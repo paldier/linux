@@ -2644,7 +2644,9 @@ mqprio:
 	if (tc->type != TC_SETUP_MQPRIO)
 		return -EINVAL;
 
-	return mlx5e_setup_tc(dev, tc->tc);
+	tc->mqprio->hw = TC_MQPRIO_HW_OFFLOAD_TCS;
+
+	return mlx5e_setup_tc(dev, tc->mqprio->num_tc);
 }
 
 struct rtnl_link_stats64 *

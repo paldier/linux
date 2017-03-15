@@ -6460,7 +6460,9 @@ static int bnxt_setup_tc(struct net_device *dev, u32 handle, __be16 proto,
 	if (ntc->type != TC_SETUP_MQPRIO)
 		return -EINVAL;
 
-	tc = ntc->tc;
+	ntc->mqprio->hw = TC_MQPRIO_HW_OFFLOAD_TCS;
+
+	tc = ntc->mqprio->num_tc;
 
 	if (tc > bp->max_tc) {
 		netdev_err(dev, "too many traffic classes requested: %d Max supported is %d\n",
