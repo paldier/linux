@@ -791,6 +791,7 @@ enum {
 	TC_SETUP_MATCHALL,
 	TC_SETUP_CLSBPF,
 	TC_SETUP_QDISC_RED,
+	TC_SETUP_QDISC_PRIO,
 	TC_SETUP_DRR,
 };
 
@@ -805,6 +806,7 @@ struct tc_to_netdev {
 		struct tc_cls_bpf_offload *cls_bpf;
 		struct tc_mqprio_qopt *mqprio;
 		struct tc_red_qopt_offload *sch_red;
+		struct tc_prio_qopt_offload *sch_prio;
 		struct tc_drr_qopt_offload *sch_drr;
 	};
 };
