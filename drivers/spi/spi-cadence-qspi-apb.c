@@ -66,6 +66,10 @@ void SwapBytes(void *pv, unsigned int n)
 		p[hi] = tmp;
 	}
 }
+
+/**
+ * Convert address buffer into word format (MSB first).
+ */
 static unsigned int cadence_qspi_apb_cmd2addr(const unsigned char *addr_buf,
 	unsigned int addr_width)
 {
@@ -75,23 +79,18 @@ static unsigned int cadence_qspi_apb_cmd2addr(const unsigned char *addr_buf,
 	debug_print("[%s] addr_buf[0]=0x%x addr_buf[1]=0x%x addr_buf[2]=0x%x "
 		"addr_buf[3]=0x%x addr_width %d\n", __func__,
 		addr_buf[0], addr_buf[1], addr_buf[2], addr_buf[3], addr_width);
+
+	if (addr_width > 4) {
+		pr_err("Invalid address width %u\n", addr_width);
+		return 0;
+	}
+
 	for (i = 0; i < addr_width; i++) {
 		addr = addr << 8;
 		addr |= addr_buf[i];
 	}
 
 	return addr;
-}
-static uint32_t qspi_create_address(const u8 *address, unsigned int cmdlen)
-{
-	uint32_t addr_value = 0;
-
-	addr_value = address[2] << 16 | address[1] << 8 |
-						address[0];
-	if (cmdlen > 3)
-		addr_value |= (address[3] << 24);
-
-	return addr_value;
 }
 
 void disable_qspi_direct_access(void *reg_base)
@@ -381,8 +380,7 @@ static int cadence_qspi_apb_command_read(void *reg_base,
 		reg |= ((addrlen - 1) & CQSPI_REG_CMDCTRL_ADD_BYTES_MASK)
 			<< CQSPI_REG_CMDCTRL_ADD_BYTES_LSB;
 		/* Get address */
-		addr_value = qspi_create_address(&addrbuf[0],
-			addrlen >= 5 ? 4 : 3);
+		addr_value = cadence_qspi_apb_cmd2addr(&addrbuf[0], addrlen);
 		CQSPI_WRITEL(addr_value, reg_base + CQSPI_REG_CMDADDRESS);
 		debug_print("[%s] CQSPI_REG_CMDADDRESS=0x%x\n", __func__, addr_value);
 	}
@@ -478,8 +476,6 @@ static int cadence_qspi_apb_command_write(void *reg_base,
 			debug_print("[%s] CQSPI_REG_CMDWRITEDATAUPPER=0x%x\n", __func__, data);
 		}
 	}
-	if (addrlen > 3)
-		addrlen = 3;
 	if (addrlen) {
 		/* Command with address */
 		reg |= (0x1 << CQSPI_REG_CMDCTRL_ADDR_EN_LSB);
@@ -487,12 +483,7 @@ static int cadence_qspi_apb_command_write(void *reg_base,
 		reg |= ((addrlen - 1) & CQSPI_REG_CMDCTRL_ADD_BYTES_MASK)
 			<< CQSPI_REG_CMDCTRL_ADD_BYTES_LSB;
 		/* Get address */
-		if ((flash_type == QSPI_FLASH_TYPE_NOR) && (txbuf[0] != MACRONIX_WRSR_CMD))
-			addr_value = cadence_qspi_apb_cmd2addr(&txbuf[1],
-				addrlen >= 5 ? 4 : 3);
-		else
-			addr_value = qspi_create_address(&addrbuf[0],
-				addrlen >= 5 ? 4 : 3);
+		addr_value = cadence_qspi_apb_cmd2addr(&addrbuf[0], addrlen);
 		CQSPI_WRITEL(addr_value, reg_base + CQSPI_REG_CMDADDRESS);
 		debug_print("[%s] CQSPI_REG_CMDADDRESS=0x%x\n", __func__, addr_value);
 	}
@@ -539,11 +530,7 @@ static int cadence_qspi_apb_indirect_read_setup(void *reg_base,
 	CQSPI_WRITEL(ahb_phy_addr, reg_base + CQSPI_REG_INDIRECTTRIGGER);
 	if (addrlen) {
 		/* Get address */
-		if (flash_type == QSPI_FLASH_TYPE_NOR) {
-			addr_value = cadence_qspi_apb_cmd2addr(&addrbuf[0], addr_bytes);
-		} else {
-			addr_value = qspi_create_address(&addrbuf[0], addr_bytes);
-		}
+		addr_value = cadence_qspi_apb_cmd2addr(&addrbuf[0], addr_bytes);
 		CQSPI_WRITEL(addr_value,
 			reg_base + CQSPI_REG_INDIRECTRDSTARTADDR);
 		debug_print("[%s]CQSPI_REG_INDIRECTRDSTARTADDR=0x%x\n", __func__, addr_value);

@@ -293,7 +293,6 @@ static int spi_nand_manufacture_init(struct mtd_info *mtd, struct nand_chip *chi
  */
 struct nand_flash_dev * spinand_flash_detect(struct mtd_info *mtd, struct nand_chip *chip)
 {
-	int retval=0;
 	u8 id_data[8];
 	int i;
 	struct nand_flash_dev *type = NULL;
@@ -737,25 +736,15 @@ static int spinand_write_enable(struct spi_device *spi)
  */
 static int spinand_read_page_to_cache(struct spi_device *spi, int page_id)
 {
-	struct mtd_info *mtd = (struct mtd_info *)dev_get_drvdata((const struct device *)&(spi->dev));
-	struct nand_chip *chip = mtd_to_nand(mtd);
-	struct spinand_info *info = (struct spinand_info *)chip->priv;
 	struct spinand_cmd cmd = {0};
 	u16 row;
 
 	row = page_id;
 	cmd.cmd = CMD_READ;
 	cmd.n_addr = 3;
-	if (info->spi->mode & SPI_RX_QUAD) {
-		cmd.addr[2] = (u8) ((page_id & 0xff0000) >> 16);
-		cmd.addr[1] = (u8)((page_id & 0xff00) >> 8);
-		cmd.addr[0] = (u8)(page_id & 0x00ff);
-	} else {
-		cmd.addr[0] = (u8) ((page_id & 0xff0000) >> 16);
-		cmd.addr[1] = (u8)((page_id & 0xff00) >> 8);
-		cmd.addr[2] = (u8)(page_id & 0x00ff);
-	}
-
+	cmd.addr[0] = (u8)(page_id >> 16);
+	cmd.addr[1] = (u8)(page_id >> 8);
+	cmd.addr[2] = (u8)(page_id);
 
 	return spinand_cmd(spi, &cmd);
 }
@@ -797,24 +786,20 @@ static int spinand_read_from_cache(struct spi_device *spi, int page_id,
 	else
 		cmd.cmd = CMD_READ_RDM;
 	cmd.n_addr = 3;
+
+	/* General format is:
+	 * 4-bit mode/plane-select + 12-bit addr + 8-bit dummy.
+	 * Gigadevice, however, requires the dummy to be placed at the
+	 * the first byte instead.
+	 */
 	if (chip->options & GIGADEVICE_DUMMY_TYPE) {
-		if (info->spi->mode & SPI_RX_QUAD) {
-			cmd.addr[2] = 0;
-			cmd.addr[1] = (u8)(column >> 8);
-			cmd.addr[0] = (u8)column;
-		} else {
-			cmd.addr[0] = 0;
-			cmd.addr[1] = (u8)(column >> 8);
-			cmd.addr[2] = (u8)column;
-		}
-	} else if (info->spi->mode & SPI_RX_QUAD) {
-		cmd.addr[0] = 0;
+		cmd.addr[0] = 0xff;
 		cmd.addr[1] = (u8)(column >> 8);
 		cmd.addr[2] = (u8)column;
 	} else {
-		cmd.addr[0] = (u8)((column & 0xff00) >> 8);
-		cmd.addr[1] = (u8)(column & 0x00ff);
-		cmd.addr[2] = (u8)(0xff);
+		cmd.addr[0] = (u8)(column >> 8);
+		cmd.addr[1] = (u8)(column);
+		cmd.addr[2] = 0xff;
 	}
 
 	cmd.n_dummy = 0;
@@ -981,23 +966,14 @@ static int spinand_program_data_to_cache(struct spi_device *spi,
  */
 static int spinand_program_execute(struct spi_device *spi, int page_id)
 {
-	struct mtd_info *mtd = (struct mtd_info *)dev_get_drvdata((const struct device *)&(spi->dev));
-	struct nand_chip *chip = mtd_to_nand(mtd);
-	struct spinand_info *info = (struct spinand_info *)chip->priv;
 	struct spinand_cmd cmd = {0};
 
 	/* NOTE: this is changed so you can write above 128 MB */
 	cmd.cmd = CMD_PROG_PAGE_EXC;
 	cmd.n_addr = 3;
-	if (info->spi->mode & SPI_TX_QUAD) {
-		cmd.addr[2] = (u8)((page_id & 0xff0000) >> 16);
-		cmd.addr[1] = (u8)((page_id & 0xff00) >> 8);
-		cmd.addr[0] = (u8)(page_id & 0x00ff);
-	} else {
-		cmd.addr[0] = (u8)((page_id & 0xff0000) >> 16);
-		cmd.addr[1] = (u8)((page_id & 0xff00) >> 8);
-		cmd.addr[2] = (u8)(page_id & 0x00ff);
-	}
+	cmd.addr[0] = (u8)(page_id >> 16);
+	cmd.addr[1] = (u8)(page_id >> 8);
+	cmd.addr[2] = (u8)(page_id);
 
 	return spinand_cmd(spi, &cmd);
 }
@@ -1089,24 +1065,15 @@ static int spinand_program_page(struct spi_device *spi,
  */
 static int spinand_erase_block_erase(struct spi_device *spi, u32 block_id)
 {
-	struct mtd_info *mtd = (struct mtd_info *)dev_get_drvdata((const struct device *)&(spi->dev));
-	struct nand_chip *chip = mtd_to_nand(mtd);
-	struct spinand_info *info = (struct spinand_info *)chip->priv;
 	struct spinand_cmd cmd = {0};
 	u16 row;
 
 	row = block_id;
 	cmd.cmd = CMD_ERASE_BLK;
 	cmd.n_addr = 3;
-	if (info->spi->mode & SPI_TX_QUAD) {
-		cmd.addr[2] = (u8)((block_id & 0xff0000) >> 16);
-		cmd.addr[1] = (u8)((block_id & 0xff00) >> 8);
-		cmd.addr[0] = (u8)(block_id & 0x00ff);
-	} else {
-		cmd.addr[0] = (u8)((block_id & 0xff0000) >> 16);
-		cmd.addr[1] = (u8)((block_id & 0xff00) >> 8);
-		cmd.addr[2] = (u8)(block_id & 0x00ff);
-	}
+	cmd.addr[0] = (u8)(block_id >> 16);
+	cmd.addr[1] = (u8)(block_id >> 8);
+	cmd.addr[2] = (u8)(block_id);
 
 	return spinand_cmd(spi, &cmd);
 }
