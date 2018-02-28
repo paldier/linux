@@ -297,12 +297,46 @@ static int prio_graft(struct Qdisc *sch, unsigned long arg, struct Qdisc *new,
 		      struct Qdisc **old)
 {
 	struct prio_sched_data *q = qdisc_priv(sch);
+	struct tc_prio_qopt_offload graft_offload;
+	struct net_device *dev = qdisc_dev(sch);
 	unsigned long band = arg - 1;
+	bool any_qdisc_is_offloaded;
+	int err;
+	struct tc_to_netdev tc = {.type = TC_SETUP_QDISC_PRIO,
+				  { .sch_prio = &graft_offload} };
+
 
 	if (new == NULL)
 		new = &noop_qdisc;
 
 	*old = qdisc_replace(sch, new, &q->queues[band]);
+
+	if (!(dev->features & NETIF_F_HW_TC) || !dev->netdev_ops->ndo_setup_tc)
+		return -EOPNOTSUPP;
+
+	graft_offload.handle = sch->handle;
+	graft_offload.parent = sch->parent;
+	graft_offload.graft_params.band = band;
+	graft_offload.graft_params.child_handle = new->handle;
+	graft_offload.command = TC_PRIO_GRAFT;
+
+	err = dev->netdev_ops->ndo_setup_tc(dev, sch->handle, 0, &tc);
+
+	/* Don't report error if the graft is part of destroy operation. */
+	if (err && new != &noop_qdisc) {
+		/* Don't report error if the parent, the old child and the new
+		 * one are not offloaded.
+		 */
+		any_qdisc_is_offloaded = sch->flags & TCQ_F_OFFLOADED;
+		any_qdisc_is_offloaded |= new->flags & TCQ_F_OFFLOADED;
+		if (*old)
+			any_qdisc_is_offloaded |= (*old)->flags &
+						   TCQ_F_OFFLOADED;
+
+		if (any_qdisc_is_offloaded)
+			pr_err("Offloading graft operation failed.");
+	}
+
 	return 0;
 }
 
