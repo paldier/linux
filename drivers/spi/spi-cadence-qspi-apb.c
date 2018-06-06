@@ -801,18 +801,14 @@ static int cadence_qspi_apb_indirect_write_execute(
 	CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_START_MASK,
 			reg_base + CQSPI_REG_INDIRECTWR);
 
-	/* Write a page or remaining bytes. */
-	write_bytes = remaining > page_size ? page_size : remaining;
-
-	/* Fill up the data at the beginning */
-	cadence_qspi_apb_write_fifo_data(ahb_base, txbuf, write_bytes,
-					 flash_type);
-	txbuf += write_bytes;
-	remaining -= write_bytes;
-
 	while (remaining > 0) {
+		/* Calculate number of bytes to write. */
+		write_bytes = remaining > page_size ? page_size : remaining;
+		cadence_qspi_apb_write_fifo_data(ahb_base, txbuf, write_bytes,
+						 flash_type);
+
 		ret = wait_event_interruptible_timeout(cadence_qspi->waitqueue,
-						       *irq_status,
+						       *irq_status & CQSPI_IRQ_MASK_WR,
 						       CQSPI_TIMEOUT_MS);
 		if (!ret) {
 			pr_err("QSPI: Indirect write timeout\n");
@@ -826,16 +822,9 @@ static int cadence_qspi_apb_indirect_write_execute(
 			ret = -EPERM;
 			goto failwr;
 		}
-		if (*irq_status & (CQSPI_REG_IRQ_UNDERFLOW |
-			CQSPI_REG_IRQ_IND_COMP | CQSPI_REG_IRQ_WATERMARK)){
-			/* Calculate number of bytes to write. */
-			write_bytes = remaining > page_size ?
-				page_size : remaining;
-			cadence_qspi_apb_write_fifo_data(ahb_base, txbuf,
-				write_bytes, flash_type);
-			txbuf  += write_bytes;
-			remaining -= write_bytes;
-		}
+
+		txbuf  += write_bytes;
+		remaining -= write_bytes;
 	}
 
 	/* Check indirect done status */
@@ -851,6 +840,23 @@ static int cadence_qspi_apb_indirect_write_execute(
 		ret = -ETIMEDOUT;
 		goto failwr;
 	}
+
+	/* We observe issues in high frequency in which write transfer fail in
+	 * between, which eventually causes issues at higher layer (e.g. file
+	 * system corruption). To workaround, we check the sram fill level
+	 * after write. If it is not zero, we assume transfer failure, and
+	 * return -EAGAIN so that user layer can retry operation in a clean
+	 * way.
+	 */
+	fill_level = (((CQSPI_READL(reg_base + CQSPI_REG_SDRAMLEVEL)) >>
+		       CQSPI_REG_SDRAMLEVEL_WR_LSB) &
+		      CQSPI_REG_SDRAMLEVEL_WR_MASK);
+	if (fill_level) {
+		pr_debug("%s fill level is %u\n", __func__, fill_level);
+		ret = -EAGAIN;
+		goto failwr;
+	}
+
 	/* Disable interrupt. */
 	CQSPI_WRITEL(0, reg_base + CQSPI_REG_IRQMASK);
 	/* Clear indirect completion status */
@@ -866,6 +872,10 @@ failwr:
 	/* Cancel the indirect write */
 	CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_CANCEL_MASK,
 		reg_base + CQSPI_REG_INDIRECTWR);
+	/* Clear indirect completion status */
+	CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_DONE_MASK,
+		     reg_base + CQSPI_REG_INDIRECTWR);
+
 	return ret;
 }
 void cadence_qspi_apb_controller_enable(void *reg_base)

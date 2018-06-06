@@ -1024,6 +1024,7 @@ static int spinand_program_page(struct spi_device *spi,
 	int retval;
 	u8 status = 0;
 	uint8_t *wbuf;
+	int retry = 3;
 
 	wbuf = buf;
 
@@ -1035,10 +1036,21 @@ static int spinand_program_page(struct spi_device *spi,
 	if (wait_till_ready(spi))
 		dev_err(&spi->dev, "wait timedout!!!\n");
 
-	retval = spinand_program_data_to_cache(spi, page_id,
-			offset, len, wbuf);
-	if (retval < 0)
+	while (retry--) {
+		retval = spinand_program_data_to_cache(spi, page_id, offset,
+						       len, wbuf);
+		if (retval != -EAGAIN)
+			break;
+
+		dev_dbg(&spi->dev, "fail to program data to cache, retrying\n");
+		cpu_relax();
+	}
+
+	if (retval < 0) {
+		dev_err(&spi->dev, "error %d program data to cache\n", retval);
 		return retval;
+	}
+
 	retval = spinand_program_execute(spi, page_id);
 	if (retval < 0)
 		return retval;
