@@ -783,7 +783,6 @@ static unsigned int ppa_prert_hook_fn (void *priv,
 
 	return NF_ACCEPT;
 }
-
 static unsigned int ppa_postrt_hook_fn(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
@@ -791,40 +790,38 @@ static unsigned int ppa_postrt_hook_fn(void *priv,
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 	struct iphdr *hdr = ip_hdr(skb);
 	/* exclude the encrypted ipsec tunnel packets */
-	if (hdr->protocol != IPPROTO_ESP) {
-#endif /* CONFIG_PPA_MPE_IP97*/
-		if (!ppa_hook_session_add_fn)
-			return NF_ACCEPT;
+	if (hdr->protocol == IPPROTO_ESP || skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn) 
+		return NF_ACCEPT;
+#else /* CONFIG_PPA_MPE_IP97*/
+	if (skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn)
+		return NF_ACCEPT;
+#endif
 
 #if IS_ENABLED(CONFIG_INTEL_IPQOS_ACCEL_DISABLE)
 		/* check for 13th bit in NFMARK set by IPQOS classifier */
 		/* If this bit is set, dont call PPA session add fn*/
-		bool accel_st = 0;
+	bool accel_st = 0;
 #if IS_ENABLED(CONFIG_NETWORK_EXTMARK)
-		GET_DATA_FROM_MARK_OPT(skb->extmark, ACCELSEL_MASK,
+	GET_DATA_FROM_MARK_OPT(skb->extmark, ACCELSEL_MASK,
 				       ACCELSEL_START_BIT_POS, accel_st);
 #endif /* CONFIG_NETWORK_EXTMARK*/
-		if (accel_st != 0)
-			return NF_ACCEPT;
+	if (accel_st != 0)
+		return NF_ACCEPT;
 #endif /* CONFIG_INTEL_IPQOS_ACCEL_DISABLE*/
 
-		struct nf_conn *ct = NULL;
-		enum ip_conntrack_info ctinfo;
-		uint32_t flags;
+	struct nf_conn *ct;
+	enum ip_conntrack_info ctinfo;
+	uint32_t flags;
 
-		ct = nf_ct_get(skb, &ctinfo);
+	ct = nf_ct_get(skb, &ctinfo);
+	flags = 0; /* post routing */
+	flags |= CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL ?
+		 PPA_F_SESSION_ORG_DIR : PPA_F_SESSION_REPLY_DIR;
 
-		flags = 0; /* post routing */
-		flags |= CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL ?
-			 PPA_F_SESSION_ORG_DIR : PPA_F_SESSION_REPLY_DIR;
+	ppa_hook_session_add_fn(skb, ct, flags);
 
-		ppa_hook_session_add_fn(skb, ct, flags);
-#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
-	}
-#endif /* CONFIG_PPA_MPE_IP97*/
 	return NF_ACCEPT;
 }
-
 static unsigned int ppa_localin_hook_fn(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)

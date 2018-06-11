@@ -18,7 +18,9 @@
 #include <linux/spinlock.h>
 #include <net/dst.h>
 #include <net/xfrm.h>
-
+#if defined(CONFIG_PPA_MPE_IP97)
+#include <net/ppa/ppa_api.h>
+#endif
 static int xfrm_output2(struct net *net, struct sock *sk, struct sk_buff *skb);
 
 static int xfrm_skb_check_space(struct sk_buff *skb)
@@ -137,6 +139,35 @@ int xfrm_output_resume(struct sk_buff *skb, int err)
 	struct net *net = xs_net(skb_dst(skb)->xfrm);
 
 	while (likely((err = xfrm_output_one(skb, err)) == 0)) {
+#if defined(CONFIG_PPA_MPE_IP97)
+		 if (ppa_hook_session_add_fn){
+#if IS_ENABLED(CONFIG_INTEL_IPQOS_ACCEL_DISABLE)
+		/* check for 13th bit in NFMARK set by IPQOS classifier */
+		/* If this bit is set, dont call PPA session add fn*/
+		bool accel_st = 0;
+#if IS_ENABLED(CONFIG_NETWORK_EXTMARK)
+		GET_DATA_FROM_MARK_OPT(skb->extmark, ACCELSEL_MASK,
+				       ACCELSEL_START_BIT_POS, accel_st);
+#endif /* CONFIG_NETWORK_EXTMARK*/
+		if (accel_st == 0){
+#endif /* CONFIG_INTEL_IPQOS_ACCEL_DISABLE*/
+
+		struct nf_conn *ct = NULL;
+		enum ip_conntrack_info ctinfo;
+		uint32_t flags;
+
+		ct = nf_ct_get(skb, &ctinfo);
+
+		flags = 0; /* post routing */
+		flags |= CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL ?
+			 PPA_F_SESSION_ORG_DIR : PPA_F_SESSION_REPLY_DIR;
+
+		ppa_hook_session_add_fn(skb, ct, flags);
+#if IS_ENABLED(CONFIG_INTEL_IPQOS_ACCEL_DISABLE)
+		}
+#endif
+	}
+#endif
 		nf_reset(skb);
 
 		err = skb_dst(skb)->ops->local_out(net, skb->sk, skb);

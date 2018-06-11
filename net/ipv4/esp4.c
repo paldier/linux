@@ -17,6 +17,7 @@
 #include <net/icmp.h>
 #include <net/protocol.h>
 #include <net/udp.h>
+#include <crypto/ltq_ipsec_ins.h>
 
 struct esp_skb_cb {
 	struct xfrm_skb_cb xfrm;
@@ -127,7 +128,68 @@ static void esp_output_done_esn(struct crypto_async_request *base, int err)
 	esp_output_restore_header(skb);
 	esp_output_done(base, err);
 }
+#if defined(CONFIG_PPA_MPE_IP97)
+int (*ltq_ipsec_enc_hook)(u32 spi, u16 ip_prot, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_complete *done),
+			unsigned int buflen, void *ip_data) = NULL;
+EXPORT_SYMBOL(ltq_ipsec_enc_hook);
 
+int (*ltq_get_len_param_hook)(u32 spi, unsigned int *ivsize, unsigned int *ICV_length,
+			unsigned int *blksize) = NULL;
+EXPORT_SYMBOL(ltq_get_len_param_hook);
+
+static void esp_output_done_fastpath(struct ltq_ipsec_complete *done)
+{
+	struct sk_buff *skb = (struct sk_buff *)(done->data);
+	skb->len = done->ret_pkt_len;
+	skb->data = skb_transport_header(skb);
+	skb->tail = skb->data + skb->len;
+	skb_push(skb, -skb_network_offset(skb));
+	xfrm_output_resume(skb, done->err);
+}
+
+static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
+{
+	int32_t err;
+	int32_t trailer_len = 0;
+	uint32_t iv_len = 0, icv_len = 0, blk_size = 0;
+	struct sk_buff *trailer;
+	uint16_t nexthdr;
+	
+	if(!ltq_get_len_param_hook) {
+		printk("param pointer is NULL\n");
+		return ;
+	}
+	ltq_get_len_param_hook(x->id.spi, &iv_len, &icv_len, &blk_size);
+	trailer_len = icv_len + blk_size ;
+	err = skb_cow_data(skb, trailer_len, &trailer);
+	if (err < 0)
+		goto error;
+	
+	skb_linearize(skb);
+	nexthdr = ip_hdr(skb)->protocol;
+	ip_hdr(skb)->protocol = IPPROTO_ESP;
+	if(!ltq_ipsec_enc_hook) {
+		printk("enc hook is NULL\n");
+		return ;
+	}
+	err = ltq_ipsec_enc_hook(x->id.spi, nexthdr, skb->data, skb_transport_header(skb), esp_output_done_fastpath, skb->len, skb);
+	if (err == -EINPROGRESS)
+		goto error;
+
+	if (err == -EBUSY)
+		err = NET_XMIT_DROP;
+
+	if(err > 0) {
+		skb->data = skb_transport_header(skb);
+		skb->len = err;
+		skb->tail = skb->data + skb->len;
+		skb_push(skb, -skb_network_offset(skb));
+		return 0;
+	}
+error:
+	return err;
+}
+#else
 static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
 {
 	int err;
@@ -304,6 +366,7 @@ static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
 error:
 	return err;
 }
+#endif
 
 static int esp_input_done2(struct sk_buff *skb, int err)
 {
@@ -409,7 +472,52 @@ static void esp_input_done_esn(struct crypto_async_request *base, int err)
 	esp_input_restore_header(skb);
 	esp_input_done(base, err);
 }
+#if defined(CONFIG_PPA_MPE_IP97)
+int (*ltq_ipsec_dec_hook)(u32 spi, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_complete *done),
+		unsigned int buflen, void *ip_data) = NULL;
 
+EXPORT_SYMBOL(ltq_ipsec_dec_hook);
+
+static void esp_input_done_fastpath(struct ltq_ipsec_complete *done)
+{
+	int ihl;
+	struct iphdr *iph;
+	struct sk_buff *skb = (struct sk_buff *)(done->data);
+	skb->len = done->ret_pkt_len;
+	iph = ip_hdr(skb);
+	ihl = iph->ihl * 4;
+	skb->transport_header = skb->network_header = skb->data  - ihl;
+	skb->tail = skb->data  + skb->len;
+	xfrm_input_resume(skb, done->nexthdr);
+}
+static int esp_input(struct xfrm_state *x, struct sk_buff *skb)
+{
+	int32_t err;
+	struct sk_buff *trailer;
+	
+	err = skb_cow_data(skb, 0, &trailer);
+	if (err < 0)
+		goto error;
+	
+	skb_linearize(skb);
+	if(!ltq_ipsec_dec_hook) {
+		printk("dec hook is NULL\n");
+		return;
+	}
+	err = ltq_ipsec_dec_hook(x->id.spi, skb->data, skb->data, esp_input_done_fastpath, skb->len, skb);
+	if (err == -EINPROGRESS)
+		goto error;
+	
+	if(err > 0) {
+		skb->len = err;
+		skb->tail = skb->data  + skb->len;
+		return 0;
+	}
+
+error:
+	return err;
+}
+#else
 /*
  * Note: detecting truncated vs. non-truncated authentication data is very
  * expensive, so we only support truncated data, which is the recommended
@@ -501,6 +609,7 @@ static int esp_input(struct xfrm_state *x, struct sk_buff *skb)
 out:
 	return err;
 }
+#endif
 
 static u32 esp4_get_mtu(struct xfrm_state *x, int mtu)
 {

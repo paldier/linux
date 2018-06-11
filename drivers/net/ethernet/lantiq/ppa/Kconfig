@@ -66,5 +66,12 @@ config PPA_BR_SESS_LEARNING
         help
             Bridge session learning support for PPA
 
+config PPA_MPE_IP97
+         tristate "INTEL PPA MPE IP97 Support"
+         depends on PPA && SOC_GRX500
+         default n
+         help
+            INTEL PPA MPE IP97 Support
+
 endif # PPA
 endmenu

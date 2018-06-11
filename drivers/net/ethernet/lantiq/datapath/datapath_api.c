@@ -399,7 +399,7 @@ static int32_t dp_alloc_port_private(int inst,
 		    ("cbm_dp_port_alloc fail for %s/dev_port %d: %d\n",
 		     owner->name, dev_port, port_id);
 		return DP_FAILURE;
-	} else if (!(cbm_data.flags & CBM_PORT_DP_SET) ||
+	} else if (!(cbm_data.flags & CBM_PORT_DP_SET) &&
 		   !(cbm_data.flags & CBM_PORT_DQ_SET)) {
 		PR_ERR("%s NO DP_SET/DQ_SET(%x):%s/dev_port %d\n",
 		       "cbm_dp_port_alloc",
