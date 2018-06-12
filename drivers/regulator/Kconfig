@@ -45,6 +45,16 @@ config REGULATOR_VIRTUAL_CONSUMER
 
 	  If unsure, say no.
 
+if REGULATOR_VIRTUAL_CONSUMER
+
+config REGULATOR_VIRTUAL_CONSUMER_PLATDEV
+	tristate "Virtual regulator consumer platform device support"
+	help
+	  This driver provides a platform virtual device for virtual consumer
+	  driver. This is mainly useful for test purposes.
+
+endif
+
 config REGULATOR_USERSPACE_CONSUMER
 	tristate "Userspace regulator consumer support"
 	help
