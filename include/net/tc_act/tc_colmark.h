@@ -7,8 +7,8 @@
 
 struct tcf_colmark {
 	struct tc_action	common;
-	enum tc_col_precedence	precedence; /* packet drop precedence marker */
-	enum tc_maeter_type	type;  /* color marker type: srTCM, trTCM */
+	enum tc_drop_precedence	precedence; /* packet drop precedence marker */
+	enum tc_meter_type	type;  /* color marker type: srTCM, trTCM */
 	bool			blind;
 	u32			flags;
 };

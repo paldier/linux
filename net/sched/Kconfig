@@ -812,6 +812,17 @@ config NET_CLS_IND
 	  classification based on the incoming device. This option is
 	  likely to disappear in favour of the metadata ematch.
 
+config NET_ACT_COLMARK
+	tristate "Color marking"
+	depends on NET_CLS_ACT
+	---help---
+	  Say Y here to configure color marking type and mode.
+
+	  If unsure, say N.
+
+	  To compile this code as a module, choose M here: the
+	  module will be called act_colmark.
+
 endif # NET_SCHED
 
 config NET_SCH_FIFO
