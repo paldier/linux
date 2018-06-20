@@ -801,7 +801,10 @@ static int cadence_qspi_apb_indirect_write_execute(
 			pr_err("QSPI: Indirect write timeout\n");
 			ret = -ETIMEDOUT;
 			goto failwr;
+		} else {
+			ret = 0;
 		}
+
 		if (*irq_status & CQSPI_IRQ_STATUS_ERR) {
 			/* Error occurred */
 			pr_err("QSPI: Indirect write error IRQ status 0x%08x\n",
@@ -841,27 +844,19 @@ static int cadence_qspi_apb_indirect_write_execute(
 	if (fill_level) {
 		pr_debug("%s fill level is %u\n", __func__, fill_level);
 		ret = -EAGAIN;
-		goto failwr;
 	}
 
-	/* Disable interrupt. */
-	CQSPI_WRITEL(0, reg_base + CQSPI_REG_IRQMASK);
-	/* Clear indirect completion status */
-	CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_DONE_MASK,
-		reg_base + CQSPI_REG_INDIRECTWR);
-	if (flash_type == QSPI_FLASH_TYPE_NOR)
-		return txlen;
-	else
-		return 0;
 failwr:
 	/* Disable interrupt. */
 	CQSPI_WRITEL(0, reg_base + CQSPI_REG_IRQMASK);
-	/* Cancel the indirect write */
-	CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_CANCEL_MASK,
-		reg_base + CQSPI_REG_INDIRECTWR);
 	/* Clear indirect completion status */
 	CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_DONE_MASK,
-		     reg_base + CQSPI_REG_INDIRECTWR);
+		reg_base + CQSPI_REG_INDIRECTWR);
+
+	/* Cancel the indirect write */
+	if (ret)
+		CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_CANCEL_MASK,
+			     reg_base + CQSPI_REG_INDIRECTWR);
 
 	return ret;
 }
