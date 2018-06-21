@@ -39,10 +39,28 @@ struct squashfs_xz {
 	struct xz_buf buf;
 };
 
+/*
+ * These changes are needed for OpenWrt till and including version 15.5 CC
+ * because the default squashfs tool uses a different format. Upstream squashfs
+ * tools and the squashfs tools shipped with LEDE are using the default format.
+ * If this is not fixed, Squash over UBIFS will fail to mount.
+ * Use the GCC version to detect if we are in a OpenWrt CC environment or in
+ * something else, GCC version < 5 means we are in OpenWrt CC.
+ * TODO: try to get rid of this hack
+ */
+#if GCC_VERSION < 50000
+struct disk_comp_opts {
+	__le32 flags;
+	__le16 bit_opts;
+	__le16 fb;
+	__le32 dictionary_size;
+};
+#else
 struct disk_comp_opts {
 	__le32 dictionary_size;
 	__le32 flags;
 };
+#endif
 
 struct comp_opts {
 	int dict_size;
