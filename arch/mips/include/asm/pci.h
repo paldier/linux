@@ -33,6 +33,7 @@ struct pci_controller {
 	struct device_node *of_node;
 
 	struct pci_ops *pci_ops;
+	struct msi_controller *msi_ctr;
 	struct resource *mem_resource;
 	unsigned long mem_offset;
 	struct resource *io_resource;

@@ -76,7 +76,7 @@ static inline int cpu_needs_post_dma_flush(struct device *dev)
 		boot_cpu_type() == CPU_BMIPS5000);
 }
 
-static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
+static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp, int coherent)
 {
 	gfp_t dma_flag;
 
@@ -101,8 +101,10 @@ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
 	else
 #endif
 #if defined(CONFIG_ZONE_DMA) && !defined(CONFIG_ZONE_DMA32)
-	     if (dev == NULL ||
-		 dev->coherent_dma_mask < DMA_BIT_MASK(sizeof(phys_addr_t) * 8))
+	     if (coherent && !plat_device_is_coherent(dev))
+		dma_flag = __GFP_DMA;
+	else if (dev == NULL ||
+		dev->coherent_dma_mask < DMA_BIT_MASK(sizeof(phys_addr_t) * 8))
 		dma_flag = __GFP_DMA;
 	else
 #endif
@@ -114,23 +116,6 @@ static gfp_t massage_gfp_flags(const struct device *dev, gfp_t gfp)
 	return gfp | dma_flag;
 }
 
-static void *mips_dma_alloc_noncoherent(struct device *dev, size_t size,
-	dma_addr_t * dma_handle, gfp_t gfp)
-{
-	void *ret;
-
-	gfp = massage_gfp_flags(dev, gfp);
-
-	ret = (void *) __get_free_pages(gfp, get_order(size));
-
-	if (ret != NULL) {
-		memset(ret, 0, size);
-		*dma_handle = plat_map_dma_mem(dev, ret, size);
-	}
-
-	return ret;
-}
-
 static void *mips_dma_alloc_coherent(struct device *dev, size_t size,
 	dma_addr_t *dma_handle, gfp_t gfp, unsigned long attrs)
 {
@@ -138,15 +123,7 @@ static void *mips_dma_alloc_coherent(struct device *dev, size_t size,
 	struct page *page = NULL;
 	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
 
-	/*
-	 * XXX: seems like the coherent and non-coherent implementations could
-	 * be consolidated.
-	 */
-	if (attrs & DMA_ATTR_NON_CONSISTENT)
-		return mips_dma_alloc_noncoherent(dev, size, dma_handle, gfp);
-
-	gfp = massage_gfp_flags(dev, gfp);
-
+	gfp = massage_gfp_flags(dev, gfp, 1);
 	if (IS_ENABLED(CONFIG_DMA_CMA) && gfpflags_allow_blocking(gfp))
 		page = dma_alloc_from_contiguous(dev,
 					count, get_order(size));
@@ -159,20 +136,13 @@ static void *mips_dma_alloc_coherent(struct device *dev, size_t size,
 	ret = page_address(page);
 	memset(ret, 0, size);
 	*dma_handle = plat_map_dma_mem(dev, ret, size);
-	if (!plat_device_is_coherent(dev)) {
+	if (!(attrs & DMA_ATTR_NON_CONSISTENT) &&
+	    !plat_device_is_coherent(dev)) {
 		dma_cache_wback_inv((unsigned long) ret, size);
 		ret = UNCAC_ADDR(ret);
 	}
 
 	return ret;
-}
-
-
-static void mips_dma_free_noncoherent(struct device *dev, size_t size,
-		void *vaddr, dma_addr_t dma_handle)
-{
-	plat_unmap_dma_mem(dev, dma_handle, size, DMA_BIDIRECTIONAL);
-	free_pages((unsigned long) vaddr, get_order(size));
 }
 
 static void mips_dma_free_coherent(struct device *dev, size_t size, void *vaddr,
@@ -182,14 +152,9 @@ static void mips_dma_free_coherent(struct device *dev, size_t size, void *vaddr,
 	unsigned int count = PAGE_ALIGN(size) >> PAGE_SHIFT;
 	struct page *page = NULL;
 
-	if (attrs & DMA_ATTR_NON_CONSISTENT) {
-		mips_dma_free_noncoherent(dev, size, vaddr, dma_handle);
-		return;
-	}
-
 	plat_unmap_dma_mem(dev, dma_handle, size, DMA_BIDIRECTIONAL);
 
-	if (!plat_device_is_coherent(dev))
+	if (!(attrs & DMA_ATTR_NON_CONSISTENT) && !plat_device_is_coherent(dev))
 		addr = CAC_ADDR(addr);
 
 	page = virt_to_page((void *) addr);

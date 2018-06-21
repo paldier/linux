@@ -472,6 +472,7 @@ static inline void local_r4k___flush_cache_all(void * args)
 	case CPU_R12000:
 	case CPU_R14000:
 	case CPU_R16000:
+	case CPU_INTERAPTIV:
 		/*
 		 * These caches are inclusive caches, that is, if something
 		 * is not cached in the S-cache, we know it also won't be

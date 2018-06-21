@@ -142,7 +142,10 @@ static int ltq_pci_startup(struct platform_device *pdev)
 
 	/* busy, i.e. configuration is not done, PCI access has to be retried */
 	ltq_pci_w32(ltq_pci_r32(PCI_CR_PCI_MOD) & ~(1 << 24), PCI_CR_PCI_MOD);
+
+	/* enable master only after configuration is done */
 	wmb();
+
 	/* BUS Master/IO/MEM access */
 	ltq_pci_cfg_w32(ltq_pci_cfg_r32(PCI_CS_STS_CMD) | 7, PCI_CS_STS_CMD);
 
@@ -165,6 +168,8 @@ static int ltq_pci_startup(struct platform_device *pdev)
 	/* enable all external masters request */
 	temp_buffer &= (~(3 << PCI_MASTER2_REQ_MASK_2BITS));
 	ltq_pci_w32(temp_buffer, PCI_CR_PC_ARB);
+
+	/* Make sure external master enabled */
 	wmb();
 
 	/* setup BAR memory regions */
@@ -182,14 +187,16 @@ static int ltq_pci_startup(struct platform_device *pdev)
 	ltq_pci_w32(0, PCI_CS_BASE_ADDR1);
 	/* both TX and RX endian swap are enabled */
 	ltq_pci_w32(ltq_pci_r32(PCI_CR_PCI_EOI) | 3, PCI_CR_PCI_EOI);
+	/* Ensure endian setup done */
 	wmb();
 	ltq_pci_w32(ltq_pci_r32(PCI_CR_BAR12MASK) | 0x80000000,
-		PCI_CR_BAR12MASK);
+		    PCI_CR_BAR12MASK);
 	ltq_pci_w32(ltq_pci_r32(PCI_CR_BAR13MASK) | 0x80000000,
-		PCI_CR_BAR13MASK);
+		    PCI_CR_BAR13MASK);
 	/*use 8 dw burst length */
 	ltq_pci_w32(0x303, PCI_CR_FCI_BURST_LENGTH);
 	ltq_pci_w32(ltq_pci_r32(PCI_CR_PCI_MOD) | (1 << 24), PCI_CR_PCI_MOD);
+	/* enable irq only after configuration is done */
 	wmb();
 
 	/* setup irq line */
@@ -198,10 +205,11 @@ static int ltq_pci_startup(struct platform_device *pdev)
 
 	/* toggle reset pin */
 	if (gpio_is_valid(reset_gpio)) {
-		__gpio_set_value(reset_gpio, 0);
+		gpio_set_value(reset_gpio, 0);
+		/* Ensure reset takes effect */
 		wmb();
 		mdelay(1);
-		__gpio_set_value(reset_gpio, 1);
+		gpio_set_value(reset_gpio, 1);
 	}
 	return 0;
 }
@@ -244,10 +252,11 @@ static struct platform_driver ltq_pci_driver = {
 
 int __init pcibios_init(void)
 {
-	int ret = platform_driver_register(&ltq_pci_driver);
+	int ret;
+
+	ret = platform_driver_register(&ltq_pci_driver);
 	if (ret)
 		pr_info("pci-xway: Error registering platform driver!");
 	return ret;
 }
-
 arch_initcall(pcibios_init);

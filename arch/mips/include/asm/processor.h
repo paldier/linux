@@ -22,6 +22,10 @@
 #include <asm/mipsregs.h>
 #include <asm/prefetch.h>
 
+#ifdef CONFIG_SOC_GRX500
+#define ARCH_LOW_ADDRESS_LIMIT MAX_DMA_ADDRESS
+#endif
+
 /*
  * Return current * instruction pointer ("program counter").
  */

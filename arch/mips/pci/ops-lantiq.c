@@ -26,21 +26,23 @@
 #define PCI_ACCESS_WRITE 1
 
 static int ltq_pci_config_access(unsigned char access_type, struct pci_bus *bus,
-	unsigned int devfn, unsigned int where, u32 *data)
+				 unsigned int devfn, unsigned int where,
+				 u32 *data)
 {
 	unsigned long cfg_base;
 	unsigned long flags;
 	u32 temp;
 
 	/* we support slot from 0 to 15 dev_fn & 0x68 (AD29) is the
-	   SoC itself */
-	if ((bus->number != 0) || ((devfn & 0xf8) > 0x78)
-		|| ((devfn & 0xf8) == 0) || ((devfn & 0xf8) == 0x68))
+	 * SoC itself
+	 */
+	if ((bus->number != 0) || ((devfn & 0xf8) > 0x78) ||
+	    ((devfn & 0xf8) == 0) || ((devfn & 0xf8) == 0x68))
 		return 1;
 
 	spin_lock_irqsave(&ebu_lock, flags);
 
-	cfg_base = (unsigned long) ltq_pci_mapped_cfg;
+	cfg_base = (unsigned long)ltq_pci_mapped_cfg;
 	cfg_base |= (bus->number << LTQ_PCI_CFG_BUSNUM_SHF) | (devfn <<
 			LTQ_PCI_CFG_FUNNUM_SHF) | (where & ~0x3);
 
@@ -51,14 +53,15 @@ static int ltq_pci_config_access(unsigned char access_type, struct pci_bus *bus,
 		*data = ltq_r32(((u32 *)(cfg_base)));
 		*data = swab32(*data);
 	}
+	/* Ensure configuration access enabled */
 	wmb();
 
 	/* clean possible Master abort */
-	cfg_base = (unsigned long) ltq_pci_mapped_cfg;
+	cfg_base = (unsigned long)ltq_pci_mapped_cfg;
 	cfg_base |= (0x0 << LTQ_PCI_CFG_FUNNUM_SHF) + 4;
 	temp = ltq_r32(((u32 *)(cfg_base)));
 	temp = swab32(temp);
-	cfg_base = (unsigned long) ltq_pci_mapped_cfg;
+	cfg_base = (unsigned long)ltq_pci_mapped_cfg;
 	cfg_base |= (0x68 << LTQ_PCI_CFG_FUNNUM_SHF) + 4;
 	ltq_w32(temp, ((u32 *)cfg_base));
 
@@ -71,7 +74,7 @@ static int ltq_pci_config_access(unsigned char access_type, struct pci_bus *bus,
 }
 
 int ltq_pci_read_config_dword(struct pci_bus *bus, unsigned int devfn,
-	int where, int size, u32 *val)
+			      int where, int size, u32 *val)
 {
 	u32 data = 0;
 
@@ -89,7 +92,7 @@ int ltq_pci_read_config_dword(struct pci_bus *bus, unsigned int devfn,
 }
 
 int ltq_pci_write_config_dword(struct pci_bus *bus, unsigned int devfn,
-	int where, int size, u32 val)
+			       int where, int size, u32 val)
 {
 	u32 data = 0;
 
@@ -97,7 +100,7 @@ int ltq_pci_write_config_dword(struct pci_bus *bus, unsigned int devfn,
 		data = val;
 	} else {
 		if (ltq_pci_config_access(PCI_ACCESS_READ, bus,
-				devfn, where, &data))
+					  devfn, where, &data))
 			return PCIBIOS_DEVICE_NOT_FOUND;
 
 		if (size == 1)

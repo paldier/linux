@@ -68,10 +68,12 @@ extern int add_temporary_entry(unsigned long entrylo0, unsigned long entrylo1,
 #define PKMAP_END	((FIXADDR_START) & ~((LAST_PKMAP << PAGE_SHIFT)-1))
 #define PKMAP_BASE	(PKMAP_END - PAGE_SIZE * LAST_PKMAP)
 
+#ifndef VMALLOC_END
 #ifdef CONFIG_HIGHMEM
 # define VMALLOC_END	(PKMAP_BASE-2*PAGE_SIZE)
 #else
 # define VMALLOC_END	(FIXADDR_START-2*PAGE_SIZE)
+#endif
 #endif
 
 #ifdef CONFIG_PHYS_ADDR_T_64BIT

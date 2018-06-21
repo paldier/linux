@@ -169,6 +169,12 @@ dtb_found:
 NESTED(smp_bootstrap, 16, sp)
 	smp_slave_setup
 	setup_c0_status_sec
-	j	start_secondary
-	END(smp_bootstrap)
+#ifdef CONFIG_EVA
+	PTR_LA  t9, start_secondary
+	jr      t9
+	.align  8
+#else
+	j       start_secondary
+#endif /* CONFIG_EVA */
+        END(smp_bootstrap)
 #endif /* CONFIG_SMP */

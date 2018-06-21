@@ -45,12 +45,16 @@
 /*
  * Returns the kernel segment base of a given address
  */
+#ifndef KSEGX
 #define KSEGX(a)		((_ACAST32_(a)) & _ACAST32_(0xe0000000))
+#endif
 
 /*
  * Returns the physical address of a CKSEGx / XKPHYS address
  */
+#ifndef CPHYSADDR
 #define CPHYSADDR(a)		((_ACAST32_(a)) & 0x1fffffff)
+#endif
 #define XPHYSADDR(a)		((_ACAST64_(a)) &			\
 				 _CONST64_(0x0000ffffffffffff))
 
@@ -77,23 +81,40 @@
 
 #else
 
+#ifndef CKSEG0ADDR
 #define CKSEG0ADDR(a)		(CPHYSADDR(a) | KSEG0)
+#endif
+#ifndef CKSEG1ADDR
 #define CKSEG1ADDR(a)		(CPHYSADDR(a) | KSEG1)
+#endif
+#ifndef CKSEG2ADDR
 #define CKSEG2ADDR(a)		(CPHYSADDR(a) | KSEG2)
+#endif
+#ifndef CKSEG3ADDR
 #define CKSEG3ADDR(a)		(CPHYSADDR(a) | KSEG3)
+#endif
 
 /*
  * Map an address to a certain kernel segment
  */
+#ifndef KSEG0ADDR
 #define KSEG0ADDR(a)		(CPHYSADDR(a) | KSEG0)
+#endif
+#ifndef KSEG1ADDR
 #define KSEG1ADDR(a)		(CPHYSADDR(a) | KSEG1)
+#endif
+#ifndef KSEG2ADDR
 #define KSEG2ADDR(a)		(CPHYSADDR(a) | KSEG2)
+#endif
+#ifndef KSEG3ADDR
 #define KSEG3ADDR(a)		(CPHYSADDR(a) | KSEG3)
+#endif
 
 /*
  * Memory segments (32bit kernel mode addresses)
  * These are the traditional names used in the 32-bit universe.
  */
+#ifndef KSEG
 #define KUSEG			0x00000000
 #define KSEG0			0x80000000
 #define KSEG1			0xa0000000
@@ -105,6 +126,7 @@
 #define CKSEG1			0xa0000000
 #define CKSEG2			0xc0000000
 #define CKSEG3			0xe0000000
+#endif
 
 #endif
 

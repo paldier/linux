@@ -31,6 +31,9 @@
 #define read_c0_vpeconf1()		__read_32bit_c0_register($1, 3)
 #define write_c0_vpeconf1(val)		__write_32bit_c0_register($1, 3, val)
 
+#define read_c0_yqmask()                __read_32bit_c0_register($1, 4)
+#define write_c0_yqmask(val)              __write_32bit_c0_register($1, 4, val)
+
 #define read_c0_tcstatus()		__read_32bit_c0_register($2, 1)
 #define write_c0_tcstatus(val)		__write_32bit_c0_register($2, 1, val)
 
@@ -368,6 +371,19 @@ do {									\
 	ehb();								\
 } while (0)
 
+#define mips_mt_yield(yq)                                       \
+({                                                              \
+        unsigned int __yq = (yq);                               \
+        unsigned int __res;                                     \
+        __asm__ __volatile__(                                   \
+        ".set  mips32r2\n"                                      \
+        ".set  mt\n"                                            \
+        "yield %0,%z1\n"                                        \
+        : "=d" (__res)                                          \
+        : "dJ" (__yq));                                         \
+                                                                \
+        __res;                                                  \
+})
 
 /* you *must* set the target tc (settc) before trying to use these */
 #define read_vpe_c0_vpecontrol()	mftc0(1, 1)

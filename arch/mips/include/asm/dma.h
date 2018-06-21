@@ -83,11 +83,16 @@
  * Deskstations or Acer PICA but not the much more versatile DMA logic used
  * for the local devices on Acer PICA or Magnums.
  */
+#if defined(CONFIG_MAX_ZONEDMA_SIZE)
+#define ZONE_DMA_SIZE (CONFIG_MAX_ZONEDMA_SIZE * 1024 * 1024)
+#else
+#define ZONE_DMA_SIZE 0x1000000
+#endif
 #if defined(CONFIG_SGI_IP22) || defined(CONFIG_SGI_IP28)
 /* don't care; ISA bus master won't work, ISA slave DMA supports 32bit addr */
 #define MAX_DMA_ADDRESS		PAGE_OFFSET
 #else
-#define MAX_DMA_ADDRESS		(PAGE_OFFSET + 0x01000000)
+#define MAX_DMA_ADDRESS		(PAGE_OFFSET + ZONE_DMA_SIZE)
 #endif
 #define MAX_DMA_PFN		PFN_DOWN(virt_to_phys((void *)MAX_DMA_ADDRESS))
 

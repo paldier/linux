@@ -38,6 +38,13 @@
 #include <asm/mipsmtregs.h>
 #include <asm/mips_mt.h>
 #include <asm/amon.h>
+#ifdef CONFIG_LTQ_VMB
+#include <asm/ltq_vmb.h>
+#endif
+
+#ifdef CONFIG_LTQ_ITC
+#include <asm/ltq_itc.h>
+#endif
 
 static void cmp_init_secondary(void)
 {
@@ -53,6 +60,10 @@ static void cmp_init_secondary(void)
 	if (cpu_has_mipsmt)
 		c->vpe_id = (read_c0_tcbind() >> TCBIND_CURVPE_SHIFT) &
 			TCBIND_CURVPE;
+#endif
+
+#ifdef CONFIG_LTQ_ITC
+	itc_init();
 #endif
 }
 
@@ -72,8 +83,15 @@ static void cmp_smp_finish(void)
 	local_irq_enable();
 }
 
-/*
- * Setup the PC, SP, and GP of a secondary processor and start it running
+void play_dead(void)
+{
+	unsigned int cpu;
+
+	cpu = smp_processor_id();
+	pr_info("CPU%d going offline\n", cpu);
+}
+
+/* Setup the PC, SP, and GP of a secondary processor and start it running
  * smp_bootstrap is the place to resume from
  * __KSTK_TOS(idle) is apparently the stack pointer
  * (unsigned long)idle->thread_info the gp
@@ -84,28 +102,98 @@ static void cmp_boot_secondary(int cpu, struct task_struct *idle)
 	unsigned long sp = __KSTK_TOS(idle);
 	unsigned long pc = (unsigned long)&smp_bootstrap;
 	unsigned long a0 = 0;
+#ifdef CONFIG_LTQ_VMB
+	int ret;
+	struct CPU_launch_t cpu_launch;
+#endif
 
 	pr_debug("SMPCMP: CPU%d: %s cpu %d\n", smp_processor_id(),
 		__func__, cpu);
 
-#if 0
-	/* Needed? */
-	flush_icache_range((unsigned long)gp,
-			   (unsigned long)(gp + sizeof(struct thread_info)));
-#endif
+#ifdef CONFIG_LTQ_VMB
+	ret = vmb_cpu_alloc(cpu, "LINUX");
+	if (ret == -VMB_EBUSY) {
+		pr_err("VPE %d is Busy !!!\n", cpu);
+		ret = vmb_cpu_alloc(MAX_CPU, "LINUX");
+		pr_err("[%s]:[%d] CPU ret = %d\n",
+		       __func__, __LINE__, ret);
+		if (ret == -VMB_EBUSY) {
+			pr_err("ALL the CPUs are Busy !\n");
+			return;
+		}
+	}
 
+	memset(&cpu_launch, 0, sizeof(struct CPU_launch_t));
+
+#ifdef CONFIG_EVA
+	cpu_launch.start_addr = CKSEG1ADDR(pc);
+#else
+	cpu_launch.start_addr = pc;
+#endif
+	cpu_launch.sp = sp;
+	cpu_launch.gp = (unsigned long)gp;
+	cpu_launch.a0 =  a0;
+
+	ret = vmb_cpu_start(ret, cpu_launch, 0, 0, 0);
+	if (ret == -VMB_ETIMEOUT || ret == -VMB_ENACK) {
+		pr_err("[%s]:[%d] FW %s could not be launched on CPU %d.",
+		       __func__, __LINE__, "LINUX", cpu);
+		pr_err("The CPU has been force reset. Please use alloc and then start.\n");
+		return;
+	}
+#else
 	amon_cpu_start(cpu, pc, sp, (unsigned long)gp, a0);
+#endif
 }
 
-/*
- * Common setup before any secondaries are started
+static unsigned int core_vpe_count(unsigned int core)
+{
+		unsigned int cfg;
+
+		if ((!IS_ENABLED(CONFIG_MIPS_MT_SMP) || !cpu_has_mipsmt) &&
+		    (!IS_ENABLED(CONFIG_CPU_MIPSR6) || !cpu_has_vp))
+			return 1;
+
+		mips_cm_lock_other(core, 0);
+		cfg = read_gcr_co_config() & CM_GCR_Cx_CONFIG_PVPE_MSK;
+		mips_cm_unlock_other();
+		return (cfg >> CM_GCR_Cx_CONFIG_PVPE_SHF) + 1;
+}
+
+/*Common setup before any secondaries are started
  */
 void __init cmp_smp_setup(void)
 {
 	int i;
 	int ncpu = 0;
+	unsigned int ncores, nvpes, core_vpes;
+	int c, v, v_min;
 
-	pr_debug("SMPCMP: CPU%d: %s\n", smp_processor_id(), __func__);
+	pr_info("SMPCMP: CPU%d: %s\n", smp_processor_id(), __func__);
+
+	/* Detect & record VPE topology */
+	ncores = mips_cm_numcores();
+	pr_info("%s topology ", cpu_has_mips_r6 ? "VP" : "VPE");
+
+	for (c = nvpes = 0; c < ncores; c++) {
+		core_vpes = core_vpe_count(c);
+		pr_cont("%c%u", c ? ',' : '{', core_vpes);
+
+	/* Use the number of VPEs in core 0 for smp_num_siblings */
+		if (!c)
+			smp_num_siblings = core_vpes;
+		v_min = NR_CPUS - nvpes;
+		v_min = min_t(int, core_vpes, v_min);
+		for (v = 0; v < v_min; v++) {
+			cpu_data[nvpes + v].core = c;
+#if defined(CONFIG_MIPS_MT_SMP) || defined(CONFIG_CPU_MIPSR6)
+			cpu_data[nvpes + v].vpe_id = v;
+#endif
+		}
+
+		nvpes += core_vpes;
+	}
+	pr_cont("} total %u\n", nvpes);
 
 #ifdef CONFIG_MIPS_MT_FPAFF
 	/* If we have an FPU, enroll ourselves in the FPU-full mask */
@@ -135,8 +223,27 @@ void __init cmp_smp_setup(void)
 
 void __init cmp_prepare_cpus(unsigned int max_cpus)
 {
+	unsigned int cca;
+	bool cca_unsuitable;
+
 	pr_debug("SMPCMP: CPU%d: %s max_cpus=%d\n",
 		 smp_processor_id(), __func__, max_cpus);
+
+	/* Detect whether the CCA is unsuited to multi-core SMP */
+	cca = read_c0_config() & CONF_CM_CMASK;
+	switch (cca) {
+	case 0x4: /* CWBE */
+	case 0x5: /* CWB */
+				pr_info("CCA is coherent, multi-core is fine\n");
+		/* The CCA is coherent, multi-core is fine */
+		cca_unsuitable = false;
+		break;
+
+	default:
+				pr_info("CCA is not coherent, multi-core is not usable\n");
+		/* CCA is not coherent, multi-core is not usable */
+		cca_unsuitable = true;
+	}
 
 #ifdef CONFIG_MIPS_MT
 	/*

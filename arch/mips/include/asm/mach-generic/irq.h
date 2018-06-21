@@ -42,4 +42,6 @@
 #endif
 #endif /* CONFIG_MIPS_GIC */
 
+#define MIPS_GIC_LOCAL_IRQ_BASE (MIPS_GIC_IRQ_BASE + GIC_MAX_INTRS)
+
 #endif /* __ASM_MACH_GENERIC_IRQ_H */

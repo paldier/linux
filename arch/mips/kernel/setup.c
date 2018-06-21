@@ -27,6 +27,7 @@
 #include <linux/device.h>
 #include <linux/dma-contiguous.h>
 #include <linux/decompress/generic.h>
+#include <linux/of_fdt.h>
 
 #include <asm/addrspace.h>
 #include <asm/bootinfo.h>
@@ -769,6 +770,7 @@ static void __init request_crashkernel(struct resource *res)
 
 static void __init arch_mem_init(char **cmdline_p)
 {
+	phys_addr_t dma_cma_limit;
 	struct memblock_region *reg;
 	extern void plat_mem_setup(void);
 
@@ -787,9 +789,6 @@ static void __init arch_mem_init(char **cmdline_p)
 	arch_mem_addpart(PFN_UP(__pa_symbol(&__init_begin)) << PAGE_SHIFT,
 			 PFN_DOWN(__pa_symbol(&__init_end)) << PAGE_SHIFT,
 			 BOOT_MEM_INIT_RAM);
-
-	pr_info("Determined physical RAM map:\n");
-	print_memory_map();
 
 #if defined(CONFIG_CMDLINE_BOOL) && defined(CONFIG_CMDLINE_OVERRIDE)
 	strlcpy(boot_command_line, builtin_cmdline, COMMAND_LINE_SIZE);
@@ -829,6 +828,12 @@ static void __init arch_mem_init(char **cmdline_p)
 		print_memory_map();
 	}
 
+	early_init_fdt_reserve_self();
+	early_init_fdt_scan_reserved_mem();
+
+	pr_info("Determined physical RAM map:\n");
+	print_memory_map();
+
 	bootmem_init();
 #ifdef CONFIG_PROC_VMCORE
 	if (setup_elfcorehdr && setup_elfcorehdr_size) {
@@ -850,7 +855,16 @@ static void __init arch_mem_init(char **cmdline_p)
 	sparse_init();
 	plat_swiotlb_setup();
 
-	dma_contiguous_reserve(PFN_PHYS(max_low_pfn));
+	/*
+	 * dma_alloc_coherent will return uncached address for most legacy MIPS,
+	 * the physical RAM is 256 MB for interaptiv, physical RAM is up to 3GB,
+	 * however, the system has only 256MB uncached address available 
+	 */
+	dma_cma_limit = PHYS_OFFSET + SZ_256M;
+	if (PFN_PHYS(max_low_pfn) < dma_cma_limit)
+		dma_cma_limit = PFN_PHYS(max_low_pfn);
+
+	dma_contiguous_reserve(dma_cma_limit);
 	/* Tell bootmem about cma reserved memblock section */
 	for_each_memblock(reserved, reg)
 		if (reg->size != 0)

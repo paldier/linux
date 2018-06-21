@@ -77,7 +77,7 @@ static void pcibios_scanbus(struct pci_controller *hose)
 	static int next_busno;
 	static int need_domain_info;
 	LIST_HEAD(resources);
-	struct pci_bus *bus;
+	struct pci_bus *bus, *child;
 
 	if (hose->get_busno && pci_has_flag(PCI_PROBE_ONLY))
 		next_busno = (*hose->get_busno)();
@@ -88,7 +88,13 @@ static void pcibios_scanbus(struct pci_controller *hose)
 				hose->io_resource, hose->io_offset);
 	pci_add_resource_offset(&resources,
 				hose->busn_resource, hose->busn_offset);
-	bus = pci_scan_root_bus(NULL, next_busno, hose->pci_ops, hose,
+
+	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+		bus = pci_scan_root_bus_msi(NULL, next_busno,
+					hose->pci_ops, hose, &resources,
+					hose->msi_ctr);
+	} else
+		bus = pci_scan_root_bus(NULL, next_busno, hose->pci_ops, hose,
 				&resources);
 	hose->bus = bus;
 
