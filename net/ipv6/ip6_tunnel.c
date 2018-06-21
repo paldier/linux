@@ -1140,10 +1140,17 @@ route_lookup:
 	if (skb_dst(skb) && !t->parms.collect_md)
 		skb_dst(skb)->ops->update_pmtu(skb_dst(skb), NULL, skb, mtu);
 	if (skb->len - t->tun_hlen - eth_hlen > mtu && !skb_is_gso(skb)) {
+		if ((fl6->flowi6_proto == IPPROTO_IPIP)) {
+			struct iphdr  *ipv4h = ip_hdr(skb);
+			if (!(ipv4h->frag_off & htons(IP_DF)))
+				goto ipv6_frag;
+		}
 		*pmtu = mtu;
 		err = -EMSGSIZE;
 		goto tx_err_dst_release;
 	}
+
+ipv6_frag:
 
 	if (t->err_count > 0) {
 		if (time_before(jiffies,
@@ -1212,6 +1219,11 @@ route_lookup:
 	ipv6h->nexthdr = proto;
 	ipv6h->saddr = fl6->saddr;
 	ipv6h->daddr = fl6->daddr;
+	if (fl6->flowi6_proto == IPPROTO_IPIP &&
+		skb->dev->type == ARPHRD_TUNNEL6 &&
+			(skb->len > ip6_skb_dst_mtu(skb))) {
+		skb->ignore_df = 1 ;
+	}
 	ip6tunnel_xmit(NULL, skb, dev);
 	return 0;
 tx_err_link_failure:
