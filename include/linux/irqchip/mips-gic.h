@@ -26,6 +26,9 @@
 /* Accessors */
 #define GIC_REG(segment, offset) (segment##_##SECTION_OFS + offset##_##OFS)
 
+#define GIC_REG_ADDR(segment, offset) \
+	(segment##_##SECTION_OFS + offset)
+
 /* GIC Address Space */
 #define SHARED_SECTION_OFS		0x0000
 #define SHARED_SECTION_SIZE		0x8000
@@ -270,6 +273,11 @@ extern int gic_get_c0_compare_int(void);
 extern int gic_get_c0_perfcount_int(void);
 extern int gic_get_c0_fdc_int(void);
 extern int gic_get_usm_range(struct resource *gic_usm_res);
+extern unsigned long gic_read_reg(unsigned int reg);
+extern void gic_write_reg(unsigned int reg, unsigned long val);
+extern int gic_yield_setup(unsigned int cpu,
+			   unsigned int pin, unsigned int irq);
+extern int gic_clear_edge(unsigned int irq);
 
 #else /* CONFIG_MIPS_GIC */
 
@@ -294,5 +302,7 @@ static inline int gic_get_usm_range(struct resource *gic_usm_res)
  * Return: The VCNUM value for the local VP.
  */
 extern unsigned gic_read_local_vp_id(void);
+
+extern void gic_send_ipi_simple(unsigned int hwirq, unsigned int cpu);
 
 #endif /* __LINUX_IRQCHIP_MIPS_GIC_H */

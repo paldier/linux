@@ -16,6 +16,7 @@
 #include <linux/percpu.h>
 #include <linux/smp.h>
 #include <linux/time.h>
+#include <linux/sched_clock.h>
 
 static DEFINE_PER_CPU(struct clock_event_device, gic_clockevent_device);
 static int gic_timer_irq;
@@ -137,6 +138,11 @@ static struct clocksource gic_clocksource = {
 	.archdata	= { .vdso_clock_mode = VDSO_CLOCK_GIC },
 };
 
+static u64 notrace gic_read_sched_clock(void)
+{
+	return gic_read_count();
+}
+
 static int __init __gic_clocksource_init(void)
 {
 	int ret;
@@ -150,6 +156,8 @@ static int __init __gic_clocksource_init(void)
 	ret = clocksource_register_hz(&gic_clocksource, gic_frequency);
 	if (ret < 0)
 		pr_warn("GIC: Unable to register clocksource\n");
+	sched_clock_register(gic_read_sched_clock, gic_get_count_width(),
+		gic_frequency);
 
 	return ret;
 }
