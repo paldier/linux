@@ -51,5 +51,10 @@ static inline void atm_proc_exit(void)
 int svc_change_qos(struct atm_vcc *vcc,struct atm_qos *qos);
 
 void atm_dev_release_vccs(struct atm_dev *dev);
+#if IS_ENABLED(CONFIG_VRX318_DATAPATH) || IS_ENABLED(CONFIG_VRX518_TC) \
+	|| IS_ENABLED(CONFIG_LTQ_PPA_A1)
+extern void (*atm_hook_mpoa_setup)(struct atm_vcc *, int, int, struct net_device *);
+#endif
+
 
 #endif

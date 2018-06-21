@@ -38,7 +38,10 @@ static void skb_debug(const struct sk_buff *skb)
 #endif
 }
 
+#define BR2684_LLC_LEN         3
+#define BR2684_SNAP_LEN        3
 #define BR2684_ETHERTYPE_LEN	2
+#define BR2684_PID_LEN		2
 #define BR2684_PAD_LEN		2
 
 #define LLC		0xaa, 0xaa, 0x03
@@ -596,6 +599,11 @@ static int br2684_regvcc(struct atm_vcc *atmvcc, void __user * arg)
 	atmvcc->push = br2684_push;
 	atmvcc->pop = br2684_pop;
 	atmvcc->release_cb = br2684_release_cb;
+#if IS_ENABLED(CONFIG_VRX518_TC)
+	if (atm_hook_mpoa_setup) /* IPoA or EoA w/o FCS */
+		atm_hook_mpoa_setup(atmvcc, brdev->payload == p_routed ? 3 : 0,
+			brvcc->encaps == BR2684_ENCAPS_LLC ? 1 : 0, net_dev);
+#endif
 	atmvcc->owner = THIS_MODULE;
 
 	/* initialize netdev carrier state */
@@ -617,18 +625,84 @@ error:
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_ATM_BR2684_MINI_JUMBO_FRAME_SUPPORT)
+#define MINI_JUMBO_ETH_DATA_LEN    1586            /* Max. octets in payload        */
+
+/**
+ * eth_change_mtu - set new MTU size
+ * @dev: network device
+ * @new_mtu: new Maximum Transfer Unit
+ *
+ * Allow changing MTU size. Needs to be overridden for devices
+ * supporting jumbo frames.
+ */
+
+
+int br2684_change_mtu(struct net_device *dev, int new_mtu)
+{
+	if (new_mtu < 68 || new_mtu > MINI_JUMBO_ETH_DATA_LEN)
+		return -EINVAL;
+	dev->mtu = new_mtu;
+	return 0;
+}
+EXPORT_SYMBOL(br2684_change_mtu);
+#endif
+
 static const struct net_device_ops br2684_netdev_ops = {
 	.ndo_start_xmit 	= br2684_start_xmit,
 	.ndo_set_mac_address	= br2684_mac_addr,
+#if IS_ENABLED(CONFIG_ATM_BR2684_MINI_JUMBO_FRAME_SUPPORT)
+	.ndo_change_mtu		= br2684_change_mtu,
+#else
 	.ndo_change_mtu		= eth_change_mtu,
+#endif
 	.ndo_validate_addr	= eth_validate_addr,
 };
 
 static const struct net_device_ops br2684_netdev_ops_routed = {
 	.ndo_start_xmit 	= br2684_start_xmit,
 	.ndo_set_mac_address	= br2684_mac_addr,
+#if IS_ENABLED(CONFIG_LTQ_MINI_JUMBO_FRAME_SUPPORT)
+	.ndo_change_mtu		= br2684_change_mtu,
+#else
 	.ndo_change_mtu		= eth_change_mtu
+#endif
 };
+
+static int br2684_unregvcc(struct atm_vcc *atmvcc, void __user *arg)
+{
+	int err;
+	struct br2684_vcc *brvcc;
+	struct br2684_dev *brdev;
+	struct net_device *net_dev;
+	struct atm_backend_br2684 be;
+
+	if (copy_from_user(&be, arg, sizeof be))
+		return -EFAULT;
+	/* write_lock_irq(&devs_lock); */
+	net_dev = br2684_find_dev(&be.ifspec);
+	if (net_dev == NULL) {
+		printk(KERN_ERR
+			"br2684: tried to unregister to non-existant device\n");
+		err = -ENXIO;
+		goto error;
+	}
+	brdev = BRPRIV(net_dev);
+	while (!list_empty(&brdev->brvccs)) {
+		brvcc = list_entry_brvcc(brdev->brvccs.next);
+		br2684_close_vcc(brvcc);
+	}
+	list_del(&brdev->br2684_devs);
+	/* write_unlock_irq(&devs_lock); */
+	unregister_netdev(net_dev);
+	free_netdev(net_dev);
+	atmvcc->push = NULL;
+	vcc_release_async(atmvcc, -ETIMEDOUT);
+	return 0;
+error:
+	/* write_unlock_irq(&devs_lock); */
+	return err;
+}
 
 static void br2684_setup(struct net_device *netdev)
 {
@@ -697,6 +771,8 @@ static int br2684_create(void __user *arg)
 		free_netdev(netdev);
 		return err;
 	}
+	/* Mark br2684 device */
+	netdev->priv_flags |= IFF_BR2684;
 
 	write_lock_irq(&devs_lock);
 
@@ -728,6 +804,7 @@ static int br2684_ioctl(struct socket *sock, unsigned int cmd,
 	switch (cmd) {
 	case ATM_SETBACKEND:
 	case ATM_NEWBACKENDIF:
+	case ATM_DELBACKENDIF:
 		err = get_user(b, (atm_backend_t __user *) argp);
 		if (err)
 			return -EFAULT;
@@ -739,6 +816,8 @@ static int br2684_ioctl(struct socket *sock, unsigned int cmd,
 			if (sock->state != SS_CONNECTED)
 				return -EINVAL;
 			return br2684_regvcc(atmvcc, argp);
+		} else if (cmd == ATM_DELBACKENDIF) {
+			return br2684_unregvcc(atmvcc, argp);
 		} else {
 			return br2684_create(argp);
 		}
@@ -834,6 +913,81 @@ static const struct file_operations br2684_proc_ops = {
 extern struct proc_dir_entry *atm_proc_root;	/* from proc.c */
 #endif /* CONFIG_PROC_FS */
 
+#ifdef CONFIG_PPA
+extern int32_t (*ppa_if_is_ipoa_fn)
+	(struct net_device *netdev, char *ifname);
+extern int32_t (*ppa_if_is_br2684_fn)
+	(struct net_device *netdev, char *ifname);
+extern int32_t (*ppa_br2684_get_vcc_fn)
+	(struct net_device *netdev, struct atm_vcc **pvcc);
+
+static int br2684_get_vcc(struct net_device *netdev, struct atm_vcc **pvcc)
+{
+	struct br2684_dev *brdev = NULL;
+	struct br2684_vcc *brvcc = NULL;
+
+	if (netdev && (br2684_start_xmit ==
+		netdev->netdev_ops->ndo_start_xmit)) {
+
+		brdev = (struct br2684_dev *)BRPRIV(netdev);
+		if (brdev) {
+			brvcc = list_empty(&brdev->brvccs) ? NULL :
+				list_entry(brdev->brvccs.next,
+					struct br2684_vcc, brvccs);
+			if (brvcc) {
+				*pvcc = brvcc->atmvcc;
+				return 0;
+			}
+		}
+	}
+	return -1;
+}
+
+static int if_is_br2684(struct net_device *netdev, char *ifname)
+{
+	int ret = 0;
+	struct net_device *tdev = NULL;
+
+	if (!netdev) {
+		tdev = netdev = dev_get_by_name(&init_net, ifname);
+		if (!netdev)
+			return 0;
+	}
+	
+	ret = (br2684_start_xmit == 
+		netdev->netdev_ops->ndo_start_xmit) ? 1 : 0;
+
+	if(tdev)
+		dev_put(tdev);
+	
+	return ret;
+}
+
+static int if_is_ipoa(struct net_device *netdev, char *ifname)
+{
+	int ret = 0;
+	struct br2684_dev *brdev = NULL;
+	struct net_device *tdev = NULL;
+
+	if (!netdev) {
+		tdev = netdev = dev_get_by_name(&init_net, ifname);
+		if (!netdev)
+			return 0;
+	}
+
+	if (if_is_br2684(netdev, ifname)) {
+		brdev = BRPRIV(netdev);
+		if (brdev)
+			ret = ((brdev->payload == p_routed) ? 1 : 0);
+	}
+
+	if (tdev)
+		dev_put(tdev);
+
+	return ret;
+}
+#endif /* CONFIG_PPA */
+
 static int __init br2684_init(void)
 {
 #ifdef CONFIG_PROC_FS
@@ -844,6 +998,12 @@ static int __init br2684_init(void)
 #endif
 	register_atm_ioctl(&br2684_ioctl_ops);
 	register_atmdevice_notifier(&atm_dev_notifier);
+
+#ifdef CONFIG_PPA
+	ppa_if_is_br2684_fn = if_is_br2684;
+	ppa_if_is_ipoa_fn = if_is_ipoa;
+	ppa_br2684_get_vcc_fn = br2684_get_vcc;
+#endif
 	return 0;
 }
 
@@ -852,6 +1012,12 @@ static void __exit br2684_exit(void)
 	struct net_device *net_dev;
 	struct br2684_dev *brdev;
 	struct br2684_vcc *brvcc;
+
+#ifdef CONFIG_PPA
+	ppa_if_is_br2684_fn = NULL;
+	ppa_if_is_ipoa_fn = NULL;
+	ppa_br2684_get_vcc_fn = NULL;
+#endif
 	deregister_atm_ioctl(&br2684_ioctl_ops);
 
 #ifdef CONFIG_PROC_FS

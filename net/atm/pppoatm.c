@@ -89,6 +89,39 @@ struct pppoatm_vcc {
 static const unsigned char pppllc[6] = { 0xFE, 0xFE, 0x03, 0xCF, 0xC0, 0x21 };
 #define LLC_LEN		(4)
 
+#ifdef CONFIG_PPA
+enum {
+	PPA_PPPOA_GET_VCC = 1,
+	PPA_PPPOA_CHECK_IFACE,
+};
+
+extern int32_t ppa_get_pppoa_info_fn(struct net_device *dev,
+		void *pvcc, uint32_t pppoa_id, void *value);
+
+static int get_pppoa_info(struct net_device *dev, void *pvcc,
+			unsigned int pppoa_id, void *value)
+{
+	struct atm_vcc **patmvcc = (struct atm_vcc **)value;
+	struct pppoatm_vcc *p_atm_vcc = (struct pppoatm_vcc *)pvcc;
+
+	if (!p_atm_vcc)
+		return -1;
+
+	if (p_atm_vcc->chan.private != pvcc)
+		return -1;
+
+	switch (pppoa_id) {
+	case PPA_PPPOA_GET_VC:
+		*patmvcc = p_atm_vcc->atmvcc;
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+#endif /* CONFIG_PPA */
+
 static inline struct pppoatm_vcc *atmvcc_to_pvcc(const struct atm_vcc *atmvcc)
 {
 	return (struct pppoatm_vcc *) (atmvcc->user_back);
@@ -431,6 +464,12 @@ static int pppoatm_assign_vcc(struct atm_vcc *atmvcc, void __user *arg)
 	atmvcc->user_back = pvcc;
 	atmvcc->push = pppoatm_push;
 	atmvcc->pop = pppoatm_pop;
+#if IS_ENABLED(CONFIG_VRX518_TC)
+	if (atm_hook_mpoa_setup) /* PPPoA */
+		atm_hook_mpoa_setup(atmvcc, 2,
+			pvcc->encaps == e_llc ? 1 : 0,
+			ppp_device(&pvcc->chan));
+#endif
 	atmvcc->release_cb = pppoatm_release_cb;
 	__module_get(THIS_MODULE);
 	atmvcc->owner = THIS_MODULE;
@@ -484,11 +523,17 @@ static struct atm_ioctl pppoatm_ioctl_ops = {
 static int __init pppoatm_init(void)
 {
 	register_atm_ioctl(&pppoatm_ioctl_ops);
+#ifdef CONFIG_PPA
+	ppa_get_pppoa_info_fn = get_pppoa_info;
+#endif
 	return 0;
 }
 
 static void __exit pppoatm_exit(void)
 {
+#ifdef CONFIG_PPA
+	ppa_get_pppoa_info_fn = NULL;
+#endif
 	deregister_atm_ioctl(&pppoatm_ioctl_ops);
 }
 

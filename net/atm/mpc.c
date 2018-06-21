@@ -30,6 +30,7 @@
 /* Modular too */
 #include <linux/module.h>
 
+#include "common.h"
 #include "lec.h"
 #include "mpc.h"
 #include "resources.h"
@@ -601,7 +602,6 @@ static netdev_tx_t mpc_send_packet(struct sk_buff *skb,
 non_ip:
 	return __netdev_start_xmit(mpc->old_ops, skb, dev, false);
 }
-
 static int atm_mpoa_vcc_attach(struct atm_vcc *vcc, void __user *arg)
 {
 	int bytes_left;
@@ -644,7 +644,10 @@ static int atm_mpoa_vcc_attach(struct atm_vcc *vcc, void __user *arg)
 
 	vcc->proto_data = mpc->dev;
 	vcc->push = mpc_push;
-
+#if IS_ENABLED(CONFIG_VRX518_TC)
+   if (atm_hook_mpoa_setup) /* IPoA, LLC */
+       atm_hook_mpoa_setup(vcc, 3, 1, mpc->dev);
+#endif
 	return 0;
 }
 
