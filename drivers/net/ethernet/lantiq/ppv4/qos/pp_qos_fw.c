@@ -1,0 +1,2813 @@
+/*
+ * GPL LICENSE SUMMARY
+ *
+ *  Copyright(c) 2017 Intel Corporation.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of version 2 of the GNU General Public License as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.
+ *
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+ *  The full GNU General Public License is included in this distribution
+ *  in the file called LICENSE.GPL.
+ *
+ *  Contact Information:
+ *  Intel Corporation
+ *  2200 Mission College Blvd.
+ *  Santa Clara, CA  97052
+ */
+#include "pp_qos_common.h"
+#include "pp_qos_utils.h"
+#include "pp_qos_uc_wrapper.h"
+#include "pp_qos_fw.h"
+
+
+#ifdef __LP64__
+#define GET_ADDRESS_HIGH(addr) ((((uintptr_t)(addr)) >> 32) & 0xFFFFFFFF)
+#else
+#define GET_ADDRESS_HIGH(addr) (0)
+#endif
+
+#ifndef PP_QOS_DISABLE_CMDQ
+
+#define CMD_FLAGS_WRAP_SUSPEND_RESUME 1
+#define CMD_FLAGS_WRAP_PARENT_SUSPEND_RESUME 2
+#define CMD_FLAGS_POST_PROCESS	4
+
+
+#define FW_CMDS(OP) \
+	OP(CMD_TYPE_INIT_LOGGER)		\
+	OP(CMD_TYPE_INIT_QOS)			\
+	OP(CMD_TYPE_MOVE)			\
+	OP(CMD_TYPE_ADD_PORT)			\
+	OP(CMD_TYPE_SET_PORT)			\
+	OP(CMD_TYPE_REMOVE_PORT)		\
+	OP(CMD_TYPE_ADD_SCHED)			\
+	OP(CMD_TYPE_SET_SCHED)			\
+	OP(CMD_TYPE_REMOVE_SCHED)		\
+	OP(CMD_TYPE_ADD_QUEUE)			\
+	OP(CMD_TYPE_SET_QUEUE)			\
+	OP(CMD_TYPE_REMOVE_QUEUE)		\
+	OP(CMD_TYPE_UPDATE_PREDECESSORS)	\
+	OP(CMD_TYPE_PARENT_CHANGE)		\
+	OP(CMD_TYPE_REMOVE_NODE)		\
+	OP(CMD_TYPE_GET_QUEUE_STATS)		\
+	OP(CMD_TYPE_GET_PORT_STATS)		\
+	OP(CMD_TYPE_ADD_SHARED_GROUP)		\
+	OP(CMD_TYPE_PUSH_DESC)			\
+	OP(CMD_TYPE_GET_NODE_INFO)		\
+	OP(CMD_TYPE_REMOVE_SHARED_GROUP)	\
+	OP(CMD_TYPE_SET_SHARED_GROUP)		\
+	OP(CMD_TYPE_FLUSH_QUEUE)		\
+	OP(CMD_TYPE_GET_NUM_USED_NODES)		\
+	OP(CMD_TYPE_INTERNAL)
+
+enum cmd_type {
+	FW_CMDS(GEN_ENUM)
+};
+
+static const char *const cmd_str[] = {
+	FW_CMDS(GEN_STR)
+};
+
+static void update_moved_nodes(
+		struct pp_qos_dev *qdev,
+		unsigned int src,
+		unsigned int dst);
+
+struct ppv4_qos_fw_hdr {
+	uint32_t major;
+	uint32_t minor;
+	uint32_t build;
+};
+
+struct ppv4_qos_fw_sec {
+	uint32_t dst;
+	uint32_t size;
+};
+
+#define FW_OK_SIGN (0xCAFECAFEU)
+#define FW_DDR_LOWEST (0x400000U)
+
+static void copy_section(void *_dst, const void *_src, unsigned int size)
+{
+	unsigned int i;
+	const uint32_t *src;
+	uint32_t *dst;
+
+	src = (uint32_t *)_src;
+	dst = (uint32_t *)_dst;
+
+	for (i = size; i > 0; i -= 4)
+		*dst++ = cpu_to_le32(*src++);
+}
+
+/*
+ * This function loads the firmware.
+ * The firmware is built from a header which holds the major, minor
+ * and build numbers.
+ * Following the header are sections. Each section is composed of
+ * header which holds the memory destination where this section's
+ * data should be copied and the size of this section in bytes.
+ * After the header comes section's data which is a stream of uint32
+ * words.
+ * The memory destination on section header designates offset relative
+ * to either ddr (a.k.a external) or qos (a.k.a) spaces. Offsets higher
+ * than FW_DDR_LOWEST refer to ddr space.
+ *
+ * Firmware is little endian.
+ *
+ * When firmware runs it writes 0xCAFECAFE to offset FW_OK_OFFSET of ddr
+ * space.
+ */
+int do_load_firmware(
+		struct pp_qos_dev *qdev,
+		const struct ppv4_qos_fw *fw,
+		void *ddr_base,
+		void *qos_base,
+		void *data)
+{
+	size_t size;
+	struct ppv4_qos_fw_hdr *hdr;
+	const uint8_t *cur;
+	const uint8_t *last;
+	void *dst;
+	struct ppv4_qos_fw_sec *sec;
+	uint32_t val;
+
+	size = fw->size;
+	hdr = (struct ppv4_qos_fw_hdr *)(fw->data);
+	hdr->major = le32_to_cpu(hdr->major);
+	hdr->minor = le32_to_cpu(hdr->minor);
+	hdr->build = le32_to_cpu(hdr->build);
+	QOS_LOG_INFO("Firmware size(%zu) major(%u) minor(%u) build(%u)\n",
+			size,
+			hdr->major,
+			hdr->minor,
+			hdr->build);
+
+	if (hdr->major != UC_VERSION_MAJOR || hdr->minor != UC_VERSION_MINOR) {
+		QOS_LOG_ERR("mismatch major %u or minor %u\n",
+				UC_VERSION_MAJOR, UC_VERSION_MINOR);
+		return -EINVAL;
+	}
+
+	qdev->fwver.major = hdr->major;
+	qdev->fwver.minor = hdr->minor;
+	qdev->fwver.build = hdr->build;
+
+	last = fw->data + size - 1;
+	cur = (uint8_t *)(hdr + 1);
+	while (cur < last) {
+		sec = (struct ppv4_qos_fw_sec *)cur;
+		sec->dst = le32_to_cpu(sec->dst);
+		sec->size = le32_to_cpu(sec->size);
+		cur = (uint8_t *)(sec + 1);
+
+		if (sec->dst >= FW_DDR_LOWEST)
+			dst = ddr_base + sec->dst;
+		else
+			dst = qos_base + sec->dst;
+
+		QOS_LOG_DEBUG("Copying %u bytes (0x%08X) <-- (0x%08X)\n",
+				sec->size,
+				(unsigned int)(uintptr_t)(dst),
+				(unsigned int)(uintptr_t)(cur));
+
+		copy_section(dst, cur, sec->size);
+		cur += sec->size;
+	}
+
+	wake_uc(data);
+	QOS_LOG_DEBUG("waked fw\n");
+	qos_sleep(10);
+	val = *((uint32_t *)(qdev->fwcom.cmdbuf));
+	if (val != FW_OK_SIGN) {
+		QOS_LOG_ERR("FW OK value is 0x%08X, instead got 0x%08X\n",
+				FW_OK_SIGN, val);
+		return  -ENODEV;
+	}
+	QOS_LOG_INFO("FW is running :)\n");
+	*((uint32_t *)(qdev->fwcom.cmdbuf)) = 0;
+	return 0;
+}
+
+/******************************************************************************/
+/*                         Driver commands structures	                      */
+/******************************************************************************/
+struct cmd {
+	unsigned int id;
+	unsigned int fw_id;
+	unsigned int flags;
+	enum cmd_type  type;
+	size_t len;
+	uint32_t *pos;
+};
+
+struct cmd_internal {
+	struct cmd base;
+};
+
+struct cmd_init_logger {
+	struct cmd base;
+	unsigned int	addr;
+	int mode;
+	int level;
+	unsigned int num_of_msgs;
+};
+
+struct cmd_init_qos {
+	struct cmd base;
+	unsigned int qm_ddr_start;
+	unsigned int qm_num_pages;
+	unsigned int wred_total_avail_resources;
+	unsigned int wred_prioritize_pop;
+	unsigned int wred_avg_q_size_p;
+	unsigned int wred_max_q_size;
+	unsigned int num_of_ports;
+};
+
+struct cmd_move {
+	struct cmd base;
+	int      node_type;
+	uint16_t src;
+	uint16_t dst;
+	unsigned int rlm;
+	uint16_t dst_port;
+	uint16_t preds[6];
+};
+
+struct cmd_remove_node {
+	struct cmd base;
+	unsigned int phy;
+	unsigned int data; /* rlm in queue, otherwise irrlevant */
+};
+
+struct cmd_update_preds {
+	struct cmd base;
+	int node_type;
+	uint16_t preds[6];
+	unsigned int phy;
+	unsigned int rlm;
+};
+
+struct port_properties {
+	struct pp_qos_common_node_properties common;
+	struct pp_qos_parent_node_properties parent;
+	void *ring_addr;
+	size_t ring_size;
+	uint8_t  packet_credit_enable;
+	unsigned int credit;
+	int	     disable;
+};
+
+struct cmd_add_port {
+	struct cmd base;
+	unsigned int phy;
+	struct port_properties prop;
+};
+
+struct cmd_set_port {
+	struct cmd base;
+	unsigned int phy;
+	struct port_properties prop;
+	uint32_t modified;
+};
+
+struct sched_properties {
+	struct pp_qos_common_node_properties common;
+	struct pp_qos_parent_node_properties parent;
+	struct pp_qos_child_node_properties  child;
+};
+
+struct cmd_add_sched {
+	struct cmd base;
+	unsigned int phy;
+	unsigned int parent;
+	uint16_t preds[6];
+	struct sched_properties prop;
+};
+
+struct cmd_set_sched {
+	struct cmd base;
+	unsigned int phy;
+	unsigned int parent;
+	struct sched_properties prop;
+	uint32_t modified;
+};
+
+struct queue_properties {
+	struct pp_qos_common_node_properties common;
+	struct pp_qos_child_node_properties  child;
+	uint8_t  blocked;
+	uint8_t  wred_enable;
+	uint8_t  fixed_drop_prob_enable;
+	unsigned int max_burst;
+	unsigned int queue_wred_min_avg_green;
+	unsigned int queue_wred_max_avg_green;
+	unsigned int queue_wred_slope_green;
+	unsigned int queue_wred_min_avg_yellow;
+	unsigned int queue_wred_max_avg_yellow;
+	unsigned int queue_wred_slope_yellow;
+	unsigned int queue_wred_min_guaranteed;
+	unsigned int queue_wred_max_allowed;
+	unsigned int queue_wred_fixed_drop_prob_green;
+	unsigned int queue_wred_fixed_drop_prob_yellow;
+	unsigned int      rlm;
+};
+
+struct cmd_add_queue {
+	struct cmd base;
+	unsigned int phy;
+	unsigned int parent;
+	unsigned int port;
+	uint16_t preds[6];
+	struct queue_properties prop;
+};
+
+struct cmd_set_queue {
+	struct cmd base;
+	unsigned int phy;
+	struct queue_properties prop;
+	uint32_t modified;
+};
+
+struct cmd_flush_queue {
+	struct cmd base;
+	unsigned int rlm;
+};
+
+struct cmd_parent_change {
+	struct cmd base;
+	unsigned int phy;
+	int type;
+	int arbitration;
+	int first;
+	unsigned int num;
+};
+
+struct cmd_get_queue_stats {
+	struct cmd base;
+	unsigned int phy;
+	unsigned int rlm;
+	unsigned int addr;
+	struct pp_qos_queue_stat *stat;
+};
+
+struct cmd_get_port_stats {
+	struct cmd base;
+	unsigned int phy;
+	unsigned int addr;
+	struct pp_qos_port_stat *stat;
+};
+
+struct cmd_push_desc {
+	struct cmd base;
+	unsigned int queue;
+	unsigned int size;
+	unsigned int color;
+	unsigned int addr;
+};
+
+struct cmd_get_node_info {
+	struct cmd base;
+	unsigned int phy;
+	unsigned int addr;
+	struct pp_qos_node_info *info;
+};
+
+struct stub_cmd {
+	struct cmd cmd;
+	uint8_t data;
+};
+
+struct cmd_set_shared_group {
+	struct cmd base;
+	unsigned int id;
+	unsigned int limit;
+};
+
+struct cmd_remove_shared_group {
+	struct cmd base;
+	unsigned int id;
+};
+
+struct cmd_get_num_used_nodes {
+	struct cmd base;
+	unsigned int addr;
+	uint32_t *num;
+};
+
+union driver_cmd {
+	struct cmd	 cmd;
+	struct stub_cmd  stub;
+	struct cmd_init_logger init_logger;
+	struct cmd_init_qos  init_qos;
+	struct cmd_move  move;
+	struct cmd_update_preds update_preds;
+	struct cmd_remove_node remove_node;
+	struct cmd_add_port add_port;
+	struct cmd_set_port set_port;
+	struct cmd_add_sched add_sched;
+	struct cmd_set_sched set_sched;
+	struct cmd_add_queue add_queue;
+	struct cmd_set_queue set_queue;
+	struct cmd_parent_change parent_change;
+	struct cmd_get_queue_stats queue_stats;
+	struct cmd_get_port_stats port_stats;
+	struct cmd_set_shared_group set_shared_group;
+	struct cmd_remove_shared_group remove_shared_group;
+	struct cmd_push_desc	pushd;
+	struct cmd_get_node_info node_info;
+	struct cmd_flush_queue flush_queue;
+	struct cmd_get_num_used_nodes num_used;
+	struct cmd_internal	internal;
+};
+
+/******************************************************************************/
+/*                         Driver functions                                   */
+/******************************************************************************/
+
+/*
+ * Following functions creates commands in driver fromat to be stored at
+ * drivers queues before sending to firmware
+ */
+
+/*
+ * Extract ancestors of node from driver's DB
+ */
+static void fill_preds(
+		const struct pp_nodes *nodes,
+		unsigned int phy,
+		uint16_t *preds,
+		size_t size)
+{
+	unsigned int i;
+	const struct qos_node *node;
+
+	i = 0;
+	memset(preds, 0x0, size * sizeof(uint16_t));
+	node = get_const_node_from_phy(nodes, phy);
+	while (node_child(node) && (i < size)) {
+		preds[i] = node->child_prop.parent_phy;
+		node = get_const_node_from_phy(nodes,
+				node->child_prop.parent_phy);
+		i++;
+	}
+}
+
+static void cmd_init(
+		const struct pp_qos_dev *qdev,
+		struct cmd *cmd,
+		enum cmd_type type,
+		size_t len,
+		unsigned int flags)
+{
+	cmd->flags = flags;
+	cmd->type = type;
+	cmd->len = len;
+	cmd->id = qdev->drvcmds.cmd_id;
+	cmd->fw_id = qdev->drvcmds.cmd_fw_id;
+}
+
+/* TODO - make less hard code */
+void create_init_logger_cmd(struct pp_qos_dev *qdev)
+{
+	struct cmd_init_logger cmd;
+
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_INIT_LOGGER, sizeof(cmd), 0);
+	cmd.addr = qdev->hwconf.fw_logger_start;
+	cmd.mode = UC_LOGGER_MODE_WRITE_HOST_MEM;
+	cmd.level = UC_LOGGER_LEVEL_INFO;
+	cmd.num_of_msgs = PPV4_QOS_LOGGER_BUF_SIZE / PPV4_QOS_LOGGER_MSG_SIZE;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_INIT_LOGGER\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id);
+	cmd_queue_put(qdev->drvcmds.cmdq, (uint8_t *)&cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_init_qos_cmd(struct pp_qos_dev *qdev)
+{
+	struct cmd_init_qos cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_INIT_QOS, sizeof(cmd), 0);
+	cmd.qm_ddr_start = qdev->hwconf.qm_ddr_start;
+	cmd.qm_num_pages = qdev->hwconf.qm_num_pages;
+	cmd.wred_total_avail_resources =
+		qdev->hwconf.wred_total_avail_resources;
+	cmd.wred_prioritize_pop = qdev->hwconf.wred_prioritize_pop;
+	cmd.wred_avg_q_size_p = qdev->hwconf.wred_const_p;
+	cmd.wred_max_q_size = qdev->hwconf.wred_max_q_size;
+	cmd.num_of_ports = qdev->max_port + 1;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_INIT_QOS\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id);
+	cmd_queue_put(qdev->drvcmds.cmdq, (uint8_t *)&cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_move_cmd(
+		struct pp_qos_dev *qdev,
+		uint16_t dst,
+		uint16_t src,
+		uint16_t dst_port)
+{
+	struct cmd_move cmd;
+	const struct qos_node *node;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	node = get_const_node_from_phy(qdev->nodes, dst);
+
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_MOVE, sizeof(cmd), 0);
+	cmd.src = src;
+	cmd.dst = dst;
+	cmd.dst_port = dst_port;
+	cmd.node_type = node->type;
+	if (node->type == TYPE_QUEUE)
+		cmd.rlm = node->data.queue.rlm;
+	else
+		cmd.rlm = -1;
+
+	fill_preds(qdev->nodes, dst, cmd.preds, 6);
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_MOVE %u-->%u type:%d, rlm:%d, port:%u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			src,
+			dst,
+			node->type,
+			cmd.rlm,
+			dst_port);
+
+	update_moved_nodes(qdev, src, dst);
+	cmd_queue_put(qdev->drvcmds.cmdq, (uint8_t *)&cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_remove_node_cmd(
+		struct pp_qos_dev *qdev,
+		enum node_type ntype,
+		unsigned int phy,
+		unsigned int data)
+{
+	struct cmd_remove_node cmd;
+	enum cmd_type ctype;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	switch (ntype) {
+	case TYPE_PORT:
+		ctype = CMD_TYPE_REMOVE_PORT;
+		break;
+	case TYPE_SCHED:
+		ctype = CMD_TYPE_REMOVE_SCHED;
+		break;
+	case TYPE_QUEUE:
+		ctype = CMD_TYPE_REMOVE_QUEUE;
+		break;
+	case TYPE_UNKNOWN:
+		QOS_ASSERT(0, "Unexpected unknow type\n");
+		ctype = CMD_TYPE_REMOVE_NODE;
+		break;
+	default:
+		QOS_LOG_ERR("illegal node type %d\n", ntype);
+		return;
+	}
+
+	cmd_init(qdev, &(cmd.base), ctype, sizeof(cmd), 0);
+	cmd.phy = phy;
+	cmd.data = data;
+
+	QOS_LOG_DEBUG("cmd %u:%u %s %u rlm %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			cmd_str[ctype], phy, data);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	if (ctype != CMD_TYPE_REMOVE_PORT)
+		add_suspend_port(qdev, get_port(qdev->nodes, phy));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_update_preds_cmd(struct pp_qos_dev *qdev, unsigned int phy)
+{
+	const struct qos_node *node;
+	struct cmd_update_preds cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(
+			qdev,
+			&(cmd.base),
+			CMD_TYPE_UPDATE_PREDECESSORS,
+			sizeof(cmd),
+			0);
+	cmd.phy = phy;
+	fill_preds(qdev->nodes, phy, cmd.preds, 6);
+	node = get_const_node_from_phy(qdev->nodes, phy);
+	cmd.node_type = node->type;
+	cmd.rlm = node->data.queue.rlm;
+
+	QOS_LOG_DEBUG(
+			"cmd %u:%u CMD_TYPE_UPDATE_PREDECESSORS %u:%u-->%u-->%u-->%u-->%u-->%u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			phy,
+			cmd.preds[0], cmd.preds[1], cmd.preds[2],
+			cmd.preds[3], cmd.preds[4], cmd.preds[5]);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+static void set_cmd_port_properties(
+		struct port_properties *prop,
+		const struct pp_qos_port_conf *conf)
+{
+	prop->common = conf->common_prop;
+	prop->parent = conf->port_parent_prop;
+	prop->packet_credit_enable = !!conf->packet_credit_enable;
+	prop->ring_addr = conf->ring_address;
+	prop->ring_size = conf->ring_size;
+	prop->credit = conf->credit;
+	prop->disable = !!conf->disable;
+}
+
+static void create_add_port_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_port_conf *conf,
+		unsigned int phy)
+{
+	struct cmd_add_port cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_ADD_PORT, sizeof(cmd), 0);
+	cmd.phy = phy;
+	set_cmd_port_properties(&cmd.prop, conf);
+
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_ADD_PORT %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			phy);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+
+static void _create_set_port_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_port_conf *conf,
+		unsigned int phy,
+		uint32_t modified,
+		struct cmd_queue *q,
+		uint32_t *pos)
+{
+	struct cmd_set_port cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_NODE_TYPE)) {
+		create_add_port_cmd(qdev, conf, phy);
+	} else {
+		memset(&cmd, 0, sizeof(cmd));
+		cmd_init(qdev, &(cmd.base), CMD_TYPE_SET_PORT, sizeof(cmd), 0);
+		cmd.phy = phy;
+		set_cmd_port_properties(&cmd.prop, conf);
+		cmd.modified = modified;
+		cmd.base.pos = pos;
+		cmd_queue_put(q, &cmd, sizeof(cmd));
+		qdev->drvcmds.cmd_fw_id++;
+	}
+}
+
+void create_set_port_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_port_conf *conf,
+		unsigned int phy,
+		uint32_t modified)
+{
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	_create_set_port_cmd(qdev, conf, phy, modified,
+			qdev->drvcmds.cmdq, NULL);
+	if (!QOS_BITS_IS_SET(modified, QOS_MODIFIED_NODE_TYPE))
+		QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_SET_PORT %u\n",
+				qdev->drvcmds.cmd_id,
+				qdev->drvcmds.cmd_fw_id,
+				phy);
+
+}
+
+static void set_cmd_sched_properties(
+		struct sched_properties *prop,
+		const struct pp_qos_sched_conf *conf)
+{
+	prop->common = conf->common_prop;
+	prop->parent = conf->sched_parent_prop;
+	prop->child = conf->sched_child_prop;
+}
+
+static void create_add_sched_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_sched_conf *conf,
+		unsigned int phy,
+		unsigned int parent)
+{
+	struct cmd_add_sched cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_ADD_SCHED, sizeof(cmd), 0);
+	cmd.phy = phy;
+	cmd.parent = parent;
+	fill_preds(qdev->nodes, phy, cmd.preds, 6);
+	set_cmd_sched_properties(&cmd.prop, conf);
+
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_ADD_SCHED %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id, phy);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	add_suspend_port(qdev, get_port(qdev->nodes, phy));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+static void _create_set_sched_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_sched_conf *conf,
+		unsigned int phy,
+		unsigned int parent,
+		uint32_t modified)
+{
+	struct cmd_set_sched cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_NODE_TYPE)) {
+		create_add_sched_cmd(qdev, conf, phy, parent);
+	} else {
+		memset(&cmd, 0, sizeof(cmd));
+		cmd_init(qdev, &(cmd.base), CMD_TYPE_SET_SCHED, sizeof(cmd), 0);
+		cmd.phy = phy;
+		set_cmd_sched_properties(&cmd.prop, conf);
+		cmd.modified = modified;
+		cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+		qdev->drvcmds.cmd_fw_id++;
+	}
+}
+
+void create_set_sched_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_sched_conf *conf,
+		unsigned int phy,
+		unsigned int parent,
+		uint32_t modified)
+{
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	_create_set_sched_cmd(qdev, conf, phy, parent, modified);
+
+	if (!QOS_BITS_IS_SET(modified, QOS_MODIFIED_NODE_TYPE))
+		QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_SET_SCHED %u\n",
+				qdev->drvcmds.cmd_id,
+				qdev->drvcmds.cmd_fw_id, phy);
+}
+
+static void set_cmd_queue_properties(
+		struct queue_properties *prop,
+		const struct pp_qos_queue_conf *conf,
+		unsigned int rlm)
+{
+	prop->common = conf->common_prop;
+	prop->child = conf->queue_child_prop;
+	prop->blocked = !!conf->blocked;
+	prop->wred_enable = !!conf->wred_enable;
+	prop->fixed_drop_prob_enable = !!conf->wred_fixed_drop_prob_enable;
+	prop->max_burst =  conf->max_burst;
+	prop->queue_wred_min_avg_green = conf->queue_wred_min_avg_green;
+	prop->queue_wred_max_avg_green = conf->queue_wred_max_avg_green;
+	prop->queue_wred_slope_green = conf->queue_wred_slope_green;
+	prop->queue_wred_min_avg_yellow = conf->queue_wred_min_avg_yellow;
+	prop->queue_wred_max_avg_yellow = conf->queue_wred_max_avg_yellow;
+	prop->queue_wred_slope_yellow = conf->queue_wred_slope_yellow;
+	prop->queue_wred_min_guaranteed = conf->queue_wred_min_guaranteed;
+	prop->queue_wred_max_allowed = conf->queue_wred_max_allowed;
+	prop->queue_wred_fixed_drop_prob_green =
+		conf->queue_wred_fixed_drop_prob_green;
+	prop->queue_wred_fixed_drop_prob_yellow =
+		conf->queue_wred_fixed_drop_prob_yellow;
+	prop->rlm = rlm;
+}
+
+static void create_add_queue_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_queue_conf *conf,
+		unsigned int phy,
+		unsigned int parent,
+		unsigned int rlm)
+{
+	struct cmd_add_queue cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(
+			qdev,
+			&(cmd.base),
+			CMD_TYPE_ADD_QUEUE,
+			sizeof(cmd),
+			CMD_FLAGS_WRAP_PARENT_SUSPEND_RESUME);
+	cmd.phy = phy;
+	cmd.parent = parent;
+
+	cmd.port = get_port(qdev->nodes, phy);
+
+	fill_preds(qdev->nodes, phy, cmd.preds, 6);
+	set_cmd_queue_properties(&cmd.prop, conf, rlm);
+
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_ADD_QUEUE %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			phy);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	add_suspend_port(qdev, cmd.port);
+	qdev->drvcmds.cmd_fw_id++;
+
+}
+
+static void _create_set_queue_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_queue_conf *conf,
+		unsigned int phy,
+		unsigned int parent,
+		unsigned int rlm,
+		uint32_t modified)
+{
+	struct cmd_set_queue cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_NODE_TYPE)) {
+		create_add_queue_cmd(qdev, conf, phy, parent, rlm);
+	} else {
+		memset(&cmd, 0, sizeof(cmd));
+		cmd_init(
+				qdev,
+				&(cmd.base),
+				CMD_TYPE_SET_QUEUE,
+				sizeof(cmd),
+				CMD_FLAGS_WRAP_SUSPEND_RESUME |
+				CMD_FLAGS_WRAP_PARENT_SUSPEND_RESUME);
+		cmd.phy = phy;
+		set_cmd_queue_properties(&cmd.prop, conf, rlm);
+		cmd.modified = modified;
+		cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+		qdev->drvcmds.cmd_fw_id++;
+	}
+}
+
+void create_set_queue_cmd(
+		struct pp_qos_dev *qdev,
+		const struct pp_qos_queue_conf *conf,
+		unsigned int phy,
+		unsigned int parent,
+		unsigned int rlm,
+		uint32_t modified)
+{
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	_create_set_queue_cmd(qdev, conf, phy, parent, rlm, modified);
+	if (!QOS_BITS_IS_SET(modified, QOS_MODIFIED_NODE_TYPE))
+		QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_SET_QUEUE %u\n",
+				qdev->drvcmds.cmd_id,
+				qdev->drvcmds.cmd_fw_id, phy);
+}
+
+void create_flush_queue_cmd(struct pp_qos_dev *qdev, unsigned int rlm)
+{
+	struct cmd_flush_queue cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_FLUSH_QUEUE, sizeof(cmd), 0);
+	cmd.rlm = rlm;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_FLUSH_QUEUE %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			rlm);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_parent_change_cmd(struct pp_qos_dev *qdev, unsigned int phy)
+{
+	struct cmd_parent_change cmd;
+	const struct qos_node *node;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	node = get_const_node_from_phy(qdev->nodes, phy);
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_PARENT_CHANGE, sizeof(cmd), 0);
+	cmd.phy = phy;
+	cmd.type = node->type;
+	cmd.arbitration = node->parent_prop.arbitration;
+	cmd.first = node->parent_prop.first_child_phy;
+	cmd.num = node->parent_prop.num_of_children;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_PARENT_CHANGE %u first:%u num:%d\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			phy,
+			cmd.first,
+			cmd.num);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_get_port_stats_cmd(
+		struct pp_qos_dev *qdev,
+		unsigned int phy,
+		unsigned int addr,
+		struct pp_qos_port_stat *pstat)
+{
+	struct cmd_get_port_stats cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(
+			qdev,
+			&(cmd.base),
+			CMD_TYPE_GET_PORT_STATS,
+			sizeof(cmd),
+			CMD_FLAGS_POST_PROCESS);
+	cmd.phy = phy;
+	cmd.addr =  addr;
+	cmd.stat = pstat;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_GET_PORT_STATS %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			phy);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_get_queue_stats_cmd(
+		struct pp_qos_dev *qdev,
+		unsigned int phy,
+		unsigned int rlm,
+		unsigned int addr,
+		struct pp_qos_queue_stat *qstat)
+{
+	struct cmd_get_queue_stats cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(
+			qdev,
+			&(cmd.base),
+			CMD_TYPE_GET_QUEUE_STATS,
+			sizeof(cmd),
+			CMD_FLAGS_POST_PROCESS);
+	cmd.phy = phy;
+	cmd.rlm = rlm;
+	cmd.addr =  addr;
+	cmd.stat = qstat;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_GET_QUEUE_STATS %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			phy);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_get_node_info_cmd(
+		struct pp_qos_dev *qdev,
+		unsigned int phy,
+		unsigned int addr,
+		struct pp_qos_node_info *info)
+{
+	struct cmd_get_node_info cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(
+			qdev,
+			&(cmd.base),
+			CMD_TYPE_GET_NODE_INFO,
+			sizeof(cmd),
+			CMD_FLAGS_POST_PROCESS);
+	cmd.phy = phy;
+	cmd.addr =  addr;
+	cmd.info = info;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_GET_NODE_INFO %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			phy);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_num_used_nodes_cmd(
+		struct pp_qos_dev *qdev,
+		unsigned int addr,
+		uint32_t *num)
+{
+	struct cmd_get_num_used_nodes cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(
+			qdev,
+			&(cmd.base),
+			CMD_TYPE_GET_NUM_USED_NODES,
+			sizeof(cmd),
+			CMD_FLAGS_POST_PROCESS);
+	cmd.addr =  addr;
+	cmd.num = num;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_GET_NUM_USED_NODES\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+static void _create_set_shared_group_cmd(struct pp_qos_dev *qdev,
+		enum cmd_type ctype,
+		unsigned int id,
+		unsigned int limit)
+{
+	struct cmd_set_shared_group cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	cmd_init(qdev, &(cmd.base), ctype, sizeof(cmd), 0);
+	cmd.id = id;
+	cmd.limit = limit;
+	QOS_LOG("cmd %u:%u %s id %u limit %u\n",
+		qdev->drvcmds.cmd_id,
+		qdev->drvcmds.cmd_fw_id,
+		cmd_str[ctype],
+		id, limit);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_add_shared_group_cmd(struct pp_qos_dev *qdev,
+		unsigned int id,
+		unsigned int limit)
+{
+	_create_set_shared_group_cmd(qdev, CMD_TYPE_ADD_SHARED_GROUP,
+			id, limit);
+}
+
+void create_set_shared_group_cmd(struct pp_qos_dev *qdev,
+		unsigned int id,
+		unsigned int limit)
+{
+	_create_set_shared_group_cmd(qdev, CMD_TYPE_SET_SHARED_GROUP,
+			id, limit);
+}
+
+void create_remove_shared_group_cmd(struct pp_qos_dev *qdev,
+		unsigned int id)
+{
+	struct cmd_remove_shared_group cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	cmd_init(
+			qdev,
+			&(cmd.base),
+			CMD_TYPE_REMOVE_SHARED_GROUP,
+			sizeof(cmd), 0);
+	cmd.id = id;
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_REMOVE_SHARED_GROUP id %u\n",
+			qdev->drvcmds.cmd_id,
+			qdev->drvcmds.cmd_fw_id,
+			id);
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+void create_push_desc_cmd(struct pp_qos_dev *qdev, unsigned int queue,
+		unsigned int size, unsigned int color, unsigned int addr)
+{
+	struct cmd_push_desc cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	cmd_init(qdev, &(cmd.base), CMD_TYPE_PUSH_DESC, sizeof(cmd), 0);
+	cmd.queue = queue;
+	cmd.size = size;
+	cmd.color = color;
+	cmd.addr = addr;
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
+/******************************************************************************/
+/*                                 FW CMDS                                    */
+/******************************************************************************/
+
+struct fw_set_common {
+	uint32_t valid;
+	int suspend;
+	unsigned int bw_limit;
+	unsigned int shared_bw_group;
+};
+
+struct fw_set_parent {
+	uint32_t valid;
+	int best_effort_enable;
+	uint16_t first;
+	uint16_t last;
+	uint16_t first_wrr;
+};
+
+struct fw_set_child {
+	uint32_t valid;
+	uint32_t bw_share;
+	uint16_t preds[6];
+};
+
+struct fw_set_port {
+	uint32_t valid;
+	void	 *ring_addr;
+	size_t	 ring_size;
+	int active;
+};
+
+struct fw_set_sched {
+	uint32_t valid;
+};
+
+struct fw_set_queue {
+	uint32_t valid;
+	unsigned int rlm;
+	int active;
+	uint32_t disable;
+	unsigned int queue_wred_min_avg_green;
+	unsigned int queue_wred_max_avg_green;
+	unsigned int queue_wred_slope_green;
+	unsigned int queue_wred_min_avg_yellow;
+	unsigned int queue_wred_max_avg_yellow;
+	unsigned int queue_wred_slope_yellow;
+	unsigned int queue_wred_min_guaranteed;
+	unsigned int queue_wred_max_allowed;
+	unsigned int queue_wred_fixed_drop_prob_green;
+	unsigned int queue_wred_fixed_drop_prob_yellow;
+};
+
+struct fw_internal {
+	struct fw_set_common common;
+	struct fw_set_parent parent;
+	struct fw_set_child  child;
+	union {
+		struct fw_set_port port;
+		struct fw_set_sched sched;
+		struct fw_set_queue queue;
+	} type_data;
+	unsigned int suspend_port_index;
+	unsigned int suspend_ports[QOS_MAX_PORTS];
+	unsigned int moved_node_index;
+	struct move_info {
+		unsigned int phy;
+	} moved_nodes[2 * MAX_MOVING_NODES];
+	unsigned int	pushed;
+	int		ongoing;
+};
+
+/******************************************************************************/
+/*                         FW write functions                                 */
+/******************************************************************************/
+
+void add_suspend_port(struct pp_qos_dev *qdev, unsigned int port)
+{
+	struct fw_internal *internals;
+	unsigned int i;
+	struct qos_node *node;
+
+	node = get_node_from_phy(qdev->nodes, port);
+	QOS_ASSERT(node_port(node), "Node %u is not a port\n", port);
+	internals = qdev->fwbuf;
+	for (i = 0; i <  internals->suspend_port_index; ++i)
+		if (internals->suspend_ports[i] == port)
+			return;
+	QOS_ASSERT(internals->suspend_port_index <= qdev->max_port, "Suspend ports buffer is full\n");
+	internals->suspend_ports[internals->suspend_port_index] = port;
+	++(internals->suspend_port_index);
+}
+
+/*
+ * Maintains a list of destinations for nodes that were moved.
+ * This list is used to instruct firmware to resume suspend this nodes,
+ * to workaround HW inability to maintain the work available signal when node
+ * are moved.
+ * The logic is as follow:
+ * If the src of the new moved node is in that list - node is removed from list
+ * If dst of new moved node is not in that list - node is added to the list
+ */
+static void update_moved_nodes(
+		struct pp_qos_dev *qdev,
+		unsigned int src,
+		unsigned int dst)
+{
+	unsigned int i;
+	unsigned int j;
+	struct fw_internal *internals;
+	struct move_info *info;
+	int found;
+
+	internals = qdev->fwbuf;
+	j = internals->moved_node_index;
+	found = 0;
+
+	for (i = 0; i < j; ++i) {
+		info = internals->moved_nodes + i;
+		if (src == info->phy) {
+			info->phy = internals->moved_nodes[j - 1].phy;
+			--j;
+		}
+		if (dst == info->phy)
+			found = 1;
+	}
+
+	internals->moved_node_index = j;
+	QOS_ASSERT(internals->moved_node_index < 2 * MAX_MOVING_NODES,
+			"Moved ports buffer is full\n");
+	if (!found) {
+		internals->moved_nodes[j].phy = dst;
+		++(internals->moved_node_index);
+	}
+}
+
+
+int init_fwdata_internals(struct pp_qos_dev *qdev)
+{
+	qdev->fwbuf = QOS_MALLOC(sizeof(struct fw_internal));
+	if (qdev->fwbuf) {
+		memset(qdev->fwbuf, 0, sizeof(struct fw_internal));
+		return 0;
+	}
+	return -EBUSY;
+}
+
+void clean_fwdata_internals(struct pp_qos_dev *qdev)
+{
+	if (qdev->fwbuf)
+		QOS_FREE(qdev->fwbuf);
+}
+
+/*
+ * Following functions translate driver commands to firmware
+ * commands
+ */
+static uint32_t *fw_write_init_logger_cmd(
+		uint32_t *buf,
+		const struct cmd_init_logger *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_INIT_UC_LOGGER);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(4);
+	*buf++ = qos_u32_to_uc((uintptr_t)cmd->addr & 0xFFFFFFFF);
+	*buf++ = qos_u32_to_uc(cmd->mode);
+	*buf++ = qos_u32_to_uc(cmd->level);
+	*buf++ = qos_u32_to_uc(cmd->num_of_msgs);
+	return buf;
+}
+
+static uint32_t *fw_write_init_qos_cmd(
+		uint32_t *buf,
+		const struct cmd_init_qos *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_INIT_QOS);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(7);
+	*buf++ = qos_u32_to_uc(cmd->qm_ddr_start & 0xFFFFFFFF);
+	*buf++ = qos_u32_to_uc(cmd->qm_num_pages);
+	*buf++ = qos_u32_to_uc(cmd->wred_total_avail_resources);
+	*buf++ = qos_u32_to_uc(cmd->wred_prioritize_pop);
+	*buf++ = qos_u32_to_uc(cmd->wred_avg_q_size_p);
+	*buf++ = qos_u32_to_uc(cmd->wred_max_q_size);
+	*buf++ = qos_u32_to_uc(cmd->num_of_ports);
+	return buf;
+}
+
+static uint32_t *fw_write_add_port_cmd(
+		uint32_t *buf,
+		const struct cmd_add_port *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_ADD_PORT);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(13);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc(!cmd->prop.disable);
+	*buf++ = qos_u32_to_uc(0);
+	*buf++ = qos_u32_to_uc(0);
+	*buf++ = qos_u32_to_uc(cmd->prop.common.bandwidth_limit);
+	*buf++ = qos_u32_to_uc(!!cmd->prop.parent.best_effort_enable);
+	*buf++ = qos_u32_to_uc(0);
+	*buf++ = qos_u32_to_uc(cmd->prop.common.shared_bandwidth_group);
+	*buf++ = qos_u32_to_uc(cmd->prop.packet_credit_enable);
+	*buf++ = qos_u32_to_uc(cmd->prop.ring_size);
+	*buf++ = qos_u32_to_uc(GET_ADDRESS_HIGH(cmd->prop.ring_addr));
+	*buf++ = qos_u32_to_uc(((uintptr_t)cmd->prop.ring_addr) & 0xFFFFFFFF);
+	*buf++ = qos_u32_to_uc(cmd->prop.credit);
+	return buf;
+}
+
+static uint32_t *fw_write_set_port_cmd(
+		uint32_t *buf,
+		unsigned int phy,
+		uint32_t flags,
+		const struct fw_set_common *common,
+		struct fw_set_parent *parent,
+		const struct fw_set_port *port)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_SET_PORT);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(14);
+	*buf++ = qos_u32_to_uc(phy);
+	*buf++ = qos_u32_to_uc(common->valid | parent->valid | port->valid);
+	*buf++ = qos_u32_to_uc(common->suspend);
+	if (parent->first > parent->last) {
+		parent->first = 0;
+		parent->last = 0;
+	}
+	*buf++ = qos_u32_to_uc(parent->first);
+	*buf++ = qos_u32_to_uc(parent->last);
+	*buf++ = qos_u32_to_uc(common->bw_limit);
+	*buf++ = qos_u32_to_uc(parent->best_effort_enable);
+	*buf++ = qos_u32_to_uc(parent->first_wrr);
+	*buf++ = qos_u32_to_uc(common->shared_bw_group);
+	*buf++ = qos_u32_to_uc(port->valid);
+	*buf++ = qos_u32_to_uc(port->ring_size);
+	*buf++ = qos_u32_to_uc(GET_ADDRESS_HIGH(port->ring_addr));
+	*buf++ = qos_u32_to_uc(((uintptr_t)port->ring_addr) & 0xFFFFFFFF);
+	*buf++ = qos_u32_to_uc(port->active);
+	return buf;
+}
+
+static uint32_t *fw_write_add_sched_cmd(
+		uint32_t *buf,
+		const struct cmd_add_sched *cmd,
+		uint32_t flags)
+{
+	unsigned int i;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_ADD_SCHEDULER);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(13);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc(0);
+	*buf++ = qos_u32_to_uc(0);
+	*buf++ = qos_u32_to_uc(cmd->prop.common.bandwidth_limit);
+	*buf++ = qos_u32_to_uc(!!cmd->prop.parent.best_effort_enable);
+	*buf++ = qos_u32_to_uc(0);
+	*buf++ = qos_u32_to_uc(cmd->prop.common.shared_bandwidth_group);
+	for (i = 0; i < 6; ++i)
+		*buf++ = qos_u32_to_uc(cmd->preds[i]);
+
+	return buf;
+}
+
+static uint32_t *fw_write_set_sched_cmd(
+		uint32_t *buf,
+		unsigned int phy,
+		uint32_t flags,
+		const struct fw_set_common *common,
+		struct fw_set_parent *parent,
+		const struct fw_set_child *child,
+		const struct fw_set_sched *sched)
+{
+	unsigned int i;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_SET_SCHEDULER);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(15);
+	*buf++ = qos_u32_to_uc(phy);
+	*buf++ = qos_u32_to_uc(common->valid | parent->valid |
+			child->valid | sched->valid);
+	*buf++ = qos_u32_to_uc(common->suspend);
+	if (parent->first > parent->last) {
+		parent->first = 0;
+		parent->last = 0;
+	}
+	*buf++ = qos_u32_to_uc(parent->first);
+	*buf++ = qos_u32_to_uc(parent->last);
+	*buf++ = qos_u32_to_uc(common->bw_limit);
+	*buf++ = qos_u32_to_uc(parent->best_effort_enable);
+	*buf++ = qos_u32_to_uc(parent->first_wrr);
+	*buf++ = qos_u32_to_uc(common->shared_bw_group);
+
+	for (i = 0; i < 6; ++i)
+		*buf++ = qos_u32_to_uc(child->preds[i]);
+
+	return buf;
+}
+
+static uint32_t *fw_write_add_queue_cmd(
+		uint32_t *buf,
+		const struct cmd_add_queue *cmd,
+		uint32_t flags)
+{
+	unsigned int i;
+	uint32_t disable;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_ADD_QUEUE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(23);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc(cmd->port);
+	*buf++ = qos_u32_to_uc(cmd->prop.rlm);
+	*buf++ = qos_u32_to_uc(cmd->prop.common.bandwidth_limit);
+	*buf++ = qos_u32_to_uc(cmd->prop.common.shared_bandwidth_group);
+	for (i = 0; i < 6; ++i)
+		*buf++ = qos_u32_to_uc(cmd->preds[i]);
+	*buf++ = qos_u32_to_uc(!cmd->prop.blocked);
+
+	disable = 0;
+	if (!cmd->prop.wred_enable)
+		QOS_BITS_SET(disable, 1);
+	if (cmd->prop.fixed_drop_prob_enable)
+		QOS_BITS_SET(disable, 8);
+	*buf++ = qos_u32_to_uc(disable);
+
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_fixed_drop_prob_green);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_fixed_drop_prob_yellow);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_min_avg_yellow);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_max_avg_yellow);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_slope_yellow);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_min_avg_green);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_max_avg_green);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_slope_green);
+	*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_min_guaranteed);
+	if (cmd->prop.blocked)
+		*buf++ = qos_u32_to_uc(0);
+	else
+		*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_max_allowed);
+	return buf;
+}
+
+static uint32_t *fw_write_set_queue_cmd(
+		uint32_t *buf,
+		unsigned int phy,
+		uint32_t flags,
+		const struct fw_set_common *common,
+		const struct fw_set_child *child,
+		const struct fw_set_queue *queue)
+{
+	unsigned int i;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_SET_QUEUE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(25);
+	*buf++ = qos_u32_to_uc(phy);
+	*buf++ = qos_u32_to_uc(queue->rlm);
+	*buf++ = qos_u32_to_uc(common->valid | child->valid);
+	*buf++ = qos_u32_to_uc(common->suspend);
+	*buf++ = qos_u32_to_uc(common->bw_limit);
+	*buf++ = qos_u32_to_uc(common->shared_bw_group);
+	for (i = 0; i < 6; ++i)
+		*buf++ = qos_u32_to_uc(child->preds[i]);
+	*buf++ = qos_u32_to_uc(queue->valid);
+	*buf++ = qos_u32_to_uc(queue->active);
+	*buf++ = qos_u32_to_uc(queue->disable);
+
+	*buf++ = qos_u32_to_uc(queue->queue_wred_fixed_drop_prob_green);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_fixed_drop_prob_yellow);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_min_avg_yellow);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_max_avg_yellow);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_slope_yellow);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_min_avg_green);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_max_avg_green);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_slope_green);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_min_guaranteed);
+	*buf++ = qos_u32_to_uc(queue->queue_wred_max_allowed);
+
+	return buf;
+}
+
+static uint32_t *fw_write_flush_queue_cmd(
+		uint32_t *buf,
+		const struct cmd_flush_queue *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_FLUSH_QUEUE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(1);
+	*buf++ = qos_u32_to_uc(cmd->rlm);
+	return buf;
+}
+
+static uint32_t *fw_write_move_sched_cmd(
+		uint32_t *buf,
+		const struct cmd_move *cmd,
+		uint32_t flags)
+{
+	unsigned int i;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_MOVE_SCHEDULER);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(8);
+	*buf++ = qos_u32_to_uc(cmd->src);
+	*buf++ = qos_u32_to_uc(cmd->dst);
+
+	for (i = 0; i < 6; ++i)
+		*buf++ = qos_u32_to_uc(cmd->preds[i]);
+
+	return buf;
+}
+
+static uint32_t *fw_write_move_queue_cmd(
+		uint32_t *buf,
+		const struct cmd_move *cmd,
+		uint32_t flags)
+{
+	unsigned int i;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_MOVE_QUEUE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(10);
+	*buf++ = qos_u32_to_uc(cmd->src);
+	*buf++ = qos_u32_to_uc(cmd->dst);
+	*buf++ = qos_u32_to_uc(cmd->dst_port);
+	*buf++ = qos_u32_to_uc(cmd->rlm);
+
+	for (i = 0; i < 6; ++i)
+		*buf++ = qos_u32_to_uc(cmd->preds[i]);
+
+	return buf;
+}
+
+static uint32_t *fw_write_remove_queue_cmd(
+		uint32_t *buf,
+		const struct cmd_remove_node *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_REMOVE_QUEUE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(2);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc(cmd->data);
+	return buf;
+}
+
+static uint32_t *fw_write_remove_sched_cmd(
+		uint32_t *buf,
+		const struct cmd_remove_node *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_REMOVE_SCHEDULER);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(1);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	return buf;
+}
+
+static uint32_t *fw_write_remove_port_cmd(
+		uint32_t *buf,
+		const struct cmd_remove_node *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_REMOVE_PORT);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(1);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	return buf;
+}
+
+static uint32_t *fw_write_get_queue_stats(
+		uint32_t *buf,
+		const struct cmd_get_queue_stats *cmd,
+		uint32_t flags)
+{
+	uint32_t reset;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_GET_QUEUE_STATS);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(4);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc(cmd->rlm);
+	*buf++ = qos_u32_to_uc((uintptr_t)cmd->addr & 0xFFFFFFFF);
+	if (cmd->stat->reset)
+		reset = QUEUE_STATS_CLEAR_Q_AVG_SIZE_BYTES |
+			QUEUE_STATS_CLEAR_DROP_P_YELLOW |
+			QUEUE_STATS_CLEAR_DROP_P_GREEN |
+			QUEUE_STATS_CLEAR_TOTAL_BYTES_ADDED |
+			QUEUE_STATS_CLEAR_TOTAL_ACCEPTS |
+			QUEUE_STATS_CLEAR_TOTAL_DROPS |
+			QUEUE_STATS_CLEAR_TOTAL_DROPPED_BYTES |
+			QUEUE_STATS_CLEAR_TOTAL_RED_DROPS;
+	else
+		reset = QUEUE_STATS_CLEAR_NONE;
+	*buf++ = qos_u32_to_uc(reset);
+
+	return buf;
+}
+
+static uint32_t *fw_write_get_port_stats(
+		uint32_t *buf,
+		const struct cmd_get_port_stats *cmd,
+		uint32_t flags)
+{
+	uint32_t reset;
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_GET_PORT_STATS);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(3);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc((uintptr_t)cmd->addr & 0xFFFFFFFF);
+	if (cmd->stat->reset)
+		reset = PORT_STATS_CLEAR_ALL;
+	else
+		reset = PORT_STATS_CLEAR_NONE;
+	*buf++ = qos_u32_to_uc(reset);
+	return buf;
+}
+
+static uint32_t *fw_write_get_system_info(
+		uint32_t *buf,
+		const struct cmd_get_num_used_nodes *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_GET_SYSTEM_STATS);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(1);
+	*buf++ = qos_u32_to_uc((uintptr_t)cmd->addr & 0xFFFFFFFF);
+	return buf;
+}
+
+static uint32_t *fw_write_set_shared_group(
+		uint32_t *buf,
+		enum cmd_type ctype,
+		const struct cmd_set_shared_group *cmd,
+		uint32_t flags)
+{
+	uint32_t uc_cmd;
+
+	if (ctype == CMD_TYPE_ADD_SHARED_GROUP)
+		uc_cmd = UC_QOS_COMMAND_ADD_SHARED_BW_LIMIT_GROUP;
+	else
+		uc_cmd = UC_QOS_COMMAND_SET_SHARED_BW_LIMIT_GROUP;
+
+	*buf++ = qos_u32_to_uc(uc_cmd);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(2);
+	*buf++ = qos_u32_to_uc(cmd->id);
+	*buf++ = qos_u32_to_uc(cmd->limit);
+	return buf;
+}
+
+static uint32_t *fw_write_remove_shared_group(uint32_t *buf,
+		const struct cmd_remove_shared_group *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_REMOVE_SHARED_BW_LIMIT_GROUP);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(1);
+	*buf++ = qos_u32_to_uc(cmd->id);
+	return buf;
+}
+
+static uint32_t *fw_write_push_desc(
+		uint32_t *buf,
+		const struct cmd_push_desc *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_DEBUG_PUSH_DESC);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(6);
+	*buf++ = qos_u32_to_uc(cmd->queue);
+	*buf++ = qos_u32_to_uc(cmd->size);
+	*buf++ = qos_u32_to_uc(cmd->color);
+	*buf++ = qos_u32_to_uc(cmd->addr);
+	*buf++ = qos_u32_to_uc(0);
+	*buf++ = qos_u32_to_uc(0);
+	return buf;
+}
+
+static uint32_t *fw_write_get_node_info(
+		uint32_t *buf,
+		const struct cmd_get_node_info *cmd,
+		uint32_t flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_GET_NODE_INFO);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(2);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc(cmd->addr);
+	return buf;
+}
+/******************************************************************************/
+/*                                FW wrappers                                 */
+/******************************************************************************/
+
+static void set_common(
+		const struct pp_qos_common_node_properties *conf,
+		struct fw_set_common *common, uint32_t modified)
+{
+	uint32_t valid;
+
+	valid = 0;
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_BANDWIDTH_LIMIT)) {
+		QOS_BITS_SET(valid, TSCD_NODE_CONF_BW_LIMIT);
+		common->bw_limit = conf->bandwidth_limit;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_SHARED_GROUP_ID)) {
+		QOS_BITS_SET(valid, TSCD_NODE_CONF_SHARED_BWL_GROUP);
+		common->shared_bw_group = conf->shared_bandwidth_group;
+	}
+	common->valid = valid;
+}
+
+static void set_parent(
+		const struct pp_qos_parent_node_properties *conf,
+		struct fw_set_parent *parent,
+		uint32_t modified)
+{
+	uint32_t valid;
+
+	valid = 0;
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_BEST_EFFORT)) {
+		QOS_BITS_SET(valid, TSCD_NODE_CONF_BEST_EFFORT_ENABLE);
+		parent->best_effort_enable = conf->best_effort_enable;
+	}
+	parent->valid = valid;
+}
+
+static void set_child(
+		const struct pp_qos_child_node_properties *conf,
+		struct fw_set_child *child,
+		uint32_t modified)
+{
+	uint32_t valid;
+
+	valid = 0;
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_VIRT_BW_SHARE)) {
+		QOS_BITS_SET(valid, TSCD_NODE_CONF_SHARED_BWL_GROUP);
+		child->bw_share = conf->bandwidth_share;
+	}
+	child->valid = valid;
+}
+
+static uint32_t *restart_node(
+		struct pp_qos_dev *qdev,
+		unsigned int phy,
+		uint32_t *_cur,
+		struct cmd_internal *cmd)
+{
+	struct qos_node *node;
+	struct fw_set_common common;
+	struct fw_set_parent parent;
+	struct fw_set_child child;
+	struct fw_set_sched sched;
+	struct fw_set_queue queue;
+	uint32_t *cur;
+
+	cur = _cur;
+	common.valid = TSCD_NODE_CONF_SUSPEND_RESUME;
+	parent.valid = 0;
+	child.valid = 0;
+	sched.valid = 0;
+	queue.valid = 0;
+	common.suspend = 1;
+
+	node = get_node_from_phy(qdev->nodes, phy);
+	QOS_ASSERT(!node_port(node), "Can't restart port %u\n", phy);
+
+	if (node_sched(node)) {
+		QOS_LOG_DEBUG("CMD_INTERNAL_RESTART_SCHED: %u\n", phy);
+		cmd->base.pos = cur;
+		cur = fw_write_set_sched_cmd(
+				cur,
+				phy,
+				0,
+				&common,
+				&parent,
+				&child,
+				&sched);
+
+		cmd_queue_put(
+				qdev->drvcmds.pendq,
+				cmd,
+				cmd->base.len);
+
+		common.suspend = 0;
+		cmd->base.pos = cur;
+		cur = fw_write_set_sched_cmd(
+				cur,
+				phy,
+				0,
+				&common,
+				&parent,
+				&child,
+				&sched);
+		cmd_queue_put(
+				qdev->drvcmds.pendq,
+				cmd,
+				cmd->base.len);
+	} else if (node_queue(node)) {
+		cmd->base.pos = cur;
+		queue.rlm = node->data.queue.rlm;
+		QOS_LOG_DEBUG("CMD_INTERNAL_RESTART_QUEUE: %u\n", phy);
+		cur = fw_write_set_queue_cmd(
+				cur,
+				phy,
+				0,
+				&common,
+				&child,
+				&queue);
+		cmd_queue_put(
+				qdev->drvcmds.pendq,
+				cmd,
+				cmd->base.len);
+
+		common.suspend = 0;
+		cmd->base.pos = cur;
+		cur = fw_write_set_queue_cmd(
+				cur,
+				phy,
+				0,
+				&common,
+				&child,
+				&queue);
+		cmd_queue_put(
+				qdev->drvcmds.pendq,
+				cmd,
+				cmd->base.len);
+	}
+
+	return cur;
+}
+
+#if 0
+static void set_port_specific(
+		const struct port_properties *conf,
+		struct fw_set_port *port,
+		uint32_t modified)
+{
+	uint32_t valid;
+
+	valid = 0;
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_RING_ADDRESS)) {
+		QOS_BITS_SET(valid,
+				PORT_CONF_RING_ADDRESS_HIGH |
+				PORT_CONF_RING_ADDRESS_LOW);
+		port->ring_addr = conf->ring_addr;
+	}
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_RING_SIZE)) {
+		QOS_BITS_SET(valid, PORT_CONF_RING_SIZE);
+		port->ring_size = conf->ring_size;
+	}
+	port->valid = valid;
+}
+#endif
+
+static uint32_t *set_port_cmd_wrapper(
+		struct fw_internal *fwdata,
+		uint32_t *buf,
+		const struct cmd_set_port *cmd,
+		uint32_t flags)
+{
+	uint32_t modified;
+
+	modified = cmd->modified;
+	set_common(&cmd->prop.common, &fwdata->common, modified);
+	set_parent(&cmd->prop.parent, &fwdata->parent, modified);
+	fwdata->type_data.port.valid = 0;
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_DISABLE)) {
+		QOS_BITS_SET(fwdata->type_data.port.valid, PORT_CONF_ACTIVE);
+		fwdata->type_data.port.active = !!cmd->prop.disable;
+	}
+
+	if ((fwdata->common.valid | fwdata->parent.valid |
+				fwdata->type_data.port.valid) == 0) {
+		QOS_LOG_DEBUG("IGNORING EMPTY CMD_TYPE_SET_PORT\n");
+		return buf;
+	}
+
+	return fw_write_set_port_cmd(
+			buf,
+			cmd->phy,
+			flags,
+			&fwdata->common,
+			&fwdata->parent,
+			&fwdata->type_data.port);
+}
+
+static uint32_t *set_sched_cmd_wrapper(
+		struct fw_internal *fwdata,
+		uint32_t *buf,
+		const struct cmd_set_sched *cmd,
+		uint32_t flags)
+{
+	uint32_t modified;
+
+	modified = cmd->modified;
+	set_common(&cmd->prop.common, &fwdata->common, modified);
+	set_parent(&cmd->prop.parent, &fwdata->parent, modified);
+	set_child(&cmd->prop.child, &fwdata->child, modified);
+	fwdata->type_data.sched.valid = 0;
+
+	if ((fwdata->common.valid |
+				fwdata->parent.valid |
+				fwdata->child.valid) == 0) {
+		QOS_LOG_DEBUG("IGNORING EMPTY CMD_TYPE_SET_SCHED\n");
+		return buf;
+	}
+
+	return fw_write_set_sched_cmd(
+			buf,
+			cmd->phy,
+			flags,
+			&fwdata->common,
+			&fwdata->parent,
+			&fwdata->child,
+			&fwdata->type_data.sched);
+}
+
+/*
+ * Topologic changes like first/last child change or change of predecessors
+ * will not be manifested through this path. They will be manifested through
+ * CMD_TYPE_PARENT_CHANGE and CMD_TYPE_UPDATE_PREDECESSORS driver commands
+ * which will call fw_write_set_node_cmd.
+ * So the only think that needs to use fw_write_set_node_cmd in this path is
+ * modify of suspend/resume
+ *
+ */
+static uint32_t *set_queue_cmd_wrapper(
+		struct fw_internal *fwdata,
+		uint32_t *buf,
+		const struct cmd_set_queue *cmd,
+		uint32_t flags)
+{
+	uint32_t modified;
+	uint32_t valid;
+	uint32_t disable;
+	struct fw_set_queue *queue;
+
+	queue = &fwdata->type_data.queue;
+	modified = cmd->modified;
+	set_common(&cmd->prop.common, &fwdata->common, modified);
+	set_child(&cmd->prop.child, &fwdata->child, modified);
+
+	valid = 0;
+	queue->rlm = cmd->prop.rlm;
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_MAX_ALLOWED)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_MAX_ALLOWED);
+		queue->queue_wred_max_allowed =
+			cmd->prop.queue_wred_max_allowed;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_BLOCKED)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_ACTIVE_Q);
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_MAX_ALLOWED);
+		queue->active = !cmd->prop.blocked;
+		if (queue->active)
+			queue->queue_wred_max_allowed =
+				cmd->prop.queue_wred_max_allowed;
+		else
+			queue->queue_wred_max_allowed = 0;
+
+	}
+
+	disable = 0;
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_ENABLE)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_DISABLE);
+		if (!cmd->prop.wred_enable)
+			QOS_BITS_SET(disable, BIT(0));
+	}
+	if (QOS_BITS_IS_SET(
+				modified,
+				QOS_MODIFIED_WRED_FIXED_DROP_PROB_ENABLE)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_DISABLE);
+		if (cmd->prop.fixed_drop_prob_enable)
+			QOS_BITS_SET(disable, BIT(3));
+	}
+	queue->disable = disable;
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_FIXED_GREEN_PROB)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_FIXED_GREEN_DROP_P);
+		queue->queue_wred_fixed_drop_prob_green =
+			cmd->prop.queue_wred_fixed_drop_prob_green;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_FIXED_YELLOW_PROB)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_FIXED_YELLOW_DROP_P);
+		queue->queue_wred_fixed_drop_prob_yellow =
+			cmd->prop.queue_wred_fixed_drop_prob_yellow;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_MIN_YELLOW)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_MIN_AVG_YELLOW);
+		queue->queue_wred_min_avg_yellow =
+			cmd->prop.queue_wred_min_avg_yellow;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_MAX_YELLOW)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_MAX_AVG_YELLOW);
+		queue->queue_wred_max_avg_yellow =
+			cmd->prop.queue_wred_max_avg_yellow;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_SLOPE_YELLOW)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_SLOPE_YELLOW);
+		queue->queue_wred_slope_yellow =
+			cmd->prop.queue_wred_slope_yellow;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_MIN_GREEN)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_MIN_AVG_GREEN);
+		queue->queue_wred_min_avg_green =
+			cmd->prop.queue_wred_min_avg_green;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_MAX_GREEN)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_MAX_AVG_GREEN);
+		queue->queue_wred_max_avg_green =
+			cmd->prop.queue_wred_max_avg_green;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_SLOPE_GREEN)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_SLOPE_GREEN);
+		queue->queue_wred_slope_green =
+			cmd->prop.queue_wred_slope_green;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_WRED_MIN_GUARANTEED)) {
+		QOS_BITS_SET(valid, WRED_QUEUE_CONF_MIN_GUARANTEED);
+		queue->queue_wred_min_guaranteed =
+			cmd->prop.queue_wred_min_guaranteed;
+	}
+
+	if ((valid | fwdata->common.valid | fwdata->child.valid) == 0) {
+		QOS_LOG_DEBUG("IGNORING EMPTY CMD_TYPE_SET_QUEUE\n");
+		return buf;
+	}
+
+	queue->valid = valid;
+	return fw_write_set_queue_cmd(
+			buf,
+			cmd->phy,
+			flags,
+			&fwdata->common,
+			&fwdata->child,
+			queue);
+}
+
+static uint32_t *parent_change_cmd_wrapper(
+		struct fw_internal *fwdata,
+		uint32_t *buf,
+		const struct cmd_parent_change *cmd,
+		uint32_t flags)
+{
+	fwdata->parent.valid =
+		TSCD_NODE_CONF_FIRST_CHILD |
+		TSCD_NODE_CONF_LAST_CHILD |
+		TSCD_NODE_CONF_FIRST_WRR_NODE;
+	fwdata->parent.first = cmd->first;
+	fwdata->parent.last = cmd->first + cmd->num - 1;
+	if (cmd->arbitration == PP_QOS_ARBITRATION_WSP)
+		fwdata->parent.first_wrr = 0;
+	else
+		fwdata->parent.first_wrr = cmd->first;
+
+	fwdata->common.valid = 0;
+	if (cmd->type == TYPE_PORT) {
+		fwdata->type_data.port.valid  = 0;
+		return fw_write_set_port_cmd(
+				buf,
+				cmd->phy,
+				flags,
+				&fwdata->common,
+				&fwdata->parent,
+				&fwdata->type_data.port);
+	} else {
+		fwdata->child.valid = 0;
+		fwdata->type_data.sched.valid = 0;
+		return fw_write_set_sched_cmd(
+				buf,
+				cmd->phy,
+				flags,
+				&fwdata->common,
+				&fwdata->parent,
+				&fwdata->child,
+				&fwdata->type_data.sched);
+	}
+}
+
+static uint32_t *update_preds_cmd_wrapper(
+		struct fw_internal *fwdata,
+		uint32_t *buf,
+		const struct cmd_update_preds *cmd,
+		uint32_t flags)
+{
+	unsigned int i;
+
+	fwdata->common.valid = 0;
+	fwdata->child.valid = TSCD_NODE_CONF_PREDECESSOR_0 |
+		TSCD_NODE_CONF_PREDECESSOR_1 |
+		TSCD_NODE_CONF_PREDECESSOR_2 |
+		TSCD_NODE_CONF_PREDECESSOR_3 |
+		TSCD_NODE_CONF_PREDECESSOR_4 |
+		TSCD_NODE_CONF_PREDECESSOR_5;
+	for (i = 0; i < 6; ++i)
+		fwdata->child.preds[i] = cmd->preds[i];
+
+	if (cmd->node_type == TYPE_SCHED) {
+		fwdata->type_data.sched.valid  = 0;
+		fwdata->parent.valid = 0;
+		return fw_write_set_sched_cmd(
+				buf,
+				cmd->phy,
+				flags,
+				&fwdata->common,
+				&fwdata->parent,
+				&fwdata->child,
+				&fwdata->type_data.sched);
+	} else {
+		fwdata->type_data.queue.valid = 0;
+		fwdata->type_data.queue.rlm = cmd->rlm;
+		return fw_write_set_queue_cmd(
+				buf,
+				cmd->phy,
+				flags,
+				&fwdata->common,
+				&fwdata->child,
+				&fwdata->type_data.queue);
+	}
+}
+
+/*
+ * Signal firmware to read and executes commands from cmd
+ * buffer.
+ * This is done by using the mailbox bundle.
+ * Refer to driver's design document for further information
+ * Since this is the only signal that is sent from driver to firmware
+ * the value of DRV_SIGNAL is insignificant
+ */
+#define DRV_SIGNAL (2U)
+void signal_uc(struct pp_qos_dev *qdev)
+{
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+#ifndef NO_FW
+	iowrite32(DRV_SIGNAL, qdev->fwcom.mbx_to_uc + 4);
+	QOS_LOG_DEBUG("signal uc was called\n");
+#endif
+}
+
+/******************************************************************************/
+/*                                Engine                                      */
+/******************************************************************************/
+
+/*
+ * Translation to user format and sanity checks on node info
+ * obtained from firmware
+ */
+static void post_process_get_node_info(
+		struct pp_qos_dev *qdev,
+		struct cmd_get_node_info *cmd)
+{
+	struct pp_qos_node_info *info;
+	struct hw_node_info_s *fw_info;
+	struct qos_node *node;
+	struct qos_node *child;
+	uint16_t preds[6];
+	uint32_t *fw_preds;
+	unsigned int first;
+	unsigned int phy;
+	unsigned int id;
+	unsigned int i;
+	unsigned int num;
+	unsigned int port;
+	int reached_port;
+
+	port = PPV4_QOS_INVALID;
+	node = get_node_from_phy(qdev->nodes, cmd->phy);
+	QOS_ASSERT(node_used(node), "Node %u is not used\n", cmd->phy);
+	fw_info = (struct hw_node_info_s *)(qdev->stat);
+	info = cmd->info;
+	memset(info, 0xFF, sizeof(*info));
+
+	QOS_ASSERT(node->type != TYPE_UNKNOWN,
+			"Node %u has unknown type\n",
+			cmd->phy);
+	info->type = node->type - 1;
+	info->is_internal = node_internal(node);
+
+	if (node_parent(node)) {
+		first = fw_info->first_child;
+		if (first == 0) {
+			QOS_ASSERT(fw_info->last_child == 0,
+					"HW reports first child 0 but last child is %u\n",
+					fw_info->last_child);
+			first = QOS_INVALID_PHY;
+			num = 0;
+		} else {
+			num = fw_info->last_child - first + 1;
+			child = get_node_from_phy(qdev->nodes, first);
+		}
+		QOS_ASSERT(node->parent_prop.num_of_children == num,
+				"Driver has %u as the number of children of node %u, while HW has %u\n",
+				node->parent_prop.num_of_children,
+				cmd->phy,
+				num);
+
+		QOS_ASSERT(num == 0 ||
+				node->parent_prop.first_child_phy == first,
+				"Driver has %u as the phy of node's %u first child, while HW has %u\n",
+				node->parent_prop.first_child_phy,
+				cmd->phy,
+				first);
+
+		for (i = 0; i < num; ++i) {
+			phy = i + first;
+			id = get_id_from_phy(qdev->mapping, phy);
+			QOS_ASSERT(QOS_ID_VALID(id),
+					"Child of %u with phy %u has no valid id\n",
+					cmd->phy, phy);
+			QOS_ASSERT(node_used(child),
+					"Child node with phy %u and id %u is not used\n",
+					phy,
+					id);
+			info->children[i].phy = phy;
+			info->children[i].id = id;
+			++child;
+		}
+	}
+
+	if (!node_port(node)) {
+		fill_preds(qdev->nodes, cmd->phy, preds, 6);
+		fw_preds = &(fw_info->predecessor0);
+		reached_port = 0;
+		for (i = 0; i < 6; ++i) {
+			QOS_ASSERT(preds[i] == *fw_preds,
+					"Driver has %u as the %u predecessor of node %u, while HW has %u\n",
+					preds[i],
+					i,
+					cmd->phy,
+					*fw_preds);
+
+			if (!reached_port) {
+				info->preds[i].phy = preds[i];
+				id = get_id_from_phy(qdev->mapping, preds[i]);
+				QOS_ASSERT(QOS_ID_VALID(id),
+						"Pred with phy %u has no valid id\n",
+						preds[i]);
+				info->preds[i].id = id;
+				if (preds[i] <= qdev->max_port) {
+					reached_port = 1;
+					port = preds[i];
+				}
+			} else {
+				info->preds[i].phy = PPV4_QOS_INVALID;
+			}
+			++fw_preds;
+		}
+	}
+
+	if (node_queue(node)) {
+		QOS_ASSERT(node->data.queue.rlm == fw_info->queue_physical_id,
+				"Node %u physical queue is %u according to driver and %u according to HW\n",
+				cmd->phy, node->data.queue.rlm,
+				fw_info->queue_physical_id);
+		QOS_ASSERT(port == fw_info->queue_port,
+				"Driver has %u as %u port, while HW has %u\n",
+				port,
+				cmd->phy,
+				fw_info->queue_physical_id);
+
+		info->queue_physical_id = fw_info->queue_physical_id;
+		info->port = fw_info->queue_port;
+	}
+
+	QOS_ASSERT(fw_info->bw_limit == node->bandwidth_limit,
+			"Driver has %u as node's %u bandwidth limit, while HW has %u\n",
+			node->bandwidth_limit,
+			cmd->phy,
+			fw_info->bw_limit);
+
+	info->bw_limit = fw_info->bw_limit;
+}
+
+/*
+ * Commands that are marked with POST_PROCESS reach
+ * here for further processing before return to client
+ */
+static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
+{
+	enum cmd_type  type;
+	struct pp_qos_queue_stat *qstat;
+	struct pp_qos_port_stat *pstat;
+	struct queue_stats_s *fw_qstat;
+	struct port_stats_s *fw_pstat;
+	struct system_stats_s *fw_sys_stat;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	type = dcmd->cmd.type;
+	switch (type) {
+	case CMD_TYPE_GET_QUEUE_STATS:
+		fw_qstat = (struct queue_stats_s *)(qdev->stat);
+		qstat = dcmd->queue_stats.stat;
+		qstat->queue_packets_occupancy = fw_qstat->
+			qmgr_num_queue_entries;
+		qstat->queue_bytes_occupancy = fw_qstat->queue_size_bytes;
+		qstat->total_packets_accepted = fw_qstat->total_accepts;
+		qstat->total_packets_dropped = fw_qstat->total_drops;
+		qstat->total_packets_red_dropped = fw_qstat->total_red_dropped;
+		qstat->total_bytes_accepted =
+			(((uint64_t)fw_qstat->total_bytes_added_high) << 32)
+			| fw_qstat->total_bytes_added_low;
+		qstat->total_bytes_dropped =
+			(((uint64_t)fw_qstat->total_dropped_bytes_high) << 32)
+			| fw_qstat->total_dropped_bytes_low;
+		break;
+
+	case CMD_TYPE_GET_PORT_STATS:
+		fw_pstat = (struct port_stats_s *)(qdev->stat);
+		pstat = dcmd->port_stats.stat;
+		pstat->total_green_bytes = fw_pstat->total_green_bytes;
+		pstat->total_yellow_bytes = fw_pstat->total_yellow_bytes;
+		break;
+
+	case CMD_TYPE_GET_NUM_USED_NODES:
+		fw_sys_stat = (struct system_stats_s *)qdev->stat;
+		*(dcmd->num_used.num) = fw_sys_stat->tscd_num_of_used_nodes;
+		break;
+
+	case CMD_TYPE_GET_NODE_INFO:
+		post_process_get_node_info(qdev, &dcmd->node_info);
+		break;
+
+	default:
+		QOS_ASSERT(0, "Unexpected cmd %d for post process\n", type);
+		return;
+
+	}
+}
+
+#define MAX_FW_CMD_SIZE 120U
+#define MS_SLEEP_BETWEEN_POLL 10U
+#define NUM_OF_POLLS	500U
+
+/*
+ * Go over all commands on pending queue until cmd id
+ * is changed or queue is empty
+ * (refer to driver design document to learn more about cmd id).
+ * On current implmentation it is expected that pending queue contain
+ * firmware commands for a single client command, therfore queue should
+ * become empty before cmd id is changed.
+ *
+ * For each command wait until firmware signals
+ * completion before continue to next command.
+ * Completion status for each command is polled NUM_OF_POLLS
+ * times. And the function sleeps between pools.
+ * If command have not completed after all that polls -
+ * function asserts.
+ *
+ */
+void check_completion(struct pp_qos_dev *qdev)
+{
+	union driver_cmd dcmd;
+
+	volatile uint32_t *pos;
+	uint32_t	val;
+	size_t len;
+	unsigned int idcur;
+	int rc;
+	unsigned int i;
+	unsigned int popped;
+	struct fw_internal *internals;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	popped = 0;
+	idcur = 0;
+	while (cmd_queue_peek(
+			      qdev->drvcmds.pendq,
+			      &dcmd.cmd,
+			      sizeof(struct cmd)) == 0) {
+		pos = dcmd.stub.cmd.pos;
+		len = dcmd.cmd.len;
+		++pos;
+#ifndef NO_FW
+		i = 0;
+		val = qos_u32_from_uc(*pos);
+		while ((val &
+			(UC_CMD_FLAG_UC_DONE | UC_CMD_FLAG_UC_ERROR)) == 0) {
+			qos_sleep(MS_SLEEP_BETWEEN_POLL);
+			val = qos_u32_from_uc(*pos);
+			++i;
+			if (i == NUM_OF_POLLS) {
+				QOS_ASSERT(
+					0,
+					"FW is not responding, polling offset 0x%04tX for cmd type %s\n",
+					(void *)pos -
+					(void *)(qdev->fwcom.cmdbuf),
+					cmd_str[dcmd.cmd.type]);
+				return;
+			}
+		}
+		if (val & UC_CMD_FLAG_UC_ERROR) {
+			QOS_ASSERT(0,
+				   "FW signaled error, polling offset 0x%04tX, cmd type %s\n",
+				   (void *)pos - (void *)(qdev->fwcom.cmdbuf),
+				   cmd_str[dcmd.cmd.type]);
+			return;
+		}
+#endif
+		rc = cmd_queue_get(qdev->drvcmds.pendq, &dcmd.stub, len);
+		QOS_ASSERT(rc == 0,
+			   "Command queue does not contain a full command\n");
+		if (dcmd.cmd.flags & CMD_FLAGS_POST_PROCESS)
+			post_process(qdev, &dcmd);
+		++popped;
+	}
+
+	internals = qdev->fwbuf;
+	QOS_ASSERT(popped == internals->pushed,
+		   "Expected to pop %u msgs from pending queue but popped %u\n",
+		   internals->pushed, popped);
+	QOS_ASSERT(cmd_queue_is_empty(qdev->drvcmds.pendq),
+		   "Driver's pending queue is not empty\n");
+	internals->pushed = 0;
+	qdev->drvcmds.cmd_fw_id = 0;
+}
+
+#define FW_CMD_BUFFER_DCCM_START 0xF0006000
+
+
+/*
+ * Take all commands from driver cmd queue, translate them to
+ * firmware format and put them on firmware queue.
+ * When finish signal firmware.
+ */
+void enqueue_cmds(struct pp_qos_dev *qdev)
+{
+	size_t len;
+	int rc;
+	uint32_t *cur;
+	uint32_t *prev;
+	uint32_t *start;
+	size_t remain;
+	uint32_t flags;
+	union driver_cmd dcmd;
+	struct cmd_internal	cmd_internal;
+	struct fw_internal *internals;
+	unsigned int pushed;
+	unsigned int i;
+	struct fw_set_common common;
+	struct fw_set_parent parent;
+	struct fw_set_port port;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	start = qdev->fwcom.cmdbuf;
+	remain = qdev->fwcom.cmdbuf_sz;
+
+	pushed = 0;
+	cur = start;
+	prev = start;
+	*cur++ = qos_u32_to_uc(UC_QOS_COMMAND_MULTIPLE_COMMANDS);
+	*cur++ = qos_u32_to_uc(UC_CMD_FLAG_IMMEDIATE);
+	*cur++ = qos_u32_to_uc(1);
+	*cur = qos_u32_to_uc(((uintptr_t)(cur) - (uintptr_t)start +
+				4 + FW_CMD_BUFFER_DCCM_START) & 0xFFFFFFFF);
+	++cur;
+
+	internals = qdev->fwbuf;
+	remain -= 16;
+	flags = UC_CMD_FLAG_IMMEDIATE;
+
+	cmd_init(
+			qdev,
+			&(cmd_internal.base),
+			CMD_TYPE_INTERNAL,
+			sizeof(cmd_internal), 0);
+	common.valid = TSCD_NODE_CONF_SUSPEND_RESUME;
+	parent.valid = 0;
+	port.valid = 0;
+
+	if (!internals->ongoing) {
+		common.suspend = 1;
+		for (i = 0; i < internals->suspend_port_index; ++i) {
+			prev = cur;
+			QOS_LOG_DEBUG("CMD_INTERNAL_SUSPEND_PORT port: %u\n",
+					internals->suspend_ports[i]);
+
+			cur = fw_write_set_port_cmd(
+					prev,
+					internals->suspend_ports[i],
+					flags,
+					&common,
+					&parent,
+					&port);
+
+			if (cur != prev) {
+				cmd_internal.base.pos = prev;
+				cmd_queue_put(
+						qdev->drvcmds.pendq,
+						&cmd_internal,
+						cmd_internal.base.len);
+				++pushed;
+				remain -= (uintptr_t)cur - (uintptr_t)prev;
+			}
+		}
+		if (pushed)
+			internals->ongoing = 1;
+	}
+
+	while ((remain >= MAX_FW_CMD_SIZE) &&
+			cmd_queue_peek(
+				qdev->drvcmds.cmdq,
+				&dcmd.cmd,
+				sizeof(struct cmd)) == 0) {
+		len = dcmd.cmd.len;
+		rc = cmd_queue_get(qdev->drvcmds.cmdq, &dcmd.stub, len);
+		QOS_ASSERT(rc == 0,
+				"Command queue does not contain a full command\n");
+		prev = cur;
+		dcmd.stub.cmd.pos = cur;
+		switch (dcmd.cmd.type) {
+		case CMD_TYPE_INIT_LOGGER:
+			cur = fw_write_init_logger_cmd(
+					prev,
+					&dcmd.init_logger,
+					flags);
+			break;
+
+		case CMD_TYPE_INIT_QOS:
+			cur = fw_write_init_qos_cmd(
+					prev,
+					&dcmd.init_qos,
+					flags);
+			break;
+
+		case CMD_TYPE_MOVE:
+			if (dcmd.move.node_type == TYPE_QUEUE)
+				cur = fw_write_move_queue_cmd(
+						prev,
+						&dcmd.move,
+						flags);
+			else
+				cur = fw_write_move_sched_cmd(
+						prev,
+						&dcmd.move,
+						flags);
+			break;
+
+		case CMD_TYPE_PARENT_CHANGE:
+			cur = parent_change_cmd_wrapper(
+					internals,
+					prev,
+					&dcmd.parent_change,
+					flags);
+			break;
+
+		case CMD_TYPE_UPDATE_PREDECESSORS:
+			cur = update_preds_cmd_wrapper(
+					internals,
+					prev,
+					&dcmd.update_preds,
+					flags);
+			break;
+
+		case CMD_TYPE_ADD_PORT:
+			cur = fw_write_add_port_cmd(
+					prev,
+					&dcmd.add_port,
+					flags);
+			break;
+
+		case CMD_TYPE_SET_PORT:
+			cur = set_port_cmd_wrapper(
+					internals,
+					prev,
+					&dcmd.set_port,
+					flags);
+			break;
+
+		case CMD_TYPE_REMOVE_PORT:
+			cur = fw_write_remove_port_cmd(
+					prev,
+					&dcmd.remove_node,
+					flags);
+			break;
+
+		case CMD_TYPE_ADD_SCHED:
+			cur = fw_write_add_sched_cmd(
+					prev,
+					&dcmd.add_sched,
+					flags);
+			break;
+
+		case CMD_TYPE_ADD_QUEUE:
+			cur = fw_write_add_queue_cmd(
+					prev,
+					&dcmd.add_queue,
+					flags);
+			break;
+
+		case CMD_TYPE_REMOVE_QUEUE:
+			cur = fw_write_remove_queue_cmd(
+					prev,
+					&dcmd.remove_node,
+					flags);
+			break;
+
+		case CMD_TYPE_REMOVE_SCHED:
+			cur = fw_write_remove_sched_cmd(
+					prev,
+					&dcmd.remove_node,
+					flags);
+			break;
+
+		case CMD_TYPE_SET_SCHED:
+			cur = set_sched_cmd_wrapper(
+					internals,
+					prev,
+					&dcmd.set_sched,
+					flags);
+			break;
+
+		case CMD_TYPE_SET_QUEUE:
+			cur = set_queue_cmd_wrapper(
+					internals,
+					prev,
+					&dcmd.set_queue,
+					flags);
+			break;
+
+		case CMD_TYPE_REMOVE_NODE:
+			QOS_ASSERT(0,
+					"Did not expect CMD_TYPE_REMOVE_NODE\n");
+			break;
+
+		case CMD_TYPE_GET_QUEUE_STATS:
+			cur = fw_write_get_queue_stats(
+					prev, &dcmd.queue_stats, flags);
+			break;
+
+		case CMD_TYPE_GET_PORT_STATS:
+			cur = fw_write_get_port_stats(
+					prev, &dcmd.port_stats, flags);
+			break;
+
+		case CMD_TYPE_GET_NUM_USED_NODES:
+			cur = fw_write_get_system_info(
+					prev, &dcmd.num_used, flags);
+			break;
+
+		case CMD_TYPE_ADD_SHARED_GROUP:
+		case CMD_TYPE_SET_SHARED_GROUP:
+			cur = fw_write_set_shared_group(
+					prev,
+					dcmd.cmd.type,
+					&dcmd.set_shared_group,
+					flags);
+			break;
+
+		case CMD_TYPE_REMOVE_SHARED_GROUP:
+			cur = fw_write_remove_shared_group(
+					prev,
+					&dcmd.remove_shared_group,
+					flags);
+			break;
+		case CMD_TYPE_PUSH_DESC:
+			cur = fw_write_push_desc(
+					prev,
+					&dcmd.pushd,
+					flags);
+			break;
+
+		case CMD_TYPE_GET_NODE_INFO:
+			cur = fw_write_get_node_info(
+					prev,
+					&dcmd.node_info,
+					flags);
+			break;
+
+		case CMD_TYPE_FLUSH_QUEUE:
+			cur = fw_write_flush_queue_cmd(
+					prev,
+					&dcmd.flush_queue,
+					flags);
+			break;
+
+		default:
+			QOS_ASSERT(0, "Unexpected msg type %d\n",
+					dcmd.cmd.type);
+			return;
+		}
+		if (cur != prev) {
+			cmd_queue_put(
+					qdev->drvcmds.pendq,
+					&dcmd.stub,
+					dcmd.stub.cmd.len);
+			++pushed;
+			remain -= (uintptr_t)cur - (uintptr_t)prev;
+		}
+	}
+
+	if (cmd_queue_is_empty(qdev->drvcmds.cmdq)) {
+		for (i = 0; i < internals->moved_node_index; ++i) {
+			prev = cur;
+			cur = restart_node(qdev,
+					internals->moved_nodes[i].phy,
+					cur,
+					&cmd_internal);
+			if (cur != prev) {
+				pushed += 2;
+				remain -= (uintptr_t)cur - (uintptr_t)prev;
+			}
+		}
+
+		common.suspend = 0;
+		for (i = 0; i < internals->suspend_port_index; ++i) {
+			prev = cur;
+			QOS_LOG_DEBUG("CMD_INTERNAL_RESUME_PORT port: %u\n",
+					internals->suspend_ports[i]);
+
+			cur = fw_write_set_port_cmd(
+					prev,
+					internals->suspend_ports[i],
+					flags,
+					&common,
+					&parent,
+					&port);
+
+			if (cur != prev) {
+				cmd_internal.base.pos = prev;
+				cmd_queue_put(
+						qdev->drvcmds.pendq,
+						&cmd_internal,
+						cmd_internal.base.len);
+				++pushed;
+				remain -= (uintptr_t)cur - (uintptr_t)prev;
+			}
+		}
+		internals->suspend_port_index = 0;
+		internals->moved_node_index = 0;
+		internals->ongoing = 0;
+	}
+
+	if (pushed) {
+		internals->pushed = pushed;
+		prev += 1;
+		flags = qos_u32_from_uc(*prev);
+		QOS_BITS_SET(flags, UC_CMD_FLAG_MULTIPLE_COMMAND_LAST);
+		*prev = qos_u32_to_uc(flags);
+		signal_uc(qdev);
+	}
+}
+#endif
