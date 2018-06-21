@@ -46,15 +46,13 @@ typedef struct bridge_id bridge_id;
 typedef struct mac_addr mac_addr;
 typedef __u16 port_id;
 
-struct bridge_id
-{
-	unsigned char	prio[2];
-	unsigned char	addr[ETH_ALEN];
+struct bridge_id {
+	unsigned char prio[2];
+	unsigned char addr[ETH_ALEN];
 };
 
-struct mac_addr
-{
-	unsigned char	addr[ETH_ALEN];
+struct mac_addr {
+	unsigned char addr[ETH_ALEN];
 };
 
 #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
@@ -150,8 +148,7 @@ struct net_bridge_vlan_group {
 	u16				pvid;
 };
 
-struct net_bridge_fdb_entry
-{
+struct net_bridge_fdb_entry {
 	struct hlist_node		hlist;
 	struct net_bridge_port		*dst;
 
@@ -179,8 +176,7 @@ struct net_bridge_port_group {
 	unsigned char			flags;
 };
 
-struct net_bridge_mdb_entry
-{
+struct net_bridge_mdb_entry {
 	struct hlist_node		hlist[2];
 	struct net_bridge		*br;
 	struct net_bridge_port_group __rcu *ports;
@@ -190,8 +186,8 @@ struct net_bridge_mdb_entry
 	bool				mglist;
 };
 
-struct net_bridge_mdb_htable
-{
+struct net_bridge_mdb_htable {
+
 	struct hlist_head		*mhash;
 	struct rcu_head			rcu;
 	struct net_bridge_mdb_htable	*old;
@@ -201,8 +197,66 @@ struct net_bridge_mdb_htable
 	u32				ver;
 };
 
-struct net_bridge_port
-{
+#ifdef CONFIG_MCAST_SNOOPING
+
+typedef enum {
+	IPV4 = 0,
+	IPV6,
+} ptype_t;
+
+struct ipaddr {
+	ptype_t type;
+	union {
+		struct in_addr ip4;
+		struct in6_addr ip6;
+	} addr;
+};
+
+typedef struct ipaddr ipaddr_t;
+
+enum igmp_ver {
+	IGMPV1 = 1,
+	IGMPV2,
+	IGMPV3,
+};
+
+enum mld_ver {
+	MLDV1 = 1,
+	MLDV2,
+};
+
+/* Set router port ioctl request */
+struct router_port {
+	ptype_t type;
+	u32 if_index; /* interface index */
+	u32 expires; /* expiry time */
+};
+
+/* Multicast group record ioctl request */
+struct br_grp_rec {
+	u32 if_index;   /* interface index */
+	ipaddr_t gaddr;          /* Group address */
+	u32 filter_mode;    /* Filter mode */
+	u32 compat;    /* Compatibility mode */
+	u32 nsrc;       /* number of sources */
+	ipaddr_t slist[0];   /* source list */
+};
+
+struct net_bridge_mg_entry {
+	struct hlist_node		hlist;
+	ipaddr_t				gaddr;              /* Group ipaddr */
+	u8						filter_mode;        /* 0 = EX, 1 = IN */
+	u8						compat_mode;   /* 1 = v1, 2 = v2, 3 = v3 */
+	struct net_bridge_port	*port;
+	struct rcu_head			rcu;
+	u32						saddr_cnt;
+	ipaddr_t				saddr[0];           /* Array of src ipaddr */
+};
+
+#endif /* CONFIG_MCAST_SNOOPING */
+
+
+struct net_bridge_port {
 	struct net_bridge		*br;
 	struct net_device		*dev;
 	struct list_head		list;
@@ -228,6 +282,17 @@ struct net_bridge_port
 	struct rcu_head			rcu;
 
 	unsigned long 			flags;
+
+#ifdef CONFIG_MCAST_SNOOPING
+	u32                    mghash_secret;
+	u32                    mghash_secret6;
+	spinlock_t             mghash_lock;
+	struct hlist_head      mghash[BR_HASH_SIZE];
+	u8                     igmp_router_port;
+	struct timer_list      igmp_router_timer;
+	u8                     mld_router_port;
+	struct timer_list      mld_router_timer;
+#endif /* CONFIG_MCAST_SNOOPING */
 
 #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
 	struct bridge_mcast_own_query	ip4_own_query;
@@ -272,8 +337,7 @@ static inline struct net_bridge_port *br_port_get_rtnl(const struct net_device *
 		rtnl_dereference(dev->rx_handler_data) : NULL;
 }
 
-struct net_bridge
-{
+struct net_bridge {
 	spinlock_t			lock;
 	struct list_head		port_list;
 	struct net_device		*dev;
@@ -1032,6 +1096,19 @@ int br_setlink(struct net_device *dev, struct nlmsghdr *nlmsg, u16 flags);
 int br_dellink(struct net_device *dev, struct nlmsghdr *nlmsg, u16 flags);
 int br_getlink(struct sk_buff *skb, u32 pid, u32 seq, struct net_device *dev,
 	       u32 filter_mask, int nlflags);
+
+#ifdef CONFIG_MCAST_SNOOPING
+/* br_mcast_snooping.c */
+extern void br_mcast_port_init(struct net_bridge_port *port);
+extern void br_mcast_port_cleanup(struct net_bridge_port *port);
+extern int br_mg_del_record(struct net_bridge_port *port, ipaddr_t *gaddr);
+extern int br_mg_add_entry(struct net_bridge_port *port, ipaddr_t *gaddr, u8 filter, u8 compat, u32 saddr_cnt, ipaddr_t *saddr);
+extern int br_selective_flood(struct net_bridge_port *p, struct sk_buff *skb);
+extern int bridge_igmp_snooping;
+extern int bridge_mld_snooping;
+extern void br_mcast_snoop_init(void);
+extern void br_mcast_snoop_deinit(void);
+#endif
 
 #ifdef CONFIG_SYSFS
 /* br_sysfs_if.c */

@@ -262,6 +262,10 @@ static void del_nbp(struct net_bridge_port *p)
 	struct net_bridge *br = p->br;
 	struct net_device *dev = p->dev;
 
+#ifdef CONFIG_MCAST_SNOOPING
+	br_mcast_port_cleanup(p);
+#endif
+
 	sysfs_remove_link(br->ifobj, p->dev->name);
 
 	nbp_delete_promisc(p);
@@ -364,6 +368,12 @@ static struct net_bridge_port *new_nbp(struct net_bridge *br,
 	p->port_no = index;
 	p->flags = BR_LEARNING | BR_FLOOD | BR_MCAST_FLOOD;
 	br_init_port(p);
+
+#ifdef CONFIG_MCAST_SNOOPING
+	br_mcast_port_init(p);
+	spin_lock_init(&p->mghash_lock);
+#endif
+
 	br_set_state(p, BR_STATE_DISABLED);
 	br_stp_port_timer_init(p);
 	err = br_multicast_add_port(p);
@@ -593,6 +603,10 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
 
 	kobject_uevent(&p->kobj, KOBJ_ADD);
 
+#ifdef CONFIG_MCAST_SNOOPING
+	br_ifinfo_notify(RTM_NEWLINK, p);
+#endif
+
 	return 0;
 
 err7:
@@ -643,6 +657,10 @@ int br_del_if(struct net_bridge *br, struct net_device *dev)
 		call_netdevice_notifiers(NETDEV_CHANGEADDR, br->dev);
 
 	netdev_update_features(br->dev);
+
+#ifdef CONFIG_MCAST_SNOOPING
+	br_ifinfo_notify(RTM_DELLINK, p);
+#endif
 
 	return 0;
 }

@@ -227,6 +227,10 @@ static int __init br_init(void)
 	br_fdb_test_addr_hook = br_fdb_test_addr;
 #endif
 
+#ifdef CONFIG_MCAST_SNOOPING
+	br_mcast_snoop_init();
+#endif
+
 #if IS_MODULE(CONFIG_BRIDGE_NETFILTER)
 	pr_info("bridge: filtering via arp/ip/ip6tables is no longer available "
 		"by default. Update your scripts to load br_netfilter if you "
@@ -266,6 +270,9 @@ static void __exit br_deinit(void)
 	br_fdb_test_addr_hook = NULL;
 #endif
 	br_fdb_fini();
+#ifdef CONFIG_MCAST_SNOOPING
+	br_mcast_snoop_deinit();
+#endif
 }
 
 module_init(br_init)

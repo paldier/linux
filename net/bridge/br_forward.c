@@ -21,6 +21,16 @@
 #include <linux/netfilter_bridge.h>
 #include "br_private.h"
 
+#if IS_ENABLED(CONFIG_MCAST_HELPER)
+void (*five_tuple_br_info_ptr)(struct sk_buff *skb) = NULL;
+EXPORT_SYMBOL(five_tuple_br_info_ptr);
+int mch_br_capture_pkt = 0;
+EXPORT_SYMBOL(mch_br_capture_pkt);
+#endif
+#ifdef CONFIG_MCAST_SNOOPING
+#define IS_MCAST_ADDR 0x1
+#endif
+
 /* Don't forward packets to originating port or forwarding disabled */
 static inline int should_deliver(const struct net_bridge_port *p,
 				 const struct sk_buff *skb)
@@ -124,6 +134,17 @@ static int deliver_clone(const struct net_bridge_port *prev,
 		return -ENOMEM;
 	}
 
+#ifdef CONFIG_MCAST_HELPER
+	/* Send five tuple info to mcast helper */
+	if (mch_br_capture_pkt == 1) {
+		if (ip_hdr(skb)->protocol == 17) {
+			if (five_tuple_br_info_ptr != NULL) {
+				five_tuple_br_info_ptr(skb);
+			}
+		}
+	}
+#endif
+
 	__br_forward(prev, skb, local_orig);
 	return 0;
 }
@@ -164,6 +185,15 @@ static struct net_bridge_port *maybe_deliver(
 
 	if (!prev)
 		goto out;
+
+#ifdef CONFIG_MCAST_SNOOPING
+	if ((bridge_igmp_snooping || bridge_mld_snooping) &&
+			(eth_hdr(skb)->h_dest[0] & IS_MCAST_ADDR) &&
+			(br_selective_flood(prev, skb) == 0)) {
+				prev = p;
+				return p;
+			}
+#endif
 
 	err = deliver_clone(prev, skb, local_orig);
 	if (err)
@@ -208,10 +238,25 @@ void br_flood(struct net_bridge *br, struct sk_buff *skb,
 	if (!prev)
 		goto out;
 
-	if (local_rcv)
-		deliver_clone(prev, skb, local_orig);
+	if (local_rcv) {
+#ifdef CONFIG_MCAST_SNOOPING
+	if ((bridge_igmp_snooping || bridge_mld_snooping) &&
+			(eth_hdr(skb)->h_dest[0] & IS_MCAST_ADDR) &&
+			(br_selective_flood(prev, skb) == 0)) {}
+	//kfree_skb(skb);
 	else
+#endif
+		deliver_clone(prev, skb, local_orig);
+	} else {
+#ifdef CONFIG_MCAST_SNOOPING
+	if ((bridge_igmp_snooping || bridge_mld_snooping) &&
+			(eth_hdr(skb)->h_dest[0] & IS_MCAST_ADDR) &&
+			(br_selective_flood(prev, skb) == 0))
+		kfree_skb(skb);
+	else
+#endif
 		__br_forward(prev, skb, local_orig);
+	}
 	return;
 
 out:

@@ -26,6 +26,9 @@
 #include <linux/if_vlan.h>
 #include <net/switchdev.h>
 #include "br_private.h"
+#ifdef CONFIG_PPA
+#include <net/ppa/ppa_api.h>
+#endif
 
 static struct kmem_cache *br_fdb_cache __read_mostly;
 static struct net_bridge_fdb_entry *fdb_find(struct hlist_head *head,
@@ -148,6 +151,10 @@ static void fdb_del_external_learn(struct net_bridge_fdb_entry *f)
 
 static void fdb_delete(struct net_bridge *br, struct net_bridge_fdb_entry *f)
 {
+#ifdef CONFIG_PPA
+	if (ppa_hook_bridge_entry_delete_fn)
+		ppa_hook_bridge_entry_delete_fn(f->addr.addr, br->dev, 0);
+#endif
 	if (f->is_static)
 		fdb_del_hw_addr(br, f->addr.addr);
 
@@ -304,6 +311,17 @@ void br_fdb_cleanup(unsigned long _data)
 
 		hlist_for_each_entry_safe(f, n, &br->hash[i], hlist) {
 			unsigned long this_timer;
+#ifdef CONFIG_PPA
+			if (ppa_hook_bridge_entry_hit_time_fn &&
+					!f->is_local) {
+				unsigned int last_hit_time;
+				if (ppa_hook_bridge_entry_hit_time_fn
+						(f->addr.addr, br->dev,
+							&last_hit_time) ==
+								PPA_HIT)
+					f->updated = last_hit_time * HZ;
+			}
+#endif
 			if (f->is_static)
 				continue;
 			if (f->added_by_external_learn)
@@ -593,6 +611,14 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
 				fdb_modified = true;
 			}
 			fdb->updated = jiffies;
+#ifdef CONFIG_PPA
+			if (ppa_hook_bridge_entry_add_fn &&
+				source->dev)
+				ppa_hook_bridge_entry_add_fn(
+					(unsigned char *)addr,
+					br->dev, source->dev,
+					PPA_F_BRIDGE_ACCEL_MODE);
+#endif
 			if (unlikely(added_by_user))
 				fdb->added_by_user = 1;
 			if (unlikely(fdb_modified))
@@ -611,6 +637,12 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
 		/* else  we lose race and someone else inserts
 		 * it first, don't bother updating
 		 */
+#ifdef CONFIG_PPA
+		if (ppa_hook_bridge_entry_add_fn && source->dev)
+			ppa_hook_bridge_entry_add_fn(
+				(unsigned char *)addr, br->dev,
+				source->dev, 0);
+#endif
 		spin_unlock(&br->hash_lock);
 	}
 }
@@ -1042,6 +1074,32 @@ out:
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_DIRECTCONNECT_DP_API)
+int dc_dp_br_fdb_delete(struct net_device *dev, const unsigned char *addr)
+{
+	struct net_bridge_port *p;
+	int err = 0;
+
+	if (!dev)
+		return -EINVAL;
+
+	p = br_port_get_rcu(dev);
+	if (!p) {
+		pr_info("bridge: %s not a bridge port\n",
+			dev->name);
+		return -EINVAL;
+	}
+
+	if (addr)
+		err = __br_fdb_delete(p, addr, 0);
+	else
+		br_fdb_delete_by_port(p->br, p, 0, 0);
+
+	return err;
+}
+EXPORT_SYMBOL(dc_dp_br_fdb_delete);
+#endif
+
 int br_fdb_sync_static(struct net_bridge *br, struct net_bridge_port *p)
 {
 	struct net_bridge_fdb_entry *fdb, *tmp;
@@ -1155,3 +1213,32 @@ int br_fdb_external_learn_del(struct net_bridge *br, struct net_bridge_port *p,
 
 	return err;
 }
+
+
+#if ((defined(CONFIG_PPA_API) && CONFIG_PPA_API) || \
+		(defined(CONFIG_PPA_API_MODULE) && CONFIG_PPA_API_MODULE))
+int ppa_br_fdb_delete(struct net_device *dev, const unsigned char *addr)
+{
+	struct net_bridge_port *p;
+	int err = 0;
+
+	if (!dev) {
+		return -EINVAL;
+	}
+
+	p = br_port_get_rcu(dev);
+	if (!p) {
+		pr_info("bridge: %s not a bridge port\n",
+				dev->name);
+		return -EINVAL;
+	}
+
+	if (addr)
+		err = __br_fdb_delete(p, addr, 0);
+	else
+		br_fdb_delete_by_port(p->br, p, 1);
+
+	return err;
+}
+EXPORT_SYMBOL(ppa_br_fdb_delete);
+#endif
