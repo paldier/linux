@@ -280,9 +280,34 @@ config PINCTRL_XWAY
 	depends on SOC_TYPE_XWAY
 	depends on PINCTRL_LANTIQ
 
+config PINCTRL_SYSFS
+    bool "/sys/class/pinctrl/... (sysfs interface)"
+    depends on SYSFS && PINCTRL_XRX500
+    default n
+    help
+      Say Y here to add a sysfs interface for pinctrl for Lantiq SoCs.
+
+	
+config PINCTRL_XRX500
+	bool "Lantiq XRX500 SoC pinctrl driver"
+	depends on SOC_GRX500
+	depends on PINCTRL_LANTIQ
+
 config PINCTRL_TB10X
 	bool
 	depends on OF && ARC_PLAT_TB10X
 	select GPIOLIB
+
+config PINCTRL_EQUILIBRIUM
+	tristate "Intel xrx500/falconmx pinctrl and GPIO driver"
+	select PINMUX
+	select PINCONF
+	select GPIOLIB
+	select GPIOLIB_IRQCHIP
+	help
+		Equilibrium pinctrl driver provides an interface that
+		allows configuring of SoC pins and using them as GPIOs.
+		Pinmux and pinconf settings all must be written in device
+		tree.
 
 endmenu
