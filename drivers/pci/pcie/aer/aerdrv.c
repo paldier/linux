@@ -287,6 +287,14 @@ static void aer_remove(struct pcie_device *dev)
 	}
 }
 
+struct pci_dev *aer_dev_to_pci_dev(void *context)
+{
+	struct pcie_device *dev = (struct pcie_device *)context;
+
+	return dev->port;
+}
+EXPORT_SYMBOL_GPL(aer_dev_to_pci_dev);
+
 /**
  * aer_probe - initialize resources
  * @dev: pointer to the pcie_dev data structure

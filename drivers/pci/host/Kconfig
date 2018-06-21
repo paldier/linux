@@ -131,6 +131,22 @@ config PCIE_XILINX
 	  Say 'Y' here if you want kernel to support the Xilinx AXI PCIe
 	  Host Bridge driver.
 
+config PCIE_INTEL_AXI
+	bool "Intel AHB/AXI PCIe host bridge support"
+	depends on (SOC_GRX500 && PCI_DRIVERS_GENERIC)
+	depends on OF_PCI
+	help
+	  Say 'Y' here if you want kernel to support the Intel AHB/AXI PCIe
+	  Host Bridge driver.
+
+config PCIE_INTEL_MSI_PIC
+	bool "Intel separate MSI PIC support"
+	depends on PCIE_INTEL_AXI
+	depends on PCI_MSI
+	help
+	  Say 'Y' here if your SoC needs separate MSI PIC support. Say 'N' if your
+	  SoC support native MSI
+
 config PCI_XGENE
 	bool "X-Gene PCIe controller"
 	depends on ARCH_XGENE
