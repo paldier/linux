@@ -630,6 +630,12 @@ config NETFILTER_XT_MARK
 	Prior to routing, the nfmark can influence the routing method and can
 	also be used by other subsystems to change their behavior.
 
+config NETFILTER_XT_EXTMARK
+	tristate 'extended nfmark target and match support'
+	default m if NETFILTER_ADVANCED=n
+	---help---
+	This option adds the "EXTMARK" target and "extmark" match.
+
 config NETFILTER_XT_CONNMARK
 	tristate 'ctmark target and match support'
 	depends on NF_CONNTRACK
@@ -839,6 +845,15 @@ config NETFILTER_XT_NAT
 	This option enables the SNAT and DNAT targets.
 
 	To compile it as a module, choose M here. If unsure, say N.
+
+config NETFILTER_XT_TARGET_EXTMARK
+	tristate '"EXTMARK" target support'
+	depends on NETFILTER_ADVANCED
+	select NETFILTER_XT_EXTMARK
+	---help---
+	This is a backwards-compat option for the user's convenience
+	(e.g. when running oldconfig). It selects
+	CONFIG_NETFILTER_XT_EXTMARK (combined mark/MARK module).
 
 config NETFILTER_XT_TARGET_NETMAP
 	tristate '"NETMAP" target support'
@@ -1274,6 +1289,15 @@ config NETFILTER_XT_MATCH_MARK
 	This is a backwards-compat option for the user's convenience
 	(e.g. when running oldconfig). It selects
 	CONFIG_NETFILTER_XT_MARK (combined mark/MARK module).
+
+config NETFILTER_XT_MATCH_EXTMARK
+	tristate '"extmark" match support'
+	depends on NETFILTER_ADVANCED
+	select NETFILTER_XT_EXTMARK
+	---help---
+	This is a backwards-compat option for the user's convenience
+	(e.g. when running oldconfig). It selects
+	CONFIG_NETFILTER_XT_EXTMARK (combined mark/MARK module).
 
 config NETFILTER_XT_MATCH_MULTIPORT
 	tristate '"multiport" Multiple port match support'

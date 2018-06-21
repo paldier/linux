@@ -106,6 +106,7 @@ obj-$(CONFIG_NETFILTER_XTABLES) += x_tables.o xt_tcpudp.o
 
 # combos
 obj-$(CONFIG_NETFILTER_XT_MARK) += xt_mark.o
+obj-$(CONFIG_NETFILTER_XT_EXTMARK) += xt_extmark.o
 obj-$(CONFIG_NETFILTER_XT_CONNMARK) += xt_connmark.o
 obj-$(CONFIG_NETFILTER_XT_SET) += xt_set.o
 obj-$(CONFIG_NETFILTER_XT_NAT) += xt_nat.o

@@ -59,6 +59,8 @@
 
 #define NF_CONNTRACK_VERSION	"0.5.0"
 
+#undef LTQ_IP_CONNTRACK_REPLACEMENT
+
 int (*nfnetlink_parse_nat_setup_hook)(struct nf_conn *ct,
 				      enum nf_nat_manip_type manip,
 				      const struct nlattr *attr) __read_mostly;
@@ -927,8 +929,13 @@ EXPORT_SYMBOL_GPL(nf_conntrack_tuple_taken);
 
 /* There's a small race here where we may free a just-assured
    connection.  Too bad: we're in trouble anyway. */
+#ifdef LTQ_IP_CONNTRACK_REPLACEMENT
+static unsigned int early_drop_list(struct net *net,
+				    struct hlist_nulls_head *head, int force)
+#else
 static unsigned int early_drop_list(struct net *net,
 				    struct hlist_nulls_head *head)
+#endif
 {
 	struct nf_conntrack_tuple_hash *h;
 	struct hlist_nulls_node *n;
@@ -943,10 +950,23 @@ static unsigned int early_drop_list(struct net *net,
 			continue;
 		}
 
+#ifdef LTQ_IP_CONNTRACK_REPLACEMENT
+		if (!force) {
+			if (test_bit(IPS_ASSURED_BIT, &tmp->status) ||
+				!net_eq(nf_ct_net(tmp), net) ||
+				nf_ct_is_dying(tmp))
+				continue;
+		} else {
+			if (!net_eq(nf_ct_net(tmp), net) ||
+				nf_ct_is_dying(tmp))
+				continue;
+		}
+#else
 		if (test_bit(IPS_ASSURED_BIT, &tmp->status) ||
 		    !net_eq(nf_ct_net(tmp), net) ||
 		    nf_ct_is_dying(tmp))
 			continue;
+#endif
 
 		if (!atomic_inc_not_zero(&tmp->ct_general.use))
 			continue;
@@ -958,10 +978,23 @@ static unsigned int early_drop_list(struct net *net,
 		 * already fired or someone else deleted it. Just drop ref
 		 * and move to next entry.
 		 */
+#ifdef LTQ_IP_CONNTRACK_REPLACEMENT
+		if (!force) {
+			if (net_eq(nf_ct_net(tmp), net) &&
+		   		nf_ct_is_confirmed(tmp) &&
+		   	 	nf_ct_delete(tmp, 0, 0))
+				drops++;
+		} else {
+			if (net_eq(nf_ct_net(tmp), net) &&
+		   	 	nf_ct_delete(tmp, 0, 0))
+				drops++;
+		}
+#else
 		if (net_eq(nf_ct_net(tmp), net) &&
 		    nf_ct_is_confirmed(tmp) &&
 		    nf_ct_delete(tmp, 0, 0))
 			drops++;
+#endif
 
 		nf_ct_put(tmp);
 	}
@@ -972,6 +1005,11 @@ static unsigned int early_drop_list(struct net *net,
 static noinline int early_drop(struct net *net, unsigned int hash)
 {
 	unsigned int i, bucket;
+
+#ifdef LTQ_IP_CONNTRACK_REPLACEMENT
+	int recheck  = 1;
+redo:
+#endif
 
 	for (i = 0; i < NF_CT_EVICTION_RANGE; i++) {
 		struct hlist_nulls_head *ct_hash;
@@ -984,7 +1022,14 @@ static noinline int early_drop(struct net *net, unsigned int hash)
 		else
 			bucket = (bucket + 1) % hsize;
 
-		drops = early_drop_list(net, &ct_hash[bucket]);
+#ifdef LTQ_IP_CONNTRACK_REPLACEMENT
+		if (!recheck)
+			drops = early_drop_list(net, &ct_hash[bucket], 1);
+		else
+			drops = early_drop_list(net, &ct_hash[bucket], 0);
+#else
+			drops = early_drop_list(net, &ct_hash[bucket]);
+#endif
 		rcu_read_unlock();
 
 		if (drops) {
@@ -992,7 +1037,12 @@ static noinline int early_drop(struct net *net, unsigned int hash)
 			return true;
 		}
 	}
-
+#ifdef LTQ_IP_CONNTRACK_REPLACEMENT
+	if (recheck) {
+		recheck = 0;
+		goto redo;
+	}
+#endif
 	return false;
 }
 
@@ -1103,7 +1153,7 @@ __nf_conntrack_alloc(struct net *net,
 	    unlikely(atomic_read(&net->ct.count) > nf_conntrack_max)) {
 		if (!early_drop(net, hash)) {
 			atomic_dec(&net->ct.count);
-			net_warn_ratelimited("nf_conntrack: table full, dropping packet\n");
+			/*net_warn_ratelimited("nf_conntrack: table full, dropping packet\n");*/
 			return ERR_PTR(-ENOMEM);
 		}
 	}

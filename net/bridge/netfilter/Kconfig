@@ -129,6 +129,16 @@ config BRIDGE_EBT_MARK
 
 	  To compile it as a module, choose M here.  If unsure, say N.
 
+config BRIDGE_EBT_EXTMARK
+	tristate "ebt: extmark filter support"
+	help
+	  This option adds the extmark match, which allows matching frames based on
+	  the 'extmark' value in the frame. This can be set by the extmark target.
+	  This value is the same as the one used in the iptables mark match and
+	  target.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
 config BRIDGE_EBT_PKTTYPE
 	tristate "ebt: packet type filter support"
 	help
@@ -179,6 +189,16 @@ config BRIDGE_EBT_MARK_T
 	help
 	  This option adds the mark target, which allows marking frames by
 	  setting the 'nfmark' value in the frame.
+	  This value is the same as the one used in the iptables mark match and
+	  target.
+
+	  To compile it as a module, choose M here.  If unsure, say N.
+
+config BRIDGE_EBT_EXTMARK_T
+	tristate "ebt: extmark target support"
+	help
+	  This option adds the extmark target, which allows marking frames by
+	  setting the 'extmark' value in the frame.
 	  This value is the same as the one used in the iptables mark match and
 	  target.
 
