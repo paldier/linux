@@ -42,6 +42,9 @@
 #include <linux/gfp.h>
 #include <linux/module.h>
 
+#if IS_ENABLED(CONFIG_PPA_TCP_LITEPATH)
+extern int32_t (*ppa_sw_litepath_tcp_send_hook)(struct sk_buff *skb);
+#endif
 /* People can turn this off for buggy TCP's found in printers etc. */
 int sysctl_tcp_retrans_collapse __read_mostly = 1;
 
@@ -1037,9 +1040,20 @@ static int __tcp_transmit_skb(struct sock *sk, struct sk_buff *skb,
 	/* Cleanup our debris for IP stacks */
 	memset(skb->cb, 0, max(sizeof(struct inet_skb_parm),
 			       sizeof(struct inet6_skb_parm)));
-
+#if IS_ENABLED(CONFIG_PPA_TCP_LITEPATH)
+	if (sk->sk_state == TCP_ESTABLISHED) {
+		if (ppa_sw_litepath_tcp_send_hook) {
+			err = ppa_sw_litepath_tcp_send_hook(skb);
+			if (!err)
+				goto xmit_done;
+		}
+	}
+#endif
 	err = icsk->icsk_af_ops->queue_xmit(sk, skb, &inet->cork.fl);
 
+#if IS_ENABLED(CONFIG_PPA_TCP_LITEPATH)
+xmit_done:
+#endif
 	if (unlikely(err > 0)) {
 		tcp_enter_cwr(sk);
 		err = net_xmit_eval(err);
@@ -2992,7 +3006,13 @@ void tcp_send_fin(struct sock *sk)
 	 * Note: in the latter case, FIN packet will be sent after a timeout,
 	 * as TCP stack thinks it has already been transmitted.
 	 */
+#ifdef CONFIG_LTQ_TOE_DRIVER
+	/* don't piggyback the FIN for large packets (TSO)
+	   bug in HW will add FIN flag for all the segmented packets */
+	if (tskb && (tcp_send_head(sk) || tcp_under_memory_pressure(sk)) && (tskb->len < tcp_current_mss(sk))) {
+#else
 	if (tskb && (tcp_send_head(sk) || tcp_under_memory_pressure(sk))) {
+#endif
 coalesce:
 		TCP_SKB_CB(tskb)->tcp_flags |= TCPHDR_FIN;
 		TCP_SKB_CB(tskb)->end_seq++;

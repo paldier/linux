@@ -113,7 +113,13 @@
 
 #define IGMP_V1_ROUTER_PRESENT_TIMEOUT		(400*HZ)
 #define IGMP_V2_ROUTER_PRESENT_TIMEOUT		(400*HZ)
+
+#ifdef CONFIG_MCAST_LATENCY_OPTIMIZATION
+#define IGMP_V2_UNSOLICITED_REPORT_INTERVAL     (2*HZ)
+#else
 #define IGMP_V2_UNSOLICITED_REPORT_INTERVAL	(10*HZ)
+#endif
+
 #define IGMP_V3_UNSOLICITED_REPORT_INTERVAL	(1*HZ)
 #define IGMP_QUERY_RESPONSE_INTERVAL		(10*HZ)
 #define IGMP_QUERY_ROBUSTNESS_VARIABLE		2
@@ -1289,7 +1295,13 @@ static void igmp_group_dropped(struct ip_mc_list *im)
 		/* IGMPv3 */
 		igmpv3_add_delrec(in_dev, im);
 
+#ifdef CONFIG_MCAST_LATENCY_OPTIMIZATION
+		in_dev->mr_ifc_count = in_dev->mr_qrv ? in_dev->mr_qrv : IGMP_QUERY_ROBUSTNESS_VARIABLE;
+		in_dev_hold(in_dev);
+		igmp_ifc_timer_expire((unsigned long)in_dev);
+#else
 		igmp_ifc_event(in_dev);
+#endif
 	}
 #endif
 }
@@ -1315,15 +1327,27 @@ static void igmp_group_added(struct ip_mc_list *im)
 	if (in_dev->dead)
 		return;
 	if (IGMP_V1_SEEN(in_dev) || IGMP_V2_SEEN(in_dev)) {
+#ifdef CONFIG_MCAST_LATENCY_OPTIMIZATION
+		atomic_inc(&im->refcnt);
+		igmp_timer_expire((unsigned long)im);
+#else
 		spin_lock_bh(&im->lock);
 		igmp_start_timer(im, IGMP_INITIAL_REPORT_DELAY);
 		spin_unlock_bh(&im->lock);
+#endif
 		return;
 	}
 	/* else, v3 */
 
 	im->crcount = in_dev->mr_qrv ?: net->ipv4.sysctl_igmp_qrv;
+
+#ifdef CONFIG_MCAST_LATENCY_OPTIMIZATION
+	in_dev->mr_ifc_count = in_dev->mr_qrv ? in_dev->mr_qrv : IGMP_QUERY_ROBUSTNESS_VARIABLE;
+	in_dev_hold(in_dev);
+	igmp_ifc_timer_expire((unsigned long)in_dev);
+#else
 	igmp_ifc_event(in_dev);
+#endif
 #endif
 }
 

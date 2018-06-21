@@ -67,6 +67,7 @@
 #include <net/fib_rules.h>
 #include <linux/netconf.h>
 #include <net/nexthop.h>
+#include<linux/mroute6.h>
 
 #include <linux/nospec.h>
 
@@ -113,6 +114,11 @@ static void mroute_netlink_event(struct mr_table *mrt, struct mfc_cache *mfc,
 				 int cmd);
 static void mroute_clean_tables(struct mr_table *mrt, bool all);
 static void ipmr_expire_process(unsigned long arg);
+
+#if IS_ENABLED(CONFIG_MCAST_HELPER)
+void (*five_tuple_info_ptr)(struct sk_buff *skb, char iface_name[20]) = NULL;
+EXPORT_SYMBOL(five_tuple_info_ptr);
+#endif
 
 #ifdef CONFIG_IP_MROUTE_MULTIPLE_TABLES
 #define ipmr_for_each_table(mrt, net) \
@@ -484,7 +490,7 @@ static void reg_vif_setup(struct net_device *dev)
 	dev->features		|= NETIF_F_NETNS_LOCAL;
 }
 
-static struct net_device *ipmr_reg_vif(struct net *net, struct mr_table *mrt)
+static struct net_device *ipmr_reg_vif (struct net *net, struct mr_table *mrt)
 {
 	struct net_device *dev;
 	char name[IFNAMSIZ];
@@ -559,7 +565,7 @@ static int __pim_rcv(struct mr_table *mrt, struct sk_buff *skb,
 	return NET_RX_SUCCESS;
 }
 #else
-static struct net_device *ipmr_reg_vif(struct net *net, struct mr_table *mrt)
+static struct net_device *ipmr_reg_vif (struct net *net, struct mr_table *mrt)
 {
 	return NULL;
 }
@@ -749,7 +755,7 @@ static int vif_add(struct net *net, struct mr_table *mrt,
 		 */
 		if (mrt->mroute_reg_vif_num >= 0)
 			return -EADDRINUSE;
-		dev = ipmr_reg_vif(net, mrt);
+		dev = ipmr_reg_vif (net, mrt);
 		if (!dev)
 			return -ENOBUFS;
 		err = dev_set_allmulti(dev, 1);
@@ -984,6 +990,14 @@ static int ipmr_cache_report(struct mr_table *mrt,
 		ip_hdr(skb)->tot_len = htons(ntohs(ip_hdr(pkt)->tot_len) +
 					     sizeof(struct iphdr));
 	} else {
+
+#if IS_ENABLED(CONFIG_MCAST_HELPER)
+		/* Send five tuple info to mcast helper */
+		if (ip_hdr(pkt)->protocol == 17)
+			if (five_tuple_info_ptr != NULL)
+				five_tuple_info_ptr(pkt, mrt->vif_table[vifi].dev->name);
+#endif
+
 		/* Copy the IP header */
 		skb_set_network_header(skb, skb->len);
 		skb_put(skb, ihl);
@@ -1773,7 +1787,7 @@ out_free:
 	kfree_skb(skb);
 }
 
-static int ipmr_find_vif(struct mr_table *mrt, struct net_device *dev)
+static int ipmr_find_vif (struct mr_table *mrt, struct net_device *dev)
 {
 	int ct;
 
@@ -1791,7 +1805,7 @@ static void ip_mr_forward(struct net *net, struct mr_table *mrt,
 {
 	int psend = -1;
 	int vif, ct;
-	int true_vifi = ipmr_find_vif(mrt, skb->dev);
+	int true_vifi = ipmr_find_vif (mrt, skb->dev);
 
 	vif = cache->mfc_parent;
 	cache->mfc_un.res.pkt++;
@@ -2153,7 +2167,7 @@ int ipmr_get_route(struct net *net, struct sk_buff *skb,
 	rcu_read_lock();
 	cache = ipmr_cache_find(mrt, saddr, daddr);
 	if (!cache && skb->dev) {
-		int vif = ipmr_find_vif(mrt, skb->dev);
+		int vif = ipmr_find_vif (mrt, skb->dev);
 
 		if (vif >= 0)
 			cache = ipmr_cache_find_any(mrt, daddr, vif);
@@ -2172,7 +2186,7 @@ int ipmr_get_route(struct net *net, struct sk_buff *skb,
 		dev = skb->dev;
 		read_lock(&mrt_lock);
 		if (dev)
-			vif = ipmr_find_vif(mrt, dev);
+			vif = ipmr_find_vif (mrt, dev);
 		if (vif < 0) {
 			read_unlock(&mrt_lock);
 			rcu_read_unlock();
@@ -2458,7 +2472,7 @@ static int rtm_to_ipmr_mfcc(struct net *net, struct nlmsghdr *nlh,
 	*mrtret = mrt;
 	*mrtsock = rtm->rtm_protocol == RTPROT_MROUTED ? 1 : 0;
 	if (dev)
-		mfcc->mfcc_parent = ipmr_find_vif(mrt, dev);
+		mfcc->mfcc_parent = ipmr_find_vif (mrt, dev);
 
 out:
 	return ret;

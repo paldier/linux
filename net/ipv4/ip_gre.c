@@ -1185,6 +1185,15 @@ static struct pernet_operations ipgre_tap_net_ops = {
 	.size = sizeof(struct ip_tunnel_net),
 };
 
+#ifdef CONFIG_PPA
+extern uint32_t (*ppa_is_ipv4_gretap_fn)(struct net_device *dev);
+
+static u32 ppa_is_ipv4_gretap(struct net_device *dev)
+{
+	return (dev && (dev->netdev_ops == (&gre_tap_netdev_ops)));
+}
+#endif
+
 static int __init ipgre_init(void)
 {
 	int err;
@@ -1213,6 +1222,10 @@ static int __init ipgre_init(void)
 	if (err < 0)
 		goto tap_ops_failed;
 
+#ifdef CONFIG_PPA
+	ppa_is_ipv4_gretap_fn = ppa_is_ipv4_gretap;
+#endif
+
 	return 0;
 
 tap_ops_failed:
@@ -1228,6 +1241,9 @@ pnet_tap_faied:
 
 static void __exit ipgre_fini(void)
 {
+#ifdef CONFIG_PPA
+	ppa_is_ipv4_gretap_fn = NULL;
+#endif
 	rtnl_link_unregister(&ipgre_tap_ops);
 	rtnl_link_unregister(&ipgre_link_ops);
 	gre_del_protocol(&ipgre_protocol, GREPROTO_CISCO);

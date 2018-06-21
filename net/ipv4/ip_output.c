@@ -299,8 +299,12 @@ static int ip_finish_output(struct net *net, struct sock *sk, struct sk_buff *sk
 	if (skb_is_gso(skb))
 		return ip_finish_output_gso(net, sk, skb, mtu);
 
-	if (skb->len > mtu || (IPCB(skb)->flags & IPSKB_FRAG_PMTU))
+	if (skb->len > mtu || (IPCB(skb)->flags & IPSKB_FRAG_PMTU)) {
+		 if (skb->dev->type == ARPHRD_TUNNEL6) {
+			return ip_finish_output2(net, sk, skb);
+		 }
 		return ip_fragment(net, sk, skb, mtu, ip_finish_output2);
+	}
 
 	return ip_finish_output2(net, sk, skb);
 }
@@ -553,6 +557,9 @@ int ip_do_fragment(struct net *net, struct sock *sk, struct sk_buff *skb,
 	__be16 not_last_frag;
 	struct rtable *rt = skb_rtable(skb);
 	int err = 0;
+#ifdef CONFIG_INTEL_IPQOS_MARK_SKBPRIO
+	__u32 old_priority = skb->priority;
+#endif
 
 	/* for offloaded checksums cleanup checksum before fragmentation */
 	if (skb->ip_summed == CHECKSUM_PARTIAL &&
@@ -647,6 +654,9 @@ int ip_do_fragment(struct net *net, struct sock *sk, struct sk_buff *skb,
 				ip_send_check(iph);
 			}
 
+#ifdef CONFIG_INTEL_IPQOS_MARK_SKBPRIO
+			skb->priority = old_priority;
+#endif
 			err = output(net, sk, skb);
 
 			if (!err)
@@ -784,6 +794,9 @@ slow_path:
 
 		ip_send_check(iph);
 
+#ifdef CONFIG_INTEL_IPQOS_MARK_SKBPRIO
+		skb2->priority = old_priority;
+#endif
 		err = output(net, sk, skb2);
 		if (err)
 			goto fail;

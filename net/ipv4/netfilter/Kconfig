@@ -252,6 +252,17 @@ config IP_NF_TARGET_SYNPROXY
 
 	  To compile it as a module, choose M here. If unsure, say N.
 
+config IP_NF_TARGET_TRIGGER
+        tristate "TRIGGER target support (port-trigger)"
+	    depends on NF_CONNTRACK && NETFILTER_ADVANCED
+        help
+          Port triggering is a specialized form of port forwarding in which
+          outbound traffic on predetermined ports "triggering ports") causes
+          inbound traffic to specific incoming ports to be dynamically
+          forwarded to the initiating host while the outbound ports are in use.
+
+          To compile it as a module, choose M here.  If unsure, say N.
+
 # NAT + specific targets: nf_conntrack
 config IP_NF_NAT
 	tristate "iptables NAT support"
