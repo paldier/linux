@@ -1,0 +1,70 @@
+
+menu "PPA"
+
+config PPA
+        bool "Protocol Processing Accelerator"
+        depends on LANTIQ
+        default n
+        ---help---
+        Protocol Acceleration Engine
+
+if PPA 
+
+config PPA_HAL_SELECTOR
+       bool "PPA HAL selector"
+       depends on PPA && SOC_GRX500 
+       default n
+       ---help---	
+       PPA hal selection logic enable
+
+config PPA_QOS
+       bool "PPA Quality of Service"
+       depends on PPA 
+       default y
+       ---help---	
+       PPA QoS enable
+
+config PPA_API_DIRECTPATH
+        bool "Direct Path Support for PPA API"
+        depends on PPA
+        default y
+        ---help---
+        Direct Path Support (e.g. WLAN) for PPA API
+
+config PPA_API_DIRECTCONNECT
+        bool "Direct connect Support for SOC"
+        depends on PPA && SOC_GRX500
+        default n
+        ---help---
+        Direct connect Support (e.g. WLAN) for PPA
+
+config PPA_API_SW_FASTPATH
+       bool "PPA software acceleration"
+       depends on PPA
+       default y
+       ---help---       
+       PPA software acceleration enable
+
+config PPA_TCP_LITEPATH
+       bool "TCP litepath"
+       depends on PPA_API_SW_FASTPATH
+       default y
+       ---help---       
+       PPA local TCP session Acceleration
+
+config PPA_TMU_MIB_SUPPORT
+        tristate "PPA TMU HAL - kernel APIs"
+        depends on PPA && SOC_GRX500
+        default y
+        help
+            TMU HAL MIB APIs support
+
+config PPA_BR_SESS_LEARNING
+        bool "Bridge session learning"
+        depends on PPA
+        default n
+        help
+            Bridge session learning support for PPA
+
+endif # PPA
+endmenu
