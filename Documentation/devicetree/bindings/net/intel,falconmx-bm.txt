@@ -1,0 +1,13 @@
+Intel FALCON-MX BM driver Device Tree Bindings
+-------------------------------------------------------------
+
+ - compatible:          "intel,falconmx-bm"
+ - reg:                 TODO:
+
+Examples:
+
+bm@0 {
+        compatible = "intel,falconmx-bm";
+        reg = <0x00>;
+};
+
