@@ -37,6 +37,53 @@ config MTD_NAND_ECC_BCH
 	  ECC codes. They are used with NAND devices requiring more than 1 bit
 	  of error correction.
 
+config MTD_NAND_ON_DIE_ECC
+	bool "Support for On-Die-ECC Class of NAND Flashes"
+	default n
+	help
+		This enables the support for a class of NAND flashes with
+		on-die ECC capabilities (detection & correction)
+
+if MTD_NAND_ON_DIE_ECC
+
+config MTD_NAND_BENAND
+	bool "Support BENAND (embedded ECC NAND)"
+	default n
+	help
+		This enables support for BENAND, which is an SLC NAND flash
+		solution with embedded error correction code (ECC).
+		currently supports only 128bytes OOB type.
+		In the read sequence, "status read command" is executed to check
+		the ECC status after read data.
+		The write sequence is the same as raw write.
+
+config MTD_NAND_BENAND_ENABLE
+	bool "Support for Toshiba BENAND (Built-in ECC NAND)"
+	default y
+	depends on MTD_NAND_BENAND
+	help
+	  This enables support for Toshiba BENAND.
+	  Toshiba BENAND is a SLC NAND solution that automatically
+	  generates ECC inside NAND chip.
+
+config MTD_NAND_BENAND_ECC_STATUS
+	bool "Enable ECC Status Read Command(0x7A)"
+	depends on MTD_NAND_BENAND_ENABLE
+	help
+	  This enables support for ECC Status Read Command(0x7A) of BENAND.
+	  When this enables, report the real number of bitflips.
+	  In other cases, report the assumud number.
+
+config MTD_NAND_MXIC_ECC_FREE
+        bool "Support for MXIC ECC-Free NAND (Built-in ECC NAND)"
+        default n
+        help
+          This enables support for MXIC ECC-Free NAND.
+          MXIC ECC-free NAND is a SLC NAND solution that automatically
+          generates ECC inside NAND chip.
+
+endif #MTD_NAND_ON_DIE_ECC
+
 config MTD_SM_COMMON
 	tristate
 	default n
@@ -538,7 +585,6 @@ config MTD_NAND_FSMC
 
 config MTD_NAND_XWAY
 	bool "Support for NAND on Lantiq XWAY SoC"
-	depends on LANTIQ && SOC_TYPE_XWAY
 	help
 	  Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is attached
 	  to the External Bus Unit (EBU).

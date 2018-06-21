@@ -46,6 +46,11 @@
 #include <linux/io.h>
 #include <linux/mtd/partitions.h>
 #include <linux/of.h>
+#include <linux/mtd/nand_ecc_on_die.h>
+
+#ifdef CONFIG_MTD_LTQ_SPINAND
+int spinand_flash_detect(struct mtd_info *mtd, struct nand_chip *chip);
+#endif /* CONFIG_MTD_LTQ_SPINAND */
 
 static int nand_get_device(struct mtd_info *mtd, int new_state);
 
@@ -3679,6 +3684,10 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 		pr_warn("Could not retrieve ONFI ECC requirements\n");
 	}
 
+	/* On-die ECC ecc_bits will be zero */
+	if (!chip->ecc_strength_ds)
+		nand_on_die_ecc_init(mtd, p->manufacturer[0]);
+
 	if (p->jedec_id == NAND_MFR_MICRON)
 		nand_onfi_detect_micron(chip, p);
 
@@ -3965,6 +3974,10 @@ static void nand_decode_ext_id(struct mtd_info *mtd, struct nand_chip *chip,
 			mtd->oobsize = 32 * mtd->writesize >> 9;
 		}
 
+		/* Check for on-chip ECC for Toshiba & MXIC flash. */
+		if (id_len >= 6 && (id_data[4] & 0x80) != 0)
+			nand_on_die_ecc_init(mtd, id_data[0]);
+
 	}
 }
 
@@ -4138,6 +4151,13 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 		if (nand_flash_detect_jedec(mtd, chip, &busw))
 			goto ident_done;
 	}
+	#ifdef CONFIG_MTD_LTQ_SPINAND
+	type = spinand_flash_detect(mtd, chip);
+	if (type->name) {
+		busw = type->options & NAND_BUSWIDTH_16;
+		goto ident_done;
+	}
+	#endif /* CONFIG_MTD_LTQ_SPINAND */
 
 	if (!type->name)
 		return ERR_PTR(-ENODEV);
@@ -4236,6 +4256,7 @@ static const char * const nand_ecc_modes[] = {
 	[NAND_ECC_HW]		= "hw",
 	[NAND_ECC_HW_SYNDROME]	= "hw_syndrome",
 	[NAND_ECC_HW_OOB_FIRST]	= "hw_oob_first",
+	[NAND_ECC_ON_DIE]	= "on-die",
 };
 
 static int of_get_nand_ecc_mode(struct device_node *np)
@@ -4743,6 +4764,23 @@ int nand_scan_tail(struct mtd_info *mtd)
 			ret = -EINVAL;
 			goto err_free;
 		}
+		break;
+
+	case NAND_ECC_ON_DIE:
+		if (!IS_ENABLED(CONFIG_MTD_NAND_ON_DIE_ECC)) {
+			WARN(1, "Enable CONFIG_MTD_NAND_ON_DIE_ECC in Kernel to support this flash.\n");
+			return -EINVAL;
+		}
+		ecc->calculate = NULL;
+		if (!ecc->read_page)
+			ecc->read_page = nand_read_page_raw;
+		ecc->write_page = nand_write_page_raw;
+		ecc->read_page_raw = nand_read_page_raw;
+		ecc->write_page_raw = nand_write_page_raw;
+		ecc->read_oob = nand_read_oob_std;
+		ecc->write_oob = nand_write_oob_std;
+		ecc->bytes = 0;
+
 		break;
 
 	case NAND_ECC_NONE:
