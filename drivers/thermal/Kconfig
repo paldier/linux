@@ -381,6 +381,16 @@ config MTK_THERMAL
 	  Enable this option if you want to have support for thermal management
 	  controller present in Mediatek SoCs
 
+config LTQ_THERMAL
+	tristate "Temperature sensor driver for Lantiq SoCs"
+	depends on HAS_IOMEM
+	depends on MIPS || COMPILE_TEST
+	depends on OF
+	depends on THERMAL_OF
+	help
+	  Enable this option if you want to have support for thermal management
+	  present in Lantiq SoCs
+
 menu "Texas Instruments thermal drivers"
 depends on ARCH_HAS_BANDGAP || COMPILE_TEST
 depends on HAS_IOMEM
