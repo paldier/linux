@@ -423,6 +423,12 @@ config CLS_U32_MARK
 	---help---
 	  Say Y here to be able to use netfilter marks as u32 key.
 
+config CLS_U32_EXTMARK
+	bool "Netfilter extended marks support"
+	depends on NET_CLS_U32
+	---help---
+	  Say Y here to be able to use netfilter marks as u32 key.
+
 config NET_CLS_RSVP
 	tristate "IPv4 Resource Reservation Protocol (RSVP)"
 	select NET_CLS

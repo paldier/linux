@@ -133,7 +133,19 @@ drop:
 	rcu_read_unlock();
 	return NETDEV_TX_OK;
 }
+#if IS_ENABLED(CONFIG_PPA)
+extern int32_t (*ppa_if_ops_veth_xmit_fn)
+	(struct net_device *dev);
 
+static int32_t ppa_if_dev_is_veth(struct net_device *netdev)
+{
+	int ret = 0;
+
+	ret = (veth_xmit == netdev->netdev_ops->ndo_start_xmit) ? 1 : 0;
+
+	return ret;
+}
+#endif
 /*
  * general routines
  */
@@ -535,11 +547,17 @@ static struct rtnl_link_ops veth_link_ops = {
 
 static __init int veth_init(void)
 {
+#if IS_ENABLED(CONFIG_PPA)
+	ppa_if_ops_veth_xmit_fn = ppa_if_dev_is_veth;
+#endif
 	return rtnl_link_register(&veth_link_ops);
 }
 
 static __exit void veth_exit(void)
 {
+#if IS_ENABLED(CONFIG_PPA)
+	ppa_if_ops_veth_xmit_fn = NULL;
+#endif
 	rtnl_link_unregister(&veth_link_ops);
 }
 

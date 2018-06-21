@@ -214,7 +214,7 @@ static void fl_hw_destroy_filter(struct tcf_proto *tp, unsigned long cookie)
 
 	if (!tc_should_offload(dev, tp, 0))
 		return;
-
+	tc_cls_common_offload_init(&offload.common, tp);
 	offload.command = TC_CLSFLOWER_DESTROY;
 	offload.cookie = cookie;
 
@@ -229,22 +229,24 @@ static int fl_hw_replace_filter(struct tcf_proto *tp,
 				struct fl_flow_key *mask,
 				struct fl_flow_key *key,
 				struct tcf_exts *actions,
-				unsigned long cookie, u32 flags)
+				struct cls_fl_filter *f)
 {
 	struct net_device *dev = tp->q->dev_queue->dev;
 	struct tc_cls_flower_offload offload = {0};
 	struct tc_to_netdev tc;
 	int err;
 
-	if (!tc_should_offload(dev, tp, flags))
-		return tc_skip_sw(flags) ? -EINVAL : 0;
+	if (!tc_should_offload(dev, tp, f->flags))
+		return tc_skip_sw(f->flags) ? -EINVAL : 0;
 
+	tc_cls_common_offload_init(&offload.common, tp);
 	offload.command = TC_CLSFLOWER_REPLACE;
-	offload.cookie = cookie;
+	offload.cookie = (unsigned long)f;
 	offload.dissector = dissector;
 	offload.mask = mask;
 	offload.key = key;
 	offload.exts = actions;
+	offload.classid = f->res.classid; /* classid = 8000:1 */
 
 	tc.type = TC_SETUP_CLSFLOWER;
 	tc.cls_flower = &offload;
@@ -252,7 +254,7 @@ static int fl_hw_replace_filter(struct tcf_proto *tp,
 	err = dev->netdev_ops->ndo_setup_tc(dev, tp->q->handle, tp->protocol,
 					    &tc);
 
-	if (tc_skip_sw(flags))
+	if (tc_skip_sw(f->flags))
 		return err;
 
 	return 0;
@@ -267,6 +269,7 @@ static void fl_hw_update_stats(struct tcf_proto *tp, struct cls_fl_filter *f)
 	if (!tc_should_offload(dev, tp, 0))
 		return;
 
+	tc_cls_common_offload_init(&offload.common, tp);
 	offload.command = TC_CLSFLOWER_STATS;
 	offload.cookie = (unsigned long)f;
 	offload.exts = &f->exts;
@@ -422,7 +425,8 @@ static int fl_set_key(struct net *net, struct nlattr **tb,
 	if (tb[TCA_FLOWER_KEY_ETH_TYPE]) {
 		ethertype = nla_get_be16(tb[TCA_FLOWER_KEY_ETH_TYPE]);
 
-		if (ethertype == htons(ETH_P_8021Q)) {
+		if (eth_type_vlan(ethertype) ||
+			ethertype == htons(ETH_P_ANYVLAN)) {
 			fl_set_key_vlan(tb, &key->vlan, &mask->vlan);
 			fl_set_key_val(tb, &key->basic.n_proto,
 				       TCA_FLOWER_KEY_VLAN_ETH_TYPE,
@@ -730,8 +734,7 @@ static int fl_change(struct net *net, struct sk_buff *in_skb,
 				   &mask.key,
 				   &fnew->key,
 				   &fnew->exts,
-				   (unsigned long)fnew,
-				   fnew->flags);
+				   fnew);
 	if (err)
 		goto errout;
 

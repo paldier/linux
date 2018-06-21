@@ -65,6 +65,9 @@ struct tc_u_knode {
 	u32			mask;
 	u32 __percpu		*pcpu_success;
 #endif
+#ifdef CONFIG_CLS_U32_EXTMARK
+	struct tc_u32_mark      extmark;
+#endif
 	struct tcf_proto	*tp;
 	struct rcu_head		rcu;
 	/* The 'sel' field MUST be the last field in structure to allow for
@@ -146,6 +149,14 @@ next_knode:
 			goto next_knode;
 		} else {
 			__this_cpu_inc(*n->pcpu_success);
+		}
+#endif
+#ifdef CONFIG_CLS_U32_EXTMARK
+		if ((skb->extmark & n->extmark.mask) != n->extmark.val) {
+			n = n->next;
+			goto next_knode;
+		} else {
+			n->extmark.success++;
 		}
 #endif
 
@@ -698,6 +709,9 @@ static const struct nla_policy u32_policy[TCA_U32_MAX + 1] = {
 	[TCA_U32_SEL]		= { .len = sizeof(struct tc_u32_sel) },
 	[TCA_U32_INDEV]		= { .type = NLA_STRING, .len = IFNAMSIZ },
 	[TCA_U32_MARK]		= { .len = sizeof(struct tc_u32_mark) },
+#ifdef CONFIG_CLS_U32_EXTMARK
+	[TCA_U32_EXTMARK]	= { .len = sizeof(struct tc_u32_mark) },
+#endif
 	[TCA_U32_FLAGS]		= { .type = NLA_U32 },
 };
 
@@ -1011,6 +1025,15 @@ static int u32_change(struct net *net, struct sk_buff *in_skb,
 		n->mask = mark->mask;
 	}
 #endif
+#ifdef CONFIG_CLS_U32_EXTMARK
+	if (tb[TCA_U32_EXTMARK]) {
+		struct tc_u32_mark *extmark;
+
+		extmark = nla_data(tb[TCA_U32_EXTMARK]);
+		memcpy(&n->extmark, extmark, sizeof(struct tc_u32_mark));
+		n->extmark.success = 0;
+	}
+#endif
 
 	err = u32_set_parms(net, tp, base, ht, n, tb, tca[TCA_RATE], ovr);
 	if (err == 0) {
@@ -1154,6 +1177,12 @@ static int u32_dump(struct net *net, struct tcf_proto *tp, unsigned long fh,
 			if (nla_put(skb, TCA_U32_MARK, sizeof(mark), &mark))
 				goto nla_put_failure;
 		}
+#endif
+#ifdef CONFIG_CLS_U32_EXTMARK
+		if ((n->extmark.val || n->extmark.mask) &&
+			nla_put(skb, TCA_U32_EXTMARK,
+				sizeof(n->extmark), &n->extmark))
+			goto nla_put_failure;
 #endif
 
 		if (tcf_exts_dump(skb, &n->exts) < 0)

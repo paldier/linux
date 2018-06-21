@@ -118,7 +118,8 @@ static unsigned long clsact_get(struct Qdisc *sch, u32 classid)
 
 static bool clsact_cl_offload(u32 classid)
 {
-	return TC_H_MIN(classid) == TC_H_MIN(TC_H_MIN_INGRESS);
+	return TC_H_MIN(classid) == TC_H_MIN(TC_H_MIN_INGRESS) ||
+	       TC_H_MIN(classid) == TC_H_MIN(TC_H_MIN_EGRESS);
 }
 
 static unsigned long clsact_bind_filter(struct Qdisc *sch,

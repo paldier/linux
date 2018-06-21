@@ -39,6 +39,12 @@
 #include <linux/in6.h>
 #include <linux/if_packet.h>
 #include <net/flow.h>
+#ifdef CONFIG_NETWORK_EXTMARK
+#include <linux/extmark.h>
+#endif
+#ifdef CONFIG_LTQ_DATAPATH_SKB
+#include <net/datapath_api_skb.h>
+#endif
 
 /* The interface for checksum offload between the stack and networking drivers
  * is as follows...
@@ -646,6 +652,9 @@ struct sk_buff {
 		struct rb_node		rbnode; /* used in netem, ip4 defrag, and tcp stack */
 	};
 
+#ifdef CONFIG_LTQ_DATAPATH_SKB
+	struct ltq_dp_skb dp_skb_info;
+#endif
 	union {
 		struct sock		*sk;
 		int			ip_defrag_offset;
@@ -797,6 +806,10 @@ struct sk_buff {
 	__u16			network_header;
 	__u16			mac_header;
 
+#if defined(CONFIG_LTQ_CBM) || IS_ENABLED(CONFIG_DIRECTCONNECT_DP_API)
+	__u32 DW0, DW1, DW2, DW3;
+#endif
+
 	/* private: */
 	__u32			headers_end[0];
 	/* public: */
@@ -808,6 +821,9 @@ struct sk_buff {
 				*data;
 	unsigned int		truesize;
 	atomic_t		users;
+#ifdef CONFIG_NETWORK_EXTMARK
+	__u32		extmark;
+#endif
 };
 
 #ifdef __KERNEL__
@@ -3341,6 +3357,11 @@ static inline int skb_csum_unnecessary(const struct sk_buff *skb)
 		(skb->ip_summed == CHECKSUM_PARTIAL &&
 		 skb_checksum_start_offset(skb) >= 0));
 }
+
+#ifdef CONFIG_LTQ_CBM
+void ltq_copy_skb_header(struct sk_buff *n, const struct sk_buff *skb);
+#endif
+
 
 /**
  *	skb_checksum_complete - Calculate checksum of an entire packet
