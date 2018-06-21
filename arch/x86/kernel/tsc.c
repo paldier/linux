@@ -329,7 +329,7 @@ unsigned long long sched_clock(void)
 }
 #else
 unsigned long long
-sched_clock(void) __attribute__((alias("native_sched_clock")));
+sched_clock(void) __attribute__((weak, alias("native_sched_clock")));
 #endif
 
 int check_tsc_unstable(void)
