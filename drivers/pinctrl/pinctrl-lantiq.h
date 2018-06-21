@@ -23,7 +23,7 @@
 
 #define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
 
-#define LTQ_MAX_MUX		4
+#define LTQ_MAX_MUX		5
 #define MFPR_FUNC_MASK		0x3
 
 #define LTQ_PINCONF_PACK(param, arg)		((param) << 16 | (arg))
@@ -105,6 +105,31 @@ struct ltq_pinmux_info {
 	int (*apply_mux)(struct pinctrl_dev *pctrldev, int pin, int mux);
 };
 
+#ifdef CONFIG_PINCTRL_SYSFS
+struct ltq_pin_sys_desc {
+	unsigned long		flags;
+	#define FLAG_EXPORT	0	/* protected by sysfs_lock */
+};
+struct ltq_pinctrl_sysfs_ops {
+	int (*pin_config_get) (struct pinctrl_dev *pctrldev,
+                                 unsigned pin,
+                                 unsigned long *config);
+	int (*pin_config_set) (struct pinctrl_dev *pctrldev,
+                                 unsigned pin,
+                                 unsigned long *configs,
+                                 unsigned num_configs);
+	int (*pin_mux_set)(struct pinctrl_dev *pctrldev, int pin, int mux);
+	int (*pin_mux_get)(struct pinctrl_dev *pctrldev, int pin, int *mux);
+	int (*pin_mux_avail_get)(struct pinctrl_dev *pctrldev, int pin, int *avail);
+};
+struct ltq_pinctrl_sysfs {
+	int total_pins;
+	struct ltq_pin_sys_desc *pin_desc_array;
+	struct platform_device *pinctrl_platform_dev;
+	struct ltq_pinctrl_sysfs_ops *sysfs_ops;
+};
+int pinctrl_sysfs_init(struct platform_device *pdev, int total_pins, struct ltq_pinctrl_sysfs_ops *ops);
+#endif
 enum ltq_pin {
 	GPIO0 = 0,
 	GPIO1,

@@ -60,6 +60,7 @@
 		FALCON_MUX_##f1,		\
 		FALCON_MUX_##f2,		\
 		FALCON_MUX_##f3,		\
+		FALCON_MUX_NONE,	\
 	},					\
 }
 

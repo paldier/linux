@@ -72,6 +72,7 @@
 			XWAY_MUX_##f1,	\
 			XWAY_MUX_##f2,	\
 			XWAY_MUX_##f3,	\
+			XWAY_MUX_NONE,	\
 		},			\
 	}
 

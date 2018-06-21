@@ -18,6 +18,397 @@
 
 #include "pinctrl-lantiq.h"
 
+#ifdef CONFIG_PINCTRL_SYSFS
+
+static struct ltq_pinctrl_sysfs pctrl_sysfs;
+static DEFINE_MUTEX(sysfs_lock);
+static ssize_t export_store(struct class *class,
+				struct class_attribute *attr,
+				const char *buf, size_t len);
+static ssize_t unexport_store(struct class *class,
+				struct class_attribute *attr,
+				const char *buf, size_t len);
+static struct class_attribute pinctrl_class_attrs[] = {
+	__ATTR(export, 0200, NULL, export_store),
+	__ATTR(unexport, 0200, NULL, unexport_store),
+	__ATTR_NULL,
+};
+static struct class pinctrl_class = {
+	.name =         "pinctrl",
+	.owner =        THIS_MODULE,
+	.class_attrs =  pinctrl_class_attrs,
+};
+static const struct ltq_cfg_param sysfs_cfg_params[] = {
+	{"pull",			LTQ_PINCONF_PARAM_PULL},
+	{"current_control",	LTQ_PINCONF_PARAM_DRIVE_CURRENT},
+	{"slew_rate",		LTQ_PINCONF_PARAM_SLEW_RATE},
+	{"open_drain",		LTQ_PINCONF_PARAM_OPEN_DRAIN},
+};
+static int get_conf_param(const char *conf, enum ltq_pinconf_param *param)
+{
+	int i;
+	for (i = 0;i < sizeof(sysfs_cfg_params)/sizeof(struct ltq_cfg_param); i++) {
+		if(!strcmp(sysfs_cfg_params[i].property, conf)) {
+			*param = sysfs_cfg_params[i].param;
+			return 0;
+		}
+	}
+	return -1;
+}
+
+static ssize_t pad_ctrl_avail_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct ltq_pin_sys_desc *desc = dev_get_drvdata(dev);
+	struct ltq_pinmux_info *info;
+	ssize_t			status;
+	u32 pin, value;
+
+	if(!pctrl_sysfs.sysfs_ops->pin_mux_avail_get)
+		return -EPERM;
+	info = platform_get_drvdata(pctrl_sysfs.pinctrl_platform_dev);
+	pin = desc - pctrl_sysfs.pin_desc_array;
+	mutex_lock(&sysfs_lock);
+	if (!test_bit((FLAG_EXPORT), &(desc->flags)))
+		status = -EIO;
+	else {
+		if ((!pctrl_sysfs.sysfs_ops->pin_mux_avail_get(info->pctrl, pin, &value))) {
+			if(value)
+				status = sprintf(buf, "%s\n", "AV");
+			else
+				status = sprintf(buf, "%s\n", "NAV");
+		} else {
+			status = -ENODEV;
+		}
+
+	}
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+static const DEVICE_ATTR(padctrl_availability, 0644,
+		pad_ctrl_avail_show, NULL);
+
+static ssize_t pin_conf_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct ltq_pin_sys_desc *desc = dev_get_drvdata(dev);
+	unsigned long config;
+	struct ltq_pinmux_info *info;
+	ssize_t	status = 0;
+	u32 pin;
+	enum ltq_pinconf_param param;
+	long value ;
+
+	if(!pctrl_sysfs.sysfs_ops->pin_config_set)
+		return -EPERM;
+	info = platform_get_drvdata(pctrl_sysfs.pinctrl_platform_dev);
+	pin = desc - pctrl_sysfs.pin_desc_array;
+
+	mutex_lock(&sysfs_lock);
+	if (!test_bit(FLAG_EXPORT, &desc->flags))
+		status = -EIO;
+
+	if (get_conf_param(attr->attr.name, &param))
+		status = -EIO;
+	if (status) {
+		mutex_unlock(&sysfs_lock);
+		return status ? : size;
+	}
+	switch (param) {
+		case LTQ_PINCONF_PARAM_PULL:
+			if (sysfs_streq(buf, "DIS"))
+				value = 0;
+			else if (sysfs_streq(buf, "EN"))
+				value = 1;
+			else
+				status = -EINVAL;
+			break;
+		case LTQ_PINCONF_PARAM_SLEW_RATE:
+			status = kstrtol(buf, 0, &value);
+			break;
+		case LTQ_PINCONF_PARAM_OPEN_DRAIN:
+			if (sysfs_streq(buf, "NOP"))
+				value = 0;
+			else if (sysfs_streq(buf, "EN"))
+				value = 1;
+			else
+				status = -EINVAL;
+			break;
+		case LTQ_PINCONF_PARAM_DRIVE_CURRENT:
+			status = kstrtol(buf, 0, &value);
+			break;
+		case LTQ_PINCONF_PARAM_OUTPUT:
+		default:
+			status =  -EIO;
+			break;
+	}
+	if (status == 0) {
+		config = LTQ_PINCONF_PACK(param, value);
+		if (pctrl_sysfs.sysfs_ops->pin_config_set(info->pctrl, pin, &config, 1))
+			status = -ENODEV;
+	}
+
+	mutex_unlock(&sysfs_lock);
+	return status ? : size;
+}
+static ssize_t pin_conf_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct ltq_pin_sys_desc *desc = dev_get_drvdata(dev);
+	struct ltq_pinmux_info *info;
+	ssize_t status = 0;
+	unsigned long config;
+	enum ltq_pinconf_param param;
+	u32 pin;
+	int arg;
+
+	if(!pctrl_sysfs.sysfs_ops->pin_config_get)
+		return -EPERM;
+
+	info = platform_get_drvdata(pctrl_sysfs.pinctrl_platform_dev);
+	pin = desc - pctrl_sysfs.pin_desc_array;
+
+	mutex_lock(&sysfs_lock);
+	if (!test_bit((FLAG_EXPORT), &(desc->flags)))
+		status = -EIO;
+	if (get_conf_param(attr->attr.name, &param))
+		status = -EIO;
+	if (status) {
+		mutex_unlock(&sysfs_lock);
+		return status;
+	}
+	config = LTQ_PINCONF_PACK(param, 0);
+	if (!pctrl_sysfs.sysfs_ops->pin_config_get(info->pctrl, pin, &config)) {
+		arg = LTQ_PINCONF_UNPACK_ARG(config);
+		switch (param) {
+		case LTQ_PINCONF_PARAM_PULL:
+			if(arg == 1)
+				status = sprintf(buf, "%s\n", "EN");
+			if(arg == 2)
+				status = sprintf(buf, "%s\n", "DIS");
+			if(arg == 0)
+				status = sprintf(buf, "%d\n", arg);
+			break;
+		case LTQ_PINCONF_PARAM_SLEW_RATE:
+			status = sprintf(buf, "%d\n", arg);
+			break;
+		case LTQ_PINCONF_PARAM_OPEN_DRAIN:
+			if(arg)
+				status = sprintf(buf, "%s\n", "EN");
+			else
+				status = sprintf(buf, "%s\n", "NOP");
+			break;
+		case LTQ_PINCONF_PARAM_DRIVE_CURRENT:
+			status = sprintf(buf, "%d\n", arg);
+			break;
+		case LTQ_PINCONF_PARAM_OUTPUT:
+		default:
+			status =  -EIO;
+			break;
+		}
+	} else {
+		status = -ENODEV;
+	}
+
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+static const DEVICE_ATTR(pull, 0644,
+		pin_conf_show, pin_conf_store);
+static const DEVICE_ATTR(slew_rate, 0644,
+		pin_conf_show, pin_conf_store);
+static const DEVICE_ATTR(open_drain, 0644,
+		pin_conf_show, pin_conf_store);
+static const DEVICE_ATTR(current_control, 0644,
+		pin_conf_show, pin_conf_store);
+
+static ssize_t pinmux_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct ltq_pin_sys_desc *desc = dev_get_drvdata(dev);
+	struct ltq_pinmux_info *info;
+	ssize_t status = 0;
+	u32 pin;
+	u32 mux;
+
+	if(!pctrl_sysfs.sysfs_ops->pin_mux_get)
+		return -EPERM;
+	info = platform_get_drvdata(pctrl_sysfs.pinctrl_platform_dev);
+	pin = desc - pctrl_sysfs.pin_desc_array;
+	mutex_lock(&sysfs_lock);
+	if (!test_bit((FLAG_EXPORT), &(desc->flags))) {
+		status = -EIO;
+	} else {
+		if (!pctrl_sysfs.sysfs_ops->pin_mux_get(info->pctrl, pin, &mux))
+			status = sprintf(buf, "%d\n", mux);
+		else
+			status = -ENODEV;
+	}
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+static ssize_t pinmux_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct ltq_pin_sys_desc *desc = dev_get_drvdata(dev);
+	struct ltq_pinmux_info *info;
+	ssize_t	status = 0;
+	u32 pin;
+	long value;
+
+	if(!pctrl_sysfs.sysfs_ops->pin_mux_set)
+		return -EPERM;
+	info = platform_get_drvdata(pctrl_sysfs.pinctrl_platform_dev);
+	pin = desc - pctrl_sysfs.pin_desc_array;
+	mutex_lock(&sysfs_lock);
+	if (!test_bit(FLAG_EXPORT, &desc->flags)) {
+		status = -EIO;
+	} else {
+		status = kstrtol(buf, 0, &value);
+		if (status == 0) {
+			if (pctrl_sysfs.sysfs_ops->pin_mux_set(info->pctrl, pin, value))
+				status = -ENODEV;
+		}
+	}
+	mutex_unlock(&sysfs_lock);
+	return status ? : size;
+}
+static const DEVICE_ATTR(pinmux, 0644,
+		pinmux_show, pinmux_store);
+static const struct attribute *pin_attrs[] = {
+	&dev_attr_pull.attr,
+	&dev_attr_open_drain.attr,
+	&dev_attr_pinmux.attr,
+	&dev_attr_slew_rate.attr,
+	&dev_attr_current_control.attr,
+	&dev_attr_padctrl_availability.attr,
+	NULL,
+};
+static const struct attribute_group pin_attr_group = {
+	.attrs = (struct attribute **) pin_attrs,
+};
+static int pin_export(unsigned int pin)
+{
+	int		status;
+	struct device	*dev;
+	if (!pinctrl_class.p)
+		return 0;
+	mutex_lock(&sysfs_lock);
+	if (pin >= pctrl_sysfs.total_pins) {
+		pr_err("%s: invalid pin\n", __func__);
+		status = -ENODEV;
+		goto fail_unlock;
+	}
+	if (test_bit((FLAG_EXPORT), &pctrl_sysfs.pin_desc_array[pin].flags)) {
+		pr_err("Pin %d already exported\r\n", pin);
+		status = -EPERM;
+		goto fail_unlock;
+	}
+	dev = device_create(&pinctrl_class,
+	&pctrl_sysfs.pinctrl_platform_dev->dev,
+	MKDEV(0, 0),
+	&pctrl_sysfs.pin_desc_array[pin],
+	"pin_%d", pin);
+	if (IS_ERR(dev)) {
+		status = PTR_ERR(dev);
+		goto fail_unlock;
+	}
+	set_bit((FLAG_EXPORT), &pctrl_sysfs.pin_desc_array[pin].flags);
+	status = sysfs_create_group(&dev->kobj, &pin_attr_group);
+	if (status)
+		goto fail_unregister_device;
+	mutex_unlock(&sysfs_lock);
+	return 0;
+fail_unregister_device:
+	device_unregister(dev);
+fail_unlock:
+	mutex_unlock(&sysfs_lock);
+	return status;
+}
+static int match_export(struct device *dev, const void *data)
+{
+	return dev_get_drvdata(dev) == data;
+}
+static int pin_unexport(unsigned int pin)
+{
+	int			status = 0;
+	struct device		*dev = NULL;
+	if (pin >= pctrl_sysfs.total_pins) {
+		pr_warn("%s: invalid pin\n", __func__);
+		status = -ENODEV;
+		goto fail_unlock;
+	}
+	mutex_lock(&sysfs_lock);
+	if (!(test_bit((FLAG_EXPORT), &pctrl_sysfs.pin_desc_array[pin].flags))) {
+		status = -ENODEV;
+		goto fail_unlock;
+	}
+	dev = class_find_device(&pinctrl_class,
+	NULL, &pctrl_sysfs.pin_desc_array[pin], match_export);
+	if (dev) {
+		clear_bit((FLAG_EXPORT), &pctrl_sysfs.pin_desc_array[pin].flags);
+	} else {
+		status = -ENODEV;
+		goto fail_unlock;
+	}
+	if (dev) {
+		device_unregister(dev);
+		put_device(dev);
+	}
+	mutex_unlock(&sysfs_lock);
+	return 0;
+fail_unlock:
+	mutex_unlock(&sysfs_lock);
+	pr_debug("%s:  status %d\n", __func__, status);
+	return status;
+}
+static ssize_t export_store(struct class *class,
+				struct class_attribute *attr,
+				const char *buf, size_t len)
+{
+	long			pin;
+	int			status;
+	status = kstrtol(buf, 0, &pin);
+	if (status < 0)
+		goto done;
+	status = pin_export((unsigned int)pin);
+	if (status < 0) {
+		if (status == -EPROBE_DEFER)
+			status = -ENODEV;
+		goto done;
+	}
+done:
+	if (status)
+		pr_debug("%s: status %d\n", __func__, status);
+	return status ? : len;
+}
+static ssize_t unexport_store(struct class *class,
+				struct class_attribute *attr,
+				const char *buf, size_t len)
+{
+	long	pin;
+	int			status;
+	status = kstrtol(buf, 0, &pin);
+	if (status < 0)
+		goto done;
+	status = pin_unexport(pin);
+done:
+	if (status)
+		pr_debug("%s: status %d\n", __func__, status);
+	return status ? : len;
+}
+int pinctrl_sysfs_init(struct platform_device *pdev, int total_pins, struct ltq_pinctrl_sysfs_ops *ops)
+{
+	int	status;
+	pctrl_sysfs.total_pins = total_pins;
+	pctrl_sysfs.pinctrl_platform_dev = pdev;
+	pctrl_sysfs.pin_desc_array = kzalloc(total_pins * sizeof(struct ltq_pin_sys_desc), GFP_KERNEL);
+	pctrl_sysfs.sysfs_ops = ops;
+	status = class_register(&pinctrl_class);
+	return status;
+}
+#endif
+
 static int ltq_get_group_count(struct pinctrl_dev *pctrldev)
 {
 	struct ltq_pinmux_info *info = pinctrl_dev_get_drvdata(pctrldev);
@@ -318,6 +709,7 @@ static const struct pinmux_ops ltq_pmx_ops = {
 	.get_function_groups	= ltq_pmx_get_groups,
 	.set_mux		= ltq_pmx_set,
 	.gpio_request_enable	= ltq_pmx_gpio_request_enable,
+	.strict = true,
 };
 
 /*
