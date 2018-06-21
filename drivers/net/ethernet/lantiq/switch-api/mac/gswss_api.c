@@ -1,0 +1,695 @@
+/******************************************************************************
+ *                Copyright (c) 2016, 2017 Intel Corporation
+ *
+ *
+ * For licensing information, see the file 'LICENSE' in the root folder of
+ * this software module.
+ *
+ ******************************************************************************/
+
+#include <gswss_api.h>
+
+int gswss_cfg0_1588(void *pdev, u32 ref_time, u32 dig_time, u32 bin_time,
+		    u32 pps_sel)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 cfg0;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	cfg0 = GSWSS_RGRD(pdata, CFG0_1588);
+
+	if (ref_time == 0)
+		mac_printf("\tREF_TIME: PON_PCS is the master\n");
+	else if (ref_time == 1)
+		mac_printf("\tREF_TIME: PCIE0 is the master\n");
+	else if (ref_time == 2)
+		mac_printf("\tREF_TIME: PCIE1 is the master\n");
+	else if (ref_time == 3)
+		mac_printf("\tREF_TIME: XGMAC2 is the master\n");
+	else if (ref_time == 4)
+		mac_printf("\tREF_TIME: XGMAC3 is the master\n");
+	else if (ref_time == 5)
+		mac_printf("\tREF_TIME: XGMAC4 is the master\n");
+	else {
+		mac_printf("\tREF_TIME: Wrong Value");
+		goto end;
+	}
+
+	if (dig_time == 0)
+		mac_printf("\tDIG_TIME: PON_PCS is the master\n");
+	else if (dig_time == 1)
+		mac_printf("\tDIG_TIME: PCIE0 is the master\n");
+	else if (dig_time == 2)
+		mac_printf("\tDIG_TIME: PCIE1 is the master\n");
+	else if (dig_time == 3)
+		mac_printf("\tDIG_TIME: XGMAC2 is the master\n");
+	else if (dig_time == 4)
+		mac_printf("\tDIG_TIME: XGMAC3 is the master\n");
+	else if (dig_time == 5)
+		mac_printf("\tDIG_TIME: XGMAC4 is the master\n");
+	else {
+		mac_printf("\tDIG_TIME: Wrong Value");
+		goto end;
+	}
+
+	if (bin_time == 0)
+		mac_printf("\tBIN_TIME: PON_PCS is the master\n");
+	else if (bin_time == 1)
+		mac_printf("\tBIN_TIME: PCIE0 is the master\n");
+	else if (bin_time == 2)
+		mac_printf("\tBIN_TIME: PCIE1 is the master\n");
+	else if (bin_time == 3)
+		mac_printf("\tBIN_TIME: XGMAC2 is the master\n");
+	else if (bin_time == 4)
+		mac_printf("\tBIN_TIME: XGMAC3 is the master\n");
+	else if (bin_time == 5)
+		mac_printf("\tBIN_TIME: XGMAC4 is the master\n");
+	else {
+		mac_printf("\tBIN_TIME: Wrong Value");
+		goto end;
+	}
+
+	if (pps_sel == 0)
+		mac_printf("\tPPS_SEL: PON_PCS is the master\n");
+	else if (pps_sel == 1)
+		mac_printf("\tPPS_SEL: PCIE0 is the master\n");
+	else if (pps_sel == 2)
+		mac_printf("\tPPS_SEL: PCIE1 is the master\n");
+	else if (pps_sel == 3)
+		mac_printf("\tPPS_SEL: XGMAC2 is the master\n");
+	else if (pps_sel == 4)
+		mac_printf("\tPPS_SEL: XGMAC3 is the master\n");
+	else if (pps_sel == 5)
+		mac_printf("\tPPS_SEL: XGMAC4 is the master\n");
+	else if (pps_sel == 6)
+		mac_printf("\tPPS_SEL: PON PPS100US is the master\n");
+	else if (pps_sel == 7)
+		mac_printf("\tPPS_SEL: Software trigger\n");
+	else {
+		mac_printf("\tPPS_SEL: Wrong Value");
+		goto end;
+	}
+
+	MAC_SET_VAL(cfg0, CFG0_1588, REFTIME, ref_time);
+	MAC_SET_VAL(cfg0, CFG0_1588, DIGTIME, dig_time);
+	MAC_SET_VAL(cfg0, CFG0_1588, BINTIME, bin_time);
+	MAC_SET_VAL(cfg0, CFG0_1588, PPSSEL, pps_sel);
+
+	GSWSS_RGWR(pdata, CFG0_1588, cfg0);
+
+end:
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+int gswss_get_cfg0_1588(void *pdev, u32 *ref_time, u32 *dig_time,
+			u32 *bin_time, u32 *pps_sel)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 cfg0;
+
+#ifdef __KERNEL__
+
+
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	cfg0 = GSWSS_RGRD(pdata, CFG0_1588);
+
+	*ref_time = MAC_GET_VAL(cfg0, CFG0_1588, REFTIME);
+	*dig_time = MAC_GET_VAL(cfg0, CFG0_1588, DIGTIME);
+	*bin_time = MAC_GET_VAL(cfg0, CFG0_1588, BINTIME);
+	*pps_sel = MAC_GET_VAL(cfg0, CFG0_1588, PPSSEL);
+
+	if (*ref_time == 0)
+		mac_printf("\tREF_TIME: PON_PCS is the master\n");
+	else if (*ref_time == 1)
+		mac_printf("\tREF_TIME: PCIE0 is the master\n");
+	else if (*ref_time == 2)
+		mac_printf("\tREF_TIME: PCIE1 is the master\n");
+	else if (*ref_time == 3)
+		mac_printf("\tREF_TIME: XGMAC2 is the master\n");
+	else if (*ref_time == 4)
+		mac_printf("\tREF_TIME: XGMAC3 is the master\n");
+	else if (*ref_time == 5)
+		mac_printf("\tREF_TIME: XGMAC4 is the master\n");
+
+	if (*dig_time == 0)
+		mac_printf("\tDIG_TIME: PON_PCS is the master\n");
+	else if (*dig_time == 1)
+		mac_printf("\tDIG_TIME: PCIE0 is the master\n");
+	else if (*dig_time == 2)
+		mac_printf("\tDIG_TIME: PCIE1 is the master\n");
+	else if (*dig_time == 3)
+		mac_printf("\tDIG_TIME: XGMAC2 is the master\n");
+	else if (*dig_time == 4)
+		mac_printf("\tDIG_TIME: XGMAC3 is the master\n");
+	else if (*dig_time == 5)
+		mac_printf("\tDIG_TIME: XGMAC4 is the master\n");
+
+	if (*bin_time == 0)
+		mac_printf("\tBIN_TIME: PON_PCS is the master\n");
+	else if (*bin_time == 1)
+		mac_printf("\tBIN_TIME: PCIE0 is the master\n");
+	else if (*bin_time == 2)
+		mac_printf("\tBIN_TIME: PCIE1 is the master\n");
+	else if (*bin_time == 3)
+		mac_printf("\tBIN_TIME: XGMAC2 is the master\n");
+	else if (*bin_time == 4)
+		mac_printf("\tBIN_TIME: XGMAC3 is the master\n");
+	else if (*bin_time == 5)
+		mac_printf("\tBIN_TIME: XGMAC4 is the master\n");
+
+	if (*pps_sel == 0)
+		mac_printf("\tPPS_SEL: PON_PCS is the master\n");
+	else if (*pps_sel == 1)
+		mac_printf("\tPPS_SEL: PCIE0 is the master\n");
+	else if (*pps_sel == 2)
+		mac_printf("\tPPS_SEL: PCIE1 is the master\n");
+	else if (*pps_sel == 3)
+		mac_printf("\tPPS_SEL: XGMAC2 is the master\n");
+	else if (*pps_sel == 4)
+		mac_printf("\tPPS_SEL: XGMAC3 is the master\n");
+	else if (*pps_sel == 5)
+		mac_printf("\tPPS_SEL: XGMAC4 is the master\n");
+	else if (*pps_sel == 6)
+		mac_printf("\tPPS_SEL: PON PPS100US is the master\n");
+	else if (*pps_sel == 7)
+		mac_printf("\tPPS_SEL: Software trigger\n");
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+int gswss_macsec_reset(void *pdev, u32 reset)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 macsec_en;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	macsec_en = GSWSS_RGRD(pdata, MACSEC_EN);
+
+	MAC_SET_VAL(macsec_en, MACSEC_EN, RES, reset);
+
+	mac_printf("GSWSS: MACSEC reset : %s\n",
+		   reset ? "ENABLED" : "DISABLED");
+
+	GSWSS_RGWR(pdata, MACSEC_EN, macsec_en);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+int gswss_get_macsec_reset(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 macsec_en, reset;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+	macsec_en = GSWSS_RGRD(pdata, MACSEC_EN);
+
+	reset = MAC_GET_VAL(macsec_en, MACSEC_EN, RES);
+
+	mac_printf("GSWSS: MACSEC reset : %s\n",
+		   reset ? "ENABLED" : "DISABLED");
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+int gswss_switch_ss_reset(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 core_reset;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	core_reset = GSWSS_RGRD(pdata, GSWIP_CFG);
+
+	mac_printf("Switch Subsys Resetting\n");
+
+	MAC_SET_VAL(core_reset, GSWIP_CFG, SS_HWRES, 1);
+
+	GSWSS_RGWR(pdata, GSWIP_CFG, core_reset);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+int gswss_get_switch_ss_reset(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 core_reset, reset;
+
+#ifdef __KERNEL__
+
+
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+	core_reset = GSWSS_RGRD(pdata, GSWIP_CFG);
+	reset = MAC_GET_VAL(core_reset, GSWIP_CFG, SS_HWRES);
+
+	mac_printf("Switch Subsys Reset %s\n",
+		   reset ? "ENABLED" : "DISABLED");
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+int gswss_set_clkmode(void *pdev, u32 clk_mode)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 clk_mode_cfg;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	clk_mode_cfg = GSWSS_RGRD(pdata, GSWIP_CFG);
+
+	mac_printf("GSWSS: Clock Mode Changing to :");
+
+	if (clk_mode == 0)
+		mac_printf("%s\n", "NCO1 - 666 Mhz");
+	else if (clk_mode == 1)
+		mac_printf("%s\n", "NCO2 - 450 Mhz");
+	else if (clk_mode == 2)
+		mac_printf("%s\n", "Auto Mode (666/450) Mhz");
+	else if (clk_mode == 3)
+		mac_printf("%s\n", "Auto Mode (666/450) Mhz");
+	else {
+		mac_printf("%s\n", "Wrong Value");
+		goto end;
+	}
+
+	MAC_SET_VAL(clk_mode_cfg, GSWIP_CFG, CLK_MD, clk_mode);
+
+	GSWSS_RGWR(pdata, GSWIP_CFG, clk_mode_cfg);
+
+end:
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+u32 gswss_get_clkmode(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 clk_mode_cfg;
+	u32 clk_mode;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	clk_mode_cfg = GSWSS_RGRD(pdata, GSWIP_CFG);
+	clk_mode = MAC_GET_VAL(clk_mode_cfg, GSWIP_CFG, CLK_MD);
+
+	mac_printf("GSWSS: Clock Mode Got :");
+
+	if (clk_mode == 0)
+		mac_printf("%s\n", "NCO1 - 666 Mhz");
+	else if (clk_mode == 1)
+		mac_printf("%s\n", "NCO2 - 450 Mhz");
+	else if (clk_mode == 2)
+		mac_printf("%s\n", "Auto Mode (666/450) Mhz");
+	else if (clk_mode == 3)
+		mac_printf("%s\n", "Auto Mode (666/450) Mhz");
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return clk_mode;
+}
+
+int gswss_set_corese(void *pdev, u32 val)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 core_en;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+	core_en = GSWSS_RGRD(pdata, GSWIP_CFG);
+
+	if (val == FREEZE)
+		pdata->core_en_cnt++;
+	else {
+		if (pdata->core_en_cnt)
+			pdata->core_en_cnt--;
+	}
+
+	/* Unfreeze only when Count is 0 & val is UNFREEZE
+	 * Freeze when val is FREEZE
+	 */
+	if ((val == UNFREEZE && pdata->core_en_cnt == 0) ||
+	    (val == FREEZE)) {
+		MAC_SET_VAL(core_en, GSWIP_CFG, CORE_SE, val);
+		GSWSS_RGWR(pdata, GSWIP_CFG, core_en);
+	}
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+	return 0;
+}
+
+u32 gswss_get_corese(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 core_en, enable;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+	core_en = GSWSS_RGRD(pdata, GSWIP_CFG);
+
+	enable = MAC_GET_VAL(core_en, GSWIP_CFG, CORE_SE);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+	return enable;
+}
+
+int gswss_set_macsec_to_mac(void *pdev, u32 mac_idx, u32 enable)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 macsec_en;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+	macsec_en = GSWSS_RGRD(pdata, MACSEC_EN);
+
+	mac_idx += 2;
+
+	if (enable) {
+		mac_printf("GSWSS: MACSEC enabled to MAC %d data traffic\n",
+			   mac_idx);
+		MAC_SET_VAL(macsec_en, MACSEC_EN, SEL, mac_idx);
+	} else {
+		mac_printf("GSWSS: MACSEC to MAC mapping : DISABLED\n");
+		MAC_SET_VAL(macsec_en, MACSEC_EN, SEL, 0);
+	}
+
+	GSWSS_RGWR(pdata, MACSEC_EN, macsec_en);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+int gswss_get_macsec_to_mac(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 macsec_en, mac_idx;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+	macsec_en = GSWSS_RGRD(pdata, MACSEC_EN);
+
+	mac_idx = MAC_GET_VAL(macsec_en, MACSEC_EN, SEL);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+	return mac_idx;
+}
+
+
+int gswss_dbg_macsec_to_mac(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 macsec_en, mac_idx;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	macsec_en = GSWSS_RGRD(pdata, MACSEC_EN);
+
+	mac_idx = MAC_GET_VAL(macsec_en, MACSEC_EN, SEL);
+
+	if (mac_idx == 0)
+		mac_printf("GSWSS: MACSEC Disabled\n");
+	else if (mac_idx == 2)
+		mac_printf("GSWSS: MACSEC enabled to MAC %d data traffic\n",
+			   mac_idx);
+	else if (mac_idx == 3)
+		mac_printf("GSWSS: MACSEC enabled to MAC %d data traffic\n",
+			   mac_idx);
+	else if (mac_idx == 4)
+		mac_printf("GSWSS: MACSEC enabled to MAC %d data traffic\n",
+			   mac_idx);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return mac_idx;
+}
+
+/* Calling from Interrupt Context, so no lock required. */
+int gswss_set_interrupt(void *pdev, u32 mod, u32 idx, u32 enable)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 mac_int_en0, mac_int_en1;
+	int ret = 0;
+
+	switch (mod) {
+	case XGMAC:
+		//mac_printf("XGMAC %d: Interrupt %s\n", idx,
+		//	   enable ? "ENABLED" : "DISABLED");
+
+		mac_int_en0 = GSWSS_RGRD(pdata, GSWIPSS_IER0);
+		idx += GSWIPSS_IER0_XGMAC2_POS;
+		SET_N_BITS(mac_int_en0, idx, GSWIPSS_IER0_XGMAC2_WIDTH, enable);
+		GSWSS_RGWR(pdata, GSWIPSS_IER0, mac_int_en0);
+		break;
+
+	case LINK:
+		mac_printf("LINK %d: Interrupt %s\n", idx,
+			   enable ? "ENABLED" : "DISABLED");
+
+		mac_int_en1 = GSWSS_RGRD(pdata, GSWIPSS_IER1);
+		idx += GSWIPSS_IER1_LINK2_POS;
+		SET_N_BITS(mac_int_en1, idx, GSWIPSS_IER1_LINK2_WIDTH, enable);
+		GSWSS_RGWR(pdata, GSWIPSS_IER1, mac_int_en1);
+		break;
+
+	default:
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
+int gswss_get_int_en_sts(void *pdev)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 reg_val, reg_val1;
+	int ret = 0, i = 0;
+	u32 mac_int_isr0, mac_int_isr1;
+	u32 max_mac = gsw_get_mac_subifcnt(0);
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	mac_int_isr0 = GSWSS_RGRD(pdata, GSWIPSS_ISR0);
+	mac_int_isr1 = GSWSS_RGRD(pdata, GSWIPSS_ISR1);
+	reg_val = GSWSS_RGRD(pdata, GSWIPSS_IER0);
+	reg_val1 = GSWSS_RGRD(pdata, GSWIPSS_IER1);
+
+	mac_printf("GSWIPSS_IER0 %08x\n", reg_val);
+	mac_printf("GSWIPSS_IER1 %08x\n", reg_val1);
+	mac_printf("GSWIPSS_ISR0 %08x\n", mac_int_isr0);
+	mac_printf("GSWIPSS_ISR1 %08x\n", mac_int_isr1);
+
+	for (i = 0; i < max_mac; i++) {
+		mac_printf("\tXGMAC %d INT EN:  %s\n",
+			   i,
+			   GET_N_BITS(reg_val, GSWIPSS_IER0_XGMAC2_POS + i, 1) ?
+			   "ENABLED" :
+			   "DISABLED");
+		mac_printf("\tXGMAC %d INT STS: %s\n",
+			   i,
+			   GET_N_BITS(mac_int_isr0, GSWIPSS_ISR0_XGMAC2_POS + i, 1) ?
+			   "ENABLED" :
+			   "DISABLED");
+
+		mac_printf("\tLINK %d INT EN:  %s\n",
+			   i, GET_N_BITS(reg_val1, GSWIPSS_IER1_LINK2_POS + i, 1) ?
+			   "ENABLED" :
+			   "DISABLED");
+		mac_printf("\tLINK %d INT STS: %s\n",
+			   i, GET_N_BITS(mac_int_isr1, GSWIPSS_ISR1_LINK2_POS + i, 1) ?
+			   "ENABLED" :
+			   "DISABLED");
+	}
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return ret;
+}
+
+/* Calling from Interrupt Context, so no lock required. */
+int gswss_get_int_stat(void *pdev, u32 mod)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	int ret = 0;
+
+	switch (mod) {
+	case XGMAC:
+		ret = GSWSS_RGRD(pdata, GSWIPSS_ISR0);
+		break;
+
+	case LINK:
+		ret = GSWSS_RGRD(pdata, GSWIPSS_ISR1);
+		break;
+
+	default:
+		ret = -1;
+		break;
+	}
+
+	return ret;
+}
+
+int gswss_set_nco(void *pdev, u32 val, u32 nco_idx)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 nco_lsb, nco_msb;
+	u32 lsb_off, msb_off;
+	int ret = 0;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	if (nco_idx) {
+		lsb_off = (NCO1_LSB + ((nco_idx - 1) * 0x8));
+		msb_off = lsb_off + 4;
+	} else {
+		lsb_off = NCO_LSB;
+		msb_off = lsb_off + 4;
+	}
+
+	nco_lsb = GSWSS_RGRD(pdata, lsb_off);
+	nco_msb = GSWSS_RGRD(pdata, msb_off);
+
+	nco_lsb = (val & 0xFFFF);
+	nco_msb = ((val & 0xFFFF0000) >> 16);
+
+	mac_printf("GSWSS: NCO_LSB Configured to %x\n", nco_lsb);
+	mac_printf("GSWSS: NCO_MSB Configured to %x\n", nco_msb);
+
+	GSWSS_RGWR(pdata, lsb_off, nco_lsb);
+	GSWSS_RGWR(pdata, msb_off, nco_msb);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return ret;
+}
+
+u32 gswss_get_nco(void *pdev, u32 nco_idx)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 nco_lsb, nco_msb, nco;
+	u32 lsb_off, msb_off;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	if (nco_idx) {
+		lsb_off = (NCO1_LSB + ((nco_idx - 1) * 0x8));
+		msb_off = lsb_off + 4;
+	} else {
+		lsb_off = NCO_LSB;
+		msb_off = lsb_off + 4;
+	}
+
+	nco_lsb = GSWSS_RGRD(pdata, lsb_off);
+	nco_msb = GSWSS_RGRD(pdata, msb_off);
+
+	mac_printf("GSWSS: NCO_LSB Got is %x\n", nco_lsb);
+	mac_printf("GSWSS: NCO_MSB Got is %x\n", nco_msb);
+
+	nco = ((nco_msb << 16) | nco_lsb);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return nco;
+}
+
+void gswss_init_fn_ptrs(struct adap_ops *adap_ops)
+{
+	adap_ops->ss_hwreset = gswss_switch_ss_reset;
+
+	adap_ops->ss_set_cfg0_1588 = gswss_cfg0_1588;
+	adap_ops->ss_get_cfg0_1588 = gswss_get_cfg0_1588;
+
+	adap_ops->ss_set_clkmode = gswss_set_clkmode;
+	adap_ops->ss_get_clkmode = gswss_get_clkmode;
+
+	adap_ops->ss_core_en = gswss_set_corese;
+	adap_ops->ss_get_core_en = gswss_get_corese;
+
+	adap_ops->ss_set_macsec_mac = gswss_set_macsec_to_mac;
+	adap_ops->ss_get_macsec_mac = gswss_get_macsec_to_mac;
+
+	adap_ops->ss_reset_macsec = gswss_macsec_reset;
+
+	adap_ops->ss_set_nco = gswss_set_nco;
+	adap_ops->ss_get_nco = gswss_get_nco;
+
+	adap_ops->ss_set_inten = gswss_set_interrupt;
+	adap_ops->ss_get_intstat = gswss_get_int_stat;
+	adap_ops->ss_cli = gswss_main;
+	adap_ops->ss_rg_rd = gswss_rd_reg;
+	adap_ops->ss_rg_wr = gswss_wr_reg;
+}
+
