@@ -270,6 +270,51 @@ static inline void delete_item(struct pppoe_net *pn, __be16 sid,
 	write_unlock_bh(&pn->hash_lock);
 }
 
+#ifdef CONFIG_PPA
+extern int32_t (*ppa_check_pppoe_addr_valid_fn)
+	(struct net_device *dev, struct pppoe_addr *pa);
+
+static int check_pppoe_addr_valid(struct net_device *dev, struct pppoe_addr *pa)
+{
+	struct pppox_sock *po = NULL;
+	struct pppoe_net *pn;
+	struct net_device *pppoe_netdev = NULL;
+	int ret = -EFAULT;
+
+	if ((!pa->dev) || (!pa->remote) || (pa->sid == 0))
+		return ret;
+
+	pn = pppoe_pernet(dev_net(dev));
+	pppoe_netdev = dev_get_by_name(dev_net(dev), pa->dev);
+	if (pppoe_netdev) {
+		po = get_item(pn, pa->sid, pa->remote, pppoe_netdev->ifindex);
+
+		if (!po) {
+			printk("Cannot find the pppoe addr in hash table\n");
+			goto err;
+		}
+
+		if (!po->pppoe_dev || !(po->pppoe_pa.remote[0] |
+			po->pppoe_pa.remote[1] | po->pppoe_pa.remote[2] |
+			po->pppoe_pa.remote[3] | po->pppoe_pa.remote[4] |
+			po->pppoe_pa.remote[5])) {
+			printk("no pppoe device or remote address is zero\n");
+			goto err;
+		}
+
+		ret = 0;
+	}
+
+err:
+	if (pppoe_netdev)
+		dev_put(pppoe_netdev);
+	if (po)
+		sock_put(sk_pppox(po));
+
+	return ret;
+}
+#endif /* CONFIG_PPA */
+
 /***************************************************************************
  *
  *  Handler for device events.
@@ -1193,6 +1238,10 @@ static int __init pppoe_init(void)
 	dev_add_pack(&pppoed_ptype);
 	register_netdevice_notifier(&pppoe_notifier);
 
+#ifdef CONFIG_PPA
+	ppa_check_pppoe_addr_valid_fn = check_pppoe_addr_valid;
+#endif
+
 	return 0;
 
 out_unregister_pppoe_proto:
@@ -1205,6 +1254,10 @@ out:
 
 static void __exit pppoe_exit(void)
 {
+
+#ifdef CONFIG_PPA
+	ppa_check_pppoe_addr_valid_fn = NULL;
+#endif
 	unregister_netdevice_notifier(&pppoe_notifier);
 	dev_remove_pack(&pppoed_ptype);
 	dev_remove_pack(&pppoes_ptype);

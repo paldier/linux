@@ -78,7 +78,7 @@
  */
 struct ppp_file {
 	enum {
-		INTERFACE=1, CHANNEL
+		INTERFACE = 1, CHANNEL
 	}		kind;
 	struct sk_buff_head xq;		/* pppd transmit queue */
 	struct sk_buff_head rq;		/* receive queue for pppd */
@@ -371,10 +371,61 @@ static const int npindex_to_ethertype[NUM_NP] = {
 #define ppp_xmit_unlock(ppp)	spin_unlock_bh(&(ppp)->wlock)
 #define ppp_recv_lock(ppp)	spin_lock_bh(&(ppp)->rlock)
 #define ppp_recv_unlock(ppp)	spin_unlock_bh(&(ppp)->rlock)
-#define ppp_lock(ppp)		do { ppp_xmit_lock(ppp); \
-				     ppp_recv_lock(ppp); } while (0)
-#define ppp_unlock(ppp)		do { ppp_recv_unlock(ppp); \
-				     ppp_xmit_unlock(ppp); } while (0)
+#define ppp_lock(ppp)		do { ppp_xmit_lock(ppp);\
+				     ppp_recv_lock(ppp); } \
+					 while (0)
+#define ppp_unlock(ppp)		do { ppp_recv_unlock(ppp);\
+				     ppp_xmit_unlock(ppp); } \
+					 while (0)
+
+#ifdef CONFIG_PPA
+extern int32_t (*ppa_ppp_get_chan_info_fn)
+	(struct net_device *ppp_dev, struct ppp_channel **chan);
+
+/*function returns the ppp channel priv data structure*/
+static int ppp_get_info(struct net_device *ppp_dev, struct ppp_channel **chan)
+{
+	struct ppp *ppp;
+	struct channel *pch;
+	struct list_head *list;
+	int ret = -EFAULT;
+
+	if (unlikely(!ppp_dev))
+		return ret;
+
+	ppp = netdev_priv(ppp_dev);
+
+	if (unlikely(!(ppp_dev->flags & IFF_POINTOPOINT) || !ppp))
+		return ret;
+
+	/*check ppp validity */
+	if (unlikely(ppp->file.dead || atomic_read(&ppp->file.refcnt) == 0 ||
+			!ppp->dev || ppp->n_channels == 0))
+		goto err_unlockppp;
+
+	/*don't support multipul link*/
+	if (unlikely(ppp->flags & SC_MULTILINK))
+		goto err_unlockppp;
+
+	list = &ppp->channels;
+	if (unlikely(list_empty(list)))
+		goto err_unlockppp;
+
+	list = list->next;
+	pch = list_entry(list, struct channel, clist);
+
+	if (unlikely(!pch->chan))
+		goto err_unlockppp;
+
+	*chan = pch->chan;
+
+	return 0;
+
+err_unlockppp:
+
+	return ret;
+}
+#endif /* CONFIG_PPA */
 
 /*
  * /dev/ppp device routines.
@@ -1211,6 +1262,9 @@ static int __init ppp_init(void)
 	/* not a big deal if we fail here :-) */
 	device_create(ppp_class, NULL, MKDEV(PPP_MAJOR, 0), NULL, "ppp");
 
+#ifdef CONFIG_PPA
+	ppa_ppp_get_chan_info_fn = ppp_get_info;
+#endif /* CONFIG_PPA */
 	return 0;
 
 out_class:
@@ -1593,6 +1647,15 @@ ppp_send_frame(struct ppp *ppp, struct sk_buff *skb)
 		/* peek at outbound CCP frames */
 		ppp_ccp_peek(ppp, skb, 0);
 		break;
+#ifdef CONFIG_INTEL_IPQOS
+	case PPP_LCP:
+	case PPP_IPCP:
+	case PPP_PAP:
+	case PPP_CHAP:
+		/* MARK LCP frames with highest priority */
+		skb->priority = 7;
+		break;
+#endif /* CONFIG_INTEL_IPQOS*/
 	}
 
 	/* try to do packet compression */
@@ -1715,7 +1778,7 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 				  *having no queued packets before
 				  *starting the fragmentation*/
 
-	hdrlen = (ppp->flags & SC_MP_XSHORTSEQ)? MPHDRLEN_SSN: MPHDRLEN;
+	hdrlen = (ppp->flags & SC_MP_XSHORTSEQ) ? MPHDRLEN_SSN : MPHDRLEN;
 	i = 0;
 	list_for_each_entry(pch, &ppp->channels, clist) {
 		if (pch->chan) {
@@ -1927,6 +1990,10 @@ static void __ppp_channel_push(struct channel *pch)
 	if (pch->chan) {
 		while (!skb_queue_empty(&pch->file.xq)) {
 			skb = skb_dequeue(&pch->file.xq);
+#ifdef CONFIG_INTEL_IPQOS
+/* MARK LCP frames with highest priority */
+			skb->priority = 7;
+#endif /* CONFIG_INTEL_IPQOS*/
 			if (!pch->chan->ops->start_xmit(pch->chan, skb)) {
 				/* put the packet back and try again later */
 				skb_queue_head(&pch->file.xq, skb);
@@ -2108,8 +2175,7 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 			skb_copy_bits(skb, 0, skb_put(ns, skb->len), skb->len);
 			consume_skb(skb);
 			skb = ns;
-		}
-		else
+		} else
 			skb->ip_summed = CHECKSUM_NONE;
 
 		len = slhc_uncompress(ppp->vj, skb->data + 2, skb->len - 2);
@@ -2146,6 +2212,15 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 	case PPP_CCP:
 		ppp_ccp_peek(ppp, skb, 1);
 		break;
+#ifdef CONFIG_INTEL_IPQOS
+	case PPP_LCP:
+	case PPP_IPCP:
+	case PPP_PAP:
+	case PPP_CHAP:
+		/* MARK LCP frames with highest priority */
+		skb->priority = 7;
+		break;
+#endif /* CONFIG_INTEL_IPQOS*/
 	}
 
 	++ppp->stats64.rx_packets;
@@ -2228,7 +2303,7 @@ ppp_decompress_frame(struct ppp *ppp, struct sk_buff *skb)
 	if (proto == PPP_COMP) {
 		int obuff_size;
 
-		switch(ppp->rcomp->compress_proto) {
+		switch (ppp->rcomp->compress_proto) {
 		case CI_MPPE:
 			obuff_size = ppp->mru + PPP_HDRLEN + 1;
 			break;
@@ -2287,7 +2362,7 @@ ppp_receive_mp_frame(struct ppp *ppp, struct sk_buff *skb, struct channel *pch)
 {
 	u32 mask, seq;
 	struct channel *ch;
-	int mphdrlen = (ppp->flags & SC_MP_SHORTSEQ)? MPHDRLEN_SSN: MPHDRLEN;
+	int mphdrlen = (ppp->flags & SC_MP_SHORTSEQ) ? MPHDRLEN_SSN : MPHDRLEN;
 
 	if (!pskb_may_pull(skb, mphdrlen + 1) || ppp->mrru == 0)
 		goto err;		/* no good, throw it away */
@@ -2437,13 +2512,13 @@ ppp_mp_reconstruct(struct ppp *ppp)
 			/* Fragment `seq' is lost, keep going. */
 			lost = 1;
 			oldseq = seq;
-			seq = seq_before(minseq, PPP_MP_CB(p)->sequence)?
-				minseq + 1: PPP_MP_CB(p)->sequence;
+			seq = seq_before(minseq, PPP_MP_CB(p)->sequence) ?
+				minseq + 1 : PPP_MP_CB(p)->sequence;
 
 			if (ppp->debug & 1)
 				netdev_printk(KERN_DEBUG, ppp->dev,
 					      "lost frag %u..%u\n",
-					      oldseq, seq-1);
+					      oldseq, seq - 1);
 
 			goto again;
 		}
@@ -2647,6 +2722,22 @@ char *ppp_dev_name(struct ppp_channel *chan)
 	return name;
 }
 
+/*
+ * Return the PPP device interface pointer
+ */
+struct net_device *ppp_device(struct ppp_channel *chan)
+{
+	struct channel *pch = chan->ppp;
+	struct net_device *dev = NULL;
+
+	if (pch) {
+		read_lock_bh(&pch->upl);
+		if (pch->ppp && pch->ppp->dev)
+			dev = pch->ppp->dev;
+		read_unlock_bh(&pch->upl);
+	}
+	return dev;
+}
 
 /*
  * Disconnect a channel from the generic layer.
@@ -2797,7 +2888,7 @@ ppp_ccp_peek(struct ppp *ppp, struct sk_buff *skb, int inbound)
 		 * Remember:
 		 * A ConfReq indicates what the sender would like to receive
 		 */
-		if(inbound)
+		if (inbound)
 			/* He is proposing what I should send */
 			ppp->xstate &= ~SC_COMP_RUN;
 		else
@@ -3241,6 +3332,11 @@ static void __exit ppp_cleanup(void)
 	/* should never happen */
 	if (atomic_read(&ppp_unit_count) || atomic_read(&channel_count))
 		pr_err("PPP: removing module but units remain!\n");
+
+#ifdef CONFIG_PPA
+	ppa_ppp_get_chan_info_fn = NULL;
+#endif /* CONFIG_PPA */
+
 	rtnl_link_unregister(&ppp_link_ops);
 	unregister_chrdev(PPP_MAJOR, "ppp");
 	device_destroy(ppp_class, MKDEV(PPP_MAJOR, 0));
@@ -3293,6 +3389,7 @@ EXPORT_SYMBOL(ppp_unregister_channel);
 EXPORT_SYMBOL(ppp_channel_index);
 EXPORT_SYMBOL(ppp_unit_number);
 EXPORT_SYMBOL(ppp_dev_name);
+EXPORT_SYMBOL(ppp_device);
 EXPORT_SYMBOL(ppp_input);
 EXPORT_SYMBOL(ppp_input_error);
 EXPORT_SYMBOL(ppp_output_wakeup);
