@@ -776,7 +776,7 @@ static void ieee80211_ibss_csa_mark_radar(struct ieee80211_sub_if_data *sdata)
 					    NL80211_IFTYPE_ADHOC);
 	if (err > 0)
 		cfg80211_radar_event(sdata->local->hw.wiphy, &ifibss->chandef,
-				     GFP_ATOMIC);
+				     0, GFP_ATOMIC);
 }
 
 static bool

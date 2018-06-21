@@ -723,6 +723,72 @@ struct wireless_dev *ieee80211_vif_to_wdev(struct ieee80211_vif *vif)
 }
 EXPORT_SYMBOL_GPL(ieee80211_vif_to_wdev);
 
+struct ieee80211_vif *net_device_to_ieee80211_vif(struct net_device *dev)
+{
+	struct ieee80211_sub_if_data *sdata;
+
+	if (!dev)
+		return NULL;
+
+	sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+	return &sdata->vif;
+}
+EXPORT_SYMBOL_GPL(net_device_to_ieee80211_vif);
+
+const struct net_device_ops *get_net_device_ops_from_wdev(
+		struct wireless_dev *wdev)
+{
+	struct ieee80211_sub_if_data *sdata;
+
+	if (!wdev)
+		return NULL;
+	sdata = IEEE80211_WDEV_TO_SUB_IF(wdev);
+	return sdata->dev->netdev_ops;
+}
+EXPORT_SYMBOL_GPL(get_net_device_ops_from_wdev);
+
+void set_net_device_ops_in_wdev(struct wireless_dev *wdev,
+		const struct net_device_ops *ops)
+{
+	struct ieee80211_sub_if_data *sdata;
+
+	if (!wdev || !ops)
+		return;
+	sdata = IEEE80211_WDEV_TO_SUB_IF(wdev);
+	sdata->dev->netdev_ops = ops;
+}
+EXPORT_SYMBOL_GPL(set_net_device_ops_in_wdev);
+
+void copy_net_device_ops_from_wdev(struct wireless_dev *wdev,
+		struct net_device_ops *ops)
+{
+	struct ieee80211_sub_if_data *sdata;
+
+	if (!wdev || !ops)
+		return;
+	sdata = IEEE80211_WDEV_TO_SUB_IF(wdev);
+	if (!sdata->dev->netdev_ops)
+		return;
+	memcpy(ops, sdata->dev->netdev_ops, sizeof(struct net_device_ops));
+}
+EXPORT_SYMBOL_GPL(copy_net_device_ops_from_wdev);
+
+const char *ieee80211_vif_to_name(struct ieee80211_vif *vif)
+{
+	struct ieee80211_sub_if_data *sdata;
+
+	if (!vif)
+		return NULL;
+
+	sdata = vif_to_sdata(vif);
+
+	if (!sdata)
+		return NULL;
+
+	return (const char *)sdata->name;
+}
+EXPORT_SYMBOL_GPL(ieee80211_vif_to_name);
+
 /*
  * Nothing should have been stuffed into the workqueue during
  * the suspend->resume cycle. Since we can't check each caller
@@ -766,8 +832,63 @@ void ieee80211_queue_delayed_work(struct ieee80211_hw *hw,
 }
 EXPORT_SYMBOL(ieee80211_queue_delayed_work);
 
+static u32 ieee802_11_parse_vendor_specific(const u8 *pos, u8 elen,
+		struct ieee802_11_elems *elems, bool calc_crc, u32 crc)
+{
+	if (elen >= 4 && pos[0] == 0x00 && pos[1] == 0x50 && pos[2] == 0xf2) {
+		/* Microsoft OUI (00:50:F2) */
+
+		if (calc_crc)
+			crc = crc32_be(crc, pos - 2, elen + 2);
+
+		if (elen >= 5 && pos[3] == 2) {
+			/* OUI Type 2 - WMM IE */
+			if (pos[4] == 0) {
+				elems->wmm_info = pos;
+				elems->wmm_info_len = elen;
+			} else if (pos[4] == 1) {
+				elems->wmm_param = pos;
+				elems->wmm_param_len = elen;
+			}
+		}
+	}
+
+	if (elen >= 4 && pos[0] == 0x00 && pos[1] == 0x90 && pos[2] == 0x4c) {
+		/* Broadcom (Epigram) (00:90:4C) */
+
+		if (calc_crc)
+			crc = crc32_be(crc, pos - 2, elen + 2);
+
+		if (elen >= 5 && pos[3] == WLAN_VENDOR_VHT_TYPE) {
+			if ((pos[4] == WLAN_VENDOR_VHT_SUBTYPE  ||
+			     pos[4] == WLAN_VENDOR_VHT_SUBTYPE2 ||
+			     pos[4] == WLAN_VENDOR_VHT_SUBTYPE3)) {
+				elems->vendor_vht = pos;
+				elems->vendor_vht_len = elen;
+			}
+		}
+	}
+
+	if (elen >= 4 && elems->vendor_events_filter && elems->vendor_events_filter_len >= 3) {
+		int i = 0, found = 1;
+		for (i = 0; i < elems->vendor_events_filter_len; i++) {
+			if (pos[i] != elems->vendor_events_filter[i]) {
+				found = 0;
+				break;
+			}
+		}
+		if (found) {
+			elems->vendor_ie_to_notify = pos;
+			elems->vendor_ie_to_notify_len = elen;
+		}
+	}
+
+	return crc;
+}
+
 u32 ieee802_11_parse_elems_crc(const u8 *start, size_t len, bool action,
 			       struct ieee802_11_elems *elems,
+				   u8 *vendor_events_filter, u8 vendor_events_filter_len,
 			       u64 filter, u32 crc)
 {
 	size_t left = len;
@@ -780,6 +901,8 @@ u32 ieee802_11_parse_elems_crc(const u8 *start, size_t len, bool action,
 	memset(elems, 0, sizeof(*elems));
 	elems->ie_start = start;
 	elems->total_len = len;
+	elems->vendor_events_filter = vendor_events_filter;
+	elems->vendor_events_filter_len = vendor_events_filter_len;
 
 	while (left >= 2) {
 		u8 id, elen;
@@ -891,24 +1014,8 @@ u32 ieee802_11_parse_elems_crc(const u8 *start, size_t len, bool action,
 			elems->challenge_len = elen;
 			break;
 		case WLAN_EID_VENDOR_SPECIFIC:
-			if (elen >= 4 && pos[0] == 0x00 && pos[1] == 0x50 &&
-			    pos[2] == 0xf2) {
-				/* Microsoft OUI (00:50:F2) */
-
-				if (calc_crc)
-					crc = crc32_be(crc, pos - 2, elen + 2);
-
-				if (elen >= 5 && pos[3] == 2) {
-					/* OUI Type 2 - WMM IE */
-					if (pos[4] == 0) {
-						elems->wmm_info = pos;
-						elems->wmm_info_len = elen;
-					} else if (pos[4] == 1) {
-						elems->wmm_param = pos;
-						elems->wmm_param_len = elen;
-					}
-				}
-			}
+			crc = ieee802_11_parse_vendor_specific(pos, elen, elems,
+					calc_crc, crc);
 			break;
 		case WLAN_EID_RSN:
 			elems->rsn = pos;
@@ -1456,7 +1563,8 @@ static int ieee80211_build_preq_ies_band(struct ieee80211_local *local,
 		break;
 	}
 
-	if (sband->vht_cap.vht_supported && have_80mhz) {
+	/* Don't add VHT capab. in 2GHZ, even if we support it */
+	if (sband->vht_cap.vht_supported && have_80mhz && band != NL80211_BAND_2GHZ) {
 		if (end - pos < 2 + sizeof(struct ieee80211_vht_cap))
 			goto out_err;
 		pos = ieee80211_ie_build_vht_cap(pos, &sband->vht_cap,
@@ -2838,7 +2946,7 @@ void ieee80211_dfs_radar_detected_work(struct work_struct *work)
 		/* XXX: multi-channel is not supported yet */
 		WARN_ON(1);
 	else
-		cfg80211_radar_event(local->hw.wiphy, &chandef, GFP_KERNEL);
+		cfg80211_radar_event(local->hw.wiphy, &chandef, 0, GFP_KERNEL);
 }
 
 void ieee80211_radar_detected(struct ieee80211_hw *hw)

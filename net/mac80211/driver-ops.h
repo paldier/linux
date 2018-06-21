@@ -656,6 +656,14 @@ static inline int drv_set_antenna(struct ieee80211_local *local,
 	return ret;
 }
 
+static inline bool drv_is_all_iface_idle(struct ieee80211_local *local)
+{
+	if (!local->ops->is_all_iface_idle)
+		return true;
+
+	return local->ops->is_all_iface_idle(&local->hw);
+}
+
 static inline int drv_get_antenna(struct ieee80211_local *local,
 				  u32 *tx_ant, u32 *rx_ant)
 {
@@ -971,6 +979,20 @@ drv_reconfig_complete(struct ieee80211_local *local,
 	if (local->ops->reconfig_complete)
 		local->ops->reconfig_complete(&local->hw, reconfig_type);
 	trace_drv_return_void(local);
+}
+
+static inline int drv_get_connection_alive(struct ieee80211_local *local,
+			      struct ieee80211_sub_if_data *sdata)
+{
+	int ret;
+
+	check_sdata_in_driver(sdata);
+
+	ret = local->ops->get_connection_alive(&local->hw, &sdata->vif);
+
+	trace_drv_return_int(local, ret);
+
+	return ret;
 }
 
 static inline void

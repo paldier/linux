@@ -868,6 +868,20 @@ static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata)
 		pos = ieee80211_add_wmm_info_ie(skb_put(skb, 9), qos_info);
 	}
 
+	if (assoc_data->vendor_vht && sband->vht_cap.vht_supported) {
+		struct ieee80211_vht_cap *ap_vht_cap =
+				(struct ieee80211_vht_cap *) (assoc_data->vendor_vht + 7);
+		pos = skb_put(skb, 7);
+		*pos++ = WLAN_EID_VENDOR_SPECIFIC;
+		*pos++ = 5 + 2 + sizeof(struct ieee80211_vht_cap);
+		*pos++ = 0x00; /* Broadcom (Epigram) (00:90:4C) */
+		*pos++ = 0x90;
+		*pos++ = 0x4C;
+		*pos++ = WLAN_VENDOR_VHT_TYPE;
+		*pos++ = WLAN_VENDOR_VHT_SUBTYPE;
+		ieee80211_add_vht_ie(sdata, skb, sband, ap_vht_cap);
+	}
+
 	/* add any remaining custom (i.e. vendor specific here) IEs */
 	if (assoc_data->ie_len) {
 		noffset = assoc_data->ie_len;
@@ -1071,6 +1085,10 @@ static void ieee80211_chswitch_work(struct work_struct *work)
 				     &ifmgd->csa_connection_drop_work);
 		goto out;
 	}
+
+	if(ieee80211_vif_use_channel(sdata, &sdata->csa_chandef,
+					IEEE80211_CHANCTX_SHARED))
+		sdata_info(sdata, "driver channel switch failed\n");
 
 	ifmgd->csa_waiting_bcn = true;
 
@@ -2352,6 +2370,7 @@ static void ieee80211_mgd_probe_ap(struct ieee80211_sub_if_data *sdata,
 				   bool beacon)
 {
 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+	struct ieee80211_local *local = sdata->local;
 	bool already = false;
 
 	if (!ieee80211_sdata_running(sdata))
@@ -2375,6 +2394,16 @@ static void ieee80211_mgd_probe_ap(struct ieee80211_sub_if_data *sdata,
 				     beacon_loss_count);
 
 		ieee80211_cqm_beacon_loss_notify(&sdata->vif, GFP_KERNEL);
+	} else {
+		if (local->ops->get_connection_alive) {
+			if (drv_get_connection_alive(local, sdata)) {
+				mod_timer(&ifmgd->conn_mon_timer,
+						round_jiffies_up(jiffies +
+								IEEE80211_CONNECTION_IDLE_TIME));
+				mutex_unlock(&sdata->local->mtx);
+				goto out;
+			}
+		}
 	}
 
 	/*
@@ -3101,6 +3130,12 @@ static bool ieee80211_assoc_success(struct ieee80211_sub_if_data *sdata,
 		ieee80211_vht_cap_ie_to_sta_vht_cap(sdata, sband,
 						    elems.vht_cap_elem, sta);
 
+	if (elems.vendor_vht) {
+		struct ieee80211_vht_cap *vht_cap_ie =
+				(struct ieee80211_vht_cap *) (elems.vendor_vht + 7);
+		ieee80211_vht_cap_ie_to_sta_vht_cap(sdata, sband, vht_cap_ie, sta);
+	}
+
 	/*
 	 * Some APs, e.g. Netgear WNDR3700, report invalid HT operation data
 	 * in their association response, so ignore that data for our own
@@ -3133,6 +3168,7 @@ static bool ieee80211_assoc_success(struct ieee80211_sub_if_data *sdata,
 	}
 
 	sta->sta.wme = elems.wmm_param && local->hw.queues >= IEEE80211_NUM_ACS;
+	sta->sta.vendor_wds = ifmgd->vendor_wds;
 
 	err = sta_info_move_state(sta, IEEE80211_STA_ASSOC);
 	if (!err && !(ifmgd->flags & IEEE80211_STA_CONTROL_PORT))
@@ -3342,10 +3378,15 @@ static void ieee80211_rx_mgmt_probe_resp(struct ieee80211_sub_if_data *sdata,
 	if (baselen > len)
 		return;
 
-	ieee802_11_parse_elems(mgmt->u.probe_resp.variable, len - baselen,
-			       false, &elems);
+	ieee802_11_parse_elems_crc(mgmt->u.probe_resp.variable, len - baselen,
+			       false, &elems, sdata->wdev.vendor_events_filter,
+				   sdata->wdev.vendor_events_filter_len, 0, 0);
 
 	ieee80211_rx_bss_info(sdata, mgmt, len, rx_status, &elems);
+
+	if (elems.vendor_ie_to_notify)
+		cfg80211_rx_vendor_specific_mgmt(&sdata->wdev, rx_status->freq,
+				(const u8 *)mgmt, len, GFP_ATOMIC);
 
 	if (ifmgd->associated &&
 	    ether_addr_equal(mgmt->bssid, ifmgd->associated->bssid))
@@ -3402,6 +3443,14 @@ static void ieee80211_rx_mgmt_beacon(struct ieee80211_sub_if_data *sdata,
 	if (baselen > len)
 		return;
 
+	ieee802_11_parse_elems_crc(mgmt->u.beacon.variable,
+			len - baselen, false, &elems, sdata->wdev.vendor_events_filter,
+			   sdata->wdev.vendor_events_filter_len, 0, 0);
+
+	if (elems.vendor_ie_to_notify)
+		 cfg80211_rx_vendor_specific_mgmt(&sdata->wdev, rx_status->freq,
+			(const u8 *)mgmt, len, GFP_ATOMIC);
+
 	rcu_read_lock();
 	chanctx_conf = rcu_dereference(sdata->vif.chanctx_conf);
 	if (!chanctx_conf) {
@@ -3418,8 +3467,6 @@ static void ieee80211_rx_mgmt_beacon(struct ieee80211_sub_if_data *sdata,
 
 	if (ifmgd->assoc_data && ifmgd->assoc_data->need_beacon &&
 	    ether_addr_equal(mgmt->bssid, ifmgd->assoc_data->bss->bssid)) {
-		ieee802_11_parse_elems(mgmt->u.beacon.variable,
-				       len - baselen, false, &elems);
 
 		ieee80211_rx_bss_info(sdata, mgmt, len, rx_status, &elems);
 		if (elems.tim && !elems.parse_error) {
@@ -3530,7 +3577,7 @@ static void ieee80211_rx_mgmt_beacon(struct ieee80211_sub_if_data *sdata,
 	ncrc = crc32_be(0, (void *)&mgmt->u.beacon.beacon_int, 4);
 	ncrc = ieee802_11_parse_elems_crc(mgmt->u.beacon.variable,
 					  len - baselen, false, &elems,
-					  care_about_ies, ncrc);
+					  NULL, 0, care_about_ies, ncrc);
 
 	if (ieee80211_hw_check(&local->hw, PS_NULLFUNC_STACK) &&
 	    ieee80211_check_tim(elems.tim, elems.tim_len, ifmgd->aid)) {
@@ -4808,6 +4855,8 @@ int ieee80211_mgd_assoc(struct ieee80211_sub_if_data *sdata,
 	assoc_data->capability = req->bss->capability;
 	assoc_data->supp_rates = bss->supp_rates;
 	assoc_data->supp_rates_len = bss->supp_rates_len;
+	assoc_data->vendor_vht = bss->vendor_vht;
+	assoc_data->vendor_vht_len = bss->vendor_vht_len;
 
 	rcu_read_lock();
 	ht_ie = ieee80211_bss_get_ie(req->bss, WLAN_EID_HT_OPERATION);
@@ -4848,6 +4897,8 @@ int ieee80211_mgd_assoc(struct ieee80211_sub_if_data *sdata,
 		ifmgd->mfp = IEEE80211_MFP_DISABLED;
 		ifmgd->flags &= ~IEEE80211_STA_MFP_ENABLED;
 	}
+
+	ifmgd->vendor_wds = req->vendor_wds;
 
 	if (req->flags & ASSOC_REQ_USE_RRM)
 		ifmgd->flags |= IEEE80211_STA_ENABLE_RRM;

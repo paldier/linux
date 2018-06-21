@@ -1564,7 +1564,8 @@ int ieee80211_vif_use_channel(struct ieee80211_sub_if_data *sdata,
 
 	lockdep_assert_held(&local->mtx);
 
-	WARN_ON(sdata->dev && netif_carrier_ok(sdata->dev));
+	if (local->use_chanctx)
+		WARN_ON(sdata->dev && netif_carrier_ok(sdata->dev));
 
 	mutex_lock(&local->chanctx_mtx);
 

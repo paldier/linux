@@ -769,6 +769,7 @@ struct cfg80211_csa_settings {
 	bool radar_required;
 	bool block_tx;
 	u8 count;
+	u8 sb_dfs_bw; /* from enum nl80211_sb_dfs_bw */
 };
 
 /**
@@ -825,6 +826,10 @@ enum station_parameters_apply_mask {
  * @opmode_notif: operating mode field from Operating Mode Notification
  * @opmode_notif_used: information if operating mode field is used
  * @support_p2p_ps: information if station supports P2P PS mechanism
+ * @resp: last association response frame
+ *	(or NULL for no change)
+ * @resp_len: length of last association response
+ * @rssi: received signal strength indicator
  */
 struct station_parameters {
 	const u8 *supported_rates;
@@ -852,6 +857,9 @@ struct station_parameters {
 	u8 opmode_notif;
 	bool opmode_notif_used;
 	int support_p2p_ps;
+	u8 *resp;
+	size_t resp_len;
+	u32 rssi;
 };
 
 /**
@@ -1071,6 +1079,7 @@ struct cfg80211_tid_stats {
  * @nonpeer_pm: non-peer mesh STA power save mode
  * @expected_throughput: expected throughput in kbps (including 802.11 headers)
  *	towards this station.
+ * @max_rssi: maximum received signal strength indicator
  * @rx_beacon: number of beacons received from this peer
  * @rx_beacon_signal_avg: signal strength average (in dBm) for beacons received
  *	from this peer
@@ -1116,6 +1125,7 @@ struct station_info {
 	enum nl80211_mesh_power_mode nonpeer_pm;
 
 	u32 expected_throughput;
+	u32 max_rssi;
 
 	u64 rx_beacon;
 	u64 rx_duration;
@@ -1814,6 +1824,7 @@ enum cfg80211_assoc_req_flags {
  * @ht_capa_mask:  The bits of ht_capa which are to be used.
  * @vht_capa: VHT capability override
  * @vht_capa_mask: VHT capability mask indicating which fields to use
+ * @vendor_wds: use WDS vendor specific capabilities
  */
 struct cfg80211_assoc_request {
 	struct cfg80211_bss *bss;
@@ -1825,6 +1836,7 @@ struct cfg80211_assoc_request {
 	struct ieee80211_ht_cap ht_capa;
 	struct ieee80211_ht_cap ht_capa_mask;
 	struct ieee80211_vht_cap vht_capa, vht_capa_mask;
+	int vendor_wds;
 };
 
 /**
@@ -2958,6 +2970,8 @@ struct cfg80211_ops {
 	int	(*set_ap_chanwidth)(struct wiphy *wiphy, struct net_device *dev,
 				    struct cfg80211_chan_def *chandef);
 
+	bool    (*is_all_iface_idle)(struct wiphy *wiphy);
+
 	int	(*add_tx_ts)(struct wiphy *wiphy, struct net_device *dev,
 			     u8 tsid, const u8 *peer, u8 user_prio,
 			     u16 admitted_time);
@@ -3056,6 +3070,7 @@ enum wiphy_flags {
 	WIPHY_FLAG_SUPPORTS_5_10_MHZ		= BIT(22),
 	WIPHY_FLAG_HAS_CHANNEL_SWITCH		= BIT(23),
 	WIPHY_FLAG_HAS_STATIC_WEP		= BIT(24),
+	WIPHY_FLAG_DISABLE_11D_HINT			= BIT(31),
 };
 
 /**
@@ -3818,6 +3833,9 @@ struct wireless_dev {
 	unsigned int cac_time_ms;
 
 	u32 owner_nlportid;
+
+	u8 *vendor_events_filter;
+	u8 vendor_events_filter_len;
 
 #ifdef CONFIG_CFG80211_WEXT
 	/* wext data */
@@ -5153,6 +5171,9 @@ void cfg80211_conn_failed(struct net_device *dev, const u8 *mac_addr,
 			  enum nl80211_connect_failed_reason reason,
 			  gfp_t gfp);
 
+int cfg80211_rx_vendor_specific_mgmt(struct wireless_dev *wdev, int freq,
+		      const u8 *buf, size_t len, gfp_t gfp);
+
 /**
  * cfg80211_rx_mgmt - notification of received, unprocessed management frame
  * @wdev: wireless device receiving the frame
@@ -5243,12 +5264,13 @@ void cfg80211_cqm_beacon_loss_notify(struct net_device *dev, gfp_t gfp);
  * cfg80211_radar_event - radar detection event
  * @wiphy: the wiphy
  * @chandef: chandef for the current channel
+ * @radar_bit_map: Bit map of channels, on which radar was detected
  * @gfp: context flags
  *
  * This function is called when a radar is detected on the current chanenl.
  */
-void cfg80211_radar_event(struct wiphy *wiphy,
-			  struct cfg80211_chan_def *chandef, gfp_t gfp);
+void cfg80211_radar_event(struct wiphy *wiphy, struct cfg80211_chan_def *chandef,
+			  u8 radar_bit_map, gfp_t gfp);
 
 /**
  * cfg80211_cac_event - Channel availability check (CAC) event
@@ -5596,6 +5618,9 @@ void cfg80211_report_wowlan_wakeup(struct wireless_dev *wdev,
  * by .crit_proto_start() has expired.
  */
 void cfg80211_crit_proto_stopped(struct wireless_dev *wdev, gfp_t gfp);
+void cfg80211_set_dfs_state_bit_map(struct wiphy *wiphy,
+				    struct cfg80211_chan_def *chandef,
+				    u8 radar_bit_map, enum nl80211_dfs_state dfs_state);
 
 /**
  * ieee80211_get_num_supported_channels - get number of channels device has

@@ -125,6 +125,9 @@ struct ieee80211_bss {
 
 	/* Keep track of what bits of information we have valid info for. */
 	u8 valid_data;
+
+	const u8 *vendor_vht;
+	u8 vendor_vht_len;
 };
 
 /**
@@ -145,6 +148,7 @@ enum ieee80211_bss_corrupt_data_flags {
  * @IEEE80211_BSS_VALID_WMM: WMM/UAPSD data was gathered from non-corrupt IE
  * @IEEE80211_BSS_VALID_RATES: Supported rates were gathered from non-corrupt IE
  * @IEEE80211_BSS_VALID_ERP: ERP flag was gathered from non-corrupt IE
+ * @IEEE80211_BSS_VALID_VENDOR_VHT: vendor VHT was gathered from non-corrupt IE
  *
  * These are bss flags that are attached to a bss in the
  * @valid_data field of &struct ieee80211_bss.  They show which parts
@@ -154,7 +158,8 @@ enum ieee80211_bss_corrupt_data_flags {
 enum ieee80211_bss_valid_data_flags {
 	IEEE80211_BSS_VALID_WMM			= BIT(1),
 	IEEE80211_BSS_VALID_RATES		= BIT(2),
-	IEEE80211_BSS_VALID_ERP			= BIT(3)
+	IEEE80211_BSS_VALID_ERP			= BIT(3),
+	IEEE80211_BSS_VALID_VENDOR_VHT	= BIT(4)
 };
 
 typedef unsigned __bitwise__ ieee80211_tx_result;
@@ -398,6 +403,9 @@ struct ieee80211_mgd_assoc_data {
 
 	struct ieee80211_vht_cap ap_vht_cap;
 
+	const u8 *vendor_vht;
+	u8 vendor_vht_len;
+
 	size_t ie_len;
 	u8 ie[];
 };
@@ -524,6 +532,8 @@ struct ieee80211_if_managed {
 	struct ieee80211_ht_cap ht_capa_mask; /* Valid parts of ht_capa */
 	struct ieee80211_vht_cap vht_capa; /* configured VHT overrides */
 	struct ieee80211_vht_cap vht_capa_mask; /* Valid parts of vht_capa */
+
+	int vendor_wds;
 
 	/* TDLS support */
 	u8 tdls_peer[ETH_ALEN] __aligned(2);
@@ -1427,6 +1437,8 @@ struct ieee80211_csa_ie {
 struct ieee802_11_elems {
 	const u8 *ie_start;
 	size_t total_len;
+	u8 *vendor_events_filter;
+	u8 vendor_events_filter_len;
 
 	/* pointers to IEs */
 	const struct ieee80211_tdls_lnkie *lnk_id;
@@ -1464,6 +1476,8 @@ struct ieee802_11_elems {
 	const u8 *opmode_notif;
 	const struct ieee80211_sec_chan_offs_ie *sec_chan_offs;
 	const struct ieee80211_mesh_chansw_params_ie *mesh_chansw_params_ie;
+	const u8 *vendor_vht;
+	const u8 *vendor_ie_to_notify;
 
 	/* length of them, respectively */
 	u8 ext_capab_len;
@@ -1481,6 +1495,8 @@ struct ieee802_11_elems {
 	u8 prep_len;
 	u8 perr_len;
 	u8 country_elem_len;
+	u8 vendor_vht_len;
+	u8 vendor_ie_to_notify_len;
 
 	/* whether a parse error occurred while retrieving these elements */
 	bool parse_error;
@@ -1889,12 +1905,13 @@ static inline void ieee80211_tx_skb(struct ieee80211_sub_if_data *sdata,
 
 u32 ieee802_11_parse_elems_crc(const u8 *start, size_t len, bool action,
 			       struct ieee802_11_elems *elems,
+				   u8 *vendor_events_filter, u8 vendor_events_filter_len,
 			       u64 filter, u32 crc);
 static inline void ieee802_11_parse_elems(const u8 *start, size_t len,
 					  bool action,
 					  struct ieee802_11_elems *elems)
 {
-	ieee802_11_parse_elems_crc(start, len, action, elems, 0, 0);
+	ieee802_11_parse_elems_crc(start, len, action, elems, NULL, 0, 0, 0);
 }
 
 

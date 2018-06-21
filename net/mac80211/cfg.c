@@ -619,7 +619,7 @@ void sta_set_rate_info_tx(struct sta_info *sta,
 		struct ieee80211_supported_band *sband;
 		int shift = ieee80211_vif_get_shift(&sta->sdata->vif);
 		u16 brate;
-
+		
 		sband = ieee80211_get_sband(sta->sdata);
 		if (sband) {
 			brate = sband->bitrates[rate->idx].bitrate;
@@ -3212,6 +3212,13 @@ int ieee80211_channel_switch(struct wiphy *wiphy, struct net_device *dev,
 	return err;
 }
 
+static bool ieee80211_is_all_iface_idle(struct wiphy *wiphy)
+{
+	struct ieee80211_local *local = wiphy_priv(wiphy);
+
+	return drv_is_all_iface_idle(local);
+}
+
 u64 ieee80211_mgmt_tx_cookie(struct ieee80211_local *local)
 {
 	lockdep_assert_held(&local->mtx);
@@ -3698,6 +3705,7 @@ const struct cfg80211_ops mac80211_config_ops = {
 	.get_channel = ieee80211_cfg_get_channel,
 	.start_radar_detection = ieee80211_start_radar_detection,
 	.channel_switch = ieee80211_channel_switch,
+	.is_all_iface_idle = ieee80211_is_all_iface_idle,
 	.set_qos_map = ieee80211_set_qos_map,
 	.set_ap_chanwidth = ieee80211_set_ap_chanwidth,
 	.add_tx_ts = ieee80211_add_tx_ts,

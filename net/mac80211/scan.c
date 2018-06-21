@@ -171,6 +171,14 @@ ieee80211_bss_info_update(struct ieee80211_local *local,
 			bss->valid_data |= IEEE80211_BSS_VALID_WMM;
 	}
 
+	if (elems->vendor_vht && (!elems->parse_error ||
+			!(bss->valid_data & IEEE80211_BSS_VALID_VENDOR_VHT))) {
+		bss->vendor_vht = elems->vendor_vht;
+		bss->vendor_vht_len = elems->vendor_vht_len;
+		if (!elems->parse_error)
+			bss->valid_data |= IEEE80211_BSS_VALID_VENDOR_VHT;
+	}
+
 	if (beacon) {
 		struct ieee80211_supported_band *sband =
 			local->hw.wiphy->bands[rx_status->band];
@@ -473,6 +481,17 @@ static int ieee80211_start_sw_scan(struct ieee80211_local *local,
 
 	return 0;
 }
+
+void ieee80211_drv_start_sw_scan(struct ieee80211_hw *hw)
+{
+	struct ieee80211_local *local = hw_to_local(hw);
+	test_and_clear_bit(SCAN_HW_SCANNING, &local->scanning);
+	__set_bit(SCAN_SW_SCANNING, &local->scanning);
+	/* TODO: check remain on channel (scan for current channel requested) */
+
+	ieee80211_start_sw_scan(local, local->scan_sdata);
+}
+EXPORT_SYMBOL(ieee80211_drv_start_sw_scan);
 
 static bool ieee80211_can_scan(struct ieee80211_local *local,
 			       struct ieee80211_sub_if_data *sdata)

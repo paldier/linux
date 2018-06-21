@@ -2333,6 +2333,12 @@ enum ieee80211_sa_query_action {
 #define WLAN_OUI_TYPE_MICROSOFT_WMM	2
 #define WLAN_OUI_TYPE_MICROSOFT_WPS	4
 
+#define WLAN_OUI_BROADCOM 			0x00904c /* Broadcom (Epigram) */
+#define WLAN_VENDOR_VHT_TYPE		0x04
+#define WLAN_VENDOR_VHT_SUBTYPE		0x08
+#define WLAN_VENDOR_VHT_SUBTYPE2	0x00
+#define WLAN_VENDOR_VHT_SUBTYPE3	0x18
+
 /*
  * WMM/802.11e Tspec Element
  */

@@ -758,6 +758,14 @@ static inline int rdev_set_antenna(struct cfg80211_registered_device *rdev,
 	return ret;
 }
 
+static inline bool rdev_is_all_iface_idle(struct cfg80211_registered_device *rdev)
+{
+	if (!rdev->ops->is_all_iface_idle)
+		return true;
+
+	return rdev->ops->is_all_iface_idle(&rdev->wiphy);
+}
+
 static inline int rdev_get_antenna(struct cfg80211_registered_device *rdev,
 				   u32 *tx_ant, u32 *rx_ant)
 {

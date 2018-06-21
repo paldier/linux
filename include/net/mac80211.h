@@ -1493,6 +1493,50 @@ struct ieee80211_vif *wdev_to_ieee80211_vif(struct wireless_dev *wdev);
 struct wireless_dev *ieee80211_vif_to_wdev(struct ieee80211_vif *vif);
 
 /**
+ * net_device_to_ieee80211_vif - return a vif from net_device
+ * @dev: the net_device to get the vif for
+ *
+ * This can be used by mac80211 drivers which needs to manipulate data
+ * path with tier own implementation of net_device_ops.
+ */
+struct ieee80211_vif *net_device_to_ieee80211_vif(struct net_device *dev);
+
+/**
+ * get_net_device_ops_from_wdev - extract the net_device from wdev
+ * @wdev: the wdev to get the net_device for
+ */
+const struct net_device_ops *get_net_device_ops_from_wdev(
+		struct wireless_dev *wdev);
+
+/**
+ * set_net_device_ops_from_wdev - replace the net_device to a wdev
+ * @wdev: the wdev to set the net_device for
+ */
+void set_net_device_ops_in_wdev(struct wireless_dev *wdev,
+		const struct net_device_ops *ops);
+
+/**
+ * copy_net_device_ops_from_wdev - clone a net_device_ops from wdev
+ * @wdev: the wdev to get the net_device_ops for
+ * @ops: the net_device_ops object to clone the ops to
+ */
+void copy_net_device_ops_from_wdev(struct wireless_dev *wdev,
+		struct net_device_ops *ops);
+
+/**
+ * ieee80211_vif_to_name - return the vif name
+ * @vif: the vif to get the wdev for
+ *
+ * This can be used by mac80211 drivers with direct cfg80211 APIs
+ * (like the vendor commands) that needs to get the name for a vif.
+ *
+ * Note that this function may return %NULL if the given wdev isn't
+ * associated with a vif that the driver knows about (e.g. monitor
+ * or AP_VLAN interfaces.)
+ */
+const char *ieee80211_vif_to_name(struct ieee80211_vif *vif);
+
+/**
  * enum ieee80211_key_flags - key flags
  *
  * These flags are used for communication about keys between the driver
@@ -1754,6 +1798,8 @@ struct ieee80211_sta_rates {
  * @tdls_initiator: indicates the STA is an initiator of the TDLS link. Only
  *	valid if the STA is a TDLS peer in the first place.
  * @mfp: indicates whether the STA uses management frame protection or not.
+ * @vendor_wds: indicates whether the STA supports
+ *	wds vendor specific capabilities.
  * @max_amsdu_subframes: indicates the maximal number of MSDUs in a single
  *	A-MSDU. Taken from the Extended Capabilities element. 0 means
  *	unlimited.
@@ -1787,6 +1833,7 @@ struct ieee80211_sta {
 	bool tdls;
 	bool tdls_initiator;
 	bool mfp;
+	int vendor_wds;
 	u8 max_amsdu_subframes;
 	u16 max_amsdu_len;
 	bool support_p2p_ps;
@@ -3642,6 +3689,11 @@ struct ieee80211_ops {
 
 	void (*reconfig_complete)(struct ieee80211_hw *hw,
 				  enum ieee80211_reconfig_type reconfig_type);
+
+	int (*get_connection_alive)(struct ieee80211_hw *hw,
+				struct ieee80211_vif *vif);
+
+	bool (*is_all_iface_idle)(struct ieee80211_hw *hw);
 
 #if IS_ENABLED(CONFIG_IPV6)
 	void (*ipv6_addr_change)(struct ieee80211_hw *hw,
@@ -5742,6 +5794,15 @@ int ieee80211_reserve_tid(struct ieee80211_sta *sta, u8 tid);
  * @tid: the TID to unreserve
  */
 void ieee80211_unreserve_tid(struct ieee80211_sta *sta, u8 tid);
+
+/**
+ * ieee80211_drv_start_sw_scan - allow driver to fallback to sw scan from hw
+ * @hw: pointer as obtained from ieee80211_alloc_hw()
+ *
+ * Note: This function must be called from hw_scan callback only.
+ *
+ */
+void ieee80211_drv_start_sw_scan(struct ieee80211_hw *hw);
 
 /**
  * ieee80211_tx_dequeue - dequeue a packet from a software tx queue
