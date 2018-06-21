@@ -78,6 +78,11 @@
 #include <linux/capability.h>
 #include <linux/user_namespace.h>
 
+#ifdef CONFIG_LTQ_CBM
+#include <net/lantiq_cbm_api.h>
+#endif
+
+
 struct kmem_cache *skbuff_head_cache __read_mostly;
 static struct kmem_cache *skbuff_fclone_cache __read_mostly;
 int sysctl_max_skb_frags __read_mostly = MAX_SKB_FRAGS;
@@ -228,6 +233,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
 	 */
 	size = SKB_DATA_ALIGN(size);
 	size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+
 	data = kmalloc_reserve(size, gfp_mask, node, &pfmemalloc);
 	if (!data)
 		goto nodata;
@@ -237,6 +243,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
 	 */
 	size = SKB_WITH_OVERHEAD(ksize(data));
 	prefetchw(data + size);
+
 
 	/*
 	 * Only clear those fields we need to clear, not those that we will
@@ -307,6 +314,7 @@ struct sk_buff *__build_skb(void *data, unsigned int frag_size)
 	struct sk_buff *skb;
 	unsigned int size = frag_size ? : ksize(data);
 
+	/*printk("%s data 0x%x size %d\r\n",__func__, data, frag_size);*/
 	skb = kmem_cache_alloc(skbuff_head_cache, GFP_ATOMIC);
 	if (!skb)
 		return NULL;
@@ -580,8 +588,17 @@ static void skb_free_head(struct sk_buff *skb)
 
 	if (skb->head_frag)
 		skb_free_frag(head);
-	else
+	else {
+#ifdef CONFIG_LTQ_CBM
+		if (!check_ptr_validation((u32)(skb->head))) {
+			kfree(skb->head);
+		} else {
+			cbm_buffer_free(smp_processor_id(), skb->head, 0);
+		}
+#else
 		kfree(head);
+#endif
+	}
 }
 
 static void skb_release_data(struct sk_buff *skb)
@@ -622,6 +639,9 @@ static void kfree_skbmem(struct sk_buff *skb)
 {
 	struct sk_buff_fclones *fclones;
 
+#ifdef CONFIG_LTQ_DATAPATH_SKB
+	dp_skb_free(skb);
+#endif
 	switch (skb->fclone) {
 	case SKB_FCLONE_UNAVAILABLE:
 		kmem_cache_free(skbuff_head_cache, skb);
@@ -856,6 +876,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	memcpy(&new->headers_start, &old->headers_start,
 	       offsetof(struct sk_buff, headers_end) -
 	       offsetof(struct sk_buff, headers_start));
+#ifdef CONFIG_NETWORK_EXTMARK
+	new->extmark	 = old->extmark;
+#endif
 	CHECK_SKB_FIELD(protocol);
 	CHECK_SKB_FIELD(csum);
 	CHECK_SKB_FIELD(hash);
@@ -879,6 +902,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 #endif
 #ifdef CONFIG_XPS
 	CHECK_SKB_FIELD(sender_cpu);
+#endif
+#ifdef CONFIG_LTQ_DATAPATH_SKB
+	dp_skb_cp(&old->dp_skb_info, &new->dp_skb_info);
 #endif
 #ifdef CONFIG_NET_SCHED
 	CHECK_SKB_FIELD(tc_index);
@@ -920,7 +946,6 @@ static struct sk_buff *__skb_clone(struct sk_buff *n, struct sk_buff *skb)
 
 	atomic_inc(&(skb_shinfo(skb)->dataref));
 	skb->cloned = 1;
-
 	return n;
 #undef C
 }
@@ -1070,6 +1095,13 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	skb_shinfo(new)->gso_segs = skb_shinfo(old)->gso_segs;
 	skb_shinfo(new)->gso_type = skb_shinfo(old)->gso_type;
 }
+
+#ifdef CONFIG_LTQ_CBM
+void ltq_copy_skb_header(struct sk_buff *n, const struct sk_buff *skb)
+{
+	copy_skb_header(n, skb);
+}
+#endif
 
 static inline int skb_alloc_rx_flag(const struct sk_buff *skb)
 {
@@ -1221,6 +1253,7 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
 		goto nodata;
 	size = SKB_WITH_OVERHEAD(ksize(data));
 
+
 	/* Copy only real data... and, alas, header. This should be
 	 * optimized for the cases when header is void.
 	 */
@@ -1265,6 +1298,7 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
 	skb->cloned   = 0;
 	skb->hdr_len  = 0;
 	skb->nohdr    = 0;
+
 	atomic_set(&skb_shinfo(skb)->dataref, 1);
 	return 0;
 

@@ -141,6 +141,11 @@
 #include <net/tcp.h>
 #include <net/busy_poll.h>
 
+#if defined(CONFIG_UDP_REDIRECT) || defined(CONFIG_UDP_REDIRECT_MODULE)
+#include <net/udp.h>
+#include <linux/udp_redirect.h>
+#endif
+
 static DEFINE_MUTEX(proto_list_mutex);
 static LIST_HEAD(proto_list);
 
@@ -417,6 +422,15 @@ int __sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 		atomic_inc(&sk->sk_drops);
 		return -ENOBUFS;
 	}
+
+		/* UNPREDIRECT */
+#if defined(CONFIG_UDP_REDIRECT) || defined(CONFIG_UDP_REDIRECT_MODULE)
+	if (udp_do_redirect_fn && sk->sk_user_data == UDP_REDIRECT_MAGIC) {
+		udp_do_redirect_fn(sk, skb);
+		kfree_skb(skb);
+		return 0;
+	}
+#endif
 
 	skb->dev = NULL;
 	skb_set_owner_r(skb, sk);

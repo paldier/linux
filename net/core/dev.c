@@ -142,6 +142,9 @@
 #include <linux/sctp.h>
 #include <linux/crash_dump.h>
 
+#ifdef CONFIG_PPA_API_SW_FASTPATH
+#include <net/ppa/ppa_api.h>
+#endif
 #include "net-sysfs.h"
 
 /* Instead of increasing this, you should create a hash table. */
@@ -155,6 +158,11 @@ static DEFINE_SPINLOCK(offload_lock);
 struct list_head ptype_base[PTYPE_HASH_SIZE] __read_mostly;
 struct list_head ptype_all __read_mostly;	/* Taps */
 static struct list_head offload_base __read_mostly;
+
+#if IS_ENABLED(CONFIG_MCAST_HELPER)
+int (*mcast_helper_sig_check_update_ptr)(struct sk_buff *skb) = NULL;
+EXPORT_SYMBOL(mcast_helper_sig_check_update_ptr);
+#endif
 
 static int netif_rx_internal(struct sk_buff *skb);
 static int call_netdevice_notifiers_info(unsigned long val,
@@ -3412,6 +3420,19 @@ static int __dev_queue_xmit(struct sk_buff *skb, void *accel_priv)
 	 */
 	rcu_read_lock_bh();
 
+#if IS_ENABLED(CONFIG_MCAST_HELPER)
+	if (mcast_helper_sig_check_update_ptr != NULL) {
+		/*ret = mcast_helper_sig_check_update_ptr(skb);*/
+		 mcast_helper_sig_check_update_ptr(skb);
+		/*if (ret == 1)
+		{
+			//dev_kfree_skb_any(skb);
+			//rcu_read_unlock_bh();
+			//return rc;
+		}*/
+	}
+#endif
+
 	skb_update_prio(skb);
 
 	qdisc_pkt_len_init(skb);
@@ -3858,6 +3879,12 @@ static int netif_rx_internal(struct sk_buff *skb)
 	net_timestamp_check(netdev_tstamp_prequeue, skb);
 
 	trace_netif_rx(skb);
+#ifdef CONFIG_PPA_API_SW_FASTPATH
+	if (ppa_hook_sw_fastpath_send_fn) {
+		if (ppa_hook_sw_fastpath_send_fn(skb) == 0)
+			return NET_RX_SUCCESS;
+	}
+#endif
 #ifdef CONFIG_RPS
 	if (static_key_false(&rps_needed)) {
 		struct rps_dev_flow voidflow, *rflow = &voidflow;
