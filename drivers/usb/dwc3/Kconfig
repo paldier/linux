@@ -105,4 +105,13 @@ config USB_DWC3_ST
 	  inside (i.e. STiH407).
 	  Say 'Y' or 'M' if you have one such device.
 
+config USB_DWC3_GRX500
+	tristate "Lantiq GRX500 Platforms"
+	depends on OF
+	select PHY_GRX500_USB
+	default USB_DWC3
+	help
+	  GRX500 SoCs with one DesignWare Core USB3 IP
+	  inside.
+	  Say 'Y' or 'M' if you have one such device.
 endif

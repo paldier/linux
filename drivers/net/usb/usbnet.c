@@ -31,7 +31,6 @@
 
 // #define	DEBUG			// error path messages, extra info
 // #define	VERBOSE			// more; success messages
-
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/netdevice.h>
@@ -45,6 +44,11 @@
 #include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/pm_runtime.h>
+#ifdef CONFIG_PPA
+#include <net/ppa/ppa_api.h>
+#include <net/ppa/ppa_hook.h>
+#include <net/ppa/ppa_api_directpath.h>
+#endif
 
 #define DRIVER_VERSION		"22-Aug-2005"
 
@@ -89,6 +93,70 @@ static int msg_level = -1;
 module_param (msg_level, int, 0);
 MODULE_PARM_DESC (msg_level, "Override default message level");
 
+#ifdef CONFIG_PPA
+static int usbnet_addr_monitor;
+static int ppa_startup_hook = 1;
+module_param(ppa_startup_hook, int, 0);
+MODULE_PARM_DESC(ppa_startup_hook, "0: don't hook ppa at startup, other: do hook");
+
+PPA_DIRECTPATH_CB usbnet_ppafp_cb;
+int32_t usbnet_ppafp_pause_rx(PPA_NETIF *dev);
+int32_t usbnet_ppafp_resume_rx(PPA_NETIF *dev);
+int32_t usbnet_ppafp_start_xmit(PPA_NETIF *rxif, PPA_NETIF *txif, PPA_BUF *skb, int32_t len);
+
+int	usbnet_ppadp_occupied = -1;
+
+static int  ppafp_enable = -1;
+module_param (ppafp_enable, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC (ppafp_enable, "Override default ppafp_enable");
+
+static void register_ppadp_sub(struct net_device *net)
+{
+	uint32_t status;
+	uint32_t if_id;
+	struct usbnet *dev = netdev_priv(net);
+
+	if (!dev->usbnet_ppadp_on || !ppa_hook_directpath_register_dev_fn) {
+		dev->usbnet_ppadp_ifid = -1;
+		return;
+	}
+
+	if (dev->usbnet_ppadp_ifid >= 0)
+		return;
+
+	usbnet_ppafp_cb.stop_tx_fn = usbnet_ppafp_pause_rx;
+	usbnet_ppafp_cb.start_tx_fn = usbnet_ppafp_resume_rx;
+	usbnet_ppafp_cb.rx_fn = usbnet_ppafp_start_xmit;
+
+	status = ppa_hook_directpath_register_dev_fn(
+					&if_id, net,
+					&usbnet_ppafp_cb,
+					PPA_F_DIRECTPATH_REGISTER
+					| PPA_F_DIRECTPATH_ETH_IF
+#ifdef PPA_F_DIRECTPATH_WAN
+					| PPA_F_DIRECTPATH_WAN
+#endif
+			);
+
+	if (status == PPA_SUCCESS)
+		dev->usbnet_ppadp_ifid = if_id;
+	else
+		dev->usbnet_ppadp_ifid = -1;
+}
+
+static void register_ppadp(struct net_device *net)
+{
+	struct usbnet *dev = netdev_priv(net);
+
+	if (!dev->usbnet_ppadp_on || (dev->usbnet_ppadp_ifid >= 0) || !ppa_hook_directpath_register_dev_fn)
+		return;
+
+	if (in_interrupt())
+		usbnet_defer_kevent(dev, EVENT_REREG_PPA);
+	else
+		register_ppadp_sub(net);
+}
+#endif
 /*-------------------------------------------------------------------------*/
 
 /* handles CDC Ethernet and many other network "bulk data" interfaces */
@@ -328,6 +396,20 @@ void usbnet_skb_return (struct usbnet *dev, struct sk_buff *skb)
 		return;
 	}
 
+#ifdef CONFIG_PPA
+	if (usbnet_addr_monitor) {
+		const struct iphdr *ih;
+		struct iphdr _iph;
+		ih = skb_header_pointer(skb, 0, sizeof(_iph), &_iph);
+
+		printk(KERN_INFO "usbnet_skb_return() INPUT SRC[%pi4/%pM] DST[%pi4/%pM]\n"
+				, eth_hdr(skb)->h_source
+				, &ih->saddr
+				, eth_hdr(skb)->h_dest
+				, &ih->daddr);
+	}
+#endif
+
 	/* only update if unset to allow minidriver rx_fixup override */
 	if (skb->protocol == 0)
 		skb->protocol = eth_type_trans (skb, dev->net);
@@ -342,10 +424,41 @@ void usbnet_skb_return (struct usbnet *dev, struct sk_buff *skb)
 	if (skb_defer_rx_timestamp(skb))
 		return;
 
+#ifdef CONFIG_PPA
+	if ( dev->usbnet_ppadp_on){
+		register_ppadp(dev->net);
+		if ((dev->usbnet_ppadp_ifid >= 0)
+			&& ppa_hook_directpath_send_fn
+			&& ppa_hook_get_ifid_for_netif_fn) {
+				uint32_t    fpstatus;
+				skb_push(skb, ETH_HLEN);
+				skb->mac_header = skb->data;
+				fpstatus = ppa_hook_directpath_send_fn(dev->usbnet_ppadp_ifid, (PPA_BUF *)skb, skb->len, 0);
+				if (!fpstatus) {
+					if (usbnet_addr_monitor)
+						printk(KERN_INFO "     Go PPA OK\n");
+				return;
+				}
+				dev_dbg(&dev->udev->dev, "ppa_hook_directpath_send_fn status %d", fpstatus);
+				/* should not touch the unavailable skb anymore since
+				   ppa_hook_directpath_send_fn will call netif_rx after
+				   failed acceleration. */
+				skb_pull(skb, ETH_HLEN);
+				if (usbnet_addr_monitor)
+					printk(KERN_INFO "Go PPA NOK %d  Try kernel\n", fpstatus);
+				return;
+			}
+		}
+#endif
+
 	status = netif_rx (skb);
 	if (status != NET_RX_SUCCESS)
 		netif_dbg(dev, rx_err, dev->net,
 			  "netif_rx status %d\n", status);
+#ifdef CONFIG_PPA
+    if (usbnet_addr_monitor)
+		printk(KERN_INFO "Go KERNEL status:%d \n", status);
+#endif
 }
 EXPORT_SYMBOL_GPL(usbnet_skb_return);
 
@@ -487,6 +600,24 @@ static int rx_submit (struct usbnet *dev, struct urb *urb, gfp_t flags)
 	unsigned long		lockflags;
 	size_t			size = dev->rx_urb_size;
 
+/*
+ * Calculate how many extra headroom is needed then allocate the
+ * skb with the proper length
+ */
+#if !defined(USBNET_NOOFFSET) || defined(USBNET_EXTRAOFFSET)
+	size_t headroom = 0;
+#if defined(CONFIG_PPA) && defined(USBNET_NOOFFSET)
+	headroom += ((dev->usbnet_ppadp_on) ? 0 : NET_IP_ALIGN);
+#else
+	headroom += NET_IP_ALIGN;
+#endif
+#if defined(USBNET_EXTRAOFFSET)
+	headroom += USBNET_EXTRAOFFSET;
+#endif
+	size += headroom;
+#endif
+
+
 	/* prevent rx skb allocation when error ratio is high */
 	if (test_bit(EVENT_RX_KILL, &dev->flags)) {
 		usb_free_urb(urb);
@@ -597,6 +728,9 @@ static void rx_complete (struct urb *urb)
 	skb_put (skb, urb->actual_length);
 	state = rx_done;
 	entry->urb = NULL;
+#ifdef CONFIG_PPA
+	register_ppadp(dev->net);
+#endif
 
 	switch (urb_status) {
 	/* success */
@@ -678,6 +812,44 @@ block:
 }
 
 /*-------------------------------------------------------------------------*/
+
+#ifdef CONFIG_PPA
+int32_t usbnet_ppafp_pause_rx(PPA_NETIF *dev)
+{
+	struct usbnet *net = netdev_priv(dev);
+
+	set_bit(EVENT_RX_PAUSED, &net->flags);
+
+	if (netif_msg_rx_status(net))
+		dev_dbg(&net->udev->dev, "paused rx queue enabled");
+
+	return PPA_SUCCESS;
+}
+
+int32_t usbnet_ppafp_resume_rx(PPA_NETIF *dev)
+{
+	struct usbnet *net = netdev_priv(dev);
+	struct sk_buff *skb;
+	int num = 0;
+
+	clear_bit(EVENT_RX_PAUSED, &net->flags);
+
+	while ((skb = skb_dequeue(&net->rxq_pause)) != NULL) {
+			usbnet_skb_return(net, skb);
+			num++;
+	}
+
+	tasklet_schedule(&net->bh);
+
+	if (netif_msg_rx_status(net))
+		dev_dbg(&net->udev->dev, "paused rx queue disabled, %d skbs requeued", num);
+
+	return PPA_SUCCESS;
+}
+#endif
+
+
+
 void usbnet_pause_rx(struct usbnet *dev)
 {
 	set_bit(EVENT_RX_PAUSED, &dev->flags);
@@ -774,6 +946,63 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs);
 
 /*-------------------------------------------------------------------------*/
 
+#ifdef CONFIG_PPA
+static DEVICE_BOOL_ATTR(addr_monitor, S_IRUGO | S_IWUSR, usbnet_addr_monitor);
+
+static ssize_t show_ppa_dp(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct net_device *netdev = to_net_dev(dev);
+	struct usbnet     *udev = netdev_priv(netdev);
+
+	return sprintf(buf, "itf_ppadp_on:%d ppadp_ifid:%d ppadp_occupied:%d\n",
+					udev->usbnet_ppadp_on,
+					udev->usbnet_ppadp_ifid,
+					usbnet_ppadp_occupied);
+}
+
+static ssize_t store_ppa_dp(struct device *dev, struct device_attribute *attr, const char *buf, size_t len)
+{
+	struct net_device *netdev = to_net_dev(dev);
+	struct usbnet     *udev = netdev_priv(netdev);
+	char *endp;
+	unsigned long target;
+
+	target = simple_strtoul(buf, &endp, 0);
+
+	if (endp == buf)
+		return -EBADMSG;
+
+	if (target == 0) {
+		if (udev->usbnet_ppadp_ifid >= 0) {
+			uint32_t if_id;
+			if (ppa_hook_directpath_rx_stop_fn)
+				ppa_hook_directpath_rx_stop_fn(udev->usbnet_ppadp_ifid, 0);
+			if (ppa_hook_directpath_register_dev_fn)
+				ppa_hook_directpath_register_dev_fn(&if_id, netdev, &usbnet_ppafp_cb, 0);
+		}
+		udev->usbnet_ppadp_on = 0;
+		udev->usbnet_ppadp_ifid = -1;
+		usbnet_ppadp_occupied = 0;
+		return len;
+	} else if (target == 1) {
+		if (ppafp_enable
+			&& usbnet_ppadp_occupied == 0
+			&& udev->usbnet_ppadp_on == 0) {
+			udev->usbnet_ppadp_on = 1;
+			usbnet_ppadp_occupied = 1;
+			register_ppadp(netdev);
+		}
+		return len;
+	 } else
+		return -EBADMSG;
+}
+
+/* extern struct device_attribute dev_attr_ppa_dp;*/
+static DEVICE_ATTR(ppa_dp, S_IRUGO|S_IWUSR, show_ppa_dp, store_ppa_dp);
+
+#endif
+/*--------------------------------------------------------------------------*/
+
 static void wait_skb_queue_empty(struct sk_buff_head *q)
 {
 	unsigned long flags;
@@ -818,6 +1047,20 @@ int usbnet_stop (struct net_device *net)
 
 	clear_bit(EVENT_DEV_OPEN, &dev->flags);
 	netif_stop_queue (net);
+
+#ifdef CONFIG_PPA
+	if (dev->usbnet_ppadp_ifid >= 0) {
+		uint32_t if_id;
+		if_id = dev->usbnet_ppadp_ifid;
+		printk(KERN_INFO "<%s> Unregister if_id: %d\n", __func__, if_id);
+		if (ppa_hook_directpath_rx_stop_fn)
+			ppa_hook_directpath_rx_stop_fn(dev->usbnet_ppadp_ifid, 0);
+		if (ppa_hook_directpath_register_dev_fn)
+			ppa_hook_directpath_register_dev_fn(&if_id, net, &usbnet_ppafp_cb, 0);
+	}
+	dev->usbnet_ppadp_ifid = -1;
+
+#endif
 
 	netif_info(dev, ifdown, dev->net,
 		   "stop stats: rx/tx %lu/%lu, errs %lu/%lu\n",
@@ -902,6 +1145,15 @@ int usbnet_open (struct net_device *net)
 	/* hard_mtu or rx_urb_size may change in reset() */
 	usbnet_update_max_qlen(dev);
 
+#ifdef CONFIG_PPA
+	if(ppa_startup_hook && usbnet_ppadp_occupied == -1) {
+		dev->usbnet_ppadp_on = 1;
+		usbnet_ppadp_occupied = 1;
+	}
+	dev->usbnet_ppadp_ifid = -1;
+	register_ppadp(net);
+#endif
+
 	// insist peer be connected
 	if (info->check_connect && (retval = info->check_connect (dev)) < 0) {
 		netif_dbg(dev, ifup, dev->net, "can't open; %d\n", retval);
@@ -920,6 +1172,10 @@ int usbnet_open (struct net_device *net)
 
 	set_bit(EVENT_DEV_OPEN, &dev->flags);
 	netif_start_queue (net);
+#ifdef CONFIG_PPA
+	if (dev->usbnet_ppadp_on && (dev->usbnet_ppadp_ifid >= 0) && ppa_hook_directpath_rx_restart_fn)
+		ppa_hook_directpath_rx_restart_fn(dev->usbnet_ppadp_ifid, 0);
+#endif
 	netif_info(dev, ifup, dev->net,
 		   "open: enable queueing (rx %d, tx %d) mtu %d %s framing\n",
 		   (int)RX_QLEN(dev), (int)TX_QLEN(dev),
@@ -1115,6 +1371,13 @@ usbnet_deferred_kevent (struct work_struct *work)
 		container_of(work, struct usbnet, kevent);
 	int			status;
 
+
+#ifdef CONFIG_PPA
+	if (test_bit(EVENT_REREG_PPA, &dev->flags)) {
+		clear_bit(EVENT_REREG_PPA, &dev->flags);
+		register_ppadp_sub(dev->net);
+	}
+#endif
 	/* usb_clear_halt() needs a thread context */
 	if (test_bit (EVENT_TX_HALT, &dev->flags)) {
 		unlink_urbs (dev, &dev->txq);
@@ -1132,8 +1395,13 @@ fail_pipe:
 					   status);
 		} else {
 			clear_bit (EVENT_TX_HALT, &dev->flags);
-			if (status != -ESHUTDOWN)
+			if (status != -ESHUTDOWN) {
+#ifdef CONFIG_PPA
+				if (dev->usbnet_ppadp_on && dev->usbnet_ppadp_ifid >= 0 && ppa_hook_directpath_rx_restart_fn)
+					ppa_hook_directpath_rx_restart_fn(dev->usbnet_ppadp_ifid, 0);
+#endif
 				netif_wake_queue (dev->net);
+			}
 		}
 	}
 	if (test_bit (EVENT_RX_HALT, &dev->flags)) {
@@ -1218,7 +1486,7 @@ skip_reset:
 
 /*-------------------------------------------------------------------------*/
 
-static void tx_complete (struct urb *urb)
+static void tx_complete(struct urb *urb)
 {
 	struct sk_buff		*skb = (struct sk_buff *) urb->context;
 	struct skb_data		*entry = (struct skb_data *) skb->cb;
@@ -1253,6 +1521,10 @@ static void tx_complete (struct urb *urb)
 				netif_dbg(dev, link, dev->net,
 					  "tx throttle %d\n", urb->status);
 			}
+#ifdef CONFIG_PPA
+			if (dev->usbnet_ppadp_on && dev->usbnet_ppadp_ifid >= 0 && ppa_hook_directpath_rx_stop_fn)
+				ppa_hook_directpath_rx_stop_fn(dev->usbnet_ppadp_ifid, 0);
+#endif
 			netif_stop_queue (dev->net);
 			break;
 		default:
@@ -1284,6 +1556,55 @@ void usbnet_tx_timeout (struct net_device *net)
 EXPORT_SYMBOL_GPL(usbnet_tx_timeout);
 
 /*-------------------------------------------------------------------------*/
+
+#ifdef CONFIG_PPA
+int32_t usbnet_ppafp_start_xmit(PPA_NETIF *rxif, PPA_NETIF *txif, PPA_BUF *skb, int32_t len)
+{
+	int pktlen;
+
+	if (usbnet_addr_monitor) {
+		const struct iphdr *ih;
+		struct iphdr _iph;
+		ih = skb_header_pointer(skb, 0, sizeof(_iph), &_iph);
+
+		printk(KERN_INFO "usbnet_ppafp_start_xmit() INPUT SRC[%pi4/%pM] DST[%pi4/%pM]\n"
+				, eth_hdr(skb)->h_source
+				, &ih->saddr
+				, eth_hdr(skb)->h_dest
+				, &ih->daddr);
+	}
+
+	if (rxif) {
+		if (usbnet_addr_monitor)
+			printk(KERN_INFO "Kicked back\n");
+		if (netif_running(rxif)) {
+			pktlen = skb->len;
+			skb->dev = rxif;
+			skb->protocol = eth_type_trans(skb, rxif);
+			if ( netif_rx(skb) == NET_RX_DROP )
+				rxif->stats.rx_dropped++;
+			else {
+				if (usbnet_addr_monitor)
+					printk(KERN_INFO "Failed drop\n");
+				rxif->stats.rx_packets++;
+				rxif->stats.rx_bytes += pktlen;
+			}
+			return 0;
+		}
+		if (usbnet_addr_monitor)
+			printk(KERN_INFO "No run\n");
+	} else if (txif) {
+		skb->dev = txif;
+		dev_queue_xmit(skb);
+		if (usbnet_addr_monitor)
+			printk(KERN_INFO "Go Tx\n");
+		return 0;
+	}
+
+	dev_kfree_skb_any(skb);
+}
+#endif
+
 
 static int build_dma_sg(const struct sk_buff *skb, struct urb *urb)
 {
@@ -1318,7 +1639,7 @@ static int build_dma_sg(const struct sk_buff *skb, struct urb *urb)
 	return 1;
 }
 
-netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
+netdev_tx_t usbnet_start_xmit(struct sk_buff *skb,
 				     struct net_device *net)
 {
 	struct usbnet		*dev = netdev_priv(net);
@@ -1329,6 +1650,22 @@ netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
 	unsigned long		flags;
 	int retval;
 
+#ifdef CONFIG_PPA
+	if (usbnet_addr_monitor) {
+		/* NCM/MBIM tx_timer_cb will send with NULL skb for starting the transmission of remain SKBs */
+		if (skb != NULL) {
+			const struct iphdr *ih;
+			struct iphdr _iph;
+			ih = skb_header_pointer(skb, 0, sizeof(_iph), &_iph);
+
+			printk(KERN_INFO "usbnet_start_xmit() INPUT SRC[%pi4/%pM] DST[%pi4/%pM]\n"
+				, eth_hdr(skb)->h_source
+				, &ih->saddr
+				, eth_hdr(skb)->h_dest
+				, &ih->daddr);
+		}
+	}
+#endif
 	if (skb)
 		skb_tx_timestamp(skb);
 
@@ -1423,8 +1760,16 @@ netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
 	}
 #endif
 
+#ifdef CONFIG_PPA
+	register_ppadp(dev->net);
+#endif
+
 	switch ((retval = usb_submit_urb (urb, GFP_ATOMIC))) {
 	case -EPIPE:
+#ifdef CONFIG_PPA
+		if (dev->usbnet_ppadp_on && dev->usbnet_ppadp_ifid >= 0 && ppa_hook_directpath_rx_stop_fn)
+			ppa_hook_directpath_rx_stop_fn(dev->usbnet_ppadp_ifid, 0);
+#endif
 		netif_stop_queue (net);
 		usbnet_defer_kevent (dev, EVENT_TX_HALT);
 		usb_autopm_put_interface_async(dev->intf);
@@ -1437,8 +1782,13 @@ netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
 	case 0:
 		netif_trans_update(net);
 		__usbnet_queue_skb(&dev->txq, skb, tx_start);
-		if (dev->txq.qlen >= TX_QLEN (dev))
+		if (dev->txq.qlen >= TX_QLEN (dev)) {
+#ifdef CONFIG_PPA
+			if (dev->usbnet_ppadp_on && dev->usbnet_ppadp_ifid >= 0 && ppa_hook_directpath_rx_stop_fn)
+				ppa_hook_directpath_rx_stop_fn(dev->usbnet_ppadp_ifid, 0);
+#endif
 			netif_stop_queue (net);
+		}
 	}
 	spin_unlock_irqrestore (&dev->txq.lock, flags);
 
@@ -1542,8 +1892,13 @@ static void usbnet_bh (unsigned long param)
 			if (dev->rxq.qlen < RX_QLEN(dev))
 				tasklet_schedule (&dev->bh);
 		}
-		if (dev->txq.qlen < TX_QLEN (dev))
+		if (dev->txq.qlen < TX_QLEN (dev)) {
+#ifdef CONFIG_PPA
+			if(dev->usbnet_ppadp_on && dev->usbnet_ppadp_ifid >= 0 && ppa_hook_directpath_rx_restart_fn)
+				ppa_hook_directpath_rx_restart_fn(dev->usbnet_ppadp_ifid, 0);
+#endif
 			netif_wake_queue (dev->net);
+		}
 	}
 }
 
@@ -1575,6 +1930,13 @@ void usbnet_disconnect (struct usb_interface *intf)
 		   dev->driver_info->description);
 
 	net = dev->net;
+
+#ifdef CONFIG_PPA
+	device_remove_file(&net->dev, &dev_attr_ppa_dp);
+	device_remove_file(&net->dev, &(dev_attr_addr_monitor.attr));
+	usbnet_ppadp_occupied = (ppa_startup_hook)? -1:0;
+#endif
+
 	unregister_netdev (net);
 
 	cancel_work_sync(&dev->kevent);
@@ -1679,6 +2041,11 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 	dev->interrupt_count = 0;
 
 	dev->net = net;
+
+#ifdef CONFIG_PPA
+	dev->usbnet_ppadp_on   =  0;
+	dev->usbnet_ppadp_ifid = -1;
+#endif
 	strcpy (net->name, "usb%d");
 	memcpy (net->dev_addr, node_id, sizeof node_id);
 
@@ -1774,6 +2141,11 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
 
 	// ok, it's ready to go.
 	usb_set_intfdata (udev, dev);
+
+#ifdef CONFIG_PPA
+	device_create_file(&net->dev, &dev_attr_ppa_dp);
+	device_create_file(&net->dev, &(dev_attr_addr_monitor.attr));
+#endif
 
 	netif_device_attach (net);
 

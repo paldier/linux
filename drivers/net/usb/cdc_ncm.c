@@ -65,6 +65,16 @@ static void cdc_ncm_txpath_bh(unsigned long param);
 static void cdc_ncm_tx_timeout_start(struct cdc_ncm_ctx *ctx);
 static enum hrtimer_restart cdc_ncm_tx_timer_cb(struct hrtimer *hr_timer);
 static struct usb_driver cdc_ncm_driver;
+/*
+ * use cdc_ncm.dstmac=00:20:30:40:50:60 from boot command or module load
+ */
+static int destMacSet;
+static char *dstmac = "FF:FF:FF:FF:FF:FF";
+static unsigned char destMac[6];
+module_param(dstmac, charp, 0);
+MODULE_PARM_DESC(dstmac, "Forced MAC in Downlink");
+
+#define MEMCPY_FOR_ZERO_GAP
 
 struct cdc_ncm_stats {
 	char stat_string[ETH_GSTRING_LEN];
@@ -88,6 +98,25 @@ static const struct cdc_ncm_stats cdc_ncm_gstrings_stats[] = {
 	CDC_NCM_SIMPLE_STAT(rx_overhead),
 	CDC_NCM_SIMPLE_STAT(rx_ntbs),
 };
+
+static void cdc_ncm_init_dstmac(void)
+{
+	unsigned int iMac[6];
+	int i;
+
+	//To check if we assign the value to dstmac when inserting module.Default value of dstmac is "FF:FF:FF:FF:FF:FF"
+	if ('F' != *dstmac) {
+		/* we got a parameter */
+		printk(KERN_INFO KBUILD_MODNAME ": Ethernet address for downlink dstmac=%s\n", dstmac);
+		sscanf(dstmac, "%x:%x:%x:%x:%x:%x", &iMac[0], &iMac[1], &iMac[2], &iMac[3], &iMac[4], &iMac[5]);
+		for (i = 0; i < 6; i++)
+			destMac[i] = (unsigned char)iMac[i];
+
+		destMacSet = 1;
+	} else {
+		printk(KERN_INFO KBUILD_MODNAME ": Default Ethernet address for downlink\n");
+	}
+}
 
 static int cdc_ncm_get_sset_count(struct net_device __always_unused *netdev, int sset)
 {
@@ -1527,11 +1556,28 @@ next_ndp:
 			break;
 
 		} else {
+#ifdef MEMCPY_FOR_ZERO_GAP
+#define PPA_ALIGN	8
+			/* Do the skb_reserve 8 bits for PMAC/CMB buffer. */
+			skb = alloc_skb(len + PPA_ALIGN, GFP_ATOMIC);
+			if (!skb)
+				goto error;
+			skb_reserve(skb, PPA_ALIGN);
+			skb->len = len;
+			memcpy(skb->data, skb_in->data + offset, len);
+			if (destMacSet && skb->data)
+				memcpy(skb->data, destMac, 6);
+
+			skb_set_tail_pointer(skb, len);
+#else
 			/* create a fresh copy to reduce truesize */
 			skb = netdev_alloc_skb_ip_align(dev->net,  len);
 			if (!skb)
 				goto error;
 			memcpy(skb_put(skb, len), skb_in->data + offset, len);
+			if (destMacSet && skb->data)
+				memcpy(skb->data, destMac, 6);
+#endif
 			usbnet_skb_return(dev, skb);
 			payload += len;	/* count payload bytes in this NTB */
 		}
@@ -1623,6 +1669,13 @@ static void cdc_ncm_status(struct usbnet *dev, struct urb *urb)
 			event->bNotificationType);
 		break;
 	}
+}
+
+static int
+cdc_ncm_probe(struct usb_interface *udev, const struct usb_device_id *prod)
+{
+	cdc_ncm_init_dstmac();
+	return usbnet_probe(udev, prod);
 }
 
 static const struct driver_info cdc_ncm_info = {
@@ -1747,7 +1800,7 @@ MODULE_DEVICE_TABLE(usb, cdc_devs);
 static struct usb_driver cdc_ncm_driver = {
 	.name = "cdc_ncm",
 	.id_table = cdc_devs,
-	.probe = usbnet_probe,
+	.probe = cdc_ncm_probe,
 	.disconnect = usbnet_disconnect,
 	.suspend = usbnet_suspend,
 	.resume = usbnet_resume,
@@ -1757,7 +1810,6 @@ static struct usb_driver cdc_ncm_driver = {
 };
 
 module_usb_driver(cdc_ncm_driver);
-
 MODULE_AUTHOR("Hans Petter Selasky");
 MODULE_DESCRIPTION("USB CDC NCM host driver");
 MODULE_LICENSE("Dual BSD/GPL");
