@@ -6496,6 +6496,11 @@ F:	drivers/platform/x86/intel_punit_ipc.c
 F:	arch/x86/include/asm/intel_pmc_ipc.h
 F:	arch/x86/include/asm/intel_punit_ipc.h
 
+INTEL PON ETHERNET DRIVER
+M:	Hauke Mehrtens <hauke.mehrtens@intel.com>
+S:	Maintained
+F:	drivers/net/ethernet/lantiq/ltq_pon_eth.c
+
 INTEL TELEMETRY DRIVER
 M:	Souvik Kumar Chakravarty <souvik.k.chakravarty@intel.com>
 L:	platform-driver-x86@vger.kernel.org

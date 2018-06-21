@@ -313,6 +313,7 @@ EXPORT_SYMBOL_GPL(of_pci_range_parser_one);
  * To guard against that we try to register the IO range first.
  * If that fails we know that pci_address_to_pio() will do too.
  */
+#ifndef CONFIG_MIPS
 int of_pci_range_to_resource(struct of_pci_range *range,
 			     struct device_node *np, struct resource *res)
 {
@@ -349,6 +350,19 @@ invalid_range:
 	res->end = (resource_size_t)OF_BAD_ADDR;
 	return err;
 }
+#else
+int of_pci_range_to_resource(struct of_pci_range *range,
+					    struct device_node *np,
+					    struct resource *res)
+{
+	res->flags = range->flags;
+	res->start = range->cpu_addr;
+	res->end = range->cpu_addr + range->size - 1;
+	res->parent = res->child = res->sibling = NULL;
+	res->name = np->full_name;
+	return 0;
+}
+#endif /* CONFIG_MIPS */
 #endif /* CONFIG_PCI */
 
 /*
