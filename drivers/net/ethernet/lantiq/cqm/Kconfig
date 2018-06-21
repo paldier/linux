@@ -1,0 +1,34 @@
+#
+# Central QOS Manager(CQM) configuration
+#
+config LTQ_CBM
+	bool "Central Buffer Manager Driver"
+	depends on SOC_GRX500
+	default n
+
+	---help---
+	Turn on this option to enable CBM/CQM driver which is a special hardware
+	present in the XRX500/FALCONMX series of SoCs to manage the network buffers
+	in HW.
+
+choice
+	prompt "SoC platform selection"
+	depends on LTQ_CBM
+
+config FALCONMX_CQM
+	bool "FALCONMX"
+	help
+	  CQM driver for FALCONMX platform.
+if FALCONMX_CQM
+source "drivers/net/ethernet/lantiq/cqm/falconmx/Kconfig"
+endif
+
+config GRX500_CBM
+	bool "GRX500"
+
+	help
+	  CBM driver for GRX500 platform.
+if GRX500_CBM
+source "drivers/net/ethernet/lantiq/cqm/grx500/Kconfig"
+endif
+endchoice

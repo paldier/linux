@@ -1,0 +1,41 @@
+#ifndef _CQM_DEV_H
+#define _CQM_DEV_H
+#include <linux/interrupt.h>
+#include <linux/slab.h>
+#include <linux/export.h>
+#include <linux/err.h>
+#include <linux/types.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/clk.h>
+
+#include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#include <linux/reset.h>
+#include <lantiq.h>
+#include <linux/platform_device.h>
+#include <linux/mfd/syscon.h>
+#include <lantiq_soc.h>
+#include "cqm_common.h"
+
+#define FALCON_DEV_NAME "falcon-cqm"
+#define GRX500_DEV_NAME "grx500-cbm"
+
+struct dt_node_inst {
+	char *dev_name;
+	char *node_name;
+	int instance_id;
+};
+
+struct cqm_data {
+	int num_resources;
+	int num_intrs;
+	unsigned int *intrs;
+	struct clk *cqm_clk[2];
+	struct reset_control *rcu_reset;
+	struct regmap *syscfg;
+	bool force_xpcs;
+};
+#endif
