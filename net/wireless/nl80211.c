@@ -286,6 +286,7 @@ static const struct nla_policy nl80211_policy[NUM_NL80211_ATTR] = {
 	[NL80211_ATTR_BEACON_TAIL] = { .type = NLA_BINARY,
 				       .len = IEEE80211_MAX_DATA_LEN },
 	[NL80211_ATTR_STA_AID] = { .type = NLA_U16 },
+	[NL80211_ATTR_STA_RSSI] = { .type = NLA_U32 },
 	[NL80211_ATTR_STA_FLAGS] = { .type = NLA_NESTED },
 	[NL80211_ATTR_STA_LISTEN_INTERVAL] = { .type = NLA_U16 },
 	[NL80211_ATTR_STA_SUPPORTED_RATES] = { .type = NLA_BINARY,
@@ -421,6 +422,7 @@ static const struct nla_policy nl80211_policy[NUM_NL80211_ATTR] = {
 	[NL80211_ATTR_VENDOR_DATA] = { .type = NLA_BINARY },
 	[NL80211_ATTR_QOS_MAP] = { .type = NLA_BINARY,
 				   .len = IEEE80211_QOS_MAP_LEN_MAX },
+	[NL80211_ATTR_VENDOR_WDS] = { .type = NLA_U32 },
 	[NL80211_ATTR_MAC_HINT] = { .len = ETH_ALEN },
 	[NL80211_ATTR_WIPHY_FREQ_HINT] = { .type = NLA_U32 },
 	[NL80211_ATTR_TDLS_PEER_CAPABILITY] = { .type = NLA_U32 },
@@ -4249,6 +4251,7 @@ static int nl80211_send_station(struct sk_buff *msg, u32 cmd, u32 portid,
 
 	PUT_SINFO(CONNECTED_TIME, connected_time, u32);
 	PUT_SINFO(INACTIVE_TIME, inactive_time, u32);
+	PUT_SINFO(MAX_RSSI, max_rssi, u32);
 
 	if (sinfo->filled & (BIT(NL80211_STA_INFO_RX_BYTES) |
 			     BIT(NL80211_STA_INFO_RX_BYTES64)) &&
@@ -4926,6 +4929,9 @@ static int nl80211_new_station(struct sk_buff *skb, struct genl_info *info)
 	    !info->attrs[NL80211_ATTR_PEER_AID])
 		return -EINVAL;
 
+	if (!info->attrs[NL80211_ATTR_STA_RSSI])
+		return -EINVAL;
+
 	mac_addr = nla_data(info->attrs[NL80211_ATTR_MAC]);
 	params.supported_rates =
 		nla_data(info->attrs[NL80211_ATTR_STA_SUPPORTED_RATES]);
@@ -4933,6 +4939,11 @@ static int nl80211_new_station(struct sk_buff *skb, struct genl_info *info)
 		nla_len(info->attrs[NL80211_ATTR_STA_SUPPORTED_RATES]);
 	params.listen_interval =
 		nla_get_u16(info->attrs[NL80211_ATTR_STA_LISTEN_INTERVAL]);
+
+	if (info->attrs[NL80211_ATTR_FRAME]) {
+		params.resp = nla_data(info->attrs[NL80211_ATTR_FRAME]);
+		params.resp_len = nla_len(info->attrs[NL80211_ATTR_FRAME]);
+	}
 
 	if (info->attrs[NL80211_ATTR_STA_SUPPORT_P2P_PS]) {
 		u8 tmp;
@@ -4957,6 +4968,8 @@ static int nl80211_new_station(struct sk_buff *skb, struct genl_info *info)
 		params.aid = nla_get_u16(info->attrs[NL80211_ATTR_STA_AID]);
 	if (!params.aid || params.aid > IEEE80211_MAX_AID)
 		return -EINVAL;
+
+	params.rssi = nla_get_u32(info->attrs[NL80211_ATTR_STA_RSSI]);
 
 	if (info->attrs[NL80211_ATTR_STA_CAPABILITY]) {
 		params.capability =
@@ -7250,33 +7263,51 @@ static int nl80211_start_radar_detection(struct sk_buff *skb,
 	unsigned int cac_time_ms;
 	int err;
 
+	pr_debug("Starting radar detection\n");
+
 	dfs_region = reg_get_dfs_region(wdev->wiphy);
-	if (dfs_region == NL80211_DFS_UNSET)
+	if (dfs_region == NL80211_DFS_UNSET) {
+		pr_debug("DFS master region not specified\n");
 		return -EINVAL;
+	}
 
 	err = nl80211_parse_chandef(rdev, info, &chandef);
-	if (err)
+	if (err) {
+		pr_debug("Could not parse the channel definition\n");
 		return err;
+	}
 
-	if (netif_carrier_ok(dev))
+	if (netif_carrier_ok(dev)) {
+		pr_debug("Carrier isn't present on device\n");
 		return -EBUSY;
+	}
 
-	if (wdev->cac_started)
+	if (wdev->cac_started) {
+		pr_debug("CAC already started\n");
 		return -EBUSY;
+	}
 
 	err = cfg80211_chandef_dfs_required(wdev->wiphy, &chandef,
 					    wdev->iftype);
-	if (err < 0)
+	if (err < 0) {
+		pr_debug("Error looking for DFS-required channels\n");
 		return err;
+	}
 
-	if (err == 0)
+	if (err == 0) {
+		pr_debug("No DFS-required channels found\n");
 		return -EINVAL;
+	}
 
-	if (!cfg80211_chandef_dfs_usable(wdev->wiphy, &chandef))
+	if (!cfg80211_chandef_dfs_usable(wdev->wiphy, &chandef)) {
+		pr_debug("Channels are not all in DFS_USABLE state\n");
 		return -EINVAL;
+	}
 
-	if (!rdev->ops->start_radar_detection)
+	if (!rdev->ops->start_radar_detection) {
+		pr_debug("Device does not support radar detection\n");
 		return -EOPNOTSUPP;
+	}
 
 	cac_time_ms = cfg80211_chandef_dfs_cac_time(&rdev->wiphy, &chandef);
 	if (WARN_ON(!cac_time_ms))
@@ -7288,7 +7319,10 @@ static int nl80211_start_radar_detection(struct sk_buff *skb,
 		wdev->cac_started = true;
 		wdev->cac_start_time = jiffies;
 		wdev->cac_time_ms = cac_time_ms;
+	} else {
+		pr_debug("Start radar detection in device failed\n");
 	}
+
 	return err;
 }
 
@@ -7426,6 +7460,12 @@ skip_beacons:
 	err = nl80211_parse_chandef(rdev, info, &params.chandef);
 	if (err)
 		return err;
+
+	if (info->attrs[NL80211_ATTR_SB_DFS_BW])
+		params.sb_dfs_bw = nla_get_u8(info->attrs[NL80211_ATTR_SB_DFS_BW]);
+
+	if (params.sb_dfs_bw)
+		cfg80211_set_dfs_state(&rdev->wiphy, &params.chandef, NL80211_DFS_AVAILABLE);
 
 	if (!cfg80211_reg_can_beacon_relax(&rdev->wiphy, &params.chandef,
 					   wdev->iftype))
@@ -8001,6 +8041,10 @@ static int nl80211_associate(struct sk_buff *skb, struct genl_info *info)
 			req.use_mfp = true;
 		else if (mfp != NL80211_MFP_NO)
 			return -EINVAL;
+	}
+
+	if (info->attrs[NL80211_ATTR_VENDOR_WDS]) {
+		req.vendor_wds = nla_get_u32(info->attrs[NL80211_ATTR_VENDOR_WDS]);
 	}
 
 	if (info->attrs[NL80211_ATTR_PREV_BSSID])
@@ -14084,7 +14128,8 @@ void
 nl80211_radar_notify(struct cfg80211_registered_device *rdev,
 		     const struct cfg80211_chan_def *chandef,
 		     enum nl80211_radar_event event,
-		     struct net_device *netdev, gfp_t gfp)
+		     struct net_device *netdev,
+		     u8 radar_bit_map, gfp_t gfp)
 {
 	struct sk_buff *msg;
 	void *hdr;
@@ -14118,6 +14163,12 @@ nl80211_radar_notify(struct cfg80211_registered_device *rdev,
 	if (nl80211_send_chandef(msg, chandef))
 		goto nla_put_failure;
 
+	if (radar_bit_map) {
+		if (NL80211_RADAR_DETECTED == event &&
+		    nla_put_u8(msg, NL80211_ATTR_RADAR_BIT_MAP, radar_bit_map))
+			goto nla_put_failure;
+	}
+
 	genlmsg_end(msg, hdr);
 
 	genlmsg_multicast_netns(&nl80211_fam, wiphy_net(&rdev->wiphy), msg, 0,
@@ -14128,6 +14179,7 @@ nl80211_radar_notify(struct cfg80211_registered_device *rdev,
 	genlmsg_cancel(msg, hdr);
 	nlmsg_free(msg);
 }
+EXPORT_SYMBOL(nl80211_radar_notify);
 
 void cfg80211_probe_status(struct net_device *dev, const u8 *addr,
 			   u64 cookie, bool acked, gfp_t gfp)

@@ -635,10 +635,24 @@ static bool cfg80211_is_all_idle(void)
 	return is_all_idle;
 }
 
+static bool cfg80211_drv_is_all_idle(void)
+{
+	struct cfg80211_registered_device *rdev;
+	bool is_all_idle = true;
+
+	list_for_each_entry(rdev, &cfg80211_rdev_list, list) {
+		if (!rdev_is_all_iface_idle(rdev))
+			is_all_idle = false;
+	 }
+
+	return is_all_idle;
+}
+
+
 static void disconnect_work(struct work_struct *work)
 {
 	rtnl_lock();
-	if (cfg80211_is_all_idle())
+	if (cfg80211_is_all_idle() && cfg80211_drv_is_all_idle())
 		regulatory_hint_disconnect();
 	rtnl_unlock();
 }
@@ -756,8 +770,9 @@ void __cfg80211_connect_result(struct net_device *dev, const u8 *bssid,
 	 * - country_ie + 2, the start of the country ie data, and
 	 * - and country_ie[1] which is the IE length
 	 */
-	regulatory_hint_country_ie(wdev->wiphy, bss->channel->band,
-				   country_ie + 2, country_ie[1]);
+	if (!(wdev->wiphy->flags & WIPHY_FLAG_DISABLE_11D_HINT))
+		regulatory_hint_country_ie(wdev->wiphy, bss->channel->band,
+						country_ie + 2, country_ie[1]);
 	kfree(country_ie);
 }
 

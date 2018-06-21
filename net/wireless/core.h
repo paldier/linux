@@ -18,6 +18,7 @@
 
 
 #define WIPHY_IDX_INVALID	-1
+#define IEEE80211_SCAN_RESULT_EXPIRE	(30 * HZ)
 
 struct cfg80211_registered_device {
 	const struct cfg80211_ops *ops;
@@ -75,6 +76,7 @@ struct cfg80211_registered_device {
 	struct cfg80211_scan_request *scan_req; /* protected by RTNL */
 	struct sk_buff *scan_msg;
 	struct cfg80211_sched_scan_request __rcu *sched_scan_req;
+	u32 scan_expire_time;
 	unsigned long suspend_at;
 	struct work_struct scan_done_wk;
 	struct work_struct sched_scan_results_wk;
@@ -492,6 +494,8 @@ void cfg80211_stop_p2p_device(struct cfg80211_registered_device *rdev,
 
 void cfg80211_stop_nan(struct cfg80211_registered_device *rdev,
 		       struct wireless_dev *wdev);
+
+int cfg80211_chandef_get_width(const struct cfg80211_chan_def *c);
 
 #define CFG80211_MAX_NUM_DIFFERENT_CHANNELS 10
 

@@ -150,7 +150,7 @@ static void chandef_primary_freqs(const struct cfg80211_chan_def *c,
 	}
 }
 
-static int cfg80211_chandef_get_width(const struct cfg80211_chan_def *c)
+int cfg80211_chandef_get_width(const struct cfg80211_chan_def *c)
 {
 	int width;
 
@@ -251,6 +251,8 @@ static void cfg80211_set_chans_dfs_state(struct wiphy *wiphy, u32 center_freq,
 		if (!c || !(c->flags & IEEE80211_CHAN_RADAR))
 			continue;
 
+		pr_debug("Setting the DFS state of channel %hu to 0x%02x\n",
+		       c->hw_value, dfs_state);
 		c->dfs_state = dfs_state;
 		c->dfs_state_entered = jiffies;
 	}
@@ -277,6 +279,7 @@ void cfg80211_set_dfs_state(struct wiphy *wiphy,
 	cfg80211_set_chans_dfs_state(wiphy, chandef->center_freq2,
 				     width, dfs_state);
 }
+EXPORT_SYMBOL(cfg80211_set_dfs_state);
 
 static u32 cfg80211_get_start_freq(u32 center_freq,
 				   u32 bandwidth)

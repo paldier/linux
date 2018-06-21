@@ -1638,20 +1638,29 @@ int cfg80211_iter_combinations(struct wiphy *wiphy,
 			}
 		}
 
-		if (radar_detect != (c->radar_detect_widths & radar_detect))
+		if (radar_detect != (c->radar_detect_widths & radar_detect)) {
+			pr_debug("combination %u, radar detect_widths 0x%02x",
+			       i, c->radar_detect_widths);
 			goto cont;
+		}
 
 		if (radar_detect && c->radar_detect_regions &&
-		    !(c->radar_detect_regions & BIT(region)))
+		    !(c->radar_detect_regions & BIT(region))) {
+			pr_debug("radar_detect_regions 0x%x, region %d)",
+			       c->radar_detect_regions, region);
 			goto cont;
+		}
 
 		/* Finally check that all iftypes that we're currently
 		 * using are actually part of this combination. If they
 		 * aren't then we can't use this combination and have
 		 * to continue to the next.
 		 */
-		if ((all_iftypes & used_iftypes) != used_iftypes)
+		if ((all_iftypes & used_iftypes) != used_iftypes) {
+			pr_debug("all_iftypes 0x%02x, used_iftypes 0x%02x",
+			       all_iftypes, used_iftypes);
 			goto cont;
+		}
 
 		/* This combination covered all interface types and
 		 * supported the requested numbers, so we're good.
@@ -1686,8 +1695,10 @@ int cfg80211_check_combinations(struct wiphy *wiphy,
 					 cfg80211_iter_sum_ifcombs, &num);
 	if (err)
 		return err;
-	if (num == 0)
+	if (num == 0) {
+		pr_debug("No suitable interface combination found\n");
 		return -EBUSY;
+	}
 
 	return 0;
 }

@@ -505,6 +505,13 @@ int cfg80211_mlme_register_mgmt(struct wireless_dev *wdev, u32 snd_portid,
 	nreg->frame_type = cpu_to_le16(frame_type);
 	nreg->wdev = wdev;
 	list_add(&nreg->list, &wdev->mgmt_registrations);
+
+	if (frame_type == IEEE80211_STYPE_PROBE_RESP ||
+		frame_type == IEEE80211_STYPE_BEACON) {
+		wdev->vendor_events_filter = nreg->match;
+		wdev->vendor_events_filter_len = nreg->match_len;
+	}
+
 	spin_unlock_bh(&wdev->mgmt_registrations_lock);
 
 	/* process all unregistrations to avoid driver confusion */
@@ -762,7 +769,7 @@ void cfg80211_dfs_channels_update_work(struct work_struct *work)
 
 				nl80211_radar_notify(rdev, &chandef,
 						     NL80211_RADAR_NOP_FINISHED,
-						     NULL, GFP_ATOMIC);
+						     NULL, 0, GFP_ATOMIC);
 				continue;
 			}
 
@@ -782,26 +789,72 @@ void cfg80211_dfs_channels_update_work(struct work_struct *work)
 }
 
 
+static void cfg80211_set_chans_dfs_state_bit_map (struct wiphy *wiphy, u32 center_freq,
+						  u32 bandwidth, u8 radar_bit_map, u8 *bit_idx,
+						  enum nl80211_dfs_state dfs_state)
+{
+	struct ieee80211_channel *c;
+	u32 freq;
+
+	for (freq = center_freq - bandwidth/2 + 10;
+	     freq <= center_freq + bandwidth/2 - 10;
+	     freq += 20) {
+		if (radar_bit_map & (1 << *bit_idx)) {
+			c = ieee80211_get_channel(wiphy, freq);
+			if (!c || !(c->flags & IEEE80211_CHAN_RADAR)) {
+				(*bit_idx)++;
+				continue;
+			}
+
+			c->dfs_state = dfs_state;
+			c->dfs_state_entered = jiffies;
+		}
+		(*bit_idx)++;
+	}
+}
+
+void cfg80211_set_dfs_state_bit_map (struct wiphy *wiphy, struct cfg80211_chan_def *chandef,
+				     u8 radar_bit_map, enum nl80211_dfs_state dfs_state)
+{
+	u8 bit_idx = 0;
+	u32 center_freq, bandwidth;
+
+	center_freq = chandef->center_freq1;
+	bandwidth   = cfg80211_chandef_get_width(chandef);
+
+	cfg80211_set_chans_dfs_state_bit_map(wiphy, center_freq, bandwidth,
+					     radar_bit_map, &bit_idx, dfs_state);
+
+	if (NL80211_CHAN_WIDTH_80P80 != bandwidth)
+		return;
+
+	center_freq = chandef->center_freq2;
+	cfg80211_set_chans_dfs_state_bit_map(wiphy, center_freq, bandwidth,
+					     radar_bit_map, &bit_idx, dfs_state);
+}
+EXPORT_SYMBOL(cfg80211_set_dfs_state_bit_map);
+
+
 void cfg80211_radar_event(struct wiphy *wiphy,
 			  struct cfg80211_chan_def *chandef,
-			  gfp_t gfp)
+			  u8 radar_bit_map, gfp_t gfp)
 {
 	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wiphy);
 	unsigned long timeout;
 
 	trace_cfg80211_radar_event(wiphy, chandef);
 
-	/* only set the chandef supplied channel to unavailable, in
-	 * case the radar is detected on only one of multiple channels
-	 * spanned by the chandef.
-	 */
-	cfg80211_set_dfs_state(wiphy, chandef, NL80211_DFS_UNAVAILABLE);
+	if (radar_bit_map)
+		cfg80211_set_dfs_state_bit_map(wiphy, chandef, radar_bit_map,
+					       NL80211_DFS_UNAVAILABLE);
+	else
+		cfg80211_set_dfs_state(wiphy, chandef, NL80211_DFS_UNAVAILABLE);
 
 	timeout = msecs_to_jiffies(IEEE80211_DFS_MIN_NOP_TIME_MS);
 	queue_delayed_work(cfg80211_wq, &rdev->dfs_update_channels_wk,
 			   timeout);
 
-	nl80211_radar_notify(rdev, chandef, NL80211_RADAR_DETECTED, NULL, gfp);
+	nl80211_radar_notify(rdev, chandef, NL80211_RADAR_DETECTED, NULL, radar_bit_map, gfp);
 }
 EXPORT_SYMBOL(cfg80211_radar_event);
 
@@ -837,6 +890,23 @@ void cfg80211_cac_event(struct net_device *netdev,
 	}
 	wdev->cac_started = false;
 
-	nl80211_radar_notify(rdev, chandef, event, netdev, gfp);
+	nl80211_radar_notify(rdev, chandef, event, netdev, 0, gfp);
 }
 EXPORT_SYMBOL(cfg80211_cac_event);
+
+int cfg80211_rx_vendor_specific_mgmt(struct wireless_dev *wdev, int freq,
+		      const u8 *buf, size_t len, gfp_t gfp)
+{
+	struct wiphy *wiphy = wdev->wiphy;
+	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wiphy);
+	struct cfg80211_mgmt_registration *reg;
+	int res = 0;
+
+	list_for_each_entry(reg, &wdev->mgmt_registrations, list) {
+		res = nl80211_send_mgmt(rdev, wdev, reg->nlportid, freq, 0, buf, len, 0, gfp);
+		break;
+	}
+
+	return res;
+}
+EXPORT_SYMBOL(cfg80211_rx_vendor_specific_mgmt);

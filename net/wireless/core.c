@@ -39,6 +39,7 @@ MODULE_ALIAS_GENL_FAMILY(NL80211_GENL_NAME);
 
 /* RCU-protected (and RTNL for writers) */
 LIST_HEAD(cfg80211_rdev_list);
+EXPORT_SYMBOL(cfg80211_rdev_list);
 int cfg80211_rdev_list_generation;
 
 /* for debugfs */
@@ -440,6 +441,8 @@ use_default_name:
 		}
 	}
 
+	rdev->scan_expire_time = IEEE80211_SCAN_RESULT_EXPIRE;
+
 	INIT_LIST_HEAD(&rdev->wiphy.wdev_list);
 	INIT_LIST_HEAD(&rdev->beacon_registrations);
 	spin_lock_init(&rdev->beacon_registrations_lock);
@@ -538,9 +541,9 @@ static int wiphy_verify_combinations(struct wiphy *wiphy)
 				CFG80211_MAX_NUM_DIFFERENT_CHANNELS))
 			return -EINVAL;
 
-		/* DFS only works on one channel. */
+		/* Two different channels allowed by WLAN driver during CSA */
 		if (WARN_ON(c->radar_detect_widths &&
-			    (c->num_different_channels > 1)))
+			    (c->num_different_channels > 2)))
 			return -EINVAL;
 
 		if (WARN_ON(!c->n_limits))
@@ -965,6 +968,12 @@ void cfg80211_unregister_wdev(struct wireless_dev *wdev)
 	}
 }
 EXPORT_SYMBOL(cfg80211_unregister_wdev);
+
+struct workqueue_struct *cfg80211_get_cfg80211_wq(void)
+{
+	return cfg80211_wq;
+}
+EXPORT_SYMBOL(cfg80211_get_cfg80211_wq);
 
 static const struct device_type wiphy_type = {
 	.name	= "wlan",

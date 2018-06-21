@@ -130,15 +130,17 @@ static u32 reg_is_indoor_portid;
 
 static void restore_regulatory_settings(bool reset_user);
 
-static const struct ieee80211_regdomain *get_cfg80211_regdom(void)
+const struct ieee80211_regdomain *get_cfg80211_regdom(void)
 {
 	return rtnl_dereference(cfg80211_regdomain);
 }
+EXPORT_SYMBOL(get_cfg80211_regdom);
 
 const struct ieee80211_regdomain *get_wiphy_regdom(struct wiphy *wiphy)
 {
 	return rtnl_dereference(wiphy->regd);
 }
+EXPORT_SYMBOL(get_wiphy_regdom);
 
 static const char *reg_dfs_region_str(enum nl80211_dfs_regions dfs_region)
 {
@@ -1857,8 +1859,9 @@ __reg_process_hint_user(struct regulatory_request *user_request)
 	if (reg_request_cell_base(lr))
 		return REG_REQ_IGNORE;
 
+	/* Don't do intersection between mac80211 and cfg80211 regdom */
 	if (lr->initiator == NL80211_REGDOM_SET_BY_COUNTRY_IE)
-		return REG_REQ_INTERSECT;
+		return REG_REQ_OK;
 	/*
 	 * If the user knows better the user should set the regdom
 	 * to their country before the IE is picked up
