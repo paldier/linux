@@ -171,3 +171,4 @@ obj-$(CONFIG_PMBUS)		+= pmbus/
 
 ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
 
+obj-$(CONFIG_LTQ_SPDMON)+= spdmon.o

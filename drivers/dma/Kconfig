@@ -576,6 +576,8 @@ source "drivers/dma/hsu/Kconfig"
 
 source "drivers/dma/sh/Kconfig"
 
+source "drivers/dma/intel/Kconfig"
+
 # clients
 comment "DMA Clients"
 	depends on DMA_ENGINE
@@ -600,5 +602,31 @@ config DMATEST
 
 config DMA_ENGINE_RAID
 	bool
+
+config LTQ_HWMCPY
+	bool "Lantiq Hardware Memcopy Engine"
+	default n
+	depends on SOC_GRX500
+	help
+	  Lantiq Hardware Memory Copy Engine.
+
+config LTQ_UMT_EXPAND_MODE
+	bool "Lantiq UMT in A21 expand mode"
+	depends on LTQ_HWMCPY && SOC_GRX500
+	help
+	  In expand mode, UMT HW is able to support max
+	  four UMT port. CBM port and DMA channels that
+	  associated with the UMT port can be configurable.
+	  Expand mode use dedicated OCP master to send out
+	  the UMT message instead of using DMA as in the
+	  legacy mode.
+
+config LTQ_UMT_SW_MODE
+	bool "Lantiq UMT SW mode"
+	depends on LTQ_HWMCPY && SOC_GRX500
+	default n
+	help
+	  In SW mode, a dedicated TC on VPE is used to update
+	  the UMT counter in the destination port.
 
 endif

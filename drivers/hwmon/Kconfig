@@ -1857,4 +1857,10 @@ config SENSORS_ATK0110
 
 endif # ACPI
 
+config LTQ_SPDMON
+	tristate "Speed monitor support"
+	depends on SOC_GRX500
+	---help---
+		Speed monitor of Lantiq SOC	
+		
 endif # HWMON

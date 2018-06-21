@@ -507,6 +507,20 @@ config CLKSRC_PXA
 	  This enables OST0 support available on PXA and SA-11x0
 	  platforms.
 
+config INTEL_GPTC
+	bool "Intel generic purpose timer support"
+	depends on GENERIC_CLOCKEVENTS
+	select CLKSRC_OF
+	help
+	  This enables external clock source (GPTC) for intel gateway SoC
+
+config GPTC_SCHED_CLOCK
+	bool "Use GPTC clock source as schedule clock"
+	depends on INTEL_GPTC && X86
+	help
+	  This enables gptc clock source as schedule clock which will be
+	  used in trace and other functions
+
 config H8300_TMR8
         bool "Clockevent timer for the H8300 platform" if COMPILE_TEST
         depends on GENERIC_CLOCKEVENTS && HAS_IOMEM

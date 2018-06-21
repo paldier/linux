@@ -1515,6 +1515,22 @@ config LANTIQ_WDT
 	help
 	  Hardware driver for the Lantiq SoC Watchdog Timer.
 
+config GRX500_IAP_WDT
+        tristate "GRX500 SoC watchdog for InterAptiv core"
+        depends on SOC_GRX500
+	select WATCHDOG_CORE
+        help
+          Hardware driver for the GRX500 SoC Watchdog Timer for
+	  InterAptiv core.
+
+config GRX500_BOOTCORE_WDT
+        tristate "GRX500 SoC watchdog for Bootcore"
+        depends on SOC_TYPE_GRX500_TEP 
+	select WATCHDOG_CORE
+        help
+          Hardware driver for the GRX500 SoC Watchdog Timer for
+	  Bootcore core.
+
 config RALINK_WDT
 	tristate "Ralink SoC watchdog"
 	select WATCHDOG_CORE

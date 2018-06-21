@@ -827,6 +827,15 @@ config REGULATOR_TPS65912
 	help
 	    This driver supports TPS65912 voltage regulator chip.
 
+config REGULATOR_TPS65273
+    tristate "TI TPS65273 Power regulators"
+    depends on I2C && OF
+    select REGMAP_I2C
+    help
+      This driver supports TPS65273 voltage regulator chips. TPS65273
+	  provides dual synchronous step-down converters with I2C controlled
+	  VID and current sharing.
+
 config REGULATOR_TPS80031
 	tristate "TI TPS80031/TPS80032 power regulator driver"
 	depends on MFD_TPS80031

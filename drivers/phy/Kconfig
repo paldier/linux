@@ -461,6 +461,17 @@ config PHY_TUSB1210
 	help
 	  Support for TI TUSB1210 USB ULPI PHY.
 
+config PHY_GRX500_USB
+	tristate "Lantiq GRX500 USB3 PHY Driver"
+	depends on USB_SUPPORT
+	depends on USB_DWC3_GRX500 
+	select GENERIC_PHY
+	select USB_PHY
+	select REGULATOR
+	select REGULATOR_FIXED_VOLTAGE
+	help
+	  Enable this to support the Lantiq GRX500 USB 3 PHY.
+
 config PHY_BRCM_SATA
 	tristate "Broadcom SATA PHY driver"
 	depends on ARCH_BRCMSTB || ARCH_BCM_IPROC || BMIPS_GENERIC || COMPILE_TEST
@@ -481,6 +492,7 @@ config PHY_CYGNUS_PCIE
 	  If unsure, say N.
 
 source "drivers/phy/tegra/Kconfig"
+source "drivers/phy/intel/Kconfig"
 
 config PHY_NS2_PCIE
 	tristate "Broadcom Northstar2 PCIe PHY driver"
