@@ -266,7 +266,7 @@ int mwifiex_11h_handle_radar_detected(struct mwifiex_private *priv,
 		mwifiex_dbg(priv->adapter, ERROR,
 			    "Failed to stop CAC in FW\n");
 	cfg80211_radar_event(priv->adapter->wiphy, &priv->dfs_chandef,
-			     GFP_KERNEL);
+			     0, GFP_KERNEL);
 	mwifiex_dbg(priv->adapter, MSG, "regdomain: %d\n",
 		    rdr_event->reg_domain);
 	mwifiex_dbg(priv->adapter, MSG, "radar detection type: %d\n",

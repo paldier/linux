@@ -34,6 +34,7 @@
 #include <net/rtnetlink.h>
 #include <net/xfrm.h>
 #include <linux/netpoll.h>
+#include <../net/bridge/br_private.h>
 
 #define MACVLAN_HASH_BITS	8
 #define MACVLAN_HASH_SIZE	(1<<MACVLAN_HASH_BITS)
@@ -406,6 +407,23 @@ static void macvlan_forward_source(struct sk_buff *skb,
 	}
 }
 
+static struct macvlan_dev *macvlan_slave_lookup(const struct macvlan_port *port)
+{
+	struct macvlan_dev *vlan;
+	struct net_bridge_port *brport;
+	int i;
+
+	for (i = 0; i < MACVLAN_HASH_SIZE; i++) {
+		hlist_for_each_entry_rcu(vlan, &port->vlan_hash[i], hlist) {
+			brport = br_port_get_rtnl(vlan->dev);
+			if (brport != NULL) {
+				return vlan;
+			}
+		}
+	}
+	return NULL;
+}
+
 /* called under rcu_read_lock() from netif_receive_skb */
 static rx_handler_result_t macvlan_handle_frame(struct sk_buff **pskb)
 {
@@ -453,9 +471,11 @@ static rx_handler_result_t macvlan_handle_frame(struct sk_buff **pskb)
 					      struct macvlan_dev, list);
 	else
 		vlan = macvlan_hash_lookup(port, eth->h_dest);
-	if (!vlan || vlan->mode == MACVLAN_MODE_SOURCE)
-		return RX_HANDLER_PASS;
-
+	if (vlan == NULL || vlan->mode == MACVLAN_MODE_SOURCE) {
+		vlan = macvlan_slave_lookup(port);
+		if (NULL == vlan  || vlan->mode == MACVLAN_MODE_SOURCE)
+			return RX_HANDLER_PASS;
+	}
 	dev = vlan->dev;
 	if (unlikely(!(dev->flags & IFF_UP))) {
 		kfree_skb(skb);
