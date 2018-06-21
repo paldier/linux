@@ -275,4 +275,32 @@ config FM10K
 	  To compile this driver as a module, choose M here. The module
 	  will be called fm10k.  MSI-X interrupt support is required
 
+config VRX518
+	tristate "Intel(R) VRX518 SmartPHY DSL PCIe Endpoint support"
+	depends on PCI_MSI
+	---help---
+	  This driver supports Intel(R) VRX518 DSL PCIe Endpoint/ACA functions. 
+
+	  To compile this driver as a module, choose M here. The module
+	  will be called vrx518.  MSI interrupt support is required for
+	  this driver to work correctly.
+
+config VRX518_TC
+	tristate "Intel(R) VRX518 SmartPHY DSL PCIe Endpoint support"
+	depends on VRX518
+        default n
+	---help---
+	  This driver supports Intel(R) VRX518 TC functions. 
+
+	  To compile this driver as a module, choose M here. The module
+	  will be called vrx518_tc.
+
+config VRX518_PCIE_SWITCH_BONDING
+	bool "Intel(R) VRX518 SmartPHY DSL bonding with PCIe Switch"
+	depends on VRX518
+	default n
+	---help---
+	Supported VRX518 SmartPHY PCIe DSL Bonding with PCIe switch
+
+source "drivers/net/ethernet/intel/vrx518/Kconfig"
 endif # NET_VENDOR_INTEL
