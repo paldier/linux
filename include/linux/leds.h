@@ -104,7 +104,11 @@ struct led_classdev {
 	/* true if activated - deactivate routine uses it to do cleanup */
 	bool			activated;
 #endif
-
+#ifdef CONFIG_SOC_GRX500
+    void (*blink_src_set)(struct led_classdev *led_cdev,
+    char *);
+    char* (*blink_src_get)(struct led_classdev *led_cdev);
+#endif
 	/* Ensures consistent access to the LED Flash Class device */
 	struct mutex		led_access;
 };

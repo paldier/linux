@@ -659,6 +659,25 @@ config LEDS_MLXCPLD
 	  This option enabled support for the LEDs on the Mellanox
 	  boards. Say Y to enabled these.
 
+config LEDS_XRX500
+    bool "LED driver for XRX500 SSO Unit"
+    depends on SOC_GRX500
+    help
+      This enables support for the Serial Shift Output Controller (SSO) unit found
+      on XRX500 SoC. The SSO allows the SoC to drive a shift registers cascade,
+      that can be up to 32 bit. This peripheral is aimed at driving leds.
+      Some of the gpios/leds can be auto updated by the soc with phy status.
+      This also acts as a GPIO controller for drivers to drive the shift register
+      outputs.
+
+config LEDS_INTEL_SSO
+	tristate "LED support for INTEL SSO"
+	depends on LEDS_CLASS
+	depends on MFD_SYSCON
+	depends on GPIO_INTEL_SSO
+	help
+	  This enables LED support for Serial Shift Output Controller(SSO).
+
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
