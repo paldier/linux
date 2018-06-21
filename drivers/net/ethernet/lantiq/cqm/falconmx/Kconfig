@@ -1,0 +1,68 @@
+#
+# Central Buffer Manager(CBM) configuration
+#
+menu "CQM_FALCONMX"
+config CQM_QMGR_NUM_DESC
+	hex "Number of QMGR Descriptors supported "
+	depends on LTQ_CBM
+	default 0x2000
+	---help---
+	Number of descriptors to be supported.128 bits of memory for each descriptor will be allocated
+	e.g 8192 descriptors * 128 bits (size of each descriptor)
+
+config CQM_SIZE0_BUF_SIZE
+	hex "CQM size0 Buffer size"
+	depends on LTQ_CBM
+	default 0x800
+	---help---
+	possible sizes are 128B, 256B, 512B, 1KB, 2KB, 4KB, 8KB, 10KB
+
+config CQM_NUM_SIZE0_BUF
+	hex "number of size0 buffers"
+	depends on LTQ_CBM
+	default 0x80
+
+config CQM_SIZE1_BUF_SIZE 
+	hex "CQM size1 Buffer size"
+	depends on LTQ_CBM
+	default 0x800
+	---help---
+	possible sizes are 128B, 256B, 512B, 1KB, 2KB, 4KB, 8KB, 10KB
+
+config CQM_NUM_SIZE1_BUF
+	hex "number of size1 buffers"
+	depends on LTQ_CBM
+	default 0x80
+
+config CQM_SIZE2_BUF_SIZE 
+	hex "CQM size2 Buffer size"
+	depends on LTQ_CBM
+	default 0x800
+	---help---
+	possible sizes are 128B, 256B, 512B, 1KB, 2KB, 4KB, 8KB, 10KB
+
+config CQM_NUM_SIZE2_BUF
+	hex "number of size2 buffers"
+	depends on LTQ_CBM
+	default 0x80
+
+config CQM_SIZE3_BUF_SIZE 
+	hex "CQM size3 Buffer size"
+	depends on LTQ_CBM
+	default 0x800
+	---help---
+	possible sizes are 128B, 256B, 512B, 1KB, 2KB, 4KB, 8KB, 10KB
+
+config CQM_NUM_SIZE3_BUF
+	hex "number of size3 buffers"
+	depends on LTQ_CBM
+	default 0x80
+
+config CBM_LS_ENABLE
+	tristate "CBM loadspreader"
+	depends on LTQ_CBM
+	default n
+	---help---
+	Turn on this option to enable CBM LS and TCP packet Marking
+	in HW.
+endmenu
