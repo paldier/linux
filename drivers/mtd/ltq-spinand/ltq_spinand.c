@@ -322,6 +322,12 @@ struct nand_flash_dev * spinand_flash_detect(struct mtd_info *mtd, struct nand_c
 
 	chip->chipsize = (type->chipsize) << 20;
 
+	/* There are no unified way to determine SLC/MLC from flash. Some use
+	 * ONFI, others do not conform to this. So for now we simply force all
+	 * as SLC.
+	 */
+	chip->bits_per_cell = 1;
+
 	/* do we need it ? */
 	chip->options |= type->options;
 
