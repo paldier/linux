@@ -364,7 +364,7 @@ static int update_DB_from_DT(struct VMB_vpe_t *vt)
 		return ret;
 	}
 
-	strncpy(vt->name, name, sizeof(vt->name));
+	strlcpy(vt->name, name, sizeof(vt->name));
 	vt->cpu_status |= CPU_BOOTUP_DT;
 
 	pr_info("[%s]:[%d], cpuid = %d name = %s\n",
@@ -690,7 +690,7 @@ int8_t vmb_cpu_alloc(int8_t cpu, char *fw_name)
 			if ((vpet->cpu_status & CPU_BOOTUP_DT) == CPU_BOOTUP_DT)
 				vpet->cpu_status &= ~CPU_BOOTUP_DT;
 			else
-				strncpy(vpet->name, fw_name,
+				strlcpy(vpet->name, fw_name,
 					sizeof(vpet->name));
 #endif
 		} else {
@@ -719,7 +719,7 @@ int8_t vmb_cpu_alloc(int8_t cpu, char *fw_name)
 				if ((vpet[j].cpu_status & CPU_BOOTUP_DT) == CPU_BOOTUP_DT)
 					vpet[j].cpu_status &= ~CPU_BOOTUP_DT;
 				else
-					strncpy(vpet[j].name, fw_name,
+					strlcpy(vpet[j].name, fw_name,
 						sizeof(vpet[j].name));
 #endif
 				goto fin_alloc;
