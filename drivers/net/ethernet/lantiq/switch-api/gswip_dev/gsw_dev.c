@@ -19,10 +19,13 @@
 #include <gswss_api.h>
 #include <gsw_flow_core.h>
 
-#define GRX500_MACH_NAME        "lantiq,xrx500"
-#define FALC_MACH_NAME          "intel,falconmx"
-#define DEVID_STR               "intel,gsw-devid"
-
+#define GRX500_MACH_NAME        		"lantiq,xrx500"
+#define FALC_MACH_NAME          		"intel,falconmx"
+#define DEVID_STR               		"intel,gsw-devid"
+#define EXTERNAL_SWITCH_DEVID    		"intel,gsw_ext-devid"
+#define EXTERNAL_SWITCH_PHYID			"intel,gsw_ext-phyid"
+#define EXTERNAL_SWITCH_BASEADDR		"intel,gsw_ext-baseaddr"
+#define EXTERNAL_SWITCH_SGMIIBASEADDR   "intel,gsw_ext-sgmiibaseaddr"
 /* Structure for GSWIP Subsystem operations
  * used to start Sub-Functional Drivers
  */
@@ -31,6 +34,7 @@ struct gsw_cell {
 	int                       cell_id;
 	u32                       device_id;
 	u32                       prod_id;
+
 	/* platform data passed to the sub devices drivers */
 	void                      *platform_data;
 	u32                       pdata_size;
@@ -274,11 +278,20 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 	if (!switch_pdata)
 		return -ENOMEM;
 
+	/** Clear Switch Core Private Data */
+	memset(switch_pdata, 0, sizeof(ethsw_api_dev_t));
 	gsw_dev_cell->drv_data = (void *)(&switch_pdata->ops);
 	gsw_dev_cell->drv_data_size = sizeof(switch_pdata->ops);
 
 	of_irq_to_resource_table(gsw_dev_cell->of_node, &irqres, 1);
 	switch_pdata->irq_num = irqres.start;
+	
+	if(devid == 1) {
+		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_DEVID,&switch_pdata->ext_devid);
+		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_PHYID,&switch_pdata->ext_phyid);
+		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_BASEADDR,&switch_pdata->gswex_base);
+		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_SGMIIBASEADDR,&switch_pdata->gswex_sgmiibase);
+	}
 
 #ifndef CONFIG_OF
 

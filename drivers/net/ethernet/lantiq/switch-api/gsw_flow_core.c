@@ -2613,10 +2613,14 @@ static void get_gsw_hw_cap(void *cdev)
 		printk("Switch Version ID                =  0x%x\n", gswdev->gipver);
 		printk("\n");
 		printk("Number of logical port           =  %d\n", gswdev->pnum);
-		printk("Number of CTP Port               =  %d\n", gswdev->num_of_ctp);
-		printk("Number of Bridge                 =  %d\n", gswdev->num_of_bridge);
-		printk("Number of Bridge Port            =  %d\n", gswdev->num_of_bridge_port);
-		printk("Number of P-Mapper               =  %d\n", gswdev->num_of_pmapper);
+		printk("Number of ports including V port =  %d\n", gswdev->tpnum);
+		if (gswdev->gipver == LTQ_GSWIP_3_1) {
+			printk("Number of CTP Port               =  %d\n", gswdev->num_of_ctp);
+			printk("Number of Bridge                 =  %d\n", gswdev->num_of_bridge);
+			printk("Number of Bridge Port            =  %d\n", gswdev->num_of_bridge_port);
+			printk("Number of P-Mapper               =  %d\n", gswdev->num_of_pmapper);
+
+		}
 		printk("Number of queues                 =  %d\n", gswdev->num_of_queues);
 		printk("Number of meter instance         =  %d\n", gswdev->num_of_meters);
 		printk("Number of shapers                =  %d\n", gswdev->num_of_shapers);
@@ -2634,10 +2638,14 @@ static void get_gsw_hw_cap(void *cdev)
 		printk("Multicast Hw Snoop               =  %d\n", gswdev->mcsthw_snoop);
 		printk("TFLOW table size                 =  %d\n", gswdev->tftblsize);
 		printk("MAC bridge table size            =  %d\n", gswdev->mactblsize);
-		printk("TFLOW RMON counter table Size    =  %d\n", gswdev->num_of_ifrmon);
-		printk("Payload Table Size               =  %d\n", gswdev->pdtblsize);
-		printk("Extend VLAN Table Size table     =  %d\n", gswdev->num_of_extendvlan);
-		printk("Number of VlanFilter table Size  =  %d\n\n", gswdev->num_of_vlanfilter);
+
+		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+			printk("TFLOW RMON counter table Size    =  %d\n", gswdev->num_of_ifrmon);
+			printk("Payload Table Size               =  %d\n", gswdev->pdtblsize);
+			printk("Extend VLAN Table Size table     =  %d\n", gswdev->num_of_extendvlan);
+			printk("VlanFilter table Size            =  %d\n\n", gswdev->num_of_vlanfilter);
+		}
+		printk("\n");
 	}
 
 }
@@ -3161,11 +3169,12 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	struct core_ops *ops;
 	void *cdev;
 	u32 ret;
-	printk("Switch Core INIT...................\n");
+	printk("\n########## Switch Core INIT for device = %d ##########\n",ethcinit->sdev);
 
 #ifdef __KERNEL__
 	/* KERNEL_MODE */
 	/** Get Platform Driver Data */
+	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
 	ops = platform_get_drvdata(ethcinit->pdev);
 
 	/** Get Switch Core Private Data */
@@ -3178,8 +3187,10 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	}
 
 	/** Clear Switch Core Private Data */
-	memset(PrvData, 0, sizeof(ethsw_api_dev_t));
-
+	} else {
+		/*External switch*/
+		PrvData = ethcinit->pdev;
+	}
 	/** Set Core OPS struct Adress to cdev*/
 	cdev = &PrvData->ops;
 
@@ -3237,8 +3248,11 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	}
 
 #if defined(CONFIG_LTQ_MULTICAST) && CONFIG_LTQ_MULTICAST
-	/*Reset Multicast software table*/
-	reset_multicast_sw_table(cdev);
+	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
+		/*Reset Multicast software table*/
+		reset_multicast_sw_table(cdev);
+	}
+
 #endif /*CONFIG_LTQ_MULTICAST*/
 
 	/** TFlow Table Init */
@@ -3249,14 +3263,18 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
 		PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x1);
 #else
-	gsw_pmicro_code_init(cdev);
-	printk("Switch API: PCE MicroCode loaded !!\n");
+	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
+		gsw_pmicro_code_init(cdev);
+		printk("Switch API: PCE MicroCode loaded !!\n");
+	}
 #endif
 
+	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
 	if (IS_VRSN_31(PrvData->gipver))
 		switch_core_init(cdev);
 	else
 		legacy_switch_core_init(cdev);
+	}
 
 #ifdef CONFIG_X86_INTEL_CE2700
 	cport_sgmii_config(cdev);
@@ -11648,6 +11666,12 @@ GSW_return_t GSW_CapGet(void *cdev, GSW_cap_t *parm)
 
 	switch (parm->nCapType) {
 	case GSW_CAP_TYPE_PORT:
+		/*Temp work around for the below external switch model*/
+		if(gswdev->gsw_dev == LTQ_FLOW_DEV_EXT_AX3000_F24S)
+		{
+			get_gsw_hw_cap (cdev);
+		}
+
 		gsw_r32(cdev, ETHSW_CAP_1_PPORTS_OFFSET,
 			ETHSW_CAP_1_PPORTS_SHIFT,
 			ETHSW_CAP_1_PPORTS_SIZE, &value);

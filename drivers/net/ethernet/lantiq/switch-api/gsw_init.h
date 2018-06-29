@@ -73,7 +73,7 @@
 /*#include <xway/switch-api/lantiq_gsw_routing.h>*/
 /*#include <xway/switch-api/gsw_types.h>*/
 
-#define LTQ_GSW_DEV_MAX 2
+#define LTQ_GSW_DEV_MAX 3
 #endif /* KERNEL_MODE */
 
 #if defined(WIN_PC_MODE) && WIN_PC_MODE
@@ -194,6 +194,8 @@ int pc_uart_datawrite_32(u32 Offset, u32 value);
 #ifdef __KERNEL__
 void gsw_r32_raw(void *cdev, short offset, u32 *value);
 void gsw_w32_raw(void *cdev, short offset, u32 value);
+void gsw_ext_r32(void *cdev, short offset, short shift, short size, u32 *value);
+void gsw_ext_w32(void *cdev, short offset, short shift, short size, u32 value);
 #endif
 
 static inline u32 gsw_field_r32(u32 rval, short shift, short size)

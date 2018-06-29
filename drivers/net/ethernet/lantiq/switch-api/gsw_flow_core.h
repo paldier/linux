@@ -516,8 +516,10 @@ typedef enum {
 typedef enum {
 	LTQ_FLOW_DEV_INT	= 0,
 	LTQ_FLOW_DEV_INT_R	= 1,
+	LTQ_FLOW_DEV_EXT_AX3000_F24S = 2,	
 	LTQ_FLOW_DEV_MAX
 } gsw_devtype_t;
+
 
 typedef struct {
 	u16 pkg_lng;
@@ -909,6 +911,10 @@ typedef struct {
 	u8 cport;
 	u8 gsw_dev;
 
+	u32 parent_devid;
+	u32 ext_devid;
+	u32 ext_phyid;
+
 	u16 mrtpcnt;			 	/* multicast router port count */
 	u16 meter_cnt;
 	u16 num_of_queues; 			/* Number of priority queues . */
@@ -951,6 +957,9 @@ typedef struct {
 	u16 gipver;
 	void *gswl_base;			/*Base address GSWIP-L */
 	void *gswr_base; 		 	/*Base address GSWIP-R */
+	u32 gswex_base; 		 	/*Base address GSWIP External switch */
+	u32	gswex_sgmiibase; 		/*Base address GSWIP External switch-SGMII */
+
 	void *gsw_base;  			/*Base address GSWITCH */
 
 #ifdef __KERNEL__
