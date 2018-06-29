@@ -310,8 +310,6 @@ static void *parse_ptp_packet(struct sk_buff *skb,
 
 		*msg_type = *((u8 *)(ptp_loc + PTP_OFFS_MSG_TYPE)) & 0xf;
 
-		printk("Txing Message Type %d\n", *msg_type);
-
 		if ((*msg_type == PTP_MSGTYPE_SYNC) ||
 		    (*msg_type == PTP_MSGTYPE_DELREQ) ||
 		    (*msg_type == PTP_MSGTYPE_PDELREQ) ||
@@ -584,13 +582,11 @@ static int xgmac_extts_enable(struct ptp_clock_info *ptp,
 		case 0:
 			pdata->exts0_enabled = on ? 1 : 0;
 			XGMAC_RGWR_BITS(pdata, MAC_AUX_CTRL, ATSEN0, 1);
-			XGMAC_RGWR_BITS(pdata, MAC_TSTAMP_CR, ESTI, 1);
 			break;
 
 		case 1:
 			pdata->exts1_enabled = on ? 1 : 0;
 			XGMAC_RGWR_BITS(pdata, MAC_AUX_CTRL, ATSEN1, 1);
-			XGMAC_RGWR_BITS(pdata, MAC_TSTAMP_CR, ESTI, 1);
 			break;
 
 		default:

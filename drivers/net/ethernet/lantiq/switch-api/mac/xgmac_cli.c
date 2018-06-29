@@ -1007,6 +1007,21 @@ void cli_del_fifo(void *pdev)
 		fifo_entry_del(pdev, pdata->rec_id);
 	}
 }
+void cli_set_extsrc(void *pdev)
+{
+	u32 i = 0;
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	struct mac_ops *ops;
+
+	if (pdata->set_all) {
+		for (i = 0; i < pdata->max_mac; i++) {
+			ops = gsw_get_mac_ops(0, i);
+			xgmac_set_exttime_source(ops, pdata->val);
+		}
+	} else {
+		xgmac_set_exttime_source(pdev, pdata->val);
+	}
+}
 
 void cli_test_all_reg(void *pdev)
 {

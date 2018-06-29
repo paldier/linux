@@ -1025,6 +1025,8 @@ int xgmac_set_mac_lpitx(void *pdev, u32 val);
 int xgmac_pause_frame_filtering(void *pdev, u32 val);
 int xgmac_set_gint(void *pdev, u32 val);
 int xgmac_set_rxcrc(void *pdev, u32 val);
+void xgmac_set_exttime_source(void *pdev, u32 val);
+
 
 /* GET API's */
 int xgmac_get_hw_capability(void *pdev);

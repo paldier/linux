@@ -1669,6 +1669,21 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	return 0;
 }
 
+void xgmac_set_exttime_source(void *pdev, u32 val)
+{
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	u32 reg_val;
+
+	reg_val = XGMAC_RGRD(pdata, MAC_TSTAMP_CR);
+
+	if (MAC_GET_VAL(reg_val, MAC_TSTAMP_CR, ESTI) != val) {
+		mac_printf("XGMAC %d: External Ref Time: %s\n",
+			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		MAC_SET_VAL(reg_val, MAC_TSTAMP_CR, ESTI, val);
+		XGMAC_RGWR(pdata, MAC_TSTAMP_CR, reg_val);
+	}
+}
+
 void xgmac_ptp_txtstamp_mode(void *pdev,
 			     u32 snaptypesel,
 			     u32 tsmstrena,

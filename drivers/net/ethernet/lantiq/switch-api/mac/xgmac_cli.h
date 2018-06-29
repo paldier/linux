@@ -106,6 +106,7 @@ void cli_set_rxcrc(void *pdev);
 int cli_get_fifo(void *pdev);
 void cli_add_fifo(void *pdev);
 void cli_del_fifo(void *pdev);
+void cli_set_extsrc(void *pdev);
 
 #endif
 

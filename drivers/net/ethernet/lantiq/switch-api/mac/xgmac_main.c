@@ -504,6 +504,13 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 		0, &pdata.rec_id, 0, 0, 0,
 		"<Del Tx Fifo>"
 	},
+	{
+		"ts_src_sel             ",
+		cli_set_extsrc,
+		0,
+		0, &pdata.val, 0, 0, 0,
+		"<REF: 0/1 - Internel/External>"
+	},
 	/* OTHERS */
 	{
 		"rmon            ",
