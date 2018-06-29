@@ -1266,20 +1266,9 @@ u64 xgmac_get_tx_tstamp(void *pdev)
 	u32 tx_snr;
 	u64 nsec;
 
-	tx_snr = XGMAC_RGRD(pdata, MAC_TXTSTAMP_NSECR);
-
-	/* check whether tstamp of the prev pkt is overwritten with the
-	 * tstamp of the cur pkt
-	 */
-	if (MAC_GET_VAL(tx_snr, MAC_TXTSTAMP_NSECR, TXTSSTSMIS)) {
-		mac_printf("timestamp of the current pkt is ignored\n");
-		/* timesatmp of the current pkt is ignored */
-		return 0;
-	}
-
 	nsec = XGMAC_RGRD(pdata, MAC_TXTSTAMP_SECR);
 	nsec *= NSEC_TO_SEC;
-	nsec += tx_snr;
+	nsec += XGMAC_RGRD(pdata, MAC_TXTSTAMP_NSECR);
 
 	return nsec;
 }
