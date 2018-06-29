@@ -323,7 +323,7 @@ static int update_gsw_dev_cell(struct device_node *np,
 		goto failed;
 
 	strncpy(gsw_dev_cells[idx].name, np->name, 
-		ARRAY_SIZE(gsw_dev_cells[idx].name));
+		(ARRAY_SIZE(gsw_dev_cells[idx].name) - 1));
 
 	gsw_dev_cells[idx].of_node = np;
 

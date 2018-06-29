@@ -234,7 +234,7 @@ struct pmac_rx_hdr { /*Egress PMAC header*/
 } __packed;
 #endif
 
-#ifdef CONFIG_LITTLE_ENDIAN
+#ifdef CONFIG_CPU_BIG_ENDIAN
 struct pmac_tx_hdr { /*Ingress PMAC header*/
 	/*byte 0 */
 	u8 tcp_chksum:1;
@@ -274,7 +274,7 @@ struct pmac_tx_hdr { /*Ingress PMAC header*/
 	u8 record_id_lsb:4;
 	u8 igp_egp:4;
 } __packed;
-#else /*big endian */
+#else /*little endian */
 struct pmac_tx_hdr { /*Ingress PMAC header*/
 	/*byte 0 */
 	u8 ip_offset:6;

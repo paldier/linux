@@ -955,6 +955,7 @@ struct dp_cap {
 			      */
 	u32 hw_tso: 1; /*!< output: HW TSO offload support for TX path */
 	u32 hw_gso: 1; /*!< output: HW GSO offload support for TX path */
+	u32 hw_ptp: 1; /*!< HW PTP support */
 
 	char qos_eng_name[DP_MAX_NAME]; /*!< QOS engine name in string */
 	char pkt_eng_name[DP_MAX_NAME]; /*!< Packet Engine Name String */

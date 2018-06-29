@@ -29,7 +29,9 @@
 #include "datapath.h"
 #include "datapath_instance.h"
 #include "datapath_swdev_api.h"
-
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#include "datapath_ioctl.h"
+#endif
 int dp_cap_num;
 struct dp_hw_cap hw_cap_list[DP_MAX_HW_CAP];
 
@@ -120,6 +122,9 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	}
 	dp_port_prop[i].ops[0] = info->ops[0];
 	dp_port_prop[i].ops[1] = info->ops[1];
+	dp_port_prop[i].mac_ops[2] = info->mac_ops[2];
+	dp_port_prop[i].mac_ops[3] = info->mac_ops[3];
+	dp_port_prop[i].mac_ops[4] = info->mac_ops[4];
 	dp_port_prop[i].info = hw_cap_list[k].info;
 	dp_port_prop[i].cbm_inst = info->cbm_inst;
 	dp_port_prop[i].qos_inst = info->qos_inst;
@@ -292,8 +297,11 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 		}
 #endif
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
-		if (!(flag & DP_F_SUBIF_LOGICAL))
-			dp_port_register_switchdev(dp_dev, dev);
+	if (!(flag & DP_F_SUBIF_LOGICAL))
+		dp_port_register_switchdev(dp_dev, dev);
+#endif
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+	dp_register_ptp_ioctl(dp_dev, dev, inst);
 #endif
 	}
 	dp_dev->count++;
@@ -351,6 +359,9 @@ int dp_inst_del_dev(struct net_device *dev, char *subif_name, int inst, int ep,
 #endif				/*do't really free now
 				 *in case network stack is holding the callback
 				 */
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+				dp_deregister_ptp_ioctl(dp_dev,dev,inst);
+#endif
 				hlist_add_head(&dp_dev->hlist,
 					       &dp_dev_list_free[idx]);
 			}

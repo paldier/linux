@@ -11,6 +11,11 @@
 #include <gswss_mac_api.h>
 #include <lmac_api.h>
 #include <xgmac_mdio.h>
+#include <xgmac_ptp.h>
+#ifdef __KERNEL__
+#include <net/switch_api/lantiq_gsw_api.h>
+#include <net/switch_api/gsw_dev.h>
+#endif
 
 int mac_set_flowctrl(void *pdev, u32 val)
 {
@@ -690,26 +695,55 @@ int mac_get_fcs_gen(void *pdev)
 	return tx_fcs;
 }
 
-/*TTSE: Enables the IEEE 1588 hw ts for Tx Frame
- *OSTC: One step ts correction with ref to ts provided in TTSH and TTSL
- *OST_AVAIl: It indicates ref ts is available in TTSH and TTSL
- *CIC:
- *	0: Csum Insertion disabled
- *	1: Only IP hdr csum calc and insert enabled
- *	2: IP hdr csum, Payload csum calc and insertion enabled,
- *		pseudo hdr csum is not calc in HW
- *	3: IP hdr csum, Payload csum calc and insertion enabled,
- *		pseudo hdr csum is calc in HW
+/* Enables the Attachment of timestamp in Rx Direction and
+ * Removal of Special tag in Tx Direction
  */
-int mac_enable_onestep_ts(void *pdev)
+int mac_enable_ts(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-
 #ifdef __KERNEL__
+	struct core_ops *ops = gsw_get_swcore_ops(0);
+	GSW_CPU_PortCfg_t cpu_port_cfg;
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588_SW_WORKAROUND)
+	int pce_rule_id = 0;
+	GSW_PCE_rule_t pce;
+#endif
+
+	if (!ops) {
+		mac_printf("Open SWAPI device FAILED!\n");
+		return -1;
+	}
+
+	memset((void *)&cpu_port_cfg, 0x00, sizeof(cpu_port_cfg));
+
+	/* Enable the Egress Special Tag */
+	ops->gsw_common_ops.CPU_PortCfgGet(ops, &cpu_port_cfg);
+	cpu_port_cfg.nPortId = (pdata->mac_idx + 2);
+	cpu_port_cfg.bSpecialTagIngress = 1;
+	cpu_port_cfg.bSpecialTagEgress = 1;
+	ops->gsw_common_ops.CPU_PortCfgSet(ops, &cpu_port_cfg);
+
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588_SW_WORKAROUND)
+	/* All RX packets in GSWIP currently have PTP=1 */
+	memset(&pce, 0, sizeof(pce));
+	pce.pattern.nIndex = pce_rule_id;
+	pce.pattern.bEnable = 1;
+	pce.action.eTimestampAction = 2;
+	ops->gsw_tflow_ops.TFLOW_PceRuleWrite(ops, &pce);
+#endif
 	spin_lock_bh(&pdata->mac_lock);
 #endif
+
+	//mac_printf("MAC %d: Enable Timestamp operations\n", pdata->mac_idx);
+
+	/* Tell adaption layer to attach Timestamp */
 	gswss_set_mac_rxtime_op(pdev, MODE1);
+
+	/* Tell adaption layer to remove Special Tag in Tx Directon */
 	gswss_set_mac_txsptag_op(pdev, MODE3);
+
+	mac_int_enable(pdev);
+	xgmac_set_mac_int(pdev, XGMAC_TSTAMP_EVNT, 1);
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
@@ -718,18 +752,39 @@ int mac_enable_onestep_ts(void *pdev)
 	return 0;
 }
 
-int mac_disable_onestep_ts(void *pdev)
+int mac_disable_ts(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 
 #ifdef __KERNEL__
+
+	GSW_CPU_PortCfg_t cpu_port_cfg;
+	struct core_ops *ops = gsw_get_swcore_ops(0);
+
+	if (!ops) {
+		pr_err("%s: Open SWAPI device FAILED!\n", __func__);
+		return -EIO;
+	}
+
+	memset((void *)&cpu_port_cfg, 0x00, sizeof(cpu_port_cfg));
+
+	/* Disable the Egress Special Tag */
+	ops->gsw_common_ops.CPU_PortCfgGet(ops, &cpu_port_cfg);
+	cpu_port_cfg.nPortId = (pdata->mac_idx + 2);
+	cpu_port_cfg.bSpecialTagEgress = 0;
+	ops->gsw_common_ops.CPU_PortCfgSet(ops, &cpu_port_cfg);
+
 	spin_lock_bh(&pdata->mac_lock);
 #endif
+	mac_printf("MAC %d: Disable Timestamp operations\n", pdata->mac_idx);
+
 	gswss_set_mac_rxtime_op(pdev, MODE0);
 	gswss_set_mac_txsptag_op(pdev, MODE0);
 	gswss_set_mac_rxsptag_op(pdev, MODE0);
 
 	xgmac_disable_tstamp(pdev);
+
+	xgmac_set_mac_int(pdev, XGMAC_TSTAMP_EVNT, 0);
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
@@ -843,6 +898,9 @@ int mac_init(void *pdev)
 
 	mac_printf("XGMAC INIT for Module %d\n", pdata->mac_idx);
 
+	/* Get all hw capability */
+	xgmac_get_hw_capability(pdev);
+	
 	/* Initialize MAC related features */
 
 	/* Program MAC Address */
@@ -911,6 +969,7 @@ int mac_init(void *pdev)
 	/* Filter pause frames from XGMAC */
 	xgmac_pause_frame_filtering(pdev, 1);
 #endif
+	fifo_init(pdev);
 
 	/* EEE Capability Turn OFF as Aquania OnBoard Phy and SFP+ will go down
 	 * with EEE Capability ON/Auto.
@@ -924,6 +983,9 @@ int mac_init(void *pdev)
 	xgmac_mdio_register(pdev);
 #endif
 
+#ifdef CONFIG_PTP_1588_CLOCK
+	xgmac_ptp_init(pdev);
+#endif
 
 	return 0;
 }
@@ -1199,7 +1261,13 @@ void mac_init_fn_ptrs(struct mac_ops *mac_op)
 	mac_op->lmac_reg_rd = lmac_rd_reg;
 	mac_op->lmac_reg_wr = lmac_wr_reg;
 
-
+#ifdef __KERNEL__
+	mac_op->set_hwts = xgmac_set_hwts;
+	mac_op->get_hwts = xgmac_get_hwts;
+	mac_op->do_rx_hwts = xgmac_rx_hwts;
+	mac_op->do_tx_hwts = xgmac_tx_hwts;
+	mac_op->mac_get_ts_info = xgmac_get_ts_info;
+#endif
 	mac_op->mac_int_en = mac_int_enable;
 	mac_op->mac_int_dis = mac_int_disable;
 

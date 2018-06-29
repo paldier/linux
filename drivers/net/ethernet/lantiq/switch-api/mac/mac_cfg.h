@@ -50,8 +50,8 @@ int mac_get_linksts(void *pdev);
 int mac_set_fcs_gen(void *pdev, u32 val);
 int mac_get_fcs_gen(void *pdev);
 
-int mac_enable_onestep_ts(void *pdev);
-int mac_disable_onestep_ts(void *pdev);
+int mac_enable_ts(void *pdev);
+int mac_disable_ts(void *pdev);
 
 int mac_irq_enable(void *pdev, GSW_Irq_Op_t *irq);
 int mac_irq_disable(void *pdev, GSW_Irq_Op_t *irq);

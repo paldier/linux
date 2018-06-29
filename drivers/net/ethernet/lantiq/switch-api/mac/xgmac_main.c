@@ -482,6 +482,27 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 		0,
 		0, &pdata.val, 0, 0, 0,
 		"<args 1: 1/0 Rx Crc check DISABLE/ENABLE>"
+	},	
+	{
+		"fifo             ",
+		0,
+		cli_get_fifo,
+		0, 0, 0, 0, 0,
+		"<Get Tx Fifo>"
+	},
+	{
+		"fifo_add             ",
+		cli_add_fifo,
+		0,
+		0, 0, 0, 0, 0,
+		"<Add Tx Fifo>"
+	},
+	{
+		"fifo_del             ",
+		cli_del_fifo,
+		0,
+		0, &pdata.rec_id, 0, 0, 0,
+		"<Del Tx Fifo>"
 	},
 	/* OTHERS */
 	{
@@ -515,7 +536,7 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 	{
 		"hw_feat         ",
 		0,
-		xgmac_get_all_hw_features,
+		xgmac_print_hw_cap,
 		0, 0, 0, 0, 0,
 		"<get all hw features>"
 	},
@@ -699,6 +720,8 @@ int xgmac_main(u32 argc, u8 *argv[])
 	u32 start_arg = 0;
 	int idx = 0;
 	u32 max_mac;
+	u32 nanosec;
+	u32 sec, min, hr, days;
 
 	int num_of_elem =
 		(sizeof(xgmac_cfg_table) / sizeof(struct _xgmac_cfg));
@@ -711,50 +734,6 @@ int xgmac_main(u32 argc, u8 *argv[])
 
 	start_arg++;
 	start_arg++;
-
-#if defined(UPTIME) && UPTIME
-
-	if (!strcmp(argv[start_arg], "uptime")) {
-		found = 1;
-		u32 total_sec, nanosec;
-		u32 sec, min, hr, days;
-
-		total_sec = XGMAC_RGRD(&prv_data[0], MAC_SYS_TIME_SEC);
-		nanosec = XGMAC_RGRD(&prv_data[0], MAC_SYS_TIME_NSEC);
-
-		if (sec)
-			sec = (total_sec * (nanosec / NANOSEC_IN_ONESEC));
-		else
-			sec = (nanosec / NANOSEC_IN_ONESEC);
-
-		if (sec >= 60) {
-			min = sec / 60;
-			sec = sec - (min * 60);
-		} else {
-			min = 0;
-		}
-
-		if (min >= 60) {
-			hr = min / 60;
-			min = min - (hr * 60);
-		} else {
-			hr = 0;
-		}
-
-		if (hr >= 24) {
-			days = hr / 24;
-			hr = hr - (days * 24);
-		} else {
-			days = 0;
-		}
-
-		mac_printf("Uptime(d:h:m:s): %02d:%02d:%02d:%02d\n",
-			   days, hr, min, sec);
-
-		goto end;
-	}
-
-#endif
 
 	if (!strcmp(argv[start_arg], "-help")) {
 		found = 1;
@@ -799,6 +778,39 @@ int xgmac_main(u32 argc, u8 *argv[])
 			return -1;
 
 		prv_data_k->set_all = 0;
+	}
+
+	if (!strcmp(argv[start_arg], "uptime")) {
+		found = 1;
+
+		sec = XGMAC_RGRD(prv_data_k, MAC_SYS_TIME_SEC);
+		nanosec = XGMAC_RGRD(prv_data_k, MAC_SYS_TIME_NSEC);
+
+		if (sec >= 60) {
+			min = sec / 60;
+			sec = sec - (min * 60);
+		} else {
+			min = 0;
+		}
+
+		if (min >= 60) {
+			hr = min / 60;
+			min = min - (hr * 60);
+		} else {
+			hr = 0;
+		}
+
+		if (hr >= 24) {
+			days = hr / 24;
+			hr = hr - (days * 24);
+		} else {
+			days = 0;
+		}
+
+		mac_printf("Uptime(d:h:m:s): %02d:%02d:%02d:%02d\n",
+			   days, hr, min, sec);
+
+		goto end;
 	}
 
 	if (!strcmp(argv[start_arg], "r")) {

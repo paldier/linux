@@ -115,6 +115,20 @@ config LTQ_DATAPATH_SWITCHDEV
 	---help---
 	  Switchdev support for different switch in datapath
 
+config LTQ_DATAPATH_PTP1588
+	bool "PTP1588 Support"
+	default n
+	depends on  LTQ_DATAPATH
+	---help---
+	  PTP1588 support in datapath
+
+config LTQ_DATAPATH_PTP1588_SW_WORKAROUND
+        bool "PTP1588 Software Workaround"
+        default n
+        depends on  LTQ_DATAPATH && LTQ_DATAPATH_PTP1588
+        ---help---
+          PTP1588 Software Workaround
+
 config LTQ_DATAPATH_DDR_SIMULATE_GSWIP31
 	bool "Force FALCON-MX SOC"
 	default n

@@ -41,6 +41,7 @@
 
 
 #include <xgmac.h>
+#include <mac_cfg.h>
 #ifdef __KERNEL__
 #include <xgmac_ptp.h>
 #include <net/switch_api/gsw_irq.h>
@@ -616,6 +617,7 @@ int xgmac_set_rxcrc(void *pdev, u32 val)
 
 	return 0;
 }
+
 /* RE:
  * When this bit is set, the Rx state machine of the MAC is enabled for
  * receiving packets from the GMII or XGMII interface
@@ -1270,6 +1272,7 @@ u64 xgmac_get_tx_tstamp(void *pdev)
 	 * tstamp of the cur pkt
 	 */
 	if (MAC_GET_VAL(tx_snr, MAC_TXTSTAMP_NSECR, TXTSSTSMIS)) {
+		mac_printf("timestamp of the current pkt is ignored\n");
 		/* timesatmp of the current pkt is ignored */
 		return 0;
 	}
@@ -1395,9 +1398,8 @@ int xgmac_config_tstamp(void *pdev, u32 mac_tscr)
 
 int xgmac_config_subsec_inc(void *pdev, u32 ptp_clk)
 {
-#if defined(PC_UTILITY) && PC_UTILITY
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	u64 val;
+	u32 val;
 
 	if (XGMAC_RGRD_BITS(pdata, MAC_TSTAMP_CR, TSCFUPDT) == 1)
 		val = ((1 * NSEC_TO_SEC) / MHZ_TO_HZ(50));
@@ -1409,9 +1411,7 @@ int xgmac_config_subsec_inc(void *pdev, u32 ptp_clk)
 		val = (val * 1000) / 465;
 
 	XGMAC_RGWR_BITS(pdata, MAC_SUBSEC_INCR, SSINC, val);
-#else
-	// TODO: for linux u64 division need to change
-#endif
+
 	return 0;
 }
 
@@ -1494,15 +1494,18 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	u32 mac_tscr = 0;
+	struct ptp_flags ptp_flgs;
 
-	memset(&pdata->ptp_flgs, 0, sizeof(pdata->ptp_flgs));
+	mac_printf("Mac Idx %d\n", pdata->mac_idx);
+	mac_printf("tx_type = %d, rx_filter = %d\n", tx_type, rx_filter);
 
 	switch (tx_type) {
 	case HWTSTAMP_TX_OFF:
 		break;
 
 	case HWTSTAMP_TX_ON:
-		pdata->ptp_flgs.ptp_tx_en = 1;
+	case HWTSTAMP_TX_ONESTEP_SYNC:
+		ptp_flgs.ptp_tx_en = 1;
 		MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSENA, 1);
 		break;
 
@@ -1520,38 +1523,38 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 
 	case HWTSTAMP_FILTER_ALL:
 		mac_printf("HW tstamp config: Filter All\n");
-		pdata->ptp_flgs.ptp_rx_en |= PTP_RX_EN_ALL;
+		ptp_flgs.ptp_rx_en |= PTP_RX_EN_ALL;
 		break;
 
 	/* PTP v1, UDP, any kind of event packet */
 	case HWTSTAMP_FILTER_PTP_V2_L4_EVENT:
-		pdata->ptp_flgs.ptp_rx_en |= PTP_RX_V2;
+		ptp_flgs.ptp_rx_en |= PTP_RX_V2;
 
 	case HWTSTAMP_FILTER_PTP_V1_L4_EVENT:
 		mac_printf("PTP v1, UDP, any kind of event packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_OVER_IPV4_UDP |
 			 PTP_RX_OVER_IPV6_UDP | PTP_RX_SNAP);
 		break;
 
 	/* PTP v1, UDP, Sync packet */
 	case HWTSTAMP_FILTER_PTP_V2_L4_SYNC:
-		pdata->ptp_flgs.ptp_rx_en |= PTP_RX_V2;
+		ptp_flgs.ptp_rx_en |= PTP_RX_V2;
 
 	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
 		mac_printf("PTP v1, UDP, Sync packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_OVER_IPV4_UDP |
 			 PTP_RX_OVER_IPV6_UDP | PTP_RX_EVNT);
 		break;
 
 	/* PTP v1, UDP, Delay_req packet */
 	case HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ:
-		pdata->ptp_flgs.ptp_rx_en |= PTP_RX_V2;
+		ptp_flgs.ptp_rx_en |= PTP_RX_V2;
 
 	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
 		mac_printf("PTP v1, UDP, Delay_req packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_OVER_IPV4_UDP |
 			 PTP_RX_OVER_IPV6_UDP | PTP_RX_EVNT | PTP_RX_MSTR);
 		break;
@@ -1559,7 +1562,7 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	/* 802.AS1, Ethernet, any kind of event packet */
 	case HWTSTAMP_FILTER_PTP_V2_L2_EVENT:
 		mac_printf("802.AS1, Ethernet, any kind of event packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_V2 | PTP_RX_OVER_ETH | PTP_RX_SNAP);
 
 		break;
@@ -1567,14 +1570,14 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	/* 802.AS1, Ethernet, Sync packet */
 	case HWTSTAMP_FILTER_PTP_V2_L2_SYNC:
 		mac_printf("802.AS1, Ethernet, Sync packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_V2 | PTP_RX_OVER_ETH | PTP_RX_EVNT);
 		break;
 
 	/* 802.AS1, Ethernet, Delay_req packet */
 	case HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ:
 		mac_printf("802.AS1, Ethernet, Delay_req packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_V2 | PTP_RX_OVER_ETH |
 			 PTP_RX_EVNT | PTP_RX_MSTR);
 		break;
@@ -1582,21 +1585,21 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	/* PTP v2/802.AS1, any layer, any kind of event packet */
 	case HWTSTAMP_FILTER_PTP_V2_EVENT:
 		mac_printf("PTP v2/802.AS1,any layer,any kind of event pkt\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_V2 | PTP_RX_OVER_ANY_LYR | PTP_RX_SNAP);
 		break;
 
 	/* PTP v2/802.AS1, any layer, Sync packet */
 	case HWTSTAMP_FILTER_PTP_V2_SYNC:
 		mac_printf("PTP v2/802.AS1, any layer, Sync packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_V2 | PTP_RX_OVER_ANY_LYR | PTP_RX_EVNT);
 		break;
 
 	/* PTP v2/802.AS1, any layer, Delay_req packet */
 	case HWTSTAMP_FILTER_PTP_V2_DELAY_REQ:
 		mac_printf("PTP v2/802.AS1, any layer, Delay_req packet\n");
-		pdata->ptp_flgs.ptp_rx_en |=
+		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_V2 | PTP_RX_OVER_ANY_LYR |
 			 PTP_RX_EVNT | PTP_RX_MSTR);
 		break;
@@ -1605,37 +1608,56 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 		return 0;
 	}
 
-	if (pdata->ptp_flgs.ptp_rx_en != 0) {
+	if (ptp_flgs.ptp_rx_en != 0) {
+
+		/* In FalconMx all packets have timestamp */
+		ptp_flgs.ptp_rx_en |= PTP_RX_EN_ALL;
+
 		MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSENA, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_V2)
+		if (ptp_flgs.ptp_rx_en & PTP_RX_V2)
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSVER2ENA, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en &
+		if (ptp_flgs.ptp_rx_en &
 		    (PTP_RX_OVER_ANY_LYR | PTP_RX_OVER_IPV4_UDP))
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSIPV4ENA, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en &
+		if (ptp_flgs.ptp_rx_en &
 		    (PTP_RX_OVER_ANY_LYR | PTP_RX_OVER_IPV6_UDP))
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSIPV6ENA, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_OVER_ETH)
+		if (ptp_flgs.ptp_rx_en & PTP_RX_OVER_ETH)
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, AV8021ASMEN, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_OVER_ANY_LYR)
+		if (ptp_flgs.ptp_rx_en & PTP_RX_OVER_ANY_LYR)
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSIPENA, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_EVNT)
+		if (ptp_flgs.ptp_rx_en & PTP_RX_EVNT)
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSEVNTENA, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_SNAP)
+		if (ptp_flgs.ptp_rx_en & PTP_RX_SNAP)
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, SNAPTYPSEL, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_MSTR)
+		if (ptp_flgs.ptp_rx_en & PTP_RX_MSTR)
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSMSTRENA, 1);
 
-		if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_EN_ALL)
+		if (ptp_flgs.ptp_rx_en & PTP_RX_EN_ALL)
 			MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSENALL, 1);
+	}
+
+	if ((pdata->ptp_flgs.ptp_rx_en == ptp_flgs.ptp_rx_en) &&
+	    (pdata->ptp_flgs.ptp_tx_en == ptp_flgs.ptp_tx_en)) {
+		return 0;
+	} else {
+		pdata->ptp_flgs.ptp_rx_en = ptp_flgs.ptp_rx_en;
+		pdata->ptp_flgs.ptp_tx_en = ptp_flgs.ptp_tx_en;
+	}
+
+	if (pdata->ptp_flgs.ptp_rx_en & PTP_RX_EN_ALL &&
+	    pdata->ptp_flgs.ptp_tx_en) {
+		mac_enable_ts(pdev);
+	} else {
+		mac_disable_ts(pdev);
 	}
 
 	xgmac_config_tstamp(pdev, mac_tscr);
@@ -1652,10 +1674,7 @@ void xgmac_ptp_txtstamp_mode(void *pdev,
 			     u32 tsmstrena,
 			     u32 tsevntena)
 {
-	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	u32 mac_tscr = 0;
-
-	memset(&pdata->ptp_flgs, 0, sizeof(pdata->ptp_flgs));
 
 	MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSVER2ENA, 1);
 	MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSIPENA, 1);
@@ -1668,6 +1687,7 @@ void xgmac_ptp_txtstamp_mode(void *pdev,
 
 	xgmac_config_tstamp(pdev, mac_tscr);
 }
+
 int xgmac_set_gint(void *pdev, u32 val)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -1680,6 +1700,72 @@ int xgmac_set_gint(void *pdev, u32 val)
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, G9991EN, val);
 		XGMAC_RGWR(pdata, MAC_TX_CFG, mac_tcr);
 	}
+
+	return 0;
+}
+
+int xgmac_get_hw_capability(void *pdev)
+{
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	u32 mac_hfr0, mac_hfr1, mac_hfr2;
+	/* Hardware features of the device */
+	struct xgmac_hw_features *hw_feat = &pdata->hw_feat;
+
+	mac_hfr0 = XGMAC_RGRD(pdata, MAC_HW_F0);
+	mac_hfr1 = XGMAC_RGRD(pdata, MAC_HW_F1);
+	mac_hfr2 = XGMAC_RGRD(pdata, MAC_HW_F2);
+
+	memset(hw_feat, 0, sizeof(*hw_feat));
+
+	hw_feat->version = XGMAC_RGRD(pdata, MAC_VR);
+
+	/* Hardware feature register 0 */
+	hw_feat->gmii        = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, GMIISEL);
+	hw_feat->vlhash      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, VLHASH);
+	hw_feat->sma         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, SMASEL);
+	hw_feat->rwk         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, RWKSEL);
+	hw_feat->mgk         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, MGKSEL);
+	hw_feat->mmc         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, MMCSEL);
+	hw_feat->aoe         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, ARPOFFSEL);
+	hw_feat->ts          = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, TSSEL);
+	hw_feat->eee         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, EEESEL);
+	hw_feat->tx_coe      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, TXCOESEL);
+	hw_feat->rx_coe      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, RXCOESEL);
+	hw_feat->addn_mac   = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, ADDMACADRSEL);
+	hw_feat->ts_src      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, TSSTSSEL);
+	hw_feat->sa_vlan_ins = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, SAVLANINS);
+	hw_feat->vxn = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, VXN);
+	hw_feat->ediffc = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, EDIFFC);
+	hw_feat->edma = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, EDMA);
+	/* Hardware feature register 1 */
+	hw_feat->rx_fifo_size  =
+		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, RXFIFOSIZE);
+	hw_feat->tx_fifo_size  =
+		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, TXFIFOSIZE);
+	hw_feat->osten  = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, OSTEN);
+	hw_feat->ptoen  = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, PTOEN);
+	hw_feat->adv_ts_hi     = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, ADVTHWORD);
+	hw_feat->dma_width     = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, ADDR64);
+	hw_feat->dcb           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, DCBEN);
+	hw_feat->sph           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, SPHEN);
+	hw_feat->tso           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, TSOEN);
+	hw_feat->dma_debug     = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, DBGMEMA);
+	hw_feat->rss           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, RSSEN);
+	hw_feat->tc_cnt        = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, NUMTC);
+	hw_feat->hash_table_size =
+		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, HASHTBLSZ);
+	hw_feat->l3l4_filter_num =
+		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, L3L4FNUM);
+	/* Hardware feature register 2 */
+	hw_feat->rx_q_cnt     = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, RXQCNT);
+	hw_feat->tx_q_cnt     = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, TXQCNT);
+	hw_feat->rx_ch_cnt    = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, RXCHCNT);
+	hw_feat->tx_ch_cnt    = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, TXCHCNT);
+	hw_feat->pps_out_num  = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, PPSOUTNUM);
+	hw_feat->aux_snap_num = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, AUXSNAPNUM);
+	hw_feat->tc_cnt++;
+	hw_feat->rx_q_cnt++;
+	hw_feat->tx_q_cnt++;
 
 	return 0;
 }

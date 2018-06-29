@@ -49,13 +49,14 @@
 #endif
 
 /* clock_adjtime is not available in GLIBC < 2.14 */
-#if !__GLIBC_PREREQ(2, 14)
+//#if !__GLIBC_PREREQ(2, 14)
 #include <sys/syscall.h>
-static int clock_adjtime(clockid_t id, struct timex *tx)
+int clock_adjtime(clockid_t id, struct timex *tx)
 {
+    printf("clock_adjtime\n");
 	return syscall(__NR_clock_adjtime, id, tx);
 }
-#endif
+//#endif
 
 static clockid_t get_clockid(int fd)
 {

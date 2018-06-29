@@ -103,6 +103,9 @@ int cli_get_rmon(void *pdev);
 void cli_set_pause_frame_filter(void *pdev);
 void cli_set_gint(void *pdev);
 void cli_set_rxcrc(void *pdev);
+int cli_get_fifo(void *pdev);
+void cli_add_fifo(void *pdev);
+void cli_del_fifo(void *pdev);
 
 #endif
 

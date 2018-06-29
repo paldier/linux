@@ -250,6 +250,8 @@ int gswss_switch_ss_reset(void *pdev);
 int gswss_set_clkmode(void *pdev, u32 clk_mode);
 int gswss_cfg0_1588(void *pdev, u32 ref_time, u32 dig_time, u32 bin_time,
 		    u32 pps_sel);
+int gswss_cfg1_1588(void *pdev, u32 trig0_sel, u32 trig1_sel, u32 sw_trig);
+
 int gswss_set_macsec_to_mac(void *pdev, u32 mac_idx, u32 enable);
 
 int gswss_get_int_stat(void *pdev, u32 mod);

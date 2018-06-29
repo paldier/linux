@@ -23,6 +23,7 @@ struct pmac_port_info2;
 struct gsw_itf;
 
 #define DP_MAX_GSW_HANDLE 2 /*! max GSW instance per SOC */
+#define DP_MAX_MAC_HANDLE 11 /*! max MAC instance per SOC */
 
 /*! enum for DP HW capability type */
 enum DP_HW_CAP_TYPE {
@@ -43,6 +44,7 @@ struct dp_inst_info {
 	enum DP_HW_CAP_TYPE type;  /*! HW type */
 	enum DP_HW_CAP_VER ver;  /*! HE version */
 	struct core_ops *ops[DP_MAX_GSW_HANDLE]; /*! GSWIP ops handler*/
+	struct mac_ops *mac_ops[DP_MAX_MAC_HANDLE]; /*! GSWIP ops handler*/
 	int cbm_inst;  /*! CBM instance for this DP instance*/
 	int qos_inst; /*! QOS instance for this DP instance*/
 };
@@ -140,6 +142,7 @@ struct inst_property {
 	struct inst_info info;
 	/*driver should know which HW to configure, esp for PCIe case */
 	struct core_ops *ops[DP_MAX_GSW_HANDLE];
+	struct mac_ops *mac_ops[DP_MAX_MAC_HANDLE];	
 	int cbm_inst;
 	int qos_inst;
 	void *priv_hal; /*private data per HAL */

@@ -89,6 +89,13 @@ struct _gswss_cfg gswss_adap_cfg[] = {
 		"dig_time bin_time pps_sel>"
 	},
 	{
+		"extts",
+		3,
+		"<trig0_sel <0/1/2/3/4/5/6/8/9/10 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4/PON100US/EXTPPS0/EXTPPS1/SW>"
+		"<trig1_sel <0/1/2/3/4/5/6/8/9/10 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4/PON100US/EXTPPS0/EXTPPS1/SW>"
+		"<sw_trig <0/1>"
+	},
+	{
 		"clk_md",
 		1,
 		"<0/1/2/3 666/450/Auto/Auto Mhz >"
@@ -324,19 +331,16 @@ int gswss_main(u32 argc, u8 *argv[])
 	u32 speed;
 	u32 dir, oper;
 	u32 mtu;
-	u32 sec, nsec, rec_id;
-	u32 ttse, ostc, ost_avail, cic;
-
-	u32 enable;
+	u32 enable, rec_id;
 	u32 ref_time, dig_time, bin_time, pps_sel;
 	struct mac_ops *ops = NULL;
 	struct adap_ops *adap_ops = gsw_get_adap_ops(0);
 	u32 reg_off, reg_val;
-
+	struct mac_fifo_entry f_entry;
+	u32 trig1_sel, trig0_sel, sw_trig;
 
 	start_arg++;
 	start_arg++;
-
 
 	if (argc <= 2) {
 		gswss_help();
@@ -458,7 +462,7 @@ int gswss_main(u32 argc, u8 *argv[])
 					      mac_nstrlen(argv[start_arg]),
 					      &start_arg);
 
-			gswss_get_txtstamp_fifo(ops, rec_id);
+			gswss_get_txtstamp_fifo(ops, rec_id, &f_entry);
 		} else if (!strcmp(argv[start_arg], "phymode")) {
 			start_arg++;
 			ops = gswss_get_mac_ops(argv[start_arg - 1],
@@ -637,29 +641,28 @@ int gswss_main(u32 argc, u8 *argv[])
 			if (!ops)
 				return -1;
 
-			ttse = mac_nstrtoul(argv[start_arg],
-					    mac_nstrlen(argv[start_arg]),
-					    &start_arg);
-			ostc = mac_nstrtoul(argv[start_arg],
-					    mac_nstrlen(argv[start_arg]),
-					    &start_arg);
-			ost_avail = mac_nstrtoul(argv[start_arg],
-						 mac_nstrlen(argv[start_arg]),
-						 &start_arg);
-			cic = mac_nstrtoul(argv[start_arg],
-					   mac_nstrlen(argv[start_arg]),
-					   &start_arg);
-			sec = mac_nstrtoul(argv[start_arg],
-					   mac_nstrlen(argv[start_arg]),
-					   &start_arg);
-			nsec = mac_nstrtoul(argv[start_arg],
-					    mac_nstrlen(argv[start_arg]),
-					    &start_arg);
-			rec_id = mac_nstrtoul(argv[start_arg],
-					      mac_nstrlen(argv[start_arg]),
-					      &start_arg);
-			gswss_set_txtstamp_fifo(ops, ttse, ostc, ost_avail, cic,
-						sec, nsec, rec_id);
+			f_entry.ttse = mac_nstrtoul(argv[start_arg],
+						    mac_nstrlen(argv[start_arg]),
+						    &start_arg);
+			f_entry.ostc = mac_nstrtoul(argv[start_arg],
+						    mac_nstrlen(argv[start_arg]),
+						    &start_arg);
+			f_entry.ostpa = mac_nstrtoul(argv[start_arg],
+						     mac_nstrlen(argv[start_arg]),
+						     &start_arg);
+			f_entry.cic = mac_nstrtoul(argv[start_arg],
+						   mac_nstrlen(argv[start_arg]),
+						   &start_arg);
+			f_entry.ttsl = mac_nstrtoul(argv[start_arg],
+						    mac_nstrlen(argv[start_arg]),
+						    &start_arg);
+			f_entry.ttsh = mac_nstrtoul(argv[start_arg],
+						    mac_nstrlen(argv[start_arg]),
+						    &start_arg);
+			f_entry.rec_id = mac_nstrtoul(argv[start_arg],
+						      mac_nstrlen(argv[start_arg]),
+						      &start_arg);
+			gswss_set_txtstamp_fifo(ops, &f_entry);
 		} else if (!strcmp(argv[start_arg], "nco")) {
 			start_arg++;
 
@@ -717,6 +720,20 @@ int gswss_main(u32 argc, u8 *argv[])
 					   &start_arg);
 
 			gswss_set_clkmode(adap_ops, val);
+		} else if (!strcmp(argv[start_arg], "extts")) {
+			start_arg++;
+
+			trig0_sel = mac_nstrtoul(argv[start_arg],
+						 mac_nstrlen(argv[start_arg]),
+						 &start_arg);
+			trig1_sel = mac_nstrtoul(argv[start_arg],
+						 mac_nstrlen(argv[start_arg]),
+						 &start_arg);
+			sw_trig = mac_nstrtoul(argv[start_arg],
+					       mac_nstrlen(argv[start_arg]),
+					       &start_arg);
+			gswss_cfg1_1588(adap_ops,
+					trig1_sel, trig0_sel, sw_trig);
 		} else {
 			gswss_help();
 		}
@@ -1192,91 +1209,96 @@ int gswss_get_mtu(void *pdev)
 }
 
 int gswss_set_txtstamp_fifo(void *pdev,
-			    u8 ttse, u8 ostc, u8 ost_avail, u8 cic, u32 sec,
-			    u32 nsec, u32 record_id)
+			    struct mac_fifo_entry *f_entry)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	int ret = 0;
 	u16 val = 0;
 	u32 mac_txtstamp;
 
-	val = ((ttse << 4) | (ostc << 3) | (ost_avail << 2) | cic);
+	val = ((f_entry->ttse << 4) | (f_entry->ostc << 3) |
+	       (f_entry->ostpa << 2) | f_entry->cic);
 	GSWSS_MAC_RGWR(pdata, MAC_TXTS_CIC(pdata->mac_idx), val);
 
 	mac_txtstamp = MAC_TXTS_0(pdata->mac_idx);
-	val = GET_N_BITS(nsec, 0, 16);
+	val = GET_N_BITS(f_entry->ttsh, 0, 16);
 	GSWSS_MAC_RGWR(pdata, mac_txtstamp, val);
 
 	mac_txtstamp = MAC_TXTS_1(pdata->mac_idx);
-	val = GET_N_BITS(nsec, 16, 16);
+	val = GET_N_BITS(f_entry->ttsh, 16, 16);
 	GSWSS_MAC_RGWR(pdata, mac_txtstamp, val);
 
 	mac_txtstamp = MAC_TXTS_2(pdata->mac_idx);
-	val = GET_N_BITS(sec, 0, 16);
+	val = GET_N_BITS(f_entry->ttsl, 0, 16);
 	GSWSS_MAC_RGWR(pdata, mac_txtstamp, val);
 
 	mac_txtstamp = MAC_TXTS_3(pdata->mac_idx);
-	val = GET_N_BITS(sec, 16, 16);
+	val = GET_N_BITS(f_entry->ttsl, 16, 16);
 	GSWSS_MAC_RGWR(pdata, mac_txtstamp, val);
 
-	sec = ((GSWSS_MAC_RGRD(pdata, MAC_TXTS_1(pdata->mac_idx)) << 16) |
-	       GSWSS_MAC_RGRD(pdata, MAC_TXTS_0(pdata->mac_idx)));
-	nsec = ((GSWSS_MAC_RGRD(pdata, MAC_TXTS_3(pdata->mac_idx)) << 16) |
-		GSWSS_MAC_RGRD(pdata, MAC_TXTS_2(pdata->mac_idx)));
-
-	mac_printf("\nMAC%d: TxTstamp Fifo Record ID %d written\n",
-		   (pdata->mac_idx + 2), record_id);
+	mac_dbg("MAC%d: TxTstamp Fifo Record ID %d written\n",
+		(pdata->mac_idx + 2), f_entry->rec_id);
 
 	/* Write the entries into the 64 array record_id */
-	gswss_set_txtstamp_access(pdev, 1, record_id);
+	gswss_set_txtstamp_access(pdev, 1, f_entry->rec_id);
 
 	return ret;
 }
 
-void gswss_get_txtstamp_fifo(void *pdev, u32 record_id)
+void gswss_get_txtstamp_fifo(void *pdev,
+			     u32 record_id, struct mac_fifo_entry *f_entry)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	u32 mac_txtstamp, tstamp_cic;
-	u32 sec, nsec;
+	u32 mac_txtstamp;
 
 	gswss_set_txtstamp_access(pdev, 0, record_id);
-
+#if 0
 	mac_printf("\nMAC%d: TxTstamp Fifo Record ID %d:\n",
 		   (pdata->mac_idx + 2),
 		   record_id);
-
+#endif
 	mac_txtstamp = GSWSS_MAC_RGRD(pdata, MAC_TXTS_CIC(pdata->mac_idx));
 
-	mac_printf("\tTTSE: \t%s\n",
-		   GET_N_BITS(mac_txtstamp, 4, 1) ? "ENABLED" : "DISABLED");
-	mac_printf("\tOSTC: \t%s\n",
-		   GET_N_BITS(mac_txtstamp, 3, 1) ? "ENABLED" : "DISABLED");
-	mac_printf("\tOSTPA: \t%s\n",
-		   GET_N_BITS(mac_txtstamp, 2, 1) ? "ENABLED" : "DISABLED");
-	tstamp_cic = GET_N_BITS(mac_txtstamp, 0, 2);
+	f_entry->ttse = GET_N_BITS(mac_txtstamp, 4, 1);
+	f_entry->ostc = GET_N_BITS(mac_txtstamp, 3, 1);
+	f_entry->ostpa = GET_N_BITS(mac_txtstamp, 2, 1);
+	f_entry->cic = GET_N_BITS(mac_txtstamp, 0, 2);
 
-	if (tstamp_cic == 0)
+	f_entry->ttsl =
+		((GSWSS_MAC_RGRD(pdata, MAC_TXTS_1(pdata->mac_idx)) << 16) |
+		 GSWSS_MAC_RGRD(pdata, MAC_TXTS_0(pdata->mac_idx)));
+	f_entry->ttsh =
+		((GSWSS_MAC_RGRD(pdata, MAC_TXTS_3(pdata->mac_idx)) << 16) |
+		 GSWSS_MAC_RGRD(pdata, MAC_TXTS_2(pdata->mac_idx)));
+
+	f_entry->rec_id = record_id;
+
+#if 0
+	mac_printf("\tTTSE: \t%s\n",
+		   f_entry->ttse ? "ENABLED" : "DISABLED");
+	mac_printf("\tOSTC: \t%s\n",
+		   f_entry->ostc ? "ENABLED" : "DISABLED");
+	mac_printf("\tOSTPA: \t%s\n",
+		   f_entry->ostpa ? "ENABLED" : "DISABLED");
+
+	if (f_entry->cic == 0)
 		mac_printf("\tCIC: \t"
 			   "DISABLED\n");
 
-	if (tstamp_cic == 1)
+	if (f_entry->cic == 1)
 		mac_printf("\tCIC: \tTime stamp IP Checksum update\n");
 
-	if (tstamp_cic == 2)
+	if (f_entry->cic == 2)
 		mac_printf("\tCIC: \tTime stamp IP and "
 			   "Payload Checksum update\n");
 
-	if (tstamp_cic == 3)
+	if (f_entry->cic == 3)
 		mac_printf("\tCIC: \tTime stamp IP, Payload checksum and "
 			   "Pseudo header update\n");
 
-	sec = ((GSWSS_MAC_RGRD(pdata, MAC_TXTS_1(pdata->mac_idx)) << 16) |
-	       GSWSS_MAC_RGRD(pdata, MAC_TXTS_0(pdata->mac_idx)));
-	nsec = ((GSWSS_MAC_RGRD(pdata, MAC_TXTS_3(pdata->mac_idx)) << 16) |
-		GSWSS_MAC_RGRD(pdata, MAC_TXTS_2(pdata->mac_idx)));
-
-	mac_printf("\tSEC: \t%d\n", sec);
-	mac_printf("\tNSEC:\t%d\n", nsec);
+	mac_printf("\tTTSL: \t%d\n", f_entry->ttsl);
+	mac_printf("\tTTSH: \t%d\n", f_entry->ttsh);
+#endif
 }
 
 

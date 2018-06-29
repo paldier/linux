@@ -32,6 +32,11 @@ int request_dp(u32 flag)
 	info.ver = GSWIP31_VER;
 	info.ops[0] = gsw_get_swcore_ops(0);
 	info.ops[1] = gsw_get_swcore_ops(0);
+	info.mac_ops[0] = NULL;
+	info.mac_ops[1] = NULL;
+	info.mac_ops[2] = gsw_get_mac_ops(0, 0);
+	info.mac_ops[3] = gsw_get_mac_ops(0, 1);
+	info.mac_ops[4] = gsw_get_mac_ops(0, 2);
 #else
 	info.type = GSWIP30_TYPE;
 	info.ver = GSWIP30_VER;

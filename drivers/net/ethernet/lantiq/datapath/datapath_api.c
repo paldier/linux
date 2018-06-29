@@ -1916,6 +1916,7 @@ static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 	char decryp = 0;
 	u8 inst = 0;
 	struct pmac_port_info *dp_port;
+	struct mac_ops *ops;
 
 	dp_port = &dp_port_info[inst][0];
 	if (!skb) {
@@ -1973,6 +1974,13 @@ static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 		goto RX_DROP;
 	}
 	dp_port = &dp_port_info[inst][port_id];
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+	if (dp_port->f_ptp) {
+		ops = dp_port_prop[inst].mac_ops[port_id];
+		if (ops)
+			ops->do_rx_hwts(ops, skb);
+	}
+#endif
 	rx_fn = dp_port->cb.rx_fn;
 	if (likely(rx_fn && dp_port->status)) {
 		/*Clear some fields as SWAS V3.7 required */
@@ -2165,6 +2173,10 @@ static void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 	pmac->tcp_h_offset = tcp_h_offset >> 2;
 }
 
+static void set_ptp_recid(struct pmac_tx_hdr *pmac, int rec_id)
+{
+	pmac->record_id_msb = rec_id;
+}
 int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 		struct sk_buff *skb, int32_t len, uint32_t flags)
 {
@@ -2183,6 +2195,10 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 	enum dp_xmit_errors err_ret = 0;
 	int inst = 0;
 	struct cbm_tx_data data;
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+	struct mac_ops *ops;
+	int rec_id = 0;
+#endif
 
 #ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
 	if (unlikely(!dp_init_ok)) {
@@ -2290,6 +2306,28 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 							dp_info2);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		}
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588_SW_WORKAROUND)
+		if(dp_info->f_ptp)
+#else
+		if(dp_info->f_ptp && 
+			(skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
+#endif
+		{	ops = dp_port_prop[inst].mac_ops[dp_info->port_id];
+			if(ops)
+				rec_id = ops->do_tx_hwts(ops, skb);
+
+			if(rec_id < 0) {
+				err_ret = DP_XMIT_PTP_ERR;
+				goto lbl_err_ret;
+			}
+
+			DP_CB(inst, get_dma_pmac_templ)(TEMPL_PTP, &pmac,
+							desc_0, desc_1,
+							dp_info2);
+			set_ptp_recid(&pmac, rec_id);
+		}
+#endif
 	} else if (dp_info->alloc_flags & DP_F_FAST_DSL) { /*some with pmac*/
 		if (unlikely(flags & DP_TX_CAL_CHKSUM)) { /* w/ pmac*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
@@ -2448,6 +2486,8 @@ lbl_err_ret:
 		break;
 	case DP_XMIT_ERR_CSM_NO_SUPPORT:
 		PR_RATELIMITED("dp_xmit not support checksum\n");
+		break;
+	case DP_XMIT_PTP_ERR:
 		break;
 	default:
 		UP_STATS(dp_info->subif_info[vap].mib.tx_pkt_dropped);

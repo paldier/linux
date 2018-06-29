@@ -54,19 +54,29 @@ enum {
 	PTP_MSGTYPE_ANNOUNCE			= 0xB,
 	PTP_MSGTYPE_SGNLNG			= 0xC,
 	PTP_MSGTYPE_MNGMNT			= 0xD,
+	PTP_MSGTYPE_INVALID			= 0xE,
 };
 
 /* Byte offset of data in the PTP V2 headers */
 #define PTP_OFFS_MSG_TYPE		0
 #define PTP_OFFS_FLAGS			6
 
+
+#define IS_2STEP(pdata)	(pdata->tstamp_config.tx_type == HWTSTAMP_TX_ON)
+#define IS_1STEP(pdata)	(pdata->tstamp_config.tx_type == HWTSTAMP_TX_ONESTEP_SYNC)
+
+#ifdef __KERNEL__
 int xgmac_tx_hwts(void *pdev, struct sk_buff *skb);
 int xgmac_rx_hwts(void *pdev, struct sk_buff *skb);
-int xgmac_config_hwts(void *pdev, struct ifreq *ifr);
+int xgmac_set_hwts(void *pdev, struct ifreq *ifr);
+int xgmac_get_hwts(void *pdev, struct ifreq *ifr);
 int xgmac_ptp_init(void *pdev);
 void xgmac_ptp_remove(void *pdev);
 void xgmac_config_timer_reg(void *pdev);
 int xgmac_ptp_tx_work(struct work_struct *work);
+int xgmac_get_ts_info(void *pdev,
+		      struct ethtool_ts_info *ts_info);
+#endif
 
 
 #endif

@@ -201,6 +201,20 @@ static int set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 	return -ENODEV;
 }
 
+static int get_tsinfo(struct net_device *dev, struct ethtool_ts_info *ts_info)
+{
+	struct ltq_switch_priv_t *priv;
+	struct mac_ops *ops;
+
+	priv = netdev_priv(dev);
+
+	ops = gsw_get_mac_ops(0, (priv->dp_port_id - 2));
+	if(ops)
+		ops->mac_get_ts_info(ops, ts_info);
+
+	return;
+}
+
 /* Reset the device */
 static int nway_reset(struct net_device *dev)
 {
@@ -215,6 +229,7 @@ static const struct ethtool_ops ethtool_ops = {
 	.set_settings		= set_settings,
 	.nway_reset		= nway_reset,
 	.get_link		= ethtool_op_get_link,
+	.get_ts_info 		= get_tsinfo,
 };
 
 /* open the network device interface*/
@@ -635,6 +650,8 @@ static int ltq_eth_init(struct net_device *dev)
 			dev->ethtool_ops = &ethtool_ops;
 		}
 	}
+
+	dev->ethtool_ops = &ethtool_ops;
 
 	priv->dp_subif.subif = 0;
 	priv->dp_subif.port_id = priv->dp_port_id;

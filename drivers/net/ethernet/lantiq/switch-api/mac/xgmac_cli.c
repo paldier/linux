@@ -44,6 +44,7 @@
 #include <gswss_mac_api.h>
 #include <lmac_api.h>
 #include <xgmac_mdio.h>
+#include <mac_tx_fifo.h>
 
 void cli_set_mtl_tx(void *pdev)
 {
@@ -127,10 +128,10 @@ void cli_set_tstamp_enable(void *pdev)
 	if (pdata->set_all) {
 		for (i = 0; i < pdata->max_mac; i++) {
 			ops = gsw_get_mac_ops(0, i);
-			mac_enable_onestep_ts(ops);
+			mac_enable_ts(ops);
 		}
 	} else {
-		mac_enable_onestep_ts(pdev);
+		mac_enable_ts(pdev);
 	}
 }
 
@@ -143,10 +144,10 @@ void cli_set_tstamp_disable(void *pdev)
 	if (pdata->set_all) {
 		for (i = 0; i < pdata->max_mac; i++) {
 			ops = gsw_get_mac_ops(0, i);
-			mac_disable_onestep_ts(ops);
+			mac_disable_ts(ops);
 		}
 	} else {
-		mac_disable_onestep_ts(pdev);
+		mac_disable_ts(pdev);
 	}
 }
 
@@ -318,10 +319,12 @@ void cli_set_int(void *pdev)
 	if (pdata->set_all) {
 		for (i = 0; i < pdata->max_mac; i++) {
 			ops = gsw_get_mac_ops(0, i);
+			mac_int_enable(ops);
 			xgmac_set_mac_int(ops, pdata->enable_mac_int, 1);
 			xgmac_set_mtl_int(ops, pdata->enable_mtl_int);
 		}
 	} else {
+		mac_int_enable(pdev);
 		xgmac_set_mac_int(pdev, pdata->enable_mac_int, 1);
 		xgmac_set_mtl_int(pdev, pdata->enable_mtl_int);
 	}
@@ -954,6 +957,57 @@ void cli_set_rxcrc(void *pdev)
 		xgmac_set_rxcrc(pdev, pdata->val);
 	}
 }
+
+int cli_get_fifo(void *pdev)
+{
+	u32 i = 0;
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	struct mac_ops *ops;
+
+	if (pdata->set_all) {
+		for (i = 0; i < pdata->max_mac; i++) {
+			ops = gsw_get_mac_ops(0, i);
+			print_fifo(ops);
+		}
+	} else {
+		print_fifo(pdev);
+	}
+
+	return 0;
+}
+
+void cli_add_fifo(void *pdev)
+{
+	u32 i = 0;
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	struct mac_ops *ops;
+
+	if (pdata->set_all) {
+		for (i = 0; i < pdata->max_mac; i++) {
+			ops = gsw_get_mac_ops(0, i);
+			fifo_entry_add(ops, 1, 1, 1, 0, 0, 0);
+		}
+	} else {
+		fifo_entry_add(pdev, 1, 1, 1, 0, 0, 0);
+	}
+}
+
+void cli_del_fifo(void *pdev)
+{
+	u32 i = 0;
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	struct mac_ops *ops;
+
+	if (pdata->set_all) {
+		for (i = 0; i < pdata->max_mac; i++) {
+			ops = gsw_get_mac_ops(0, i);
+			fifo_entry_del(ops, pdata->rec_id);
+		}
+	} else {
+		fifo_entry_del(pdev, pdata->rec_id);
+	}
+}
+
 void cli_test_all_reg(void *pdev)
 {
 	lmac_test_all_reg(pdev);

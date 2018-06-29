@@ -98,6 +98,9 @@ static void init_dma_pmac_template(int portid, u32 flags)
 			dp_info->dma0_template[i].field.redir = 1;
 			dp_info->dma0_mask_template[i].field.redir = 0;
 		}
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+		dp_info->pmac_template[TEMPL_PTP].ptp= 1;
+#endif
 	} else if (flags & DP_F_FAST_WLAN) {/*someties with pmac*/
 		/*normal fast_wlan without pmac.*/
 	} else if (flags & DP_F_DIRECTLINK) { /*always with pmac*/
@@ -1368,6 +1371,7 @@ int register_dp_cap_gswip31(int flag)
 	cap.info.cap.rx_hw_chksum = 0;
 	cap.info.cap.hw_tso = 0;
 	cap.info.cap.hw_gso = 0;
+	cap.info.cap.hw_ptp = 1;
 	strncpy(cap.info.cap.qos_eng_name, "ppv4",
 		sizeof(cap.info.cap.qos_eng_name));
 	strncpy(cap.info.cap.pkt_eng_name, "mpe",

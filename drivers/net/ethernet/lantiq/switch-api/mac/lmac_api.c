@@ -524,85 +524,85 @@ int lmac_clear_int(void *pdev, u32 event)
 
 	if ((event & LMAC_PHYERR_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, PHYERR))) {
-		mac_printf("LMAC %d Clearing PHYERR Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing PHYERR Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, PHYERR, 1);
 	}
 
 	if ((event & LMAC_ALIGN_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, ALIGN))) {
-		mac_printf("LMAC %d Clearing ALIGN Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing ALIGN Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, ALIGN, 1);
 	}
 
 	if ((event & LMAC_SPEED_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, SPEED))) {
-		mac_printf("LMAC %d Clearing SPEED Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing SPEED Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, SPEED, 1);
 	}
 
 	if ((event & LMAC_FDUP_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, FDUP))) {
-		mac_printf("LMAC %d Clearing FDUP Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing FDUP Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, FDUP, 1);
 	}
 
 	if ((event & LMAC_RXPAUEN_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, RXPAUEN))) {
-		mac_printf("LMAC %d Clearing RXPAUEN Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing RXPAUEN Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, RXPAUEN, 1);
 	}
 
 	if ((event & LMAC_TXPAUEN_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, TXPAUEN))) {
-		mac_printf("LMAC %d Clearing TXPAUEN Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing TXPAUEN Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, TXPAUEN, 1);
 	}
 
 	if ((event & LMAC_LPIOFF_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, LPIOFF))) {
-		mac_printf("LMAC %d Clearing LPIOFF Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing LPIOFF Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, LPIOFF, 1);
 	}
 
 	if ((event & LMAC_LPION_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, LPION))) {
-		mac_printf("LMAC %d Clearing LPION Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing LPION Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, LPION, 1);
 	}
 
 	if ((event & LMAC_JAM_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, JAM))) {
-		mac_printf("LMAC %d Clearing JAM Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing JAM Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, JAM, 1);
 	}
 
 	if ((event & LMAC_FCSERR_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, FCSERR))) {
-		mac_printf("LMAC %d Clearing FCSERR Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing FCSERR Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, FCSERR, 1);
 	}
 
 	if ((event & LMAC_TXPAU_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, TXPAUSE))) {
-		mac_printf("LMAC %d Clearing TXPAUSE Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing TXPAUSE Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, TXPAUSE, 1);
 	}
 
 	if ((event & LMAC_RXPAU_EVNT) &&
 	    (MAC_GET_VAL(mac_isr, MAC_PISR, RXPAUSE))) {
-		mac_printf("LMAC %d Clearing RXPAUSE Interrupt Status\n",
-			   pdata->mac_idx);
+		mac_dbg("LMAC %d Clearing RXPAUSE Interrupt Status\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_isr, MAC_PISR, RXPAUSE, 1);
 	}
 

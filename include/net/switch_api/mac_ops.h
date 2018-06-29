@@ -12,6 +12,9 @@
 
 #include "gsw_irq.h"
 #include "gsw_types.h"
+#ifdef __KERNEL__
+#include <linux/netdevice.h>
+#endif
 
 struct mac_ops {
 	/* This function Sets the Flow Ctrl operation in Both XGMAC and LMAC.
@@ -299,6 +302,31 @@ struct mac_ops {
 	 * return	OUT	-1: 	Configure Sub Second Inccrement Error
 	 */
 	int(*config_subsec_inc)(void *, u32);
+#ifdef __KERNEL__
+	/* This sequence is used set Hardware timestamp
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 */
+	int(*set_hwts)(void *, struct ifreq *);
+	/* This sequence is used get Hardware timestamp
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 */
+	int(*get_hwts)(void *, struct ifreq *);
+	/* This sequence is used for Rx Hardware timestamp operations
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 * return	OUT	-1: 	Initialize MAC Error
+	 */
+	int(*do_rx_hwts)(void *, struct sk_buff *);
+	/* This sequence is used for Tx Hardware timestamp operations
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 * return	OUT	-1: 	Initialize MAC Error
+	 */
+	int(*do_tx_hwts)(void *, struct sk_buff *);
+	/* This sequence is get Timestamp info
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 * return	OUT	-1: 	Initialize MAC Error
+	 */
+	int(*mac_get_ts_info)(void *, struct ethtool_ts_info *);
+#endif
 	/* This sequence is used Initialize MAC
 	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
 	 * return	OUT	-1: 	Initialize MAC Error

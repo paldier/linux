@@ -108,6 +108,86 @@ end:
 	return 0;
 }
 
+int gswss_cfg1_1588(void *pdev, u32 trig0_sel, u32 trig1_sel, u32 sw_trig)
+{
+	struct adap_prv_data *pdata = GET_ADAP_PDATA(pdev);
+	u32 cfg0;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->adap_lock);
+#endif
+
+	cfg0 = GSWSS_RGRD(pdata, CFG1_1588);
+
+	if (trig0_sel == 0)
+		mac_printf("\tTRIG0: PON is the master\n");
+	else if (trig0_sel == 1)
+		mac_printf("\tTRIG0: PCIE0 is the master\n");
+	else if (trig0_sel == 2)
+		mac_printf("\tTRIG0: PCIE1 is the master\n");
+	else if (trig0_sel == 3)
+		mac_printf("\tTRIG0: XGMAC2 is the master\n");
+	else if (trig0_sel == 4)
+		mac_printf("\tTRIG0: XGMAC3 is the master\n");
+	else if (trig0_sel == 5)
+		mac_printf("\tTRIG0: XGMAC4 is the master\n");
+	else if (trig0_sel == 6)
+		mac_printf("\tTRIG0: PON100US is the master\n");
+	else if (trig0_sel == 8)
+		mac_printf("\tTRIG0: EXTPPS0 is the master\n");
+	else if (trig0_sel == 9)
+		mac_printf("\tTRIG0: EXTPPS1 is the master\n");
+	else if (trig0_sel == 10)
+		mac_printf("\tTRIG0: Software Trigger\n");
+	else {
+		mac_printf("\tREF_TIME: Wrong Value");
+		goto end;
+	}
+
+	if (trig1_sel == 0)
+		mac_printf("\tTRIG1: PON is the master\n");
+	else if (trig1_sel == 1)
+		mac_printf("\tTRIG1: PCIE0 is the master\n");
+	else if (trig1_sel == 2)
+		mac_printf("\tTRIG1: PCIE1 is the master\n");
+	else if (trig1_sel == 3)
+		mac_printf("\tTRIG1: XGMAC2 is the master\n");
+	else if (trig1_sel == 4)
+		mac_printf("\tTRIG1: XGMAC3 is the master\n");
+	else if (trig1_sel == 5)
+		mac_printf("\tTRIG1: XGMAC4 is the master\n");
+	else if (trig1_sel == 6)
+		mac_printf("\tTRIG1: PON100US is the master\n");
+	else if (trig1_sel == 8)
+		mac_printf("\tTRIG1: EXTPPS0 is the master\n");
+	else if (trig1_sel == 9)
+		mac_printf("\tTRIG1: EXTPPS1 is the master\n");
+	else if (trig1_sel == 10)
+		mac_printf("\tTRIG1: Software Trigger\n");
+	else {
+		mac_printf("\tTRIG1: Wrong Value");
+		goto end;
+	}
+
+	if (sw_trig == 0)
+		mac_printf("\tSW_TRIG: 0\n");
+	else if (trig1_sel == 1)
+		mac_printf("\tSW_TRIG: 1\n");
+
+	MAC_SET_VAL(cfg0, CFG1_1588, TRIG1SEL, trig1_sel);
+	MAC_SET_VAL(cfg0, CFG1_1588, TRIG0SEL, trig0_sel);
+	MAC_SET_VAL(cfg0, CFG1_1588, SWTRIG, sw_trig);
+
+	GSWSS_RGWR(pdata, CFG1_1588, cfg0);
+end:
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->adap_lock);
+#endif
+
+	return 0;
+}
+
+
 int gswss_get_cfg0_1588(void *pdev, u32 *ref_time, u32 *dig_time,
 			u32 *bin_time, u32 *pps_sel)
 {

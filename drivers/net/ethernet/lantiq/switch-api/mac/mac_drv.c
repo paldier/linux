@@ -14,6 +14,8 @@
 #include <xgmac_common.h>
 #include <xgmac.h>
 #include <lmac_api.h>
+#include <linux/clk.h>
+
 
 static void __iomem *base[2];
 
@@ -140,6 +142,7 @@ static int mac_probe(struct platform_device *pdev)
 	struct adap_prv_data *adap_pdata = GET_ADAP_PDATA(gswdev->adap_ops);
 	struct mac_prv_data *pdata =
 		GET_MAC_PDATA(platform_get_drvdata(pdev));
+	struct device *dev = &pdev->dev;
 
 	gswdev->mac_dev[pdev->id] = pdev;
 
@@ -168,11 +171,21 @@ static int mac_probe(struct platform_device *pdev)
 
 	pdata->max_mac = gsw_get_mac_subifcnt(0);
 
-	if (device_property_present(&pdev->dev, "board_type")) {
+	if (device_property_present(dev, "board_type")) {
 		pr_info("Board Type: HAPS\n");
 		pdata->haps = 1;
 	} else
 		pdata->haps = 0;
+
+	pdata->ker_ptp_clk = devm_clk_get(dev, "ptp_clk");
+
+	if (IS_ERR(pdata->ker_ptp_clk)) {
+		dev_err(dev, "Failed to get MAC %d ptp clock!\n",
+			pdata->mac_idx);
+		return -EINVAL;
+	}
+
+	pdata->ptp_clk = (u32)clk_get_rate(pdata->ker_ptp_clk);
 
 	/* Init function fointers */
 	mac_init_fn_ptrs(&pdata->ops);

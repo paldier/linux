@@ -1948,95 +1948,60 @@ int xgmac_get_priv_data(void *pdev)
 	return 0;
 }
 
-int xgmac_get_all_hw_features(void *pdev)
+int xgmac_print_hw_cap(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	u32 mac_hfr0, mac_hfr1, mac_hfr2;
 	/* Hardware features of the device */
 	struct xgmac_hw_features *hw_feat = &pdata->hw_feat;
 
-	mac_hfr0 = XGMAC_RGRD(pdata, MAC_HW_F0);
-	mac_hfr1 = XGMAC_RGRD(pdata, MAC_HW_F1);
-	mac_hfr2 = XGMAC_RGRD(pdata, MAC_HW_F2);
-
-	memset(hw_feat, 0, sizeof(*hw_feat));
-
-	hw_feat->version = XGMAC_RGRD(pdata, MAC_VR);
-
-	/* Hardware feature register 0 */
 	mac_printf("========== Hardware feature register 0 ==============\n");
-	hw_feat->gmii        = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, GMIISEL);
 
 	if (hw_feat->gmii)
 		mac_printf("\t 1Gbps Supported\n");
-
-	hw_feat->vlhash      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, VLHASH);
 
 	if (hw_feat->vlhash)
 		mac_printf("\t Enable Address Filter VLAN Hash Table "
 			   "option is selected.\n");
 
-	hw_feat->sma         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, SMASEL);
-
 	if (hw_feat->sma)
 		mac_printf("\t Enable Station Management Block "
 			   "(MDIO Interface) option is selected.\n");
-
-	hw_feat->rwk         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, RWKSEL);
 
 	if (hw_feat->rwk)
 		mac_printf("\t Enable Remote Wake-Up Packet Detection "
 			   "option is selected\n");
 
-	hw_feat->mgk         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, MGKSEL);
-
 	if (hw_feat->mgk)
 		mac_printf("\t Enable Magic Packet Detection option "
 			   "is selected.\n");
-
-	hw_feat->mmc         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, MMCSEL);
 
 	if (hw_feat->mmc)
 		mac_printf("\t Enable XGMAC Management Counter (MMC) option "
 			   "is selected.\n");
 
-	hw_feat->aoe         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, ARPOFFSEL);
-
 	if (hw_feat->aoe)
 		mac_printf("\t Enable IPv4 ARP Offload option "
 			   "is selected\n");
-
-	hw_feat->ts          = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, TSSEL);
 
 	if (hw_feat->ts)
 		mac_printf("\t Enable IEEE 1588 Timestamp Support option "
 			   "is selected.\n");
 
-	hw_feat->eee         = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, EEESEL);
-
 	if (hw_feat->eee)
 		mac_printf("\t Enable Energy Efficient Ethernet (EEE) option "
 			   "is selected.\n");
-
-	hw_feat->tx_coe      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, TXCOESEL);
 
 	if (hw_feat->tx_coe)
 		mac_printf("\t Enable Transmit TCP/IP Checksum Offload option"
 			   "is selected.\n");
 
-	hw_feat->rx_coe      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, RXCOESEL);
-
 	if (hw_feat->rx_coe)
 		mac_printf("\t Enable Receive TCP/IP Checksum Check option"
 			   "is selected.\n");
 
-	hw_feat->addn_mac   = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, ADDMACADRSEL);
-
 	if (hw_feat->addn_mac)
 		mac_printf("\t Number of additional MAC addresses "
 			   "selected = %d\n", hw_feat->addn_mac);
-
-	hw_feat->ts_src      = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, TSSTSSEL);
 
 	if (hw_feat->ts_src) {
 		if (hw_feat->ts_src == 1)
@@ -2050,65 +2015,42 @@ int xgmac_get_all_hw_features(void *pdev)
 		mac_printf("\t Time Stamp time source: RESERVED\n");
 	}
 
-	hw_feat->sa_vlan_ins = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, SAVLANINS);
-
 	if (hw_feat->sa_vlan_ins)
 		mac_printf("\t Enable SA and VLAN Insertion on "
 			   "Tx option is selected.\n");
 
-	hw_feat->vxn = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, VXN);
-
 	if (hw_feat->vxn)
 		mac_printf("\t Support for VxLAN/NVGRE is selected\n");
-
-	hw_feat->ediffc = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, EDIFFC);
 
 	if (hw_feat->ediffc)
 		mac_printf("\t EDMA mode Separate Memory is selected "
 			   "for the Descriptor Cache.\n");
-
-	hw_feat->edma = MAC_GET_VAL(mac_hfr0, MAC_HW_F0, EDMA);
 
 	if (hw_feat->edma)
 		mac_printf("\t “Enhanced DMA” option is selected.\n");
 
 	mac_printf("========== Hardware feature register 1 ==============\n");
 
-	/* Hardware feature register 1 */
-	hw_feat->rx_fifo_size  =
-		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, RXFIFOSIZE);
-
 	if (hw_feat->rx_fifo_size)
 		mac_printf("\t Rx Fifo Size %d:%d bytes\n",
 			   hw_feat->rx_fifo_size,
 			   (1 << (hw_feat->rx_fifo_size + 7)));
-
-	hw_feat->tx_fifo_size  =
-		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, TXFIFOSIZE);
 
 	if (hw_feat->tx_fifo_size)
 		mac_printf("\t Tx Fifo Size %d:%d bytes\n",
 			   hw_feat->tx_fifo_size,
 			   (1 << (hw_feat->tx_fifo_size + 7)));
 
-	hw_feat->osten  = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, OSTEN);
-
 	if (hw_feat->osten)
 		mac_printf("\t One Step Timestamping Enabled\n");
-
-	hw_feat->ptoen  = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, PTOEN);
 
 	if (hw_feat->ptoen)
 		mac_printf("\t Enable PTP Timestamp Offload Feature is "
 			   "selected\n");
 
-	hw_feat->adv_ts_hi     = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, ADVTHWORD);
-
 	if (hw_feat->adv_ts_hi)
 		mac_printf("\t Add IEEE 1588 Higher Word Register option is "
 			   "selected.\n");
-
-	hw_feat->dma_width     = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, ADDR64);
 
 	if (hw_feat->dma_width == 0)
 		mac_printf("\t Dma Width: 32\n");
@@ -2119,41 +2061,27 @@ int xgmac_get_all_hw_features(void *pdev)
 	else if (hw_feat->dma_width == 3)
 		mac_printf("\t Dma Width: RESERVED\n");
 
-	hw_feat->dcb           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, DCBEN);
-
 	if (hw_feat->dcb)
 		mac_printf("\t Enable Data Center Bridging option is "
 			   "selected.\n");
-
-	hw_feat->sph           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, SPHEN);
 
 	if (hw_feat->sph)
 		mac_printf("\t Enable Split Header Structure option is "
 			   "selected.\n");
 
-	hw_feat->tso           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, TSOEN);
-
 	if (hw_feat->tso)
 		mac_printf("\t Enable TCP Segmentation Offloading for "
 			   "TCP/IP Packets option is selected.\n");
-
-	hw_feat->dma_debug     = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, DBGMEMA);
 
 	if (hw_feat->dma_debug)
 		mac_printf("\t Enable Debug Memory Access option is "
 			   "selected.\n");
 
-	hw_feat->rss           = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, RSSEN);
-
 	if (hw_feat->rss)
 		mac_printf("\t RSS Feature Enabled\n");
 
-	hw_feat->tc_cnt        = MAC_GET_VAL(mac_hfr1, MAC_HW_F1, NUMTC);
 	mac_printf("\t Number of traffic classes selected: %d\n",
 		   (hw_feat->tc_cnt + 1));
-
-	hw_feat->hash_table_size =
-		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, HASHTBLSZ);
 
 	if (hw_feat->hash_table_size)
 		mac_printf("\t Hash table size: %d\n",
@@ -2161,41 +2089,26 @@ int xgmac_get_all_hw_features(void *pdev)
 	else
 		mac_printf("\t Hash table size: No hash table selected\n");
 
-	hw_feat->l3l4_filter_num =
-		MAC_GET_VAL(mac_hfr1, MAC_HW_F1, L3L4FNUM);
-
 	if (hw_feat->l3l4_filter_num)
 		mac_printf("\t Total number of L3 or L4 filters %d\n",
 			   hw_feat->l3l4_filter_num);
 
 	mac_printf("========== Hardware feature register 2 ==============\n");
-
-	/* Hardware feature register 2 */
-	hw_feat->rx_q_cnt     = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, RXQCNT);
 	mac_printf("\t Number of MTL RX Q: %d\n", (hw_feat->rx_q_cnt + 1));
 
-	hw_feat->tx_q_cnt     = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, TXQCNT);
 	mac_printf("\t Number of MTL TX Q: %d\n", (hw_feat->tx_q_cnt + 1));
-
-	hw_feat->rx_ch_cnt    = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, RXCHCNT);
 
 	if (hw_feat->rx_ch_cnt)
 		mac_printf("\t Number of DMA Receive channels: %d\n",
 			   (hw_feat->rx_ch_cnt + 1));
 
-	hw_feat->tx_ch_cnt    = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, TXCHCNT);
-
 	if (hw_feat->tx_ch_cnt)
 		mac_printf("\t Number of DMA transmit channels: %d\n",
 			   (hw_feat->tx_ch_cnt + 1));
 
-	hw_feat->pps_out_num  = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, PPSOUTNUM);
-
 	if (hw_feat->pps_out_num)
 		mac_printf("\t Number of PPS outputs %d\n",
 			   hw_feat->pps_out_num);
-
-	hw_feat->aux_snap_num = MAC_GET_VAL(mac_hfr2, MAC_HW_F2, AUXSNAPNUM);
 
 	if (hw_feat->aux_snap_num) {
 		if (hw_feat->aux_snap_num > 4)
@@ -2208,9 +2121,6 @@ int xgmac_get_all_hw_features(void *pdev)
 		mac_printf("\t No Auxiliary input\n");
 	}
 
-	hw_feat->tc_cnt++;
-	hw_feat->rx_q_cnt++;
-	hw_feat->tx_q_cnt++;
 	return 0;
 }
 

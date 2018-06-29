@@ -155,6 +155,7 @@ enum dp_xmit_errors {
 	DP_XMIT_ERR_EP_ZERO,
 	DP_XMIT_ERR_GSO_NOHEADROOM,
 	DP_XMIT_ERR_CSM_NO_SUPPORT,
+	DP_XMIT_PTP_ERR,
 };
 
 enum PARSER_FLAGS {
@@ -411,12 +412,15 @@ struct vlan_info {
 	u16 in_vid;
 	int cnt;
 };
-
-#define MAX_TEMPLATE 3
-#define TEMPL_NORMAL 0
-#define TEMPL_CHECKSUM 1
-#define TEMPL_OTHERS   2
-
+enum DP_TEMP_DMA_PMAC {
+	TEMPL_NORMAL = 0,
+	TEMPL_CHECKSUM,
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+	TEMPL_PTP,
+#endif
+	TEMPL_OTHERS,
+	MAX_TEMPLATE
+};
 enum DP_PRIV_F {
 	DP_PRIV_PER_CTP_QUEUE = BIT(0), /*Manage Queue per CTP/subif */
 };
@@ -450,6 +454,9 @@ struct pmac_port_info {
 	u32 tx_ring_offset;  /*PP: next tx_ring_addr=
 			      *   current tx_ring_addr + tx_ring_offset
 			      */
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+	u32 f_ptp:1; /* PTP1588 support enablement */
+#endif
 };
 
 struct pmac_port_info2 {

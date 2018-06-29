@@ -272,9 +272,10 @@ void gswss_get_macif(void *pdev);
 int gswss_get_mac_en(void *pdev);
 int gswss_get_mac_reset(void *pdev);
 int gswss_set_txtstamp_fifo(void *pdev,
-			    u8 ttse, u8 ostc, u8 ost_avail, u8 cic, u32 sec,
-			    u32 nsec, u32 record_id);
-void gswss_get_txtstamp_fifo(void *pdev, u32 record_id);
+			    struct mac_fifo_entry *f_entry);
+void gswss_get_txtstamp_fifo(void *pdev,
+			     u32 record_id, struct mac_fifo_entry *f_entry);
+
 int gswss_set_eee_cap(void *pdev, u32 val);
 
 #endif

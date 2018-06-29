@@ -2408,7 +2408,7 @@ typedef struct {
 	/** Number of args */
 	u32 argc;
 	/** Argument values */
-	u8 argv[10][30];
+	u8 argv[15][30];
 } GSW_MAC_cfg_t;
 
 /** \brief MMD Register Access. The 'nData' value is directly written

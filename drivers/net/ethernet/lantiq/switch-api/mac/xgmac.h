@@ -66,11 +66,9 @@
 // PTP Clock in Mhz
 #define PTP_CLK				500
 
-// Seconds value to increment in nsec
-#define XGMAC_TSTAMP_SSINC		(1000 / PTP_CLK)
 #define XGMAC_TSTAMP_SNSINC		0
 
-#define NSEC_TO_SEC			1000000000L
+#define NSEC_TO_SEC			1000000000
 
 #define MHZ_TO_HZ(val)			((val) * 1000000)
 
@@ -118,6 +116,10 @@
 #define MAC_TXTSTAMP_NSECR		0x0d30
 #define MAC_TXTSTAMP_SECR		0x0d34
 #define MAC_TXTSTAMP_STS		0x0d38
+#define MAC_AUX_CTRL			0x0d40
+#define MAC_AUX_NSEC			0x0d48
+#define MAC_AUX_SEC			0x0d4c
+#define MAC_RX_PCH_CRC_CNT		0x0d2c
 
 /* MTL register offsets */
 #define MTL_OMR				0x1000
@@ -139,7 +141,6 @@
 #define MTL_Q_ISR			0x1174
 
 
-
 #define MAC_LPS_TLPIEN			0x00000001
 #define MAC_LPS_TLPIEX			0x00000002
 #define MAC_LPS_RLPIEN			0x00000004
@@ -153,7 +154,16 @@
 #define XGMAC_CTRL_REG_BAS_POS		15
 #define XGMAC_CTRL_REG_BAS_WIDTH	1
 
-
+#define MAC_AUX_CTRL_ATSFC_POS		0
+#define MAC_AUX_CTRL_ATSFC_WIDTH	1
+#define MAC_AUX_CTRL_ATSEN0_POS		4
+#define MAC_AUX_CTRL_ATSEN0_WIDTH	1
+#define MAC_AUX_CTRL_ATSEN1_POS		5
+#define MAC_AUX_CTRL_ATSEN1_WIDTH	1
+#define MAC_AUX_CTRL_ATSEN2_POS		6
+#define MAC_AUX_CTRL_ATSEN2_WIDTH	1
+#define MAC_AUX_CTRL_ATSEN3_POS		7
+#define MAC_AUX_CTRL_ATSEN3_WIDTH	1
 
 /* MAC register entry bit positions and sizes */
 #define MAC_HW_F0_ADDMACADRSEL_POS      18
@@ -455,6 +465,8 @@
 #define MAC_TSTAMP_CR_TSTRIG_WIDTH           1
 #define MAC_TSTAMP_CR_TSUPDT_POS             3
 #define MAC_TSTAMP_CR_TSUPDT_WIDTH           1
+#define MAC_TSTAMP_CR_ESTI_POS               20
+#define MAC_TSTAMP_CR_ESTI_WIDTH             1
 
 #define MAC_TSTAMP_STSR_ATSNS_POS              25
 #define MAC_TSTAMP_STSR_ATSNS_WIDTH            5
@@ -1015,7 +1027,8 @@ int xgmac_set_gint(void *pdev, u32 val);
 int xgmac_set_rxcrc(void *pdev, u32 val);
 
 /* GET API's */
-int xgmac_get_all_hw_features(void *pdev);
+int xgmac_get_hw_capability(void *pdev);
+int xgmac_print_hw_cap(void *pdev);
 int xgmac_dbg_eee_status(void *pdev);
 int xgmac_get_priv_data(void *pdev);
 int xgmac_get_stats(void *pdev);

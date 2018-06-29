@@ -17,4 +17,5 @@ mac_driver-objs += mac_cfg.o
 mac_driver-objs += gswss_api.o 
 mac_driver-objs += gswss_mac_api.o 
 mac_driver-objs += lmac_api.o
+mac_driver-objs += mac_tx_fifo.o
 

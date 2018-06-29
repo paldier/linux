@@ -102,7 +102,7 @@
 #include <adap_ops.h>
 #include <types.h>
 #endif
-
+#include <mac_tx_fifo.h>
 
 #if defined(PC_UTILITY) && PC_UTILITY
 extern int pc_uart_dataread(u32 Offset, u32 *value);
@@ -186,11 +186,19 @@ FILE *get_fp(void);
 		fp = (FILE *) get_fp();	\
 		fprintf(fp, __VA_ARGS__); \
 	} while (0)
+
+#define mac_dbg(...)		\
+	do { FILE *fp;			\
+		fp = (FILE *) get_fp(); \
+		fprintf(fp, __VA_ARGS__); \
+	} while (0)
 #else
 #define mac_printf printf
+#define mac_dbg printf
 #endif
 #else
 #define mac_printf printk
+#define mac_dbg pr_debug
 #endif
 
 static inline int mac_nstrlen(char *s)
@@ -560,9 +568,10 @@ struct mac_prv_data {
 	u32 sec;
 	u32 nsec;
 	u32 one_nsec_accuracy;
-	u32 two_step;
 	u32 cic;
 	u32 rec_id;
+	struct mac_fifo_entry ts_fifo[MAX_FIFO_ENTRY];
+
 #ifdef __KERNEL__
 	/* will be pointing to skb which is
 	 * queued for transmission and device
@@ -574,18 +583,17 @@ struct mac_prv_data {
 	struct ptp_clock_info ptp_clk_info;
 	spinlock_t ptp_lock;
 	struct ptp_clock *ptp_clock;
-	u32 ptp_tx_init;
 	spinlock_t mac_lock;
 	struct mii_bus *mii;
 	struct phy_device *phydev;
 	struct tasklet_struct mac_tasklet;
+	struct clk *ker_ptp_clk;
 #endif
+	u32 exts0_enabled;
+	u32 exts1_enabled;
 	u32 snaptype;
 	u32 tsmstrena;
 	u32 tsevntena;
-	u32 ttse;
-	u32 ostc;
-	u32 ostc_avail;
 
 	/* Hardware features of the device */
 	struct xgmac_hw_features hw_feat;
