@@ -212,7 +212,7 @@ static int get_tsinfo(struct net_device *dev, struct ethtool_ts_info *ts_info)
 	if(ops)
 		ops->mac_get_ts_info(ops, ts_info);
 
-	return;
+	return 0;
 }
 
 /* Reset the device */

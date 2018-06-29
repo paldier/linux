@@ -364,14 +364,14 @@ int xgmac_tx_hwts(void *pdev, struct sk_buff *skb)
 
 		/* Currently supporting only Master Mode */
 		if (IS_2STEP(pdata)) {
-			mac_printf("2-Step\n");
+			mac_dbg("2-Step\n");
 
 			/* PTP Sync if we are Master TTSE=1 OSTC=0, OSTPA=0 */
 			rec_id = fifo_entry_add(pdev, 1, 0, 0, 0, 0, 0);
 		}
 
 		if (IS_1STEP(pdata)) {
-			mac_printf("1-Step\n");
+			mac_dbg("1-Step\n");
 			ptp_loc = parse_ptp_packet(skb, &ethtype, &msg_type);
 
 			if (!ptp_loc)

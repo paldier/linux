@@ -171,7 +171,7 @@ int gswss_cfg1_1588(void *pdev, u32 trig0_sel, u32 trig1_sel, u32 sw_trig)
 
 	if (sw_trig == 0)
 		mac_printf("\tSW_TRIG: 0\n");
-	else if (trig1_sel == 1)
+	else if (sw_trig == 1)
 		mac_printf("\tSW_TRIG: 1\n");
 
 	MAC_SET_VAL(cfg0, CFG1_1588, TRIG1SEL, trig1_sel);

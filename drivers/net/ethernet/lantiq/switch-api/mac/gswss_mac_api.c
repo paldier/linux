@@ -85,11 +85,13 @@ struct _gswss_cfg gswss_adap_cfg[] = {
 	{
 		"cfg_1588",
 		4,
-		"<ref_time "
-		"dig_time bin_time pps_sel>"
+		"<ref_time <0/1/2/3/4/5 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4>"
+		"<dig_time <0/1/2/3/4/5 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4>"
+		"<bin_time <0/1/2/3/4/5 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4>"
+		"<pps_sel <0/1/2/3/4/5/6/7 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4/PON100US/SW>"
 	},
 	{
-		"extts",
+		"aux_trig",
 		3,
 		"<trig0_sel <0/1/2/3/4/5/6/8/9/10 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4/PON100US/EXTPPS0/EXTPPS1/SW>"
 		"<trig1_sel <0/1/2/3/4/5/6/8/9/10 PON/PCIE0/PCIE1/XGMAC2/XGMAC3/XGMAC4/PON100US/EXTPPS0/EXTPPS1/SW>"
@@ -720,7 +722,7 @@ int gswss_main(u32 argc, u8 *argv[])
 					   &start_arg);
 
 			gswss_set_clkmode(adap_ops, val);
-		} else if (!strcmp(argv[start_arg], "extts")) {
+		} else if (!strcmp(argv[start_arg], "aux_trig")) {
 			start_arg++;
 
 			trig0_sel = mac_nstrtoul(argv[start_arg],
