@@ -543,28 +543,29 @@ int xgmac_get_hwts(void *pdev, struct ifreq *ifr)
 int xgmac_ptp_isr_hdlr(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	u32 txtsc;
+	u32 tstamp_sts;
 	struct mac_ops *hw_if = &pdata->ops;
 	u64 tstamp;
 	int ret = -1;
 
-	/* Clear/Acknowledge interrupt by reading TXTSC */
-	txtsc = XGMAC_RGRD_BITS(pdata, MAC_TSTAMP_STSR, TXTSC);
-
-	/* Read the TxTimestamp Seconds register
-	 * to clear the TXTSC bit
-	 */
-	if (txtsc) {
+	/* Clear/Acknowledge interrupt by reading */
+	tstamp_sts = XGMAC_RGRD(pdata, MAC_TSTAMP_STSR);
+	
+	/* Timestamp stored interrupt */
+	if (tstamp_sts & 0x8000) {
 		if (IS_2STEP(pdata))
 			xgmac_ptp_tx_work(&pdata->ptp_tx_work);
 
 		if (IS_1STEP(pdata))
 			tstamp = hw_if->get_tx_tstamp(pdev);
 
-		if (XGMAC_RGRD(pdata, MAC_AUX_CTRL) & 0x30)
-			xgmac_extts_isr_handler(pdata);
-
 		ret = 0;
+	}
+
+	/* Auxilairy Timestamp stored interrupt */
+	if(tstamp_sts & 0x4) {
+		if (XGMAC_RGRD(pdata, MAC_AUX_CTRL) & 0x30)
+			xgmac_extts_isr_handler(pdata);		
 	}
 
 	return ret;
@@ -580,16 +581,19 @@ static int xgmac_extts_enable(struct ptp_clock_info *ptp,
 	case PTP_CLK_REQ_EXTTS:
 		switch (rq->extts.index) {
 		case 0:
+			mac_dbg("ATSEN0 enabled\n");
 			pdata->exts0_enabled = on ? 1 : 0;
 			XGMAC_RGWR_BITS(pdata, MAC_AUX_CTRL, ATSEN0, 1);
 			break;
 
 		case 1:
+			mac_dbg("ATSEN1 enabled\n");			
 			pdata->exts1_enabled = on ? 1 : 0;
 			XGMAC_RGWR_BITS(pdata, MAC_AUX_CTRL, ATSEN1, 1);
 			break;
 
 		default:
+			mac_dbg("Invalid request\n");
 			return -EINVAL;
 		}
 
