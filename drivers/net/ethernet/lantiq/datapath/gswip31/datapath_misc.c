@@ -1148,9 +1148,9 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 	dp_q_tbl[inst][qid].ref_cnt--;
 	dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt--;
 	if (port_info->subif_info[subif_ix].ctp_dev) { /* pmapper */
+		port_info->subif_info[subif_ix].ctp_dev = NULL;
 		dp_bp_dev_tbl[inst][bp].ref_cnt--;
 		if (!dp_bp_dev_tbl[inst][bp].ref_cnt) {
-			port_info->subif_info[subif_ix].ctp_dev = NULL;
 			dp_bp_dev_tbl[inst][bp].dev = NULL;
 			dp_bp_dev_tbl[inst][bp].flag = 0;
 			DP_DEBUG(DP_DBG_FLAG_REG,
