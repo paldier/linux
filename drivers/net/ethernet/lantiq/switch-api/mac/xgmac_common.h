@@ -187,11 +187,7 @@ FILE *get_fp(void);
 		fprintf(fp, __VA_ARGS__); \
 	} while (0)
 
-#define mac_dbg(...)		\
-	do { FILE *fp;			\
-		fp = (FILE *) get_fp(); \
-		fprintf(fp, __VA_ARGS__); \
-	} while (0)
+#define mac_dbg mac_printf
 #else
 #define mac_printf printf
 #define mac_dbg printf

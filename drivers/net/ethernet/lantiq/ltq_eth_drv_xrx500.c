@@ -201,6 +201,7 @@ static int set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 	return -ENODEV;
 }
 
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 static int get_tsinfo(struct net_device *dev, struct ethtool_ts_info *ts_info)
 {
 	struct ltq_switch_priv_t *priv;
@@ -214,6 +215,7 @@ static int get_tsinfo(struct net_device *dev, struct ethtool_ts_info *ts_info)
 
 	return 0;
 }
+#endif
 
 /* Reset the device */
 static int nway_reset(struct net_device *dev)
@@ -229,7 +231,9 @@ static const struct ethtool_ops ethtool_ops = {
 	.set_settings		= set_settings,
 	.nway_reset		= nway_reset,
 	.get_link		= ethtool_op_get_link,
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)	
 	.get_ts_info 		= get_tsinfo,
+#endif	
 };
 
 /* open the network device interface*/
@@ -651,7 +655,9 @@ static int ltq_eth_init(struct net_device *dev)
 		}
 	}
 
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 	dev->ethtool_ops = &ethtool_ops;
+#endif
 
 	priv->dp_subif.subif = 0;
 	priv->dp_subif.port_id = priv->dp_port_id;

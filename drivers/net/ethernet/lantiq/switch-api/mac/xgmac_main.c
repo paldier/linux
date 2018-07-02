@@ -37,8 +37,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
- * ========================================================================= */
-
+ * =========================================================================
+ */
 
 #include <xgmac.h>
 #include <gswss_mac_api.h>
@@ -242,7 +242,7 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 		"mac_addr        ",
 		cli_set_mac_address,
 		xgmac_get_mac_addr,
-		0, (u32 *) &pdata.mac_addr, 0, 0, 0,
+		0, (u32 *)&pdata.mac_addr, 0, 0, 0,
 		"<args 1: mac_addr>"
 	},
 	{
@@ -482,7 +482,7 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 		0,
 		0, &pdata.val, 0, 0, 0,
 		"<args 1: 1/0 Rx Crc check DISABLE/ENABLE>"
-	},	
+	},
 	{
 		"fifo             ",
 		0,
@@ -509,7 +509,7 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 		cli_set_extsrc,
 		0,
 		0, &pdata.val, 0, 0, 0,
-		"<REF: 0/1 - Internel/External>"
+		"<REF: 0/1 - Internal/External>"
 	},
 	/* OTHERS */
 	{
@@ -1032,7 +1032,6 @@ void xgmac_cli_init(void)
 			xgmac_cfg_table[i].args += 1;
 	}
 }
-
 
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 struct mac_ops *gsw_get_mac_ops(u32 devid, u32 mac_idx)

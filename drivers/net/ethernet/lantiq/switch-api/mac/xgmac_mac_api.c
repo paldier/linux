@@ -37,8 +37,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
- * ========================================================================= */
-
+ * =========================================================================
+ */
 
 #include <xgmac.h>
 #include <mac_cfg.h>
@@ -182,7 +182,7 @@ int xgmac_initiate_pause_tx(void *pdev)
 	reg_val = XGMAC_RGRD(pdata, MAC_TX_FCR);
 
 	if (MAC_GET_VAL(reg_val, MAC_TX_FCR, TFE) == 0) {
-		mac_printf("XGMAC %d: Pause pkt will be txd only if TFE bit is set\n",
+		mac_printf("XGMAC %d: Pause pkt txd only if TFE bit is set\n",
 			   pdata->mac_idx);
 		return 0;
 	}
@@ -617,7 +617,6 @@ int xgmac_set_rxcrc(void *pdev, u32 val)
 
 	return 0;
 }
-
 /* RE:
  * When this bit is set, the Rx state machine of the MAC is enabled for
  * receiving packets from the GMII or XGMII interface
@@ -1262,8 +1261,6 @@ u64 xgmac_get_systime(void *pdev)
 u64 xgmac_get_tx_tstamp(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-
-	u32 tx_snr;
 	u64 nsec;
 
 	nsec = XGMAC_RGRD(pdata, MAC_TXTSTAMP_SECR);
@@ -1278,7 +1275,6 @@ u64 xgmac_get_tx_tstamp(void *pdev)
 int xgmac_get_txtstamp_cnt(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-
 	u32 tx_sts;
 	u32 ttsns;
 
@@ -1553,7 +1549,6 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 		mac_printf("802.AS1, Ethernet, any kind of event packet\n");
 		ptp_flgs.ptp_rx_en |=
 			(PTP_RX_V2 | PTP_RX_OVER_ETH | PTP_RX_SNAP);
-
 		break;
 
 	/* 802.AS1, Ethernet, Sync packet */

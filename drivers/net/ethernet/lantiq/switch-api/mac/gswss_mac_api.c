@@ -133,7 +133,6 @@ void gswss_help(void)
 
 	for (i = 0; i < num_of_elem; i++) {
 		if (gswss_mac_cfg[i].help) {
-
 #if defined(CHIPTEST) && CHIPTEST
 			mac_printf("gsw gswss %15s \t %s\n",
 				   gswss_mac_cfg[i].cmdname,
@@ -143,19 +142,17 @@ void gswss_help(void)
 				   gswss_mac_cfg[i].cmdname,
 				   gswss_mac_cfg[i].help);
 #endif
-
 		}
 	}
 
 	mac_printf("\n");
 
 	for (i = 0; i < num_of_elem; i++) {
-
 		if (gswss_mac_cfg[i].cmdname) {
-
 #if defined(CHIPTEST) && CHIPTEST
 
-			if (!strcmp(gswss_mac_cfg[i].cmdname, "txtstamp_fifo")) {
+			if (!strcmp(gswss_mac_cfg[i].cmdname,
+				    "txtstamp_fifo")) {
 				mac_printf("gsw gswss get %11s \t "
 					   "<0/1/2: MacIdx> <rec_id>\n",
 					   gswss_mac_cfg[i].cmdname);
@@ -170,7 +167,8 @@ void gswss_help(void)
 				   gswss_mac_cfg[i].cmdname);
 #else
 
-			if (!strcmp(gswss_mac_cfg[i].cmdname, "txtstamp_fifo")) {
+			if (!strcmp(gswss_mac_cfg[i].cmdname,
+				    "txtstamp_fifo")) {
 				mac_printf("switch_cli gswss get %11s \t "
 					   "<0/1/2: MacIdx> <rec_id>\n",
 					   gswss_mac_cfg[i].cmdname);
@@ -185,7 +183,6 @@ void gswss_help(void)
 				   "<0/1/2: MacIdx> \n",
 				   gswss_mac_cfg[i].cmdname);
 #endif
-
 		}
 	}
 
@@ -195,7 +192,6 @@ void gswss_help(void)
 
 	for (i = 0; i < num_of_elem; i++) {
 		if (gswss_adap_cfg[i].help) {
-
 #if defined(CHIPTEST) && CHIPTEST
 			mac_printf("gsw gswss %15s \t %s\n",
 				   gswss_adap_cfg[i].cmdname,
@@ -212,7 +208,6 @@ void gswss_help(void)
 
 	for (i = 0; i < num_of_elem; i++) {
 		if (gswss_adap_cfg[i].cmdname) {
-
 #if defined(CHIPTEST) && CHIPTEST
 			mac_printf("gsw gswss get %11s \t \n",
 				   gswss_adap_cfg[i].cmdname);
@@ -233,7 +228,6 @@ int gswss_mac_check_args(int argc, char *argv)
 
 	for (i = 0; i < num_of_elem; i++) {
 		if (!strcmp(argv, gswss_mac_cfg[i].cmdname)) {
-
 			if (argc != (gswss_mac_cfg[i].args + 3)) {
 				mac_printf("\n--WRONG Command--\n");
 				mac_printf("switch_cli gswss %s %s\n",
@@ -258,9 +252,8 @@ struct mac_ops *gswss_get_mac_ops(char *cmd, char *argv, u32 *start_arg)
 	u32 max_mac = 0;
 
 	for (i = 0; i < num_of_elem; i++) {
-		if (!strcmp(cmd, gswss_mac_cfg[i].cmdname)) {
+		if (!strcmp(cmd, gswss_mac_cfg[i].cmdname))
 			break;
-		}
 	}
 
 	max_mac = gsw_get_mac_subifcnt(0);
@@ -285,7 +278,6 @@ int gswss_adap_check_args(int argc, char *argv)
 
 	for (i = 0; i < num_of_elem; i++) {
 		if (!strcmp(argv, gswss_adap_cfg[i].cmdname)) {
-
 			if (argc != (gswss_adap_cfg[i].args + 3)) {
 				mac_printf("\n--WRONG Command--\n");
 				mac_printf("switch_cli %s\n",
@@ -294,8 +286,6 @@ int gswss_adap_check_args(int argc, char *argv)
 					   gswss_adap_cfg[i].cmdname);
 				return -1;
 			}
-
-
 		}
 	}
 
@@ -614,9 +604,11 @@ int gswss_main(u32 argc, u8 *argv[])
 			} else if (dir == TX) {
 				if (oper == 0) {
 					if (val == 0 || val == 1)
-						gswss_set_mac_txfcs_ins_op(ops, val);
+						gswss_set_mac_txfcs_ins_op(ops,
+									   val);
 					else if (val == 2 || val == 3)
-						gswss_set_mac_txfcs_rm_op(ops, val - 2);
+						gswss_set_mac_txfcs_rm_op(ops,
+									  val - 2);
 				} else if (oper == 1) {
 					gswss_set_mac_txsptag_op(ops, val);
 				}
@@ -1254,11 +1246,11 @@ void gswss_get_txtstamp_fifo(void *pdev,
 	u32 mac_txtstamp;
 
 	gswss_set_txtstamp_access(pdev, 0, record_id);
-#if 0
-	mac_printf("\nMAC%d: TxTstamp Fifo Record ID %d:\n",
-		   (pdata->mac_idx + 2),
-		   record_id);
-#endif
+
+	mac_dbg("\nMAC%d: TxTstamp Fifo Record ID %d:\n",
+		(pdata->mac_idx + 2),
+		record_id);
+
 	mac_txtstamp = GSWSS_MAC_RGRD(pdata, MAC_TXTS_CIC(pdata->mac_idx));
 
 	f_entry->ttse = GET_N_BITS(mac_txtstamp, 4, 1);
@@ -1275,34 +1267,32 @@ void gswss_get_txtstamp_fifo(void *pdev,
 
 	f_entry->rec_id = record_id;
 
-#if 0
-	mac_printf("\tTTSE: \t%s\n",
-		   f_entry->ttse ? "ENABLED" : "DISABLED");
-	mac_printf("\tOSTC: \t%s\n",
-		   f_entry->ostc ? "ENABLED" : "DISABLED");
-	mac_printf("\tOSTPA: \t%s\n",
-		   f_entry->ostpa ? "ENABLED" : "DISABLED");
+
+	mac_dbg("\tTTSE: \t%s\n",
+		f_entry->ttse ? "ENABLED" : "DISABLED");
+	mac_dbg("\tOSTC: \t%s\n",
+		f_entry->ostc ? "ENABLED" : "DISABLED");
+	mac_dbg("\tOSTPA: \t%s\n",
+		f_entry->ostpa ? "ENABLED" : "DISABLED");
 
 	if (f_entry->cic == 0)
-		mac_printf("\tCIC: \t"
-			   "DISABLED\n");
+		mac_dbg("\tCIC: \t"
+			"DISABLED\n");
 
 	if (f_entry->cic == 1)
-		mac_printf("\tCIC: \tTime stamp IP Checksum update\n");
+		mac_dbg("\tCIC: \tTime stamp IP Checksum update\n");
 
 	if (f_entry->cic == 2)
-		mac_printf("\tCIC: \tTime stamp IP and "
-			   "Payload Checksum update\n");
+		mac_dbg("\tCIC: \tTime stamp IP and "
+			"Payload Checksum update\n");
 
 	if (f_entry->cic == 3)
-		mac_printf("\tCIC: \tTime stamp IP, Payload checksum and "
-			   "Pseudo header update\n");
+		mac_dbg("\tCIC: \tTime stamp IP, Payload checksum and "
+			"Pseudo header update\n");
 
-	mac_printf("\tTTSL: \t%d\n", f_entry->ttsl);
-	mac_printf("\tTTSH: \t%d\n", f_entry->ttsh);
-#endif
+	mac_dbg("\tTTSL: \t%d\n", f_entry->ttsl);
+	mac_dbg("\tTTSH: \t%d\n", f_entry->ttsh);
 }
-
 
 int gswss_set_txtstamp_access(void *pdev, u32 op_mode, u32 addr)
 {
@@ -1328,7 +1318,6 @@ int gswss_set_txtstamp_access(void *pdev, u32 op_mode, u32 addr)
 
 	return ret;
 }
-
 
 int gswss_set_duplex_mode(void *pdev, u32 val)
 {

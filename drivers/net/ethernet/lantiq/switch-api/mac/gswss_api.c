@@ -33,10 +33,8 @@ int gswss_cfg0_1588(void *pdev, u32 ref_time, u32 dig_time, u32 bin_time,
 		mac_printf("\tREF_TIME: XGMAC3 is the master\n");
 	else if (ref_time == 5)
 		mac_printf("\tREF_TIME: XGMAC4 is the master\n");
-	else {
-		mac_printf("\tREF_TIME: Wrong Value");
+	else
 		goto end;
-	}
 
 	if (dig_time == 0)
 		mac_printf("\tDIG_TIME: PON_PCS is the master\n");
@@ -50,10 +48,8 @@ int gswss_cfg0_1588(void *pdev, u32 ref_time, u32 dig_time, u32 bin_time,
 		mac_printf("\tDIG_TIME: XGMAC3 is the master\n");
 	else if (dig_time == 5)
 		mac_printf("\tDIG_TIME: XGMAC4 is the master\n");
-	else {
-		mac_printf("\tDIG_TIME: Wrong Value");
+	else
 		goto end;
-	}
 
 	if (bin_time == 0)
 		mac_printf("\tBIN_TIME: PON_PCS is the master\n");
@@ -67,10 +63,8 @@ int gswss_cfg0_1588(void *pdev, u32 ref_time, u32 dig_time, u32 bin_time,
 		mac_printf("\tBIN_TIME: XGMAC3 is the master\n");
 	else if (bin_time == 5)
 		mac_printf("\tBIN_TIME: XGMAC4 is the master\n");
-	else {
-		mac_printf("\tBIN_TIME: Wrong Value");
+	else
 		goto end;
-	}
 
 	if (pps_sel == 0)
 		mac_printf("\tPPS_SEL: PON_PCS is the master\n");
@@ -88,10 +82,8 @@ int gswss_cfg0_1588(void *pdev, u32 ref_time, u32 dig_time, u32 bin_time,
 		mac_printf("\tPPS_SEL: PON PPS100US is the master\n");
 	else if (pps_sel == 7)
 		mac_printf("\tPPS_SEL: Software trigger\n");
-	else {
-		mac_printf("\tPPS_SEL: Wrong Value");
+	else
 		goto end;
-	}
 
 	MAC_SET_VAL(cfg0, CFG0_1588, REFTIME, ref_time);
 	MAC_SET_VAL(cfg0, CFG0_1588, DIGTIME, dig_time);
@@ -139,10 +131,8 @@ int gswss_cfg1_1588(void *pdev, u32 trig0_sel, u32 trig1_sel, u32 sw_trig)
 		mac_printf("\tTRIG0: EXTPPS1 is the master\n");
 	else if (trig0_sel == 10)
 		mac_printf("\tTRIG0: Software Trigger\n");
-	else {
-		mac_printf("\tREF_TIME: Wrong Value");
+	else
 		goto end;
-	}
 
 	if (trig1_sel == 0)
 		mac_printf("\tTRIG1: PON is the master\n");
@@ -164,10 +154,8 @@ int gswss_cfg1_1588(void *pdev, u32 trig0_sel, u32 trig1_sel, u32 sw_trig)
 		mac_printf("\tTRIG1: EXTPPS1 is the master\n");
 	else if (trig1_sel == 10)
 		mac_printf("\tTRIG1: Software Trigger\n");
-	else {
-		mac_printf("\tTRIG1: Wrong Value");
+	else
 		goto end;
-	}
 
 	if (sw_trig == 0)
 		mac_printf("\tSW_TRIG: 0\n");
@@ -187,7 +175,6 @@ end:
 	return 0;
 }
 
-
 int gswss_get_cfg0_1588(void *pdev, u32 *ref_time, u32 *dig_time,
 			u32 *bin_time, u32 *pps_sel)
 {
@@ -195,8 +182,6 @@ int gswss_get_cfg0_1588(void *pdev, u32 *ref_time, u32 *dig_time,
 	u32 cfg0;
 
 #ifdef __KERNEL__
-
-
 	spin_lock_bh(&pdata->adap_lock);
 #endif
 
@@ -347,8 +332,6 @@ int gswss_get_switch_ss_reset(void *pdev)
 	u32 core_reset, reset;
 
 #ifdef __KERNEL__
-
-
 	spin_lock_bh(&pdata->adap_lock);
 #endif
 	core_reset = GSWSS_RGRD(pdata, GSWIP_CFG);
@@ -385,10 +368,8 @@ int gswss_set_clkmode(void *pdev, u32 clk_mode)
 		mac_printf("%s\n", "Auto Mode (666/450) Mhz");
 	else if (clk_mode == 3)
 		mac_printf("%s\n", "Auto Mode (666/450) Mhz");
-	else {
-		mac_printf("%s\n", "Wrong Value");
+	else
 		goto end;
-	}
 
 	MAC_SET_VAL(clk_mode_cfg, GSWIP_CFG, CLK_MD, clk_mode);
 
@@ -443,9 +424,9 @@ int gswss_set_corese(void *pdev, u32 val)
 #endif
 	core_en = GSWSS_RGRD(pdata, GSWIP_CFG);
 
-	if (val == FREEZE)
+	if (val == FREEZE) {
 		pdata->core_en_cnt++;
-	else {
+	} else {
 		if (pdata->core_en_cnt)
 			pdata->core_en_cnt--;
 	}
@@ -530,7 +511,6 @@ int gswss_get_macsec_to_mac(void *pdev)
 #endif
 	return mac_idx;
 }
-
 
 int gswss_dbg_macsec_to_mac(void *pdev)
 {
@@ -625,21 +605,27 @@ int gswss_get_int_en_sts(void *pdev)
 	for (i = 0; i < max_mac; i++) {
 		mac_printf("\tXGMAC %d INT EN:  %s\n",
 			   i,
-			   GET_N_BITS(reg_val, GSWIPSS_IER0_XGMAC2_POS + i, 1) ?
+			   GET_N_BITS(reg_val,
+				      GSWIPSS_IER0_XGMAC2_POS + i, 1) ?
 			   "ENABLED" :
 			   "DISABLED");
 		mac_printf("\tXGMAC %d INT STS: %s\n",
 			   i,
-			   GET_N_BITS(mac_int_isr0, GSWIPSS_ISR0_XGMAC2_POS + i, 1) ?
+			   GET_N_BITS(mac_int_isr0,
+				      GSWIPSS_ISR0_XGMAC2_POS + i, 1) ?
 			   "ENABLED" :
 			   "DISABLED");
 
 		mac_printf("\tLINK %d INT EN:  %s\n",
-			   i, GET_N_BITS(reg_val1, GSWIPSS_IER1_LINK2_POS + i, 1) ?
+			   i,
+			   GET_N_BITS(reg_val1,
+				      GSWIPSS_IER1_LINK2_POS + i, 1) ?
 			   "ENABLED" :
 			   "DISABLED");
 		mac_printf("\tLINK %d INT STS: %s\n",
-			   i, GET_N_BITS(mac_int_isr1, GSWIPSS_ISR1_LINK2_POS + i, 1) ?
+			   i,
+			   GET_N_BITS(mac_int_isr1,
+				      GSWIPSS_ISR1_LINK2_POS + i, 1) ?
 			   "ENABLED" :
 			   "DISABLED");
 	}

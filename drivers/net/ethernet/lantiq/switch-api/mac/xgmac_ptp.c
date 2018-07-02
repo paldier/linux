@@ -37,8 +37,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
- * ========================================================================= */
-
+ * =========================================================================
+ */
 
 #include <xgmac.h>
 #include <xgmac_ptp.h>
@@ -60,7 +60,6 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 				struct sk_buff *skb);
 static int xgmac_ptp_register(void *pdev);
 static void xgmac_extts_isr_handler(struct mac_prv_data *pdata);
-
 
 void xgmac_config_timer_reg(void *pdev)
 {
@@ -174,7 +173,6 @@ static int xgmac_get_time(struct ptp_clock_info *ptp,
 	u64 ns;
 	u32 reminder;
 
-
 	spin_lock_bh(&pdata->ptp_lock);
 
 	ns = hw_if->get_systime(hw_if);
@@ -199,7 +197,6 @@ static int xgmac_set_time(struct ptp_clock_info *ptp,
 	struct mac_prv_data *pdata =
 		container_of(ptp, struct mac_prv_data, ptp_clk_info);
 	struct mac_ops *hw_if = &pdata->ops;
-
 
 	pr_debug("set_time: ts->tv_sec  = %lld, ts->tv_nsec = %lld\n",
 		 (u64)ts->tv_sec, (u64)ts->tv_nsec);
@@ -304,10 +301,9 @@ static void *parse_ptp_packet(struct sk_buff *skb,
 		break;
 	}
 
-	if (!ptp_loc)
+	if (!ptp_loc) {
 		pr_info("PTP header is not found in the packet, Please check\n");
-	else {
-
+	} else {
 		*msg_type = *((u8 *)(ptp_loc + PTP_OFFS_MSG_TYPE)) & 0xf;
 
 		if ((*msg_type == PTP_MSGTYPE_SYNC) ||
@@ -316,7 +312,7 @@ static void *parse_ptp_packet(struct sk_buff *skb,
 		    (*msg_type == PTP_MSGTYPE_PDELRESP)) {
 			ptp_loc = pos;
 		} else {
-			pr_info("Error: Unkown PTP Message \n");
+			pr_info("Error: Unknown PTP Message\n");
 			ptp_loc = NULL;
 		}
 	}
@@ -333,7 +329,6 @@ static void tx_hwtstamp(struct mac_prv_data *pdata,
 
 	skb_tstamp_tx(pdata->ptp_tx_skb, shhwtstamp);
 }
-
 
 /* =========================== TX TIMESTAMP =========================== */
 
@@ -354,7 +349,6 @@ int xgmac_tx_hwts(void *pdev, struct sk_buff *skb)
 	/* check for hw tstamping */
 	if (pdata->hw_feat.ts_src && pdata->ptp_flgs.ptp_tx_en &&
 	    (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP)) {
-
 		/* declare that device is doing timestamping */
 		skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
 
@@ -393,7 +387,6 @@ int xgmac_tx_hwts(void *pdev, struct sk_buff *skb)
 
 	return rec_id;
 }
-
 
 /*  This API will get executed by workqueue only for 2 step timestamp
  *  Get the TX'ted Timestamp and pass it to upper app
@@ -487,7 +480,7 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 	/* GSWIP HW attach upper 2 bytes with 0 for timestamp */
 	regval = (0xffffffff00000000 & tmpregval[0]) |
 		 (tmpregval[0] & 0xffff) << 16
-		 | (tmpregval[1] & 0xffff000000000000) >> 48 ;
+		 | (tmpregval[1] & 0xffff000000000000) >> 48;
 
 	/* The timestamp is recorded in little endian format, and is stored at
 	 * the end of the packet.
@@ -539,7 +532,6 @@ int xgmac_get_hwts(void *pdev, struct ifreq *ifr)
 			    sizeof(pdata->tstamp_config)) ? -EFAULT : 0;
 }
 
-
 int xgmac_ptp_isr_hdlr(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -550,7 +542,7 @@ int xgmac_ptp_isr_hdlr(void *pdev)
 
 	/* Clear/Acknowledge interrupt by reading */
 	tstamp_sts = XGMAC_RGRD(pdata, MAC_TSTAMP_STSR);
-	
+
 	/* Timestamp stored interrupt */
 	if (tstamp_sts & 0x8000) {
 		if (IS_2STEP(pdata))
@@ -563,9 +555,9 @@ int xgmac_ptp_isr_hdlr(void *pdev)
 	}
 
 	/* Auxilairy Timestamp stored interrupt */
-	if(tstamp_sts & 0x4) {
+	if (tstamp_sts & 0x4) {
 		if (XGMAC_RGRD(pdata, MAC_AUX_CTRL) & 0x30)
-			xgmac_extts_isr_handler(pdata);		
+			xgmac_extts_isr_handler(pdata);
 	}
 
 	return ret;
@@ -587,7 +579,7 @@ static int xgmac_extts_enable(struct ptp_clock_info *ptp,
 			break;
 
 		case 1:
-			mac_dbg("ATSEN1 enabled\n");			
+			mac_dbg("ATSEN1 enabled\n");
 			pdata->exts1_enabled = on ? 1 : 0;
 			XGMAC_RGWR_BITS(pdata, MAC_AUX_CTRL, ATSEN1, 1);
 			break;

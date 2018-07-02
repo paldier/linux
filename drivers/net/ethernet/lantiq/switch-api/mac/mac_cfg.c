@@ -531,7 +531,6 @@ int mac_set_lpien(void *pdev, u32 enable, u32 lpi_waitg, u32 lpi_waitm)
 	spin_lock_bh(&pdata->mac_lock);
 #endif
 
-
 #ifdef CONFIG_SILVER_WORKAROUND
 #else
 	mac_printf("Configuring LPIEN\n");
@@ -844,7 +843,6 @@ int mac_get_int_sts(void *pdev)
 
 	/* LMAC ISR Status */
 	if (lmac_pisr) {
-
 		if (MAC_GET_VAL(lmac_pisr, MAC_PISR, PHYERR))
 			val |= (1 << LMAC_PHYERR_EVNT);
 
@@ -885,13 +883,12 @@ int mac_get_int_sts(void *pdev)
 	return val;
 }
 
-
 int mac_init(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	int i = 0;
+
 	xgmac_init_pdata(pdata, -1);
 #endif
 	xgmac_cli_init();
@@ -900,9 +897,8 @@ int mac_init(void *pdev)
 
 	/* Get all hw capability */
 	xgmac_get_hw_capability(pdev);
-	
-	/* Initialize MAC related features */
 
+	/* Initialize MAC related features */
 	/* Program MAC Address */
 	xgmac_set_mac_address(pdev, pdata->mac_addr);
 
@@ -1045,7 +1041,6 @@ int mac_exit(void *pdev)
 	return 0;
 }
 
-
 int mac_int_enable(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -1058,7 +1053,6 @@ int mac_int_enable(void *pdev)
 
 	return 0;
 }
-
 
 int mac_int_disable(void *pdev)
 {
@@ -1174,7 +1168,8 @@ int mac_irq_clr(void *pdev, u32 event)
 		break;
 
 	/* These 2 interrupts are cleared by a read RXESIS or TXESIS
-	   Which will be done while reading Interrupt Status */
+	 * Which will be done while reading Interrupt Status
+	 */
 	case XGMAC_TXERR_STS_EVNT:
 	case XGMAC_RXERR_STS_EVNT:
 		break;
@@ -1206,6 +1201,7 @@ int mac_irq_clr(void *pdev, u32 event)
 
 	return 0;
 }
+
 void mac_init_fn_ptrs(struct mac_ops *mac_op)
 {
 	mac_op->set_flow_ctl = mac_set_flowctrl;
@@ -1275,6 +1271,5 @@ void mac_init_fn_ptrs(struct mac_ops *mac_op)
 	mac_op->IRQ_Enable = mac_irq_event_enable;
 	mac_op->IRQ_Register = mac_irq_register;
 	mac_op->IRQ_UnRegister = mac_irq_unregister;
-
 }
 

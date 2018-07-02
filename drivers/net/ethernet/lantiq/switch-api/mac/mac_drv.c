@@ -16,7 +16,6 @@
 #include <lmac_api.h>
 #include <linux/clk.h>
 
-
 static void __iomem *base[2];
 
 static irqreturn_t mac_isr(int irq, void *dev_id)
@@ -31,7 +30,6 @@ static irqreturn_t mac_isr(int irq, void *dev_id)
 
 	/* Handle all the MAC Interrupts */
 	for (i = 0; i < max_mac; i++) {
-
 		task_sched = 0;
 
 		mac_int_sts = gswss_get_int_stat(adap_ops, XGMAC);
@@ -53,7 +51,6 @@ static irqreturn_t mac_isr(int irq, void *dev_id)
 
 		/* Check LMAC i Interrupts */
 		if (lmac_int_sts & (1 << (LMAC_ISR_MAC2_POS + i))) {
-
 			/* Disable the LMAC 2/3/4 Interrupt First */
 			lmac_set_int(mac_ops, 0);
 
@@ -83,7 +80,6 @@ static void mac_irq_tasklet(unsigned long data)
 		/* Check all events for this MAC */
 		for (j = 0; j < MAX_IRQ_EVNT; j++) {
 			if (evnt & (1 << j)) {
-
 				/* Clear the MAC Interrupt status */
 				ops->clr_int_sts(ops, j);
 
@@ -96,20 +92,16 @@ static void mac_irq_tasklet(unsigned long data)
 			}
 		}
 
-
 		/* Enable Corresponding XGMAC and LMAC Interrupts back */
 		ops->mac_int_en(ops);
 	}
-
-
-	return;
 }
 
 static int mac_irq_init(struct mac_prv_data *pdata)
 {
 	int ret = 0;
 
-	pdata->irq_hdl = kzalloc(sizeof(struct mac_irq_hdl) * (MAX_IRQ_EVNT - 1),
+	pdata->irq_hdl = kzalloc(sizeof(*pdata->irq_hdl) * (MAX_IRQ_EVNT - 1),
 				 GFP_KERNEL);
 
 	if (!pdata->irq_hdl) {
@@ -118,7 +110,6 @@ static int mac_irq_init(struct mac_prv_data *pdata)
 	}
 
 	if (pdata->mac_idx == 0) {
-
 		ret = request_irq(pdata->irq_num, mac_isr, 0, "gsw_mac", NULL);
 
 		if (ret) {
@@ -174,8 +165,9 @@ static int mac_probe(struct platform_device *pdev)
 	if (device_property_present(dev, "board_type")) {
 		pr_info("Board Type: HAPS\n");
 		pdata->haps = 1;
-	} else
+	} else {
 		pdata->haps = 0;
+	}
 
 	pdata->ker_ptp_clk = devm_clk_get(dev, "ptp_clk");
 

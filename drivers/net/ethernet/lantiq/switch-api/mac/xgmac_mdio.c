@@ -37,8 +37,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
- * ========================================================================= */
-
+ * =========================================================================
+ */
 
 #include <xgmac_mdio.h>
 #include <xgmac.h>
@@ -141,7 +141,7 @@ void print_mdio_rd_cnt(void *pdev,
 	u32 i, phy_reg_data;
 
 	clause = mdio_get_clause(pdata, pdata->mac_idx);
-	mac_printf("OP    \tCL    \tDEVADR\tPHYID \tPHYREG\tDATA  \n");
+	mac_printf("OP    \tCL    \tDEVADR\tPHYID \tPHYREG\tDATA\n");
 	mac_printf("============================================\n");
 
 	for (i = 0; i <= (phy_reg_end - phy_reg_st); i++) {
@@ -169,7 +169,7 @@ void xgmac_print_mdio(void *pdev,
 	int clause;
 
 	clause = mdio_get_clause(pdev, phy_id);
-	mac_printf("OP    \tCL    \tDEVADR\tPHYID \tPHYREG\tDATA  \n");
+	mac_printf("OP    \tCL    \tDEVADR\tPHYID \tPHYREG\tDATA\n");
 	mac_printf("============================================\n");
 
 	mac_printf("%6s\t", "RD");
@@ -423,19 +423,20 @@ int xgmac_mdio_get_int_sts(void *pdev)
 
 	return 0;
 }
+
 #ifdef __KERNEL__
 /* API to read MII PHY register
-* \details This API is expected to write MII registers with the value being
-* passed as the last argument which is done in write_phy_regs API
-* called by this function.
-*
-* \param[in] bus - points to the mii_bus structure
-* \param[in] phyadr - the phy address to write
-* \param[in] phyreg - the phy register offset to write
-* \param[in] phydata - the register value to write with
-*
-* \return 0 on success and -ve number on failure.
-*/
+ * \details This API is expected to write MII registers with the value being
+ * passed as the last argument which is done in write_phy_regs API
+ * called by this function.
+ *
+ * \param[in] bus - points to the mii_bus structure
+ * \param[in] phyadr - the phy address to write
+ * \param[in] phyreg - the phy register offset to write
+ * \param[in] phydata - the register value to write with
+ *
+ * \return 0 on success and -ve number on failure.
+ */
 static int xgmac_mdio_read(struct mii_bus *bus, int phyadr, int phyreg)
 {
 	struct mac_ops *pdev = bus->priv;
@@ -454,18 +455,17 @@ static int xgmac_mdio_read(struct mii_bus *bus, int phyadr, int phyreg)
 }
 
 /* API to write MII PHY register
-* \details This API is expected to write MII registers with the value being
-* passed as the last argument which is done in write_phy_regs API
-* called by this function.
-*
-* \param[in] bus - points to the mii_bus structure
-* \param[in] phyadr - the phy address to write
-* \param[in] phyreg - the phy register offset to write
-* \param[in] phydata - the register value to write with
-*
-* \return 0 on success and -ve number on failure.
-*/
-
+ * \details This API is expected to write MII registers with the value being
+ * passed as the last argument which is done in write_phy_regs API
+ * called by this function.
+ *
+ * \param[in] bus - points to the mii_bus structure
+ * \param[in] phyadr - the phy address to write
+ * \param[in] phyreg - the phy register offset to write
+ * \param[in] phydata - the register value to write with
+ *
+ * \return 0 on success and -ve number on failure.
+ */
 static int xgmac_mdio_write(struct mii_bus *bus, int phyadr, int phyreg,
 			    u16 phydata)
 {
@@ -481,7 +481,6 @@ static int xgmac_mdio_write(struct mii_bus *bus, int phyadr, int phyreg,
 
 	return ret;
 }
-
 
 /* API to reset PHY
  */
@@ -531,20 +530,19 @@ int xgmac_mdio_register(void *pdev)
 
 	/* find the phy ID or phy address which is connected to our MAC */
 	for (phyadr = 0; phyadr < 32; phyadr++) {
-
 		phy_reg_read_status =
 			xgmac_mdio_single_rd(&pdata->ops, 0, phyadr, MII_BMSR,
 					     &mii_status);
 
 		if (phy_reg_read_status == 0) {
 			if (mii_status != 0x0000 && mii_status != 0xffff) {
-				pr_err("Phy detected at"\
+				pr_err("Phy detected at"
 				       " ID/ADDR %d\n", phyadr);
 				phy_detected = 1;
 				break;
 			}
 		} else if (phy_reg_read_status < 0) {
-			pr_err("Error reading the phy register"\
+			pr_err("Error reading the phy register"
 			       " MII_BMSR for phy ID/ADDR %d\n", phyadr);
 		}
 	}
@@ -562,7 +560,7 @@ int xgmac_mdio_register(void *pdev)
 
 	new_bus = mdiobus_alloc();
 
-	if (new_bus == NULL) {
+	if (!new_bus) {
 		mac_printf("XGMAC %d: Unable to allocate mdio bus\n",
 			   pdata->mac_idx);
 		return -ENOMEM;
@@ -588,7 +586,7 @@ int xgmac_mdio_register(void *pdev)
 
 	pdata->mii = new_bus;
 
-	mac_printf("XGMAC %d: MDIO register Successfull\n", pdata->mac_idx);
+	mac_printf("XGMAC %d: MDIO register Successful\n", pdata->mac_idx);
 
 	return ret;
 }
@@ -612,7 +610,7 @@ void xgmac_mdio_unregister(void *pdev)
 	mdiobus_free(pdata->mii);
 	pdata->mii = NULL;
 
-	mac_printf("XGMAC %d: mdio_unregister Successfull\n", pdata->mac_idx);
+	mac_printf("XGMAC %d: mdio_unregister Successful\n", pdata->mac_idx);
 }
 
 static void dump_phy_registers(void *pdev)
@@ -642,18 +640,18 @@ static void dump_phy_registers(void *pdev)
 
 	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_ADVERTISE,
 			     &phydata);
-	mac_printf("Auto-nego Adv (Advertisement Control Reg)"\
+	mac_printf("Auto-nego Adv (Advertisement Control Reg)"
 		   " (%#x) = %#x\n", MII_ADVERTISE, phydata);
 
 	/* read Phy Control Reg */
 	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_LPA,
 			     &phydata);
-	mac_printf("Auto-nego Lap (Link Partner Ability Reg)"\
+	mac_printf("Auto-nego Lap (Link Partner Ability Reg)"
 		   " (%#x)= %#x\n", MII_LPA, phydata);
 
 	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_EXPANSION,
 			     &phydata);
-	mac_printf("Auto-nego Exp (Extension Reg)"\
+	mac_printf("Auto-nego Exp (Extension Reg)"
 		   "(%#x) = %#x\n", MII_EXPANSION, phydata);
 
 	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_ESTATUS,
@@ -663,7 +661,7 @@ static void dump_phy_registers(void *pdev)
 
 	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_CTRL1000,
 			     &phydata);
-	mac_printf("1000 Ctl Reg (1000BASE-T Control Reg)"\
+	mac_printf("1000 Ctl Reg (1000BASE-T Control Reg)"
 		   "(%#x) = %#x\n", MII_CTRL1000, phydata);
 
 	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_STAT1000, &phydata);
