@@ -96,8 +96,6 @@ void fifo_entry_del(void *pdev, u32 rec_id)
 
 	/* Fifo available for the next packet */
 	f_entry->is_used = 0;
-
-	return;
 }
 
 static void fifo_update_hw_clrsts(void *pdev,
@@ -129,10 +127,7 @@ void fifo_isr_handler(void *pdev)
 		if (pdata->ts_fifo[i].is_used)
 			fifo_update_hw_clrsts(pdev, &pdata->ts_fifo[i]);
 	}
-
-	return;
 }
-
 
 u32 timer_in_sec(u32 jiffies)
 {
@@ -175,8 +170,6 @@ void print_fifo(void *pdev)
 			   pdata->ts_fifo[i].jiffies);
 #endif
 	}
-
-	return;
 }
 
 static int fifo_freeid_get(void *pdev, u8 ttse)
@@ -194,9 +187,9 @@ static int fifo_freeid_get(void *pdev, u8 ttse)
 			}
 
 			/* If nothing stored in Xgmac Fifo */
-			if (mac_fifo_cnt == 0)
+			if (mac_fifo_cnt == 0) {
 				return pdata->ts_fifo[i].rec_id;
-			else {
+			} else {
 				mac_printf("Xgmac Fifo already have entry\n");
 				return FIFO_FULL;
 			}

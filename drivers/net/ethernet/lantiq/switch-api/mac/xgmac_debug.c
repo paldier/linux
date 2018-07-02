@@ -1884,7 +1884,6 @@ int xgmac_get_stats(void *pdev)
 }
 #endif
 
-
 int xgmac_get_priv_data(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -2027,7 +2026,7 @@ int xgmac_print_hw_cap(void *pdev)
 			   "for the Descriptor Cache.\n");
 
 	if (hw_feat->edma)
-		mac_printf("\t “Enhanced DMA” option is selected.\n");
+		mac_printf("\t Enhanced DMA option is selected.\n");
 
 	mac_printf("========== Hardware feature register 1 ==============\n");
 

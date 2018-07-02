@@ -908,7 +908,6 @@ int xgmac_main(u32 argc, u8 *argv[])
 				return 0;
 			}
 
-
 			set_data(argv, i, &start_arg, idx);
 
 			if (xgmac_cfg_table[i].set_func)
@@ -1036,7 +1035,7 @@ void xgmac_cli_init(void)
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 struct mac_ops *gsw_get_mac_ops(u32 devid, u32 mac_idx)
 {
-	return &(prv_data[mac_idx].ops);
+	return &prv_data[mac_idx].ops;
 }
 
 u32 gsw_get_mac_subifcnt(u32 devid)

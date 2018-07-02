@@ -344,7 +344,6 @@ int xgmac_tx_hwts(void *pdev, struct sk_buff *skb)
 	u16 ethtype;
 	u8 *ptp_loc = NULL;
 	u8 msg_type = PTP_MSGTYPE_INVALID;
-	struct skb_shared_hwtstamps shhwtstamp = {0};
 
 	/* check for hw tstamping */
 	if (pdata->hw_feat.ts_src && pdata->ptp_flgs.ptp_tx_en &&

@@ -39,7 +39,6 @@ static irqreturn_t mac_isr(int irq, void *dev_id)
 
 		/* Check XGMAC i Interrupts */
 		if (mac_int_sts & (1 << (GSWIPSS_IER0_XGMAC2_POS + i))) {
-
 			/* Disable the XGMAC 2/3/4 Interrupt First */
 			gswss_set_interrupt(adap_ops, XGMAC,
 					    pdata->mac_idx, 0);
@@ -61,7 +60,6 @@ static irqreturn_t mac_isr(int irq, void *dev_id)
 		if (task_sched)
 			tasklet_schedule(&pdata->mac_tasklet);
 	}
-
 
 	return IRQ_HANDLED;
 }

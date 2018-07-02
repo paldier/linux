@@ -10,9 +10,9 @@
 #ifndef _MAC_TXFIFO_H
 #define _MAC_TXFIFO_H
 
-#define FIFO_TIMEOUT_IN_SEC         	100     /*  5 minute */
-#define MAX_FIFO_ENTRY			64
-#define START_FIFO			1
+#define FIFO_TIMEOUT_IN_SEC         	100     /* 100 Sec */
+#define MAX_FIFO_ENTRY			64	/* Max Hw Fifo available */
+#define START_FIFO			1	/* */
 
 enum {
 	FIFO_FULL = -1,
@@ -20,15 +20,32 @@ enum {
 	FIFO_ENTRY_NOT_AVAIL = -3,
 };
 
+/* GSWIP Tx Fifo to send signal from GSWIP to Xgmac
+ * to do the action on the packet
+ * Actions include
+ * 1) Store Tx Timestamp
+ * 2) One Step TImestamp update for Sync packets
+ * 3) Packet ID update for the stored timestamp
+ * 4) Timestamp correction needed
+ * Entry will be cleared by the HW when packet is sent out
+ */
 struct mac_fifo_entry {
 	u32 is_used;
+	/* RecordID, denotes index to the 64 entry Fifo */
 	u32 rec_id;
+	/* Transmit Timestamp Store Enable */
 	u8 ttse;
+	/* One Step Timestamp Capture Enable */
 	u8 ostc;
+	/* One Step Timestamp Available/PacketID Available */
 	u8 ostpa;
+	/* Checksum Insertion or Update information */
 	u8 cic;
+	/* Lower 32 byte of time correction */
 	u32 ttsl;
+	/* Upper 32 byte of time correction */
 	u32 ttsh;
+	/* Timeout for this Fifo Entry */
 	u32 timeout;
 	u32 jiffies;
 #ifdef __KERNEL__

@@ -153,7 +153,7 @@ void gswss_help(void)
 
 			if (!strcmp(gswss_mac_cfg[i].cmdname,
 				    "txtstamp_fifo")) {
-				mac_printf("gsw gswss get %11s \t "
+				mac_printf("gsw gswss get %11s \t"
 					   "<0/1/2: MacIdx> <rec_id>\n",
 					   gswss_mac_cfg[i].cmdname);
 				continue;
@@ -169,7 +169,7 @@ void gswss_help(void)
 
 			if (!strcmp(gswss_mac_cfg[i].cmdname,
 				    "txtstamp_fifo")) {
-				mac_printf("switch_cli gswss get %11s \t "
+				mac_printf("switch_cli gswss get %11s \t"
 					   "<0/1/2: MacIdx> <rec_id>\n",
 					   gswss_mac_cfg[i].cmdname);
 				continue;
@@ -179,7 +179,7 @@ void gswss_help(void)
 			    (!strcmp(gswss_mac_cfg[i].cmdname, "r")))
 				continue;
 
-			mac_printf("switch_cli gswss get %11s \t "
+			mac_printf("switch_cli gswss get %11s \t"
 				   "<0/1/2: MacIdx> \n",
 				   gswss_mac_cfg[i].cmdname);
 #endif
@@ -217,8 +217,6 @@ void gswss_help(void)
 #endif
 		}
 	}
-
-	return;
 }
 
 int gswss_mac_check_args(int argc, char *argv)
@@ -233,7 +231,7 @@ int gswss_mac_check_args(int argc, char *argv)
 				mac_printf("switch_cli gswss %s %s\n",
 					   gswss_mac_cfg[i].cmdname,
 					   gswss_mac_cfg[i].help);
-				mac_printf("switch_cli gswss get %s "
+				mac_printf("switch_cli gswss get %s"
 					   "<0/1/2: MacIdx> \n",
 					   gswss_mac_cfg[i].cmdname);
 				return -1;
@@ -1267,7 +1265,6 @@ void gswss_get_txtstamp_fifo(void *pdev,
 
 	f_entry->rec_id = record_id;
 
-
 	mac_dbg("\tTTSE: \t%s\n",
 		f_entry->ttse ? "ENABLED" : "DISABLED");
 	mac_dbg("\tOSTC: \t%s\n",
@@ -1840,6 +1837,6 @@ void gswss_check_reg(void *pdev, u32 reg, char *name, int idx,
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 struct adap_ops *gsw_get_adap_ops(u32 devid)
 {
-	return &(adap_priv_data.ops);
+	return &adap_priv_data.ops;
 }
 #endif

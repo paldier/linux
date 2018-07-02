@@ -617,6 +617,7 @@ int xgmac_set_rxcrc(void *pdev, u32 val)
 
 	return 0;
 }
+
 /* RE:
  * When this bit is set, the Rx state machine of the MAC is enabled for
  * receiving packets from the GMII or XGMII interface
@@ -966,12 +967,10 @@ int xgmac_lpi_int_clr(void *pdev)
 	return ret;
 }
 
-
 /* RWKPKTEN: Remote Wake-Up Packet Enable
  * if 1, a power management event is generated when
  * the MAC receives a remote wake-up packet.
  */
-
 int xgmac_set_rwk_pmt(void *pdev, u32 val)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -1162,7 +1161,6 @@ int xgmac_set_tstamp_addend(void *pdev, u32 tstamp_addend)
  * This bit should be zero before it is updated.
  * This bit is reset when the initialization is complete.
  */
-
 int xgmac_init_systime(void *pdev, u32 sec, u32 nsec)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -1306,7 +1304,6 @@ int xgmac_get_txtstamp_pktid(void *pdev)
 
 	return pktid;
 }
-
 
 /* TSCTRLSSR:Timestamp Digital or Binary Rollover Control
  * if 1, the Timestamp Low register rolls over after 0x3B9A_C9FF value
@@ -1593,7 +1590,6 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	}
 
 	if (ptp_flgs.ptp_rx_en != 0) {
-
 		/* In FalconMx all packets have timestamp */
 		ptp_flgs.ptp_rx_en |= PTP_RX_EN_ALL;
 

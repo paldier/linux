@@ -922,8 +922,8 @@ int mac_init(void *pdev)
 	mac_set_flowctrl(pdev, 3);
 #endif
 	/* Configure MII for 100M, 10M, 1G and 2.5G to XGMAC by default
-         * default value is LMAC
-         */
+     * default value is LMAC
+     */
 	mac_set_mii_if(pdev, GSW_PORT_HW_GMII);
 
 	if (pdata->haps) {
@@ -1272,4 +1272,3 @@ void mac_init_fn_ptrs(struct mac_ops *mac_op)
 	mac_op->IRQ_Register = mac_irq_register;
 	mac_op->IRQ_UnRegister = mac_irq_unregister;
 }
-

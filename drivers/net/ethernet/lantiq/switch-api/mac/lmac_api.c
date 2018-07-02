@@ -50,7 +50,6 @@ void lmac_help(void)
 
 	for (i = 0; i < num_of_elem; i++) {
 		if (lmac_cfg[i].help) {
-
 #if defined(CHIPTEST) && CHIPTEST
 			mac_printf("gsw %s\n",
 				   lmac_cfg[i].help);
@@ -69,7 +68,6 @@ int lmac_check_args(int argc, char *argv)
 
 	for (i = 0; i < num_of_elem; i++) {
 		if (!strcmp(argv, lmac_cfg[i].cmdname)) {
-
 			if (argc != (lmac_cfg[i].args + 4)) {
 				mac_printf("\n--WRONG Command--\n");
 				mac_printf("switch_cli %s\n",
@@ -112,10 +110,8 @@ int lmac_main(u32 argc, u8 *argv[])
 	struct mac_ops *ops;
 	u32 reg_off, reg_val;
 
-
 	start_arg++;
 	start_arg++;
-
 
 	if (argc <= 2) {
 		lmac_help();
@@ -124,7 +120,6 @@ int lmac_main(u32 argc, u8 *argv[])
 
 	if (!strcmp(argv[start_arg], "-help")) {
 		lmac_help();
-
 		goto end;
 	}
 
@@ -140,9 +135,8 @@ int lmac_main(u32 argc, u8 *argv[])
 	ops = gsw_get_mac_ops(0, idx);
 
 	if (!strcmp(argv[start_arg], "r")) {
-		if (0 != lmac_check_args(argc, (char *)argv[start_arg])) {
+		if (0 != lmac_check_args(argc, (char *)argv[start_arg]))
 			return -1;
-		}
 
 		start_arg++;
 #if defined(PC_UTILITY) || defined(__KERNEL__)
@@ -164,9 +158,8 @@ int lmac_main(u32 argc, u8 *argv[])
 	}
 
 	if (!strcmp(argv[start_arg], "w")) {
-		if (0 != lmac_check_args(argc, (char *)argv[start_arg])) {
+		if (0 != lmac_check_args(argc, (char *)argv[start_arg]))
 			return -1;
-		}
 
 		start_arg++;
 
@@ -198,7 +191,6 @@ int lmac_main(u32 argc, u8 *argv[])
 			lmac_get_rmon();
 			goto end;
 		} else if (!strcmp(argv[start_arg], "all")) {
-
 			lmac_get_intf_mode(ops);
 			lmac_get_duplex_mode(ops);
 			lmac_get_txfcs(ops);
@@ -506,10 +498,6 @@ int lmac_get_int(void *pdev)
 	mac_idx = pdata->mac_idx + LMAC_ISR_MAC2_POS;
 	val = GET_N_BITS(lmac_isr, mac_idx, LMAC_ISR_MAC2_WIDTH);
 
-#if 0
-	mac_printf("LMAC %d Interrupt Stats : %s\n", pdata->mac_idx,
-		   val ? "ENABLED" : "DISABLED");
-#endif
 	return val;
 }
 
