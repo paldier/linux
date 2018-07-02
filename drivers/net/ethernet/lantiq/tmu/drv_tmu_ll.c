@@ -5069,20 +5069,20 @@ int tmu_queue_dump(struct seq_file *s, int pos)
 	/*Order the queues and link them together according to associated SBID */
 	print_queue1(s, first_print);
 	first_print = 0;
- EXIT:
-	if (stat.qnum == 0) {
-		pos++;
-	} else {
+EXIT:
+	pos++;
+	if (stat.qnum)
 		SEQ_PRINTF(s, "\n");
-		pos++;
-	}
-	/*pos=-1;  test */
-	if (pos >= EGRESS_PORT_ID_MAX || pos <= 0) {
+	if (pos >= EGRESS_PORT_ID_MAX) {
 		tmu_global_tail_drop_thr_get(&thr);
 		tmu_proc_printf(s, "           goth=(%d, %d, %d, %d)\n",
 				thr.goth[0], thr.goth[1], thr.goth[2],
 				thr.goth[3]);
-		pos = -1;	/*end of the loop */
+	}
+	if (seq_has_overflowed(s))
+		pos -= 1; /* return original pos */
+	if (pos >= EGRESS_PORT_ID_MAX) {
+		pos = -1; /* end of the loop */
 	}
 	return pos;
 }

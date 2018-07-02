@@ -47,7 +47,6 @@ enum CQE_LOOKUP_MODE {
 };
 
 #define PMAC_SIZE 8
-
 struct gsw_itf {
 	u8 ep; /*-1 means no assigned yet for dynamic case */
 	u8 fixed; /*fixed (1) or dynamically allocate (0)*/

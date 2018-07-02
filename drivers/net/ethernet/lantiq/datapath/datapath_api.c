@@ -831,7 +831,7 @@ int32_t dp_alloc_port_ext(int inst, struct module *owner,
 	res = dp_alloc_port_private(inst, owner, dev, dev_port,
 				    port_id, pmac_cfg, data, flags);
 	DP_LIB_UNLOCK(&dp_lock);
-	if (!inst)
+	if (inst) /* only inst zero need ACA workaround */
 		return res;
 
 #ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
@@ -2338,12 +2338,13 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 			if (aca_portid > 0)
 				desc_1->field.ep = aca_portid;
 #endif
-		} else if (flags & DP_TX_DSL_FCS) {/*must after checksum chk*/
+		} else if (flags & DP_TX_DSL_FCS) {/* after checksum check */
 			/* w/ pmac for FCS purpose*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
+			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
 							desc_0, desc_1,
 							dp_info2);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
+			insert_pmac_f = 1;
 		} else { /*no pmac */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
 							desc_0, desc_1,

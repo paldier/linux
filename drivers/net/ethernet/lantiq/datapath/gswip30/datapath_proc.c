@@ -3077,6 +3077,10 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 		for (i = class_s; i <= class_e; i++) {
 			for (k = flow_s; k <= flow_e; k++) {
 				pmac.eg.nTrafficClass = i;
+				pmac.eg.nFlowIDMsb = k;
+				ret = gsw_core_api(DP_PMAC_OPS(gsw_handle,
+							       Pmac_Eg_CfgGet),
+						   gsw_handle, &pmac);
 				/*Note: bProcFlagsSelect zero,
 				 *just nTrafficClass,
 				 *else use MPE1/2/ENC/DEC flag instead
@@ -3090,8 +3094,8 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 				pmac.eg.bDecFlag = (pmac.eg.nTrafficClass >>
 					3) & 1;
 				pmac.eg.nFlowIDMsb = k;
-				ret = gsw_core_api((dp_gsw_cb)gsw_handle->
-						   gsw_pmac_ops.Pmac_Eg_CfgSet,
+				ret = gsw_core_api(DP_PMAC_OPS(gsw_handle,
+							       Pmac_Eg_CfgSet),
 						   gsw_handle, &pmac);
 			}
 		}

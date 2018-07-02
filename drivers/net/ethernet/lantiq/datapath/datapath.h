@@ -129,6 +129,7 @@
 
 #define PARSER_FLAG_SIZE   40
 #define PARSER_OFFSET_SIZE 8
+#define DP_PMAC_OPS(gsw, cmd) (dp_gsw_cb)(gsw)->gsw_pmac_ops.cmd
 
 #define PKT_PASER_FLAG_OFFSET   0
 #define PKT_PASER_OFFSET_OFFSET (PARSER_FLAG_SIZE)

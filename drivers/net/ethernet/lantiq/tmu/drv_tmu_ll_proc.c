@@ -97,7 +97,8 @@ int tmu_lookup_dump(struct seq_file *s, int pos)
 {
 	if (find_pattern(pos, s, -1) < 0)
 		return pos;
-	pos++;
+	if (!seq_has_overflowed(s))
+		pos++;
 	if (pos >= 16)
 		pos = -1;
 	return pos;

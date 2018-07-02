@@ -101,8 +101,6 @@ static void init_dma_pmac_template(int portid, u32 flags)
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 		dp_info->pmac_template[TEMPL_PTP].ptp= 1;
 #endif
-	} else if (flags & DP_F_FAST_WLAN) {/*someties with pmac*/
-		/*normal fast_wlan without pmac.*/
 	} else if (flags & DP_F_DIRECTLINK) { /*always with pmac*/
 		/*normal dirctpath without checksum support
 		 *but with pmac to Switch for accelerate
@@ -196,6 +194,15 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.enc = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.dec = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.mpe2 = 0;
+	} else if (flags & DP_F_FAST_WLAN) {
+		/* WLAN block must put after DSL/DIRECTLINK block
+		 * since all ACA device in GRX500 is using WLAN flag wrongly
+		 * and here must make sure still be back-compatible for it.
+		 * normal fast_wlan without pmac except checksum offload support
+		 * So no need to configure pmac_tmplate[0]
+		 *
+		 * Need to add real stuff later
+		 */
 	} else /*if(flags & DP_F_DIRECT ) */{/*always with pmac*/
 		/*normal dirctpath without checksum support */
 		dp_info->pmac_template[TEMPL_NORMAL].igp_msb = portid;

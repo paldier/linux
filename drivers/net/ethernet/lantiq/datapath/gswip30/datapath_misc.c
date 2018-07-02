@@ -111,25 +111,6 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		}
 		/*for checksum for pmac_template[1]*/
 		dp_info->pmac_template[TEMPL_CHECKSUM].tcp_chksum = 1;
-	} else if (flags & DP_F_FAST_WLAN) {
-		/*someties with pma
-		 *normal fast_wlan without pmac
-		 *So no need to configure pmac_tmplate[0]
-		 */
-		/*fast_wlan with checksum support */
-		dp_info->pmac_template[TEMPL_CHECKSUM].port_map_en = 1;
-		dp_info->pmac_template[TEMPL_CHECKSUM].sppid = portid;
-		dp_info->pmac_template[TEMPL_CHECKSUM].redirect = 1;
-		dp_info->pmac_template[TEMPL_CHECKSUM].tcp_chksum = 1;
-		dp_info->pmac_template[TEMPL_CHECKSUM].class_en = 1;
-		SET_PMAC_PORTMAP(&dp_info->pmac_template[TEMPL_CHECKSUM],
-				 portid);
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.enc = 1;
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.dec = 1;
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.mpe2 = 1;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
 	} else if (flags & DP_F_DIRECTLINK) { /*always with pmac*/
 		/*normal dirctpath without checksum support
 		 *but with pmac to Switch for accelerate
@@ -215,6 +196,27 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.enc = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.dec = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.mpe2 = 0;
+	} else if (flags & DP_F_FAST_WLAN) {
+		/* WLAN block must put after DSL/DIRECTLINK block
+		 * since all ACA device in GRX500 is using WLAN flag wrongly
+		 * and here must make sure still be back-compatible for it.
+		 * normal fast_wlan without pmac except checksum offload support
+		 * So no need to configure pmac_tmplate[0]
+		 */
+		/*fast_wlan with checksum support */
+		dp_info->pmac_template[TEMPL_CHECKSUM].port_map_en = 1;
+		dp_info->pmac_template[TEMPL_CHECKSUM].sppid = portid;
+		dp_info->pmac_template[TEMPL_CHECKSUM].redirect = 1;
+		dp_info->pmac_template[TEMPL_CHECKSUM].tcp_chksum = 1;
+		dp_info->pmac_template[TEMPL_CHECKSUM].class_en = 1;
+		SET_PMAC_PORTMAP(&dp_info->pmac_template[TEMPL_CHECKSUM],
+				 portid);
+		dp_info->dma1_template[TEMPL_CHECKSUM].field.enc = 1;
+		dp_info->dma1_template[TEMPL_CHECKSUM].field.dec = 1;
+		dp_info->dma1_template[TEMPL_CHECKSUM].field.mpe2 = 1;
+		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
+		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
+		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
 	} else /*if(flags & DP_F_DIRECT ) */{/*always with pmac*/
 		/*normal dirctpath without checksum support */
 		dp_info->pmac_template[TEMPL_NORMAL].port_map_en = 0;

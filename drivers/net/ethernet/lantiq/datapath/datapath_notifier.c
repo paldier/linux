@@ -49,7 +49,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 	struct inst_property *prop;
 
 	dev = netdev_notifier_info_to_dev(ptr);
-	if(!dev)
+	if (!dev)
 		return 0;
 	addr = (u8 *)dev->dev_addr;
 	if (!addr || dev->addr_len != ETH_ALEN) /*only support ethernet */

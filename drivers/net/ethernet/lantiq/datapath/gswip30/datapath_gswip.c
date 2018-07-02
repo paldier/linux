@@ -183,10 +183,11 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 			egcfg.nDestPortId = port;
 			egcfg.nTrafficClass = i;
 			egcfg.nFlowIDMsb = j;
-
 			memset(&pmac_glb, 0, sizeof(pmac_glb));
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Gbl_CfgGet, gswr_r, &pmac_glb);
+			gsw_core_api(DP_PMAC_OPS(gswr_r, Pmac_Gbl_CfgGet),
+				     gswr_r, &pmac_glb);
+			gsw_core_api(DP_PMAC_OPS(gswr_r, Pmac_Eg_CfgGet),
+				     gswr_r, &egcfg);
 			egcfg.bProcFlagsSelect = pmac_glb.bProcFlagsEgCfgEna;
 			DP_DEBUG(DP_DBG_FLAG_DBG, "bProcFlagsSelect=%u\n",
 				 egcfg.bProcFlagsSelect);
