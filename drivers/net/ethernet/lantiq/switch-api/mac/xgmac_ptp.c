@@ -366,8 +366,10 @@ int xgmac_tx_hwts(void *pdev, struct sk_buff *skb)
 			mac_dbg("1-Step\n");
 			ptp_loc = parse_ptp_packet(skb, &ethtype, &msg_type);
 
-			if (!ptp_loc)
+			if (!ptp_loc) {
+				mac_printf("Parsing PTP packet Error\n");
 				return -1;
+			}
 
 			/* PTP Sync if we are Master TTSE=0 OSTC=1, OSTPA=0 */
 			rec_id = fifo_entry_add(pdev, 0, 1, 0, 0, 0, 0);
@@ -380,9 +382,6 @@ int xgmac_tx_hwts(void *pdev, struct sk_buff *skb)
 			/* if -1, CPU should drop the packet */
 			return -1;
 		}
-
-		if (IS_1STEP(pdata))
-			tx_hwtstamp(pdata, &shhwtstamp);
 	}
 
 	return rec_id;
