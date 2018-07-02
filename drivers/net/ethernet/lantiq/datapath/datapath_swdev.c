@@ -61,6 +61,37 @@ u16 dp_swdev_cal_hash(unsigned char *name)
 	return (u16)(hash & 0x3F);
 }
 
+int dp_swdev_chk_bport_in_br(struct net_device *bp_dev, int bport, int inst)
+{
+	struct net_device *br_dev;
+	struct bridge_member_port *temp_list = NULL;
+	struct br_info *br_info;
+	int found = 0;
+	bool f_unlock = false;
+
+	if (!rtnl_is_locked()) {
+		rtnl_lock();
+		f_unlock = true;
+	}
+	br_dev = netdev_master_upper_dev_get(bp_dev);
+	if (f_unlock)
+		rtnl_unlock();
+	if (!br_dev)
+		return -1;
+	br_info = dp_swdev_bridge_entry_lookup(br_dev->name, inst);
+	list_for_each_entry(temp_list, &br_info->bp_list, list) {
+		if (temp_list->portid == bport) {
+			found = 1;
+			DP_DEBUG(DP_DBG_FLAG_SWDEV, "bport(%s) in bridge\n",
+				 bp_dev->name ? bp_dev->name : "NULL");
+			return 0;
+		}
+	}
+	DP_DEBUG(DP_DBG_FLAG_SWDEV, "bport(%s) not in bridge\n",
+		 bp_dev->name ? bp_dev->name : "NULL");
+	return -1;
+}
+
 struct br_info *dp_swdev_bridge_entry_lookup(char *br_name,
 					     int inst)
 {
@@ -220,8 +251,6 @@ static int dp_swdev_clr_gswip_cfg(struct bridge_id_entry_item *br_item,
 			 br_item->portid);
 		return 0;
 	}
-	DP_DEBUG(DP_DBG_FLAG_SWDEV,
-		 "No configuration,Pls check!!\n");
 	return 0;
 }
 

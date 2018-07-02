@@ -537,6 +537,18 @@ static int bp_rm_vlan(struct core_ops *ops, u32 bp,
 		return 0;
 }
 
+static int bp_diff(u32 *bp0, u32 num_bp0, u32 *bp1)
+{
+	u32 i, j;
+
+	for (i = 0; i < num_bp0; i++) {
+		for (j = 0; j < num_bp0 && bp0[j] != bp1[i]; j++);
+		if (j >= num_bp0)
+			break;
+	}
+	return i;
+}
+
 /* Function for VLAN configure */
 int set_gswip_ext_vlan(struct core_ops *ops, struct ext_vlan_info *vlan,
 		       int flag)
@@ -577,9 +589,8 @@ int set_gswip_ext_vlan(struct core_ops *ops, struct ext_vlan_info *vlan,
 		return -ENOMEM;
 
 	new_priv->num_bp = (u32)(vlan->n_vlan1 + vlan->n_vlan2);
-	new_priv->bp[0] = vlan->bp;
 
-	for (i = 0, j = 1; i < vlan->n_vlan1; i++, j++)
+	for (i = j = 0; i < vlan->n_vlan1; i++, j++)
 		new_priv->bp[j] = vlan->vlan1_list[i].bp;
 
 	for (i = 0; i < vlan->n_vlan2; i++, j++)
@@ -593,20 +604,12 @@ int set_gswip_ext_vlan(struct core_ops *ops, struct ext_vlan_info *vlan,
 		ret = bp_add_vlan(ops, vlan, 0, &bpcfg);
 	} else if (old_priv->num_bp < new_priv->num_bp) {
 		/* vlan added */
-		for (i = 0;
-		     ((u32)i < old_priv->num_bp) &&
-		     (old_priv->bp[i] == new_priv->bp[i]);
-		     i++)
-			;
+		i = bp_diff(old_priv->bp, old_priv->num_bp, new_priv->bp);
 
 		ret = bp_add_vlan(ops, vlan, i, &bpcfg);
 	} else if (old_priv->num_bp > new_priv->num_bp) {
 		/* vlan removed */
-		for (i = 0;
-		     ((u32)i < new_priv->num_bp) &&
-		     (old_priv->bp[i] == new_priv->bp[i]);
-		     i++)
-			;
+		i = bp_diff(new_priv->bp, new_priv->num_bp, old_priv->bp);
 
 		bp_rm_vlan(ops, old_priv->bp[i], &bpcfg);
 		ret = 0;

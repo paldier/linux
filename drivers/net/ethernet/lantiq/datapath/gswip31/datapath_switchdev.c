@@ -137,7 +137,6 @@ int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 			}
 		}
 	}
-	DP_DEBUG(DP_DBG_FLAG_SWDEV, "%s successfully set\n", __func__);
 	return 0;
 }
 
@@ -334,34 +333,37 @@ int dp_gswip_ext_vlan(int inst, int vap, int ep)
 			PR_ERR("tmp->dev is NULL\n");
 			goto EXIT;
 		}
-		get_vlan_via_dev(tmp->dev, &vlan_prop);
-		if (vlan_prop.num == 2) {
-			DP_DEBUG(DP_DBG_FLAG_SWDEV,
-				 "VLAN Inner proto=%x, vid=%d\n",
-				 vlan_prop.in_proto, vlan_prop.in_vid);
-			DP_DEBUG(DP_DBG_FLAG_SWDEV,
-				 "VLAN out proto=%x, vid=%d\n",
-				 vlan_prop.out_proto, vlan_prop.out_vid);
-			vlan->vlan2_list[v2].outer_vlan.vid = vlan_prop.out_vid;
-			vlan->vlan2_list[v2].outer_vlan.tpid =
-							vlan_prop.out_proto;
-			vlan->vlan2_list[v2].ether_type = 0;
-			vlan->vlan2_list[v2].inner_vlan.vid = vlan_prop.in_vid;
-			vlan->vlan2_list[v2].inner_vlan.tpid =
-							vlan_prop.in_proto;
-			vlan->vlan2_list[v2].bp = tmp->bp;
-			v2 += 1;
-		} else if (vlan_prop.num == 1) {
-			DP_DEBUG(DP_DBG_FLAG_SWDEV,
-				 "outer VLAN proto=%x, vid=%d\n",
-				 vlan_prop.out_proto, vlan_prop.out_vid);
-			vlan->vlan1_list[v1].outer_vlan.vid = vlan_prop.out_vid;
-			vlan->vlan1_list[v1].outer_vlan.tpid =
-							vlan_prop.out_proto;
-			vlan->vlan1_list[v1].bp = tmp->bp;
-			v1 += 1;
+		ret = dp_swdev_chk_bport_in_br(tmp->dev, tmp->bp, inst);
+		if (ret == 0) {
+			get_vlan_via_dev(tmp->dev, &vlan_prop);
+			if (vlan_prop.num == 2) {
+				DP_DEBUG(DP_DBG_FLAG_SWDEV,
+					 "VLAN Inner proto=%x, vid=%d\n",
+					 vlan_prop.in_proto, vlan_prop.in_vid);
+				DP_DEBUG(DP_DBG_FLAG_SWDEV,
+					 "VLAN out proto=%x, vid=%d\n",
+					 vlan_prop.out_proto, vlan_prop.out_vid);
+				vlan->vlan2_list[v2].outer_vlan.vid = vlan_prop.out_vid;
+				vlan->vlan2_list[v2].outer_vlan.tpid =
+								vlan_prop.out_proto;
+				vlan->vlan2_list[v2].ether_type = 0;
+				vlan->vlan2_list[v2].inner_vlan.vid = vlan_prop.in_vid;
+				vlan->vlan2_list[v2].inner_vlan.tpid =
+								vlan_prop.in_proto;
+				vlan->vlan2_list[v2].bp = tmp->bp;
+				v2 += 1;
+			} else if (vlan_prop.num == 1) {
+				DP_DEBUG(DP_DBG_FLAG_SWDEV,
+					 "outer VLAN proto=%x, vid=%d\n",
+					 vlan_prop.out_proto, vlan_prop.out_vid);
+				vlan->vlan1_list[v1].outer_vlan.vid = vlan_prop.out_vid;
+				vlan->vlan1_list[v1].outer_vlan.tpid =
+								vlan_prop.out_proto;
+				vlan->vlan1_list[v1].bp = tmp->bp;
+				v1 += 1;
+			}
+			i += 1;
 		}
-		i += 1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "vlan1=%d vlan2=%d total vlan int=%d\n",
 		 v1, v2, i);

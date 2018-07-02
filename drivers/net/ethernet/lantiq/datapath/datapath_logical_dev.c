@@ -163,6 +163,7 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 	}
 	logic_dev_tmp->dev = dev;
 	logic_dev_tmp->ep = port_id;
+	logic_dev_tmp->ctp = subif.subif;
 	if (dp_port_prop[inst].info.subif_platform_set_unexplicit(inst,
 								  port_id,
 								  logic_dev_tmp,
@@ -170,7 +171,6 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 		DP_DEBUG(DP_DBG_FLAG_LOGIC, "dp_set_unexplicit fail\n");
 		return -1;
 	}
-	logic_dev_tmp->ctp = subif.subif;
 	DP_DEBUG(DP_DBG_FLAG_LOGIC, "add logic dev list\n");
 	list_add(&logic_dev_tmp->list,
 		 &port_info->subif_info[masked_subif].logic_dev);
