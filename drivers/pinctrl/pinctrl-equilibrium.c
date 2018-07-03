@@ -641,6 +641,10 @@ static void eqbr_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
 	int i, j;
 
 	bank = find_pinbank_via_pin(pctl, pin);
+	if (!bank) {
+		dev_err(pctl->dev, "Couldn't find pin bank for pin %u\n", pin);
+		return -ENODEV;
+	}
 	offset = pin - bank->pin_base;
 
 	seq_printf(s, "pin mux: %u\n", readl(bank->membase + (offset << 2)));
@@ -976,7 +980,10 @@ static void eqbr_pinconf_dbg_show(struct pinctrl_dev *pctldev,
 	pin = offset;
 	pctl = pinctrl_dev_get_drvdata(pctldev);
 	bank = find_pinbank_via_pin(pctl, pin);
-
+	if (!bank) {
+		dev_err(pctl->dev, "Couldn't find pin bank for pin %u\n", pin);
+		return -ENODEV;
+	}
 	mem = bank->membase;
 	offset = pin - bank->pin_base;
 

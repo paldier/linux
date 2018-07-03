@@ -513,9 +513,9 @@ int ltq_umt_request(u32 ep_id, u32 cbm_pid,
 
 		spin_unlock_bh(&port->umt_port_lock);
 	} else {
-		kfree(dqport.deq_info);
 		mcpy_dbg(MCPY_ERR, "port no %d not valid !\n",
 			 dqport.deq_info->port_no);
+		kfree(dqport.deq_info);
 		goto param_err;
 	}
 

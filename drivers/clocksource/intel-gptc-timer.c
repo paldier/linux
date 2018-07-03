@@ -611,6 +611,7 @@ static int gptc_of_parse_timer(struct gptc *gptc)
 			timer->dir = GPTC_COUNT_DOWN;
 			timer->cpuid = 0;
 			list_add_tail(&timer->ht_yield, &gptc_ht_yield_list);
+			break;
 		default:
 			break;
 		}
@@ -755,8 +756,6 @@ static int gptc_clocksource_init(void)
 			gptc_per_timer_init(timer);
 			ret = clocksource_register_hz(&gptc_clksrc.cs,
 						      timer->frequency);
-			if (ret < 0)
-				pr_warn("GPTC: Unable to register clocksource\n");
 		#ifndef CONFIG_X86
 			sched_clock_register(gptc_read_sched_clock,
 					     32, timer->frequency);
