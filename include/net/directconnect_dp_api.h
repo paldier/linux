@@ -52,7 +52,7 @@
 /**
   \brief DC DP API version code
  */
-#define DC_DP_API_VERSION_CODE        0x040101
+#define DC_DP_API_VERSION_CODE        0x040103
 
 /**
   \brief DC DP API version
@@ -78,6 +78,16 @@
   \brief Alloc flag as SWPATH
  */
 #define DC_DP_F_SWPATH           0x00000040
+
+/**
+  \brief Alloc flag as FASTPATH DSL
+ */
+#define DC_DP_F_FAST_DSL         0x00000100
+
+/**
+  \brief Alloc flag as shared resource
+ */
+#define DC_DP_F_SHARED_RES       0x00000200
 
 /**
   \brief Register device flag; Specify if peripheral driver want to allocate SW Tx ring
@@ -317,12 +327,12 @@
 /**
   \brief Register subif flags; Specify to register already registered subif/vap as LitePath Partial offload
  */
-#define DC_DP_F_REGISTER_LITEPATH       0x00000100
+#define DC_DP_F_REGISTER_LITEPATH			0x00000100
 
 /**
   \brief Register subif flags; De-register already registered LitePath subif/logical netdev from LitePath
  */
-#define DC_DP_F_DEREGISTER_LITEPATH	0x00000200
+#define DC_DP_F_DEREGISTER_LITEPATH			0x00000200
 
 /**
   \brief Xmit flags: Specify it as dc_dp_xmit() flags value if xmit to litepath
@@ -403,6 +413,16 @@
   \brief  Multicast module register update MACs request
  */
 #define DC_DP_F_MC_UPDATE_MAC_ADDR		0x08
+
+/**
+  \brief Multicast module cleanup request (if applicable to peripheral driver).
+ */
+#define DC_DP_F_MC_FW_RESET			0x10
+
+/**
+  \brief Multicast module re-learning request (if applicable to peripheral driver).
+ */
+#define DC_DP_F_MC_NEW_STA			0x20
 
 /**
   \brief A new multicast group membership add request.
@@ -1072,6 +1092,7 @@ dc_dp_get_host_capability (
   \param[in] port_id  Optional port_id number requested. Usually, 0 and allocated by driver
   \param[in] flags  : Use Datapath driver flags for Datapath Port Alloc
   -  DC_DP_F_FASTPATH : Allocate the port as h/w acclerable
+  -  DC_DP_F_FAST_DSL : Allocate the DSL port as h/w acclerable
   -  DC_DP_F_LITEPATH : Allocate the port as partial accelerable/offload
   -  DC_DP_F_SWPATH : Allocate the port as non-accelerable
   -  DC_DP_F_DEREGISTER : Deallocate the already allocated port
@@ -1119,6 +1140,7 @@ dc_dp_reserve_fastpath (
   - DC_DP_F_DONT_ALLOC_HW_TX_RING : Specify it if peripheral driver don't want to allocate hw tx ring
   - DC_DP_F_DONT_ALLOC_HW_RX_RING : Specify it if peripheral driver don't want to allocate hw rx ring
   - DC_DP_F_QOS : Specify it if peripheral/dev QoS class is required in DC peripheral
+  - DC_DP_F_SHARED_RES : Specify it if peripheral driver want to re-use/update dc resources, multi-port/bodning case respectively
   \return 0 if OK / -1 if error
   \note This is the first registration to be invoked by any DC peripheral. Subsequently additional registrations like Multicast, Ring-Recovery or Power Saving (PS) to be done.
  */
@@ -1462,8 +1484,10 @@ dc_dp_disconn_if (
   \param[in] cb  Multicast callback function.
   \param[in] flags  :
   DC_DP_F_MC_REGISTER - Register a DirectConnect interface.
-  DC_DP_F_MC_UPDATE_MAC_ADDR - Register a DirectConnect interface to get mcast SSM support.
   DC_DP_F_MC_DEREGISTER - De-register already registered DirectConnect interface.
+  DC_DP_F_MC_UPDATE_MAC_ADDR - Register a DirectConnect interface to get mcast SSM support.
+  DC_DP_F_MC_FW_RESET - Cleanup request on already learned entries on the registered DirectConnect interface.
+  DC_DP_F_MC_NEW_STA - Re-learn request on the registered DirectConnect interface.
   \return 0 if OK / -1 if error
   \note It can be skipped for specific peripheral driver if there is no notion
   of host connect/disconnect on the peripheral network/interface.
