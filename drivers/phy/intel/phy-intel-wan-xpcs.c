@@ -145,7 +145,7 @@ static int intel_wan_xpcs_phy_dt_parse(struct intel_wan_xpcs_phy *priv)
 	/* get chiptop regmap */
 	priv->syscfg =
 		syscon_regmap_lookup_by_phandle(np,
-						"intel,wanxpcsphy-syscon");
+						"intel,syscon");
 	if (IS_ERR(priv->syscfg)) {
 		dev_err(dev, "No phandle specified for xpcs-phy syscon\n");
 		return PTR_ERR(priv->syscfg);

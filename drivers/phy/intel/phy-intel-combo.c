@@ -812,7 +812,7 @@ static int intel_combo_phy_dt_parse(struct intel_combo_phy *priv)
 
 	/* get chiptop regmap */
 	priv->syscfg
-		= syscon_regmap_lookup_by_phandle(np, "intel,cbphy-syscon");
+		= syscon_regmap_lookup_by_phandle(np, "intel,syscon");
 	if (IS_ERR(priv->syscfg)) {
 		dev_err(dev, "No syscon phandle specified for combo-phy syscon\n");
 		ret = -EINVAL;

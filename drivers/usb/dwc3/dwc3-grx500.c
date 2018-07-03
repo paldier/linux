@@ -94,7 +94,7 @@ static int dwc3_ltq_probe(struct platform_device *pdev)
 	}
 
 	dwc->syscfg = syscon_regmap_lookup_by_phandle(dev->of_node,
-												  "usb-syscon");
+						      "intel,syscon");
 	if (IS_ERR(dwc->syscfg)) {
 		dev_err(dev, "Failed to retrieve syscon regmap\n");
 		return PTR_ERR(dwc->syscfg);

@@ -78,7 +78,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	if (IS_ERR(cqm_pdata->cqm_clk[1]))
 		pr_err("Error getting cqm clk\n");
 	cqm_pdata->syscfg = syscon_regmap_lookup_by_phandle(node,
-							    "lantiq,wanmux");
+							    "intel,syscon");
 	if (IS_ERR(cqm_pdata->syscfg)) {
 		pr_err("No syscon phandle specified for wan mux\n");
 		cqm_pdata->syscfg = NULL;

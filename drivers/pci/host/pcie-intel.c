@@ -1707,7 +1707,7 @@ static int intel_pcie_parse_dt(struct intel_pcie_port *lpp)
 		lpp->inbound_shift, lpp->outbound_shift, lpp->link_gen,
 		lpp->lanes, lpp->has_iatu ? "enabled" : "disabled");
 
-	lpp->syscfg = syscon_regmap_lookup_by_phandle(np, "intel,pcie-syscon");
+	lpp->syscfg = syscon_regmap_lookup_by_phandle(np, "intel,syscon");
 	if (IS_ERR(lpp->syscfg)) {
 		dev_err(dev, "No syscon phandle specified for pcie syscon\n");
 		lpp->syscfg = NULL;

@@ -340,7 +340,7 @@ static int intel_pcie_slim_phy_probe(struct platform_device *pdev)
 		priv->ssc_en = !!prop;
 	priv->ssc_status = SSC_DISABLED;
 
-	priv->phycfg = syscon_regmap_lookup_by_phandle(np, "intel,phy-syscon");
+	priv->phycfg = syscon_regmap_lookup_by_phandle(np, "intel,syscon");
 	if (IS_ERR(priv->phycfg)) {
 		dev_err(dev, "No CHIPTOP syscon phandle!\n");
 		return -EINVAL;
