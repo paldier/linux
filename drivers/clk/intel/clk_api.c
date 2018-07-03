@@ -1065,7 +1065,7 @@ pll_clk_set(struct regmap *map, u32 reg,
 	    spinlock_t *lock)
 {
 	unsigned int mult, div, frac;
-	const int loop_cnt = 8;
+	const int loop_cnt = 100;
 	int i;
 
 	mult = ff_tbl->mult;
