@@ -75,7 +75,8 @@
 #define QOS_MODIFIED_SHARED_GROUP_ID		BIT(3)
 #define QOS_MODIFIED_ARBITRATION		BIT(5)
 #define QOS_MODIFIED_BEST_EFFORT		BIT(6)
-#define QOS_MODIFIED_VIRT_BW_SHARE		BIT(8)
+#define QOS_MODIFIED_PRIORITY			BIT(7)
+#define QOS_MODIFIED_BW_WEIGHT			BIT(8)
 #define QOS_MODIFIED_PARENT			BIT(9)
 #define QOS_MODIFIED_RING_ADDRESS		BIT(10)
 #define QOS_MODIFIED_RING_SIZE			BIT(11)
@@ -115,7 +116,9 @@ enum node_type {
 
 struct child_node_properties {
 	uint16_t	parent_phy;
+	uint8_t		priority;
 	uint8_t		virt_bw_share;
+	uint8_t		bw_weight;
 };
 
 struct parent_node_properties {
@@ -439,7 +442,7 @@ unsigned int octet_get_least_free_entries(struct pp_octets *octets);
 /*
  * Initialize qos dev, max port designates phy of highest port
  */
-struct pp_qos_dev *_qos_init(unsigned int max_port);
+void _qos_init(unsigned int max_port, struct pp_qos_dev **qdev);
 void _qos_clean(struct pp_qos_dev *qdev);
 
 /*
@@ -562,7 +565,7 @@ unsigned int get_virtual_parent_phy(const struct pp_nodes *nodes,
 				    const struct qos_node *child);
 
 void node_update_children(struct pp_qos_dev *qdev,
-				 unsigned int phy,
+				 struct qos_node *parent,
 				 unsigned int new_phy);
 
 void tree_update_predecessors(struct pp_qos_dev *qdev, unsigned int phy);
@@ -573,10 +576,10 @@ void tree_update_predecessors(struct pp_qos_dev *qdev, unsigned int phy);
  * 2. If sched's parent is also internal scheduler
  *    update its virtual bandwidth share also to be the update
  *    bw share sum of its children. And keep doing that
- *    up the tree hirarchy so long parent is an internal scheduler
+ *    up the tree hierarchy so long parent is an internal scheduler
  * 3. For each
  */
-void update_internal_bandwidth(const struct pp_qos_dev *qdev,
+void update_internal_bandwidth(struct pp_qos_dev *qdev,
 			       struct qos_node *sched);
 
 /* Remove all nodes (including root) of a subtree */
@@ -629,7 +632,6 @@ void update_children_position(
 			struct pp_qos_dev *qdev,
 			struct qos_node *child,
 			struct qos_node *parent,
-			unsigned int position,
 			struct qos_node *node_src);
 int allocate_ddr_for_qm(struct pp_qos_dev *qdev);
 int allocate_ddr_for_qm_on_platform(struct pp_qos_dev *qdev);

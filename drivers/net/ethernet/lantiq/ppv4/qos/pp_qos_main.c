@@ -765,8 +765,9 @@ static int check_queue_conf_validity(
 		QOS_BITS_SET(*modified,
 			     QOS_MODIFIED_NODE_TYPE |
 			     QOS_MODIFIED_BANDWIDTH_LIMIT |
-			     QOS_MODIFIED_VIRT_BW_SHARE |
+			     QOS_MODIFIED_BW_WEIGHT |
 			     QOS_MODIFIED_PARENT |
+			     QOS_MODIFIED_PRIORITY |
 			     QOS_MODIFIED_MAX_BURST |
 			     QOS_MODIFIED_BLOCKED |
 			     QOS_MODIFIED_WRED_ENABLE |
@@ -1039,8 +1040,6 @@ static int _pp_qos_queue_set(
 		parent = get_node_from_phy(
 				qdev->nodes,
 				nodep->child_prop.parent_phy);
-		if (nodep->child_prop.virt_bw_share && node_internal(parent))
-			update_internal_bandwidth(qdev, parent);
 	} else {
 		phy = get_phy_from_id(qdev->mapping, id);
 		nodep = get_node_from_phy(qdev->nodes, phy);
@@ -1049,17 +1048,15 @@ static int _pp_qos_queue_set(
 				nodep->child_prop.parent_phy);
 
 		/* Child of WSP changes priority i.e. position */
-		if (parent->parent_prop.arbitration == PP_QOS_ARBITRATION_WSP) {
+		if ((parent->parent_prop.arbitration ==
+			 PP_QOS_ARBITRATION_WSP)
+			&&
+			QOS_BITS_IS_SET(modified, QOS_MODIFIED_PRIORITY)) {
 			update_children_position(
 					qdev,
 					nodep,
 					parent,
-					min(conf->queue_child_prop.priority,
-					(unsigned int)parent->
-					parent_prop.num_of_children),
 					&node);
-
-
 		}  else {
 			memcpy(nodep, &node, sizeof(struct qos_node));
 		}
@@ -1073,6 +1070,10 @@ static int _pp_qos_queue_set(
 				nodep->child_prop.parent_phy,
 				nodep->data.queue.rlm,
 				modified);
+
+	if (parent_changed && nodep->child_prop.virt_bw_share)
+		update_internal_bandwidth(qdev, parent);
+
 out:
 	if (rc) {
 		if (parent_changed) {
@@ -1365,7 +1366,7 @@ static int check_sched_conf_validity(
 			     QOS_MODIFIED_NODE_TYPE |
 			     QOS_MODIFIED_SHARED_GROUP_ID |
 			     QOS_MODIFIED_BANDWIDTH_LIMIT |
-			     QOS_MODIFIED_VIRT_BW_SHARE |
+			     QOS_MODIFIED_BW_WEIGHT |
 			     QOS_MODIFIED_PARENT |
 			     QOS_MODIFIED_ARBITRATION |
 			     QOS_MODIFIED_BEST_EFFORT);
@@ -1500,7 +1501,9 @@ static int _pp_qos_sched_set(
 			add_suspend_port(qdev, get_port(qdev->nodes, prev_phy));
 			dst_port = get_port(qdev->nodes, phy);
 			create_move_cmd(qdev, phy, prev_phy, dst_port);
-			node_update_children(qdev, prev_phy, phy);
+			node_update_children(qdev,
+				get_node_from_phy(qdev->nodes, prev_phy),
+				phy);
 			map_invalidate_id(qdev->mapping, id);
 			map_id_phy(qdev->mapping, id, phy);
 			oldnode = get_node_from_phy(qdev->nodes, prev_phy);
@@ -1521,8 +1524,6 @@ static int _pp_qos_sched_set(
 		parent = get_node_from_phy(
 				qdev->nodes,
 				nodep->child_prop.parent_phy);
-		if (nodep->child_prop.virt_bw_share && node_internal(parent))
-			update_internal_bandwidth(qdev, parent);
 	} else {
 		phy = get_phy_from_id(qdev->mapping, id);
 		nodep = get_node_from_phy(qdev->nodes, phy);
@@ -1531,17 +1532,13 @@ static int _pp_qos_sched_set(
 				nodep->child_prop.parent_phy);
 
 		/* Child of WSP changes priority i.e. position */
-		if (parent->parent_prop.arbitration == PP_QOS_ARBITRATION_WSP) {
+		if (parent->parent_prop.arbitration == PP_QOS_ARBITRATION_WSP &&
+			QOS_BITS_IS_SET(modified, QOS_MODIFIED_PRIORITY)) {
 			update_children_position(
 					qdev,
 					nodep,
 					parent,
-					min(conf->sched_child_prop.priority,
-					(unsigned int)parent->
-					parent_prop.num_of_children),
 					&node);
-
-
 		}  else {
 			memcpy(nodep, &node, sizeof(struct qos_node));
 		}
@@ -1554,6 +1551,11 @@ static int _pp_qos_sched_set(
 				phy,
 				nodep->child_prop.parent_phy,
 				modified);
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_PARENT) &&
+	    nodep->child_prop.virt_bw_share)
+		update_internal_bandwidth(qdev, parent);
+
 	return 0;
 }
 
@@ -2022,7 +2024,7 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 		return NULL;
 	}
 
-	qdev = _qos_init(initinfo->pl_data.max_port);
+	_qos_init(initinfo->pl_data.max_port, &qdev);
 	if (qdev) {
 		qdev->hwconf.wred_prioritize_pop =
 			initinfo->pl_data.wred_prioritize_pop;

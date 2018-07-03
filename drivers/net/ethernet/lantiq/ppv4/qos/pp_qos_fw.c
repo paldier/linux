@@ -543,7 +543,7 @@ void create_move_cmd(
 		cmd.rlm = -1;
 
 	fill_preds(qdev->nodes, dst, cmd.preds, 6);
-	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_MOVE %u-->%u type:%d, rlm:%d, port:%u\n",
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_MOVE %u-->%u type:%d, q:%d, port:%u",
 			qdev->drvcmds.cmd_id,
 			qdev->drvcmds.cmd_fw_id,
 			src,
@@ -1231,7 +1231,8 @@ void add_suspend_port(struct pp_qos_dev *qdev, unsigned int port)
 	for (i = 0; i <  internals->suspend_port_index; ++i)
 		if (internals->suspend_ports[i] == port)
 			return;
-	QOS_ASSERT(internals->suspend_port_index <= qdev->max_port, "Suspend ports buffer is full\n");
+	QOS_ASSERT(internals->suspend_port_index <= qdev->max_port,
+		   "Suspend ports buffer is full\n");
 	internals->suspend_ports[internals->suspend_port_index] = port;
 	++(internals->suspend_port_index);
 }
@@ -1425,7 +1426,7 @@ static uint32_t *fw_write_set_sched_cmd(
 
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_SET_SCHEDULER);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(15);
+	*buf++ = qos_u32_to_uc(16);
 	*buf++ = qos_u32_to_uc(phy);
 	*buf++ = qos_u32_to_uc(common->valid | parent->valid |
 			child->valid | sched->valid);
@@ -1439,6 +1440,7 @@ static uint32_t *fw_write_set_sched_cmd(
 	*buf++ = qos_u32_to_uc(common->bw_limit);
 	*buf++ = qos_u32_to_uc(parent->best_effort_enable);
 	*buf++ = qos_u32_to_uc(parent->first_wrr);
+	*buf++ = qos_u32_to_uc(child->bw_share);
 	*buf++ = qos_u32_to_uc(common->shared_bw_group);
 
 	for (i = 0; i < 6; ++i)
@@ -1502,12 +1504,13 @@ static uint32_t *fw_write_set_queue_cmd(
 
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_SET_QUEUE);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(25);
+	*buf++ = qos_u32_to_uc(26);
 	*buf++ = qos_u32_to_uc(phy);
 	*buf++ = qos_u32_to_uc(queue->rlm);
 	*buf++ = qos_u32_to_uc(common->valid | child->valid);
 	*buf++ = qos_u32_to_uc(common->suspend);
 	*buf++ = qos_u32_to_uc(common->bw_limit);
+	*buf++ = qos_u32_to_uc(child->bw_share);
 	*buf++ = qos_u32_to_uc(common->shared_bw_group);
 	for (i = 0; i < 6; ++i)
 		*buf++ = qos_u32_to_uc(child->preds[i]);
@@ -1784,13 +1787,19 @@ static void set_child(
 		struct fw_set_child *child,
 		uint32_t modified)
 {
-	uint32_t valid;
+	uint32_t valid = 0;
 
-	valid = 0;
-	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_VIRT_BW_SHARE)) {
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_BW_WEIGHT)) {
+		QOS_BITS_SET(valid, TSCD_NODE_CONF_NODE_WEIGHT);
+		child->bw_share = conf->bandwidth_share;
+	}
+
+	// Should be changed. Currently both are using bw_share variable
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_SHARED_GROUP_ID)) {
 		QOS_BITS_SET(valid, TSCD_NODE_CONF_SHARED_BWL_GROUP);
 		child->bw_share = conf->bandwidth_share;
 	}
+
 	child->valid = valid;
 }
 
@@ -2505,9 +2514,9 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 	struct fw_internal *internals;
 	unsigned int pushed;
 	unsigned int i;
-	struct fw_set_common common;
-	struct fw_set_parent parent;
-	struct fw_set_port port;
+	struct fw_set_common common = {0};
+	struct fw_set_parent parent = {0};
+	struct fw_set_port port = {0};
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;

@@ -37,7 +37,7 @@
 // UC version
 #define UC_VERSION_MAJOR	(1)
 #define UC_VERSION_MINOR	(0)
-#define UC_VERSION_BUILD	(4)
+#define UC_VERSION_BUILD	(5)
 
 /**************************************************************************
  *! @enum	UC_STATUS
@@ -131,26 +131,29 @@ enum tscd_node_conf {
 	//!< First Weighted-Round-Robin node (Not relevant for queue)
 	TSCD_NODE_CONF_FIRST_WRR_NODE		=	0x0020,
 
+	//!< Node Weight (Not relevant for ports)
+	TSCD_NODE_CONF_NODE_WEIGHT			=	0x0040,
+
 	//!< Update predecessor 0 (Not relevant for port)
-	TSCD_NODE_CONF_PREDECESSOR_0		=	0x0040,
+	TSCD_NODE_CONF_PREDECESSOR_0		=	0x0080,
 
 	//!< Update predecessor 1 (Not relevant for port)
-	TSCD_NODE_CONF_PREDECESSOR_1		=	0x0080,
+	TSCD_NODE_CONF_PREDECESSOR_1		=	0x0100,
 
 	//!< Update predecessor 2 (Not relevant for port)
-	TSCD_NODE_CONF_PREDECESSOR_2		=	0x0100,
+	TSCD_NODE_CONF_PREDECESSOR_2		=	0x0200,
 
 	//!< Update predecessor 3 (Not relevant for port)
-	TSCD_NODE_CONF_PREDECESSOR_3		=	0x0200,
+	TSCD_NODE_CONF_PREDECESSOR_3		=	0x0400,
 
 	//!< Update predecessor 4 (Not relevant for port)
-	TSCD_NODE_CONF_PREDECESSOR_4		=	0x0400,
+	TSCD_NODE_CONF_PREDECESSOR_4		=	0x0800,
 
 	//!< Update predecessor 5 (Not relevant for port)
-	TSCD_NODE_CONF_PREDECESSOR_5		=	0x0800,
+	TSCD_NODE_CONF_PREDECESSOR_5		=	0x1000,
 
 	//!< Shared BW limit group (0: no shared BW limit, 1-511: group ID)
-	TSCD_NODE_CONF_SHARED_BWL_GROUP		=	0x1000,
+	TSCD_NODE_CONF_SHARED_BWL_GROUP		=	0x2000,
 
 	//!< All flags are set
 	TSCD_NODE_CONF_ALL					=	0xFFFF
