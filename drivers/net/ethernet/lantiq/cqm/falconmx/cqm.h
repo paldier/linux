@@ -155,6 +155,13 @@ enum CQM_QIDT_STATE {
 	STATE_NONE = 0xffff
 };
 
+enum CQM_BUFF_SIZE {
+	CQM_SIZE0_BUF_SIZE = 0,
+	CQM_SIZE1_BUF_SIZE,
+	CQM_SIZE2_BUF_SIZE,
+	CQM_SIZE3_BUF_SIZE,
+};
+
 /**************************************************
  *
  * Macros
@@ -582,6 +589,8 @@ struct cqm_ctrl {
 	dma_addr_t dma_hndl_p[TOT_DMA_HNDL];
 	struct dentry *debugfs;
 	const char *name;
+	u32 fmx_pool_ptrs[CQM_FMX_NUM_BM_POOLS];
+	u32 fmx_pool_size[CQM_FMX_NUM_BM_POOLS];
 };
 
 struct cqm_buf_dbg_cnt {

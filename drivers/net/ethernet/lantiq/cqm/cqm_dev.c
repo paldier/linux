@@ -22,6 +22,10 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	struct cqm_data *cqm_pdata = NULL;
 	unsigned int intr[MAX_NUM_INTR];
 	struct resource resource[MAX_NUM_BASE_ADDR];
+	struct property *prop;
+	const __be32 *p;
+	unsigned int buf_num;
+	unsigned int *pool_size;
 
 	pr_info("[%s] .. [%d]\n", __func__, __LINE__);
 
@@ -80,6 +84,16 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 		cqm_pdata->syscfg = NULL;
 	}
 	cqm_pdata->force_xpcs = of_property_read_bool(node, "intel,force-xpcs");
+	of_property_for_each_u32(node, "intel,bm-buff-num", prop, p, buf_num) {
+		cqm_pdata->pool_ptrs[cqm_pdata->num_pools] = buf_num;
+		cqm_pdata->num_pools++;
+	}
+
+	pool_size = cqm_pdata->pool_size;
+	of_property_for_each_u32(node, "intel,bm-buff-size", prop, p, buf_num) {
+		*pool_size = buf_num;
+		pool_size++;
+	}
 	ret_node = node;
 	return ret_node;
 
@@ -99,7 +113,7 @@ int add_cqm_dev(int i)
 	node = parse_dts(i, &pdata, &res, &num_res);
 	if (!node) {
 		pr_err("%s(#%d): parse_dts fail for %s\n",
-		 __func__, __LINE__, dev_node_name[i].dev_name);
+		       __func__, __LINE__, dev_node_name[i].dev_name);
 		return CBM_FAILURE;
 	}
 	pr_info("parse dts done\n");

@@ -121,6 +121,5 @@ struct cqm_bm_pool_config {
 extern const struct cqm_config falcon_cqm_config[];
 extern struct cqm_ctrl g_fmx_ctrl;
 extern struct cqm_bm_pool_config bm_pool_conf[CQM_FMX_NUM_POOLS];
-extern struct bmgr_policy_params policy_params[CQM_FMX_NUM_BM_POLICY];
 
 #endif /* __CQM_CONFIG_H__ */

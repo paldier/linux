@@ -22,6 +22,7 @@
 
 #define FALCON_DEV_NAME "falcon-cqm"
 #define GRX500_DEV_NAME "grx500-cbm"
+#define MAX_NUM_POOLS 16
 
 struct dt_node_inst {
 	char *dev_name;
@@ -37,5 +38,8 @@ struct cqm_data {
 	struct reset_control *rcu_reset;
 	struct regmap *syscfg;
 	bool force_xpcs;
+	int num_pools;
+	unsigned int pool_ptrs[MAX_NUM_POOLS];
+	unsigned int pool_size[MAX_NUM_POOLS];
 };
 #endif

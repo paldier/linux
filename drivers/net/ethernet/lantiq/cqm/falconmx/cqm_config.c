@@ -43,37 +43,6 @@ struct cqm_bm_pool_config bm_pool_conf[CQM_FMX_NUM_POOLS] = {
 	},
 };
 
-struct bmgr_policy_params policy_params[CQM_FMX_NUM_BM_POLICY] = {
-	{
-	.group_id = 0,
-	.max_allowed = 0x280,
-	.min_guaranteed = 0x40,
-	.pools_in_policy = {{0, 0x80}, {1, 0x80}, {2, 0x80}, {3, 0x80} },
-	.num_pools_in_policy = 4,
-	},
-	{
-	.group_id = 0,
-	.max_allowed = 0x280,
-	.min_guaranteed = 0x40,
-	.pools_in_policy = {{1, 0x80}, {2, 0x80}, {3, 0x80} },
-	.num_pools_in_policy = 3,
-	},
-	{
-	.group_id = 0,
-	.max_allowed = 0x280,
-	.min_guaranteed = 0x40,
-	.pools_in_policy = {{2, 0x80}, {3, 0x80} },
-	.num_pools_in_policy = 2,
-	},
-	{
-	.group_id = 0,
-	.max_allowed = 0x280,
-	.min_guaranteed = 0x40,
-	.pools_in_policy = {{3, 0x80} },
-	.num_pools_in_policy = 1,
-	}
-};
-
 const struct cqm_config falcon_cqm_config[] = {
 	{
 	.type = DQM_CPU_TYPE,

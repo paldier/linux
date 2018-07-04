@@ -4,22 +4,12 @@
 #include <net/datapath_proc_api.h>
 #include <net/switch_api/gsw_flow_ops.h>
 
-#ifdef CONFIG_LTQ_PPV4_BM_SLIM
-#define CONFIG_CQM_SIZE0_BUF_SIZE 2048
-#define CONFIG_CQM_SIZE1_BUF_SIZE 2048
-#define CONFIG_CQM_SIZE2_BUF_SIZE 2048
-#define CONFIG_CQM_SIZE3_BUF_SIZE 2048
-#define CONFIG_CQM_NUM_SIZE0_BUF 0x80
-#define CONFIG_CQM_NUM_SIZE1_BUF 0x80
-#define CONFIG_CQM_NUM_SIZE2_BUF 0x80
-#define CONFIG_CQM_NUM_SIZE3_BUF 0x80
-#endif
 #define OWN_BIT  BIT(31)
 #define COMPLETE_BIT  BIT(30)
 #define FMX_CQM_DROP_INIT ((FMX_CQM_DROP_Q << 24) | \
-						   (FMX_CQM_DROP_Q << 16) | \
-						   (FMX_CQM_DROP_Q << 8) | \
-						   FMX_CQM_DROP_Q)
+			   (FMX_CQM_DROP_Q << 16) | \
+			   (FMX_CQM_DROP_Q << 8) | \
+			   FMX_CQM_DROP_Q)
 static const char cqm_name[] = "cqm";
 static void __iomem *bufreq[CQM_FMX_NUM_POOLS];
 static void __iomem *eqmdesc[4];
@@ -37,6 +27,7 @@ static struct cbm_q_info  cbm_qtable[MAX_QOS_QUEUES] = { {0} };
 static spinlock_t cqm_qidt_lock;
 static spinlock_t cqm_port_map;
 static spinlock_t cpu_pool_enq;
+static struct bmgr_policy_params p_param[CQM_FMX_NUM_BM_POLICY];
 
 LIST_HEAD(pmac_mapping_list);
 static struct cqm_ctrl *cqm_ctrl;
@@ -67,26 +58,13 @@ static int get_buff_resv_bytes(int cbm_inst, int size)
 {
 	int bsl_thr_val = 0;
 
-	dev_info(cqm_ctrl->dev, "BSL thres %d\n", BSL_THRES);
+	dev_info(cqm_ctrl->dev, "BSL thres %d size %d\n", BSL_THRES, size);
 
-	switch (size) {
-	case 0:
-		bsl_thr_val = CONFIG_CQM_SIZE0_BUF_SIZE - BSL_THRES;
-		break;
-	case 1:
-		bsl_thr_val = CONFIG_CQM_SIZE1_BUF_SIZE - BSL_THRES;
-		break;
-	case 2:
-		bsl_thr_val = CONFIG_CQM_SIZE2_BUF_SIZE - BSL_THRES;
-		break;
-	case 3:
-		bsl_thr_val = CONFIG_CQM_SIZE3_BUF_SIZE - BSL_THRES;
-		break;
-	default:
+	if (size < CQM_FMX_NUM_BM_POOLS)
+		bsl_thr_val = cqm_ctrl->fmx_pool_size[size] - BSL_THRES;
+	else
 		dev_err(cqm_ctrl->dev, "%s: unsupported size %d\n", __func__,
 			size);
-		break;
-	}
 	return bsl_thr_val;
 }
 
@@ -2862,41 +2840,6 @@ static int init_cqm_basic(struct platform_device *pdev)
 	return CBM_SUCCESS;
 }
 
-static int qos_init(struct platform_device *pdev)
-{
-#ifdef CONFIG_LTQ_PPV4_QOS_SLIM
-	u32 adj_size;
-	u32 adjusted_qos_ram_base;
-	u32 size = CONFIG_CQM_QMGR_NUM_DESC * 16;
-
-	cqm_ctrl->max_mem_alloc += size;
-	/*This is not a fool proof check, because there could be other users
-	 *allocating from CMA zone
-	 */
-	if (cqm_ctrl->max_mem_alloc >= CONFIG_CMA_SIZE_MBYTES * 1024 * 1024)
-		panic("Total mem alloc exceeds CMA zone\n");
-	cqm_ctrl->cqm_qmgr_buf_base = dma_alloc_attrs(&pdev->dev, size,
-						      &cqm_ctrl->dma_hndl_qos,
-						      GFP_KERNEL,
-						      DMA_ATTR_NON_CONSISTENT);
-	dev_dbg(cqm_ctrl->dev, "qos descbuf 0x%p",
-		cqm_ctrl->cqm_qmgr_buf_base);
-	if (!cqm_ctrl->cqm_qmgr_buf_base) {
-		dev_err(cqm_ctrl->dev, "Error in QMGR buffer allocation\n");
-		return CBM_FAILURE;
-	}
-	buf_addr_adjust((u32)cqm_ctrl->cqm_qmgr_buf_base,
-			size,
-			&adjusted_qos_ram_base,
-			&adj_size,
-			64);
-	qos_config((void *)__pa(adjusted_qos_ram_base));
-#else
-#warning Updated "qos_init" implementation needed!
-#endif
-	return CBM_SUCCESS;
-}
-
 static int get_bufsize(int size)
 {
 	switch (size) {
@@ -2970,30 +2913,16 @@ static int bm_init(struct platform_device *pdev)
 {
 	struct bmgr_pool_params p_params;
 	u8 i, j;
-	int result, pool = 0;
+	int result;
 	u32 buf_size;
 	u32 start_low;
 
-	result = pool_config(pdev, pool, CONFIG_CQM_SIZE0_BUF_SIZE,
-			     CONFIG_CQM_NUM_SIZE0_BUF);
-	if (result)
-		panic("pool %d allocation failed\n", pool);
-	pool++;
-	pool_config(pdev, pool, CONFIG_CQM_SIZE1_BUF_SIZE,
-		    CONFIG_CQM_NUM_SIZE1_BUF);
-	if (result)
-		panic("pool %d allocation failed\n", pool);
-	pool++;
-	pool_config(pdev, pool, CONFIG_CQM_SIZE2_BUF_SIZE,
-		    CONFIG_CQM_NUM_SIZE2_BUF);
-	if (result)
-		panic("pool %d allocation failed\n", pool);
-	pool++;
-	pool_config(pdev, pool, CONFIG_CQM_SIZE3_BUF_SIZE,
-		    CONFIG_CQM_NUM_SIZE3_BUF);
-	if (result)
-		panic("pool %d allocation failed\n", pool);
-	pool++;
+	for (i = 0; i < CQM_FMX_NUM_BM_POOLS; i++) {
+		result = pool_config(pdev, i, cqm_ctrl->fmx_pool_size[i],
+				     cqm_ctrl->fmx_pool_ptrs[i]);
+		if (result)
+			panic("pool %d allocation failed\n", i);
+	}
 
 	bmgr_driver_init();
 
@@ -3017,7 +2946,7 @@ static int bm_init(struct platform_device *pdev)
 	}
 
 	for (j = 0; j < CQM_FMX_NUM_BM_POLICY; j++)
-		bmgr_policy_configure(&policy_params[j], &i);
+		bmgr_policy_configure(&p_param[j], &i);
 
 #ifdef CONFIG_LTQ_PPV4_BM_SLIM
 	new_init_bm();
@@ -3611,6 +3540,65 @@ static int check_base_addr(void)
 	return CBM_SUCCESS;
 }
 
+static int conf_bm(struct cqm_data *pdata)
+{
+	int i, j, result = CBM_FAILURE;
+
+	/* copy BM pool and policy from dts*/
+	memcpy(cqm_ctrl->fmx_pool_ptrs, pdata->pool_ptrs
+		, sizeof(cqm_ctrl->fmx_pool_ptrs));
+	memcpy(cqm_ctrl->fmx_pool_size, pdata->pool_size
+		, sizeof(cqm_ctrl->fmx_pool_size));
+
+	/* Pool Index loop*/
+	for (i = 0; i < pdata->num_pools; i++) {
+		/* Validate pool and policy */
+		if ((pdata->pool_ptrs[i] <= 0) ||
+		    (pdata->pool_size[i] <= 0)) {
+			pr_err("Idx %u 0x%x 0x%x\n"
+				, i, pdata->pool_ptrs[i], pdata->pool_ptrs[i]);
+			return result;
+		}
+
+		/* Config pool size */
+		switch (i) {
+		case CQM_SIZE0_BUF_SIZE:
+			p_param[i].max_allowed = cqm_ctrl->fmx_pool_ptrs[i];
+			p_param[i].min_guaranteed = cqm_ctrl->fmx_pool_ptrs[i];
+			break;
+		case CQM_SIZE1_BUF_SIZE:
+			p_param[i].max_allowed = (cqm_ctrl->fmx_pool_ptrs[i]
+						  * 4) / 5;
+			p_param[i].min_guaranteed = 0x100;
+			break;
+		case CQM_SIZE2_BUF_SIZE:
+			p_param[i].max_allowed = (cqm_ctrl->fmx_pool_ptrs[i]
+						  * 4) / 5;
+			p_param[i].min_guaranteed = 0x80;
+			break;
+		case CQM_SIZE3_BUF_SIZE:
+			p_param[i].max_allowed = (cqm_ctrl->fmx_pool_ptrs[i]
+						  * 4) / 5;
+			p_param[i].min_guaranteed = 0x40;
+			break;
+		}
+
+		/* Config no of policy */
+		p_param[i].num_pools_in_policy = pdata->num_pools - i;
+
+		/* group_id default value */
+		p_param[i].group_id = 0;
+
+		 /* Pool size loop*/
+		for (j = 0; j < p_param[i].num_pools_in_policy; j++) {
+			p_param[i].pools_in_policy[j].pool_id = (i + j);
+			p_param[i].pools_in_policy[j].max_allowed =
+			cqm_ctrl->fmx_pool_ptrs[i + j];
+		}
+	}
+	return CBM_SUCCESS;
+}
+
 static int cqm_falconmx_probe(struct platform_device *pdev)
 {
 	struct resource *res[FMX_MAX_RESOURCE] = {NULL};
@@ -3681,6 +3669,18 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 #endif
 	cqm_ctrl->syscfg = pdata->syscfg;
 	cqm_ctrl->force_xpcs = pdata->force_xpcs;
+
+	/* check fmx pool and policy */
+	if (pdata->num_pools != CQM_FMX_NUM_BM_POOLS) {
+		pr_err("fmx pools %u\n", pdata->num_pools);
+		return CBM_FAILURE;
+	}
+
+	if (conf_bm(pdata) != CBM_SUCCESS) {
+		pr_err("conf_BMpool_and_policy failed\n");
+		return CBM_FAILURE;
+	}
+
 	spin_lock_irqsave(&cqm_qidt_lock, sys_flag);
 	for (i = 0; i < CQM_QIDT_DW_NUM; i++) {
 		g_cbm_qidt_mirror[i].qidt_shadow = FMX_CQM_DROP_INIT;
@@ -3692,7 +3692,6 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 		cbm_w32((cqm_ctrl->pon_dqm_cntr + i * 4), 0x0);
 	spin_unlock_irqrestore(&cqm_qidt_lock, sys_flag);
 	bm_init(pdev);
-	qos_init(pdev);
 	if (cbm_hw_init(pdev))
 		return -1;
 	configure_ports(cqm_ctrl->cqm_cfg);
