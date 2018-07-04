@@ -1005,6 +1005,7 @@ int dp_notif_br_alloc(struct net_device *br_dev)
 	}
 	return br_id;
 }
+
 /*Register netdev_ops for switchdev*/
 static int dp_set_netdev_ops(struct dp_dev *dp_dev)
 {
@@ -1018,6 +1019,7 @@ static int dp_set_netdev_ops(struct dp_dev *dp_dev)
 	dp_dev->new_dev_ops.ndo_fdb_dump = switchdev_port_fdb_dump;
 	return 0;
 }
+
 /* This function registers the created port in datapath to switchdev */
 int dp_port_register_switchdev(struct dp_dev  *dp_dev,
 			       struct net_device *dp_port)
@@ -1086,29 +1088,6 @@ int dp_port_register_switchdev(struct dp_dev  *dp_dev,
 void dp_port_deregister_switchdev(struct dp_dev *dp_dev,
 				  struct net_device *dev)
 {
-	struct net_device *br_dev;
-	bool f_unlock = false;
-
-	/* Workaround for ethernet ifconfig down case
-	 * to remove port from switchdev as dev is de-registered
-	 * from DP lib
-	 */
-	if (netif_is_bridge_port(dev)) {
-		if (!rtnl_is_locked()) {
-			rtnl_lock();
-			f_unlock = true;
-		}
-		br_dev = netdev_master_upper_dev_get(dev);
-		if (f_unlock)
-			rtnl_unlock();
-		DP_DEBUG(DP_DBG_FLAG_SWDEV, "Upper br.device name:%s\n",
-			 br_dev->name);
-		if (dp_del_br_if(dev, br_dev, dp_dev->inst, dp_dev->bp)) {
-			DP_DEBUG(DP_DBG_FLAG_SWDEV,
-				 "del br intf port in DP fail:%s\n",
-				 dev->name);
-		}
-	}
 	if (dp_dev->old_swdev_ops)
 		dev->switchdev_ops = dp_dev->old_swdev_ops;
 	if (dp_dev->old_dev_ops) {

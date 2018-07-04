@@ -475,16 +475,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 	int i, port_id, start, end;
 	struct pmac_port_info *port_info;
 	struct cbm_dp_en_data cbm_data = {0};
-
 	struct subif_platform_data platfrm_data = {0};
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
-	struct net_device *br_dev;
-	int fid, vap;
-	struct dp_dev *dp_dev;
-	struct br_info *br_info;
-	u32 idx;
-	bool f_unlock = false;
-#endif
 
 	port_id = subif_id->port_id;
 	port_info = &dp_port_info[inst][port_id];
@@ -616,48 +607,6 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 				subif_id->inst, subif_id->port_id,
 				port_info->subif_info[i].bp,
 				subif_id->subif, flags);
-	#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
-	/*Added as workaround to alloc FID & config MAC,when bridge
-	 * port registration happens after br addif
-	 */
-		if (dev) {
-			idx = dp_dev_hash(dev, NULL);
-			dp_dev = dp_dev_lookup(&dp_dev_list[idx], dev, NULL, 0);
-			if (!dp_dev) {
-				PR_ERR("DP dev not exists!!,No mac config\n");
-				return 0;
-			}
-			vap = GET_VAP(subif_id->subif, port_info->vap_offset,
-				      port_info->vap_mask);
-			if (!rtnl_is_locked()) {
-				rtnl_lock();
-				f_unlock = true;
-			}
-			br_dev = netdev_master_upper_dev_get(dev);
-			if (f_unlock)
-				rtnl_unlock();
-			if (br_dev) {
-				br_info = dp_swdev_bridge_entry_lookup(br_dev->
-								       name, 0);
-				if (br_info) {
-					dp_dev->fid = br_info->fid;
-					port_info->subif_info[vap].fid =
-								dp_dev->fid;
-				} else {
-					fid = dp_notif_br_alloc(br_dev);
-					if (fid > 0) {
-						dp_dev->fid = fid;
-						port_info->subif_info[vap].fid =
-								dp_dev->fid;
-					} else {
-						PR_ERR("FID alloc fail %s\r\n",
-						       __func__);
-						return 0;
-					}
-				}
-			}
-		}
-	#endif
 	} else {
 		DP_DEBUG(DP_DBG_FLAG_REG,
 			 "register subif failed for no matched vap\n");
