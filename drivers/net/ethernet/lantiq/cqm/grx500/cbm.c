@@ -1788,7 +1788,7 @@ cbm_cpu_pkt_tx_grx500(
 		skb->head = NULL;
 	}
 	if (setup_desc((struct cbm_desc *)&desc, tmp_data_ptr,
-		       (skb->len < (ETH_ZLEN + 8)) ? (ETH_ZLEN + 8) : skb->len,
+		       skb->len,
 		       skb->DW1, skb->DW0)){
 		pr_err("cbm setup desc failed..\n");
 		dev_kfree_skb_any(skb);
