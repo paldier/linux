@@ -158,24 +158,34 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 	str[len] = 0;
 	num = dp_split_buffer(str, param_list, ARRAY_SIZE(param_list));
 
-	if (dp_strncmpi(param_list[0], "enable", strlen("enable")) == 0) {
+	if (dp_strncmpi(param_list[0],
+			"enable",
+			strlen("enable")) == 0) {
 		for (i = 1; i < num; i++) {
-			if (dp_strncmpi(param_list[i], "cpu", strlen("cpu")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"cpu",
+					strlen("cpu")) == 0) {
 				flag |= 0x1;
 				cpu = 2;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe1", strlen("mpe1")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe1",
+					strlen("mpe1")) == 0) {
 				flag |= 0x2;
 				mpe1 = 2;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe2", strlen("mpe2")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe2",
+					strlen("mpe2")) == 0) {
 				flag |= 0x4;
 				mpe2 = 2;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe3", strlen("mpe3")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe3",
+					strlen("mpe3")) == 0) {
 				flag |= 0x8;
 				mpe3 = 2;
 			}
@@ -193,24 +203,34 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 			 "flag=0x%x mpe3/2/1/cpu=%d/%d/%d/%d\n", flag, mpe3,
 			 mpe2, mpe1, cpu);
 		dp_set_gsw_parser_31(flag, cpu, mpe1, mpe2, mpe3);
-	} else if (dp_strncmpi(param_list[0], "disable", strlen("disable")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				"disable",
+				strlen("disable")) == 0) {
 		for (i = 1; i < num; i++) {
-			if (dp_strncmpi(param_list[i], "cpu", strlen("cpu")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"cpu",
+					strlen("cpu")) == 0) {
 				flag |= 0x1;
 				cpu = 0;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe1", strlen("mpe1")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe1",
+					strlen("mpe1")) == 0) {
 				flag |= 0x2;
 				mpe1 = 0;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe2", strlen("mpe2")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe2",
+					strlen("mpe2")) == 0) {
 				flag |= 0x4;
 				mpe2 = 0;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe3", strlen("mpe3")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe3",
+					strlen("mpe3")) == 0) {
 				flag |= 0x8;
 				mpe3 = 0;
 			}
@@ -228,7 +248,9 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 			 "flag=0x%x mpe3/2/1/cpu=%d/%d/%d/%d\n", flag, mpe3,
 			 mpe2, mpe1, cpu);
 		dp_set_gsw_parser_31(flag, cpu, mpe1, mpe2, mpe3);
-	} else if (dp_strncmpi(param_list[0], "refresh", strlen("refresh")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				"refresh",
+				strlen("refresh")) == 0) {
 		dp_get_gsw_parser_31(NULL, NULL, NULL, NULL);
 		PR_INFO("value:cpu=%d mpe1=%d mpe2=%d mpe3=%d\n", pinfo[0].v,
 			pinfo[1].v, pinfo[2].v, pinfo[3].v);
@@ -1047,8 +1069,9 @@ ssize_t proc_qos_mib(struct file *file, const char *buf,
 				PR_INFO("P[%03d]: 0x%08x 0x%08x\n",
 					i, gree_b, yellow_b);
 		}
-	} else
+	} else {
 		goto help;
+	}
 
 	return count;
 help:   /*                        [0]    [1]*/
@@ -1553,7 +1576,8 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 		PR_INFO("parameter %d not enough/more. count=%d\n", num, count);
 		goto help;
 	}
-	if (dp_strncmpi(param_list[0], "help", strlen("help")) == 0)	/* help */
+	if (dp_strncmpi(param_list[0],
+			"help", strlen("help")) == 0)	/* help */
 		goto help;
 	/* set pmac */
 	if (dp_strncmpi(param_list[0], "set", strlen("set")) != 0) {
@@ -1578,7 +1602,9 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 		ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_pmac_ops
 				   .Pmac_Eg_CfgGet, gsw_handle, &pmac);
 		for (i = start_param; i < num; i += 2) {
-			if (dp_strncmpi(param_list[i], "Class", strlen("Class")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"Class",
+					strlen("Class")) == 0) {
 				char *p = param_list[i + 1];
 				char *tail = p + strlen(p);
 				char *tmp;
@@ -1592,7 +1618,9 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 				*tmp = 0;
 				class_s = dp_atoi(p);
 				class_e = dp_atoi(tmp + 1);
-			} else if (dp_strncmpi(param_list[i], "FlowID", strlen("FlowID")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					"FlowID",
+					strlen("FlowID")) == 0) {
 				char *p = param_list[i + 1];
 				char *tail = p + strlen(p);
 				char *tmp;
@@ -1606,34 +1634,58 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 				*tmp = 0;
 				flow_s = dp_atoi(p);
 				flow_e = dp_atoi(tmp + 1);
-			} else if (dp_strncmpi(param_list[i], "DestPort", strlen("DestPort")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					"DestPort",
+					strlen("DestPort")) == 0) {
 				PMAC_EG_SET(nDestPortId, param_list[i + 1]);
-			} else if (dp_strncmpi(param_list[i], "RxDmaCH", strlen("RxDmaCH")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					"RxDmaCH",
+					strlen("RxDmaCH")) == 0) {
 				PMAC_EG_SET(nRxDmaChanId, param_list[i + 1]);
 			}
 #ifdef xxxxx
 			/*below global flag cannot be editted here*/
-			else if (dp_strncmpi(param_list[i], "MPE1", strlen("MPE1")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "MPE1",
+						 strlen("MPE1")) == 0)
 				PMAC_EG_SET(bMpe1Flag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "MPE2", strlen("MPE2")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "MPE2",
+						 strlen("MPE2")) == 0)
 				PMAC_EG_SET(bMpe2Flag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "DEC", strlen("DEC")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "DEC",
+						 strlen("DEC")) == 0)
 				PMAC_EG_SET(bDecFlag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "ENC", strlen("ENC")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "ENC",
+						 strlen("ENC")) == 0)
 				PMAC_EG_SET(bEncFlag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "ProcFlag", strlen("ProcFlag")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "ProcFlag",
+						 strlen("ProcFlag")) == 0)
 				PMAC_EG_SET(bProcFlagsSelect,
 					    param_list[i + 1]);
 #endif
-			else if (dp_strncmpi(param_list[i], "RemL2Hdr", strlen("RemL2Hdr")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "RemL2Hdr",
+						 strlen("RemL2Hdr")) == 0)
 				PMAC_EG_SET(bRemL2Hdr, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "RemNum", strlen("RemNum")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "RemNum",
+						 strlen("RemNum")) == 0)
 				PMAC_EG_SET(numBytesRem, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "FCS", strlen("FCS")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "FCS",
+						 strlen("FCS")) == 0)
 				PMAC_EG_SET(bFcsEna, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "PmacEna", strlen("PmacEna")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "PmacEna",
+						 strlen("PmacEna")) == 0)
 				PMAC_EG_SET(bPmacEna, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "TcEnable", strlen("TcEnable")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "TcEnable",
+						 strlen("TcEnable")) == 0)
 				PMAC_EG_SET(bTCEnable, param_list[i + 1]);
 			else {
 				PR_INFO("wrong parameter[%d]: %s\n",
@@ -1688,34 +1740,47 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 		ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_pmac_ops
 				   .Pmac_Ig_CfgGet, gsw_handle, &pmac);
 		for (i = start_param; i < num; i += 2) {
-			if (dp_strncmpi(param_list[i], "TxDmaCH", strlen("TxDmaCH")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"TxDmaCH",
+					strlen("TxDmaCH")) == 0) {
 				PMAC_IG_SET(nTxDmaChanId, param_list[i + 1]);
-			} else if (dp_strncmpi(param_list[i], "ErrDrop", strlen("ErrDrop")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					"ErrDrop",
+					strlen("ErrDrop")) == 0) {
 				PMAC_IG_SET(bErrPktsDisc, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "ClassEna", strlen("ClassEna")) == 0) {
+					"ClassEna",
+					strlen("ClassEna")) == 0) {
 				PMAC_IG_SET(bClassEna, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "ClassDefault", strlen("ClassDefault")) == 0) {
+					"ClassDefault",
+					strlen("ClassDefault")) == 0) {
 				PMAC_IG_SET(bClassDefault, param_list[i + 1]);
-			} else if (dp_strncmpi(param_list[i], "PmacEna", strlen("PmacEna")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					"PmacEna",
+					strlen("PmacEna")) == 0) {
 				PMAC_IG_SET(bPmapEna, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "PmacDefault", strlen("PmacEna")) == 0) {
+					"PmacDefault",
+					strlen("PmacEna")) == 0) {
 				PMAC_IG_SET(bPmapDefault, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "SubIdDefault", strlen("SubIdDefault")) == 0) {
+					"SubIdDefault",
+					strlen("SubIdDefault")) == 0) {
 				 /*changed from bSubIdDefault in GSWIP3.1 */
 				//PMAC_IG_SET(bSubIdDefault, param_list[i + 1]);
 				PMAC_IG_SET(eSubId, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "SpIdDefault", strlen("SpIdDefault")) == 0) {
+					      "SpIdDefault",
+						  strlen("SpIdDefault")) == 0) {
 				PMAC_IG_SET(bSpIdDefault, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "PmacPresent", strlen("PmacPresent")) == 0) {
+					      "PmacPresent",
+						  strlen("PmacPresent")) == 0) {
 				PMAC_IG_SET(bPmacPresent, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					    "DefaultPmacHdr", strlen("DefaultPmacHdr")) == 0) {
+				"DefaultPmacHdr",
+				strlen("DefaultPmacHdr")) == 0) {
 				char *p = param_list[i + 1];
 				char *tail = p + strlen(p);
 
@@ -1733,7 +1798,8 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 			PR_ERR("GSW_PMAC_IG_CFG_SET returned failure\n");
 			goto exit;
 		}
-	} else if (dp_strncmpi(param_list[start_param - 1], "reset", strlen("reset")) == 0) {
+	} else if (dp_strncmpi(param_list[start_param - 1],
+			   "reset", strlen("reset")) == 0) {
 		GSW_reset_t reset;
 
 		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.Reset,
@@ -2081,7 +2147,8 @@ static ssize_t proc_swdev_brctl_write(struct file *file,
 	str[len] = 0;
 	num = dp_split_buffer(str, param_list, ARRAY_SIZE(param_list));
 
-	if ((num != 2) || (dp_strncmpi(param_list[0], "help", strlen("help")) == 0))
+	if ((num != 2) ||
+	    (dp_strncmpi(param_list[0], "help", strlen("help")) == 0))
 		goto HELP;
 
 	buf1 = kmalloc(MAX_BP_NUM + 1, GFP_KERNEL);
@@ -2173,12 +2240,14 @@ static ssize_t proc_swdev_fdb_write(struct file *file, const char *buf,
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
 	num = dp_split_buffer(str, param_list, ARRAY_SIZE(param_list));
-	if ((num != 5) || (dp_strncmpi(param_list[0], "help", strlen("help")) == 0))
+	if ((num != 5) ||
+	    (dp_strncmpi(param_list[0], "help", strlen("help")) == 0))
 		goto HELP;
 
 	if (dp_strncmpi(param_list[0], "fdb", strlen("fdb")) == 0) {
 		if (dp_strncmpi(param_list[1], "add", strlen("add")) == 0) {
-			if (dp_strncmpi(param_list[2], "dev", strlen("dev")) == 0) {
+			if (dp_strncmpi(param_list[2], "dev",
+					strlen("dev")) == 0) {
 				/*fdb add <mac> dev <port>*/
 				tmp =
 				kmalloc(sizeof(struct fdb_tbl *), GFP_KERNEL);
@@ -2192,7 +2261,8 @@ static ssize_t proc_swdev_fdb_write(struct file *file, const char *buf,
 			}
 		}
 		if (dp_strncmpi(param_list[1], "del", strlen("del")) == 0) {
-			if (dp_strncmpi(param_list[2], "dev", strlen("dev")) == 0) {
+			if (dp_strncmpi(param_list[2], "dev",
+					strlen("dev")) == 0) {
 				/*fdb add dev <port> <mac>*/
 				dev = dev_get_by_name(&init_net, param_list[3]);
 				mac_stob(param_list[4], b);
@@ -2271,10 +2341,12 @@ static void pmac_eg_cfg(char *param_list[], int num, dp_pmac_cfg_t *pmac_cfg)
 	for (i = 2; i < num; i += 2) {
 		for (j = 0; j < ARRAY_SIZE(egress_entries); j++) {
 			if (dp_strncmpi(param_list[i],
-				       egress_entries[j].name, strlen(egress_entries[j].name)))
+					egress_entries[j].name,
+					strlen(egress_entries[j].name)))
 				continue;
 			if (dp_strncmpi(egress_entries[j].name,
-				       "rm_l2hdr", strlen("rm_l2hdr")) == 0) {
+					"rm_l2hdr",
+					strlen("rm_l2hdr")) == 0) {
 				if (dp_atoi(param_list[i + 1]) > 0) {
 					pmac_cfg->eg_pmac.rm_l2hdr = 1;
 					value = dp_atoi(param_list[i + 1]);
@@ -2326,7 +2398,9 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 			for (j = 0; j < ARRAY_SIZE(ingress_entries); j++) {
 				if (dp_strncmpi
 				    (param_list[i],
-				     ingress_entries[j].name, strlen(ingress_entries[j].name)) == 0) {
+				     ingress_entries[j].name,
+					 strlen(ingress_entries[j].name))
+					 == 0) {
 					value = dp_atoi(param_list[i + 1]);
 					ingress_entries[j].
 					    ingress_callback(&pmac_cfg,
@@ -2344,7 +2418,8 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 			PR_INFO("pmac set configuration failed\n");
 			return -1;
 		}
-	} else if (dp_strncmpi(param_list[0], "egress", strlen("egress")) == 0) {
+	} else if (dp_strncmpi(param_list[0], "egress",
+	strlen("egress")) == 0) {
 		port = dp_atoi(param_list[1]);
 
 		pmac_eg_cfg(param_list, num, &pmac_cfg);

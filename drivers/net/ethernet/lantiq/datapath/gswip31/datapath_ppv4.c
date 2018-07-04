@@ -750,7 +750,8 @@ int init_ppv4_qos(int inst, int flag)
 	}
 	qos_port_conf_set_default(&t->p_conf);
 	t->p_conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WRR;
-	t->p_conf.ring_address = (void *)dp_deq_port_tbl[inst][idx].tx_ring_addr;
+	t->p_conf.ring_address =
+	(void *)dp_deq_port_tbl[inst][idx].tx_ring_addr;
 	t->p_conf.ring_size = dp_deq_port_tbl[inst][idx].tx_ring_size;
 	t->p_conf.packet_credit_enable = 1;
 	t->p_conf.credit = dp_deq_port_tbl[inst][idx].tx_pkt_credit;

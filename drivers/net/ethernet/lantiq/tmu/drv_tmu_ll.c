@@ -3366,8 +3366,14 @@ ssize_t tmu_proc_get_qid_via_index(struct file *file, const char *buf,
 
 	lookup_index = dp_atoi(param_list[1]);
 
-	if ((dp_strncmpi(param_list[0], "set", strlen("set")) == 0) ||
-	    (dp_strncmpi(param_list[0], "write", strlen("write")) == 0)) {
+	if ((dp_strncmpi(param_list[0],
+			 "set",
+			 strlen("set"))
+			 == 0) ||
+	    (dp_strncmpi(param_list[0],
+			 "write",
+			 strlen("write"))
+			 == 0)) {
 		if (!param_list[2]) {
 			TMU_PRINT("wrong command\n");
 			return count;
@@ -5124,7 +5130,7 @@ static struct tmu_dgb_info dbg_enable_mask_str[] = {
 	{"all", "enable all debug", -1}
 };
 
-void tmu_proc_port_write_help()
+void tmu_proc_port_write_help(void)
 {
 	TMU_PRINT("usage for proc %s:\n", PROC_BASE PROC_FILE_EPT);
 	TMU_PRINT("  echo help > %s\n", PROC_BASE PROC_FILE_EPT);
@@ -5517,9 +5523,15 @@ ssize_t tmu_proc_tmu_cascade_write(struct file *file, const char *buf,
 	level = num - 3;
 
 	if (num <= 1 || num > ARRAY_SIZE(param_list)
-	    || dp_strncmpi(param_list[0], "help", strlen("help")) == 0)
+	    || dp_strncmpi(param_list[0],
+			   "help",
+			   strlen("help"))
+			   == 0)
 		tmu_proc_tmu_create_cascade_help();
-	else if (dp_strncmpi(param_list[0], "set_wfq", strlen("set_wfq")) == 0) {
+	else if (dp_strncmpi(param_list[0],
+			     "set_wfq",
+				 strlen("set_wfq"))
+				 == 0) {
 		struct tmu_sched_blk_in_link ilink;
 
 		if (num != 3) {
@@ -5563,11 +5575,17 @@ ssize_t tmu_proc_tmu_cascade_write(struct file *file, const char *buf,
 		}
 
 		tmu_sched_blk_in_link_set(((LINK_B + 0) << 3) + LEAF, &ilink);
-	} else if (dp_strncmpi(param_list[0], "del_q", strlen("del_q")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				   "del_q",
+				   strlen("del_q"))
+				   == 0) {
 		qid = dp_atoi(param_list[1]);
 		tmu_egress_queue_delete(qid);
 		TMU_PRINT("\nQueue %d deleted\n\n", qid);
-	} else if (dp_strncmpi(param_list[0], "del_sb", strlen("del_sb")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				   "del_sb",
+				   strlen("del_sb"))
+				   == 0) {
 		sbid = dp_atoi(param_list[1]);
 
 		if (tmu_sched_blk_delete(sbid)) {
@@ -5576,7 +5594,10 @@ ssize_t tmu_proc_tmu_cascade_write(struct file *file, const char *buf,
 			TMU_PRINT("has a vaild SB/Queue id)\n\n");
 		} else
 			TMU_PRINT("\nSB %d deleted\n\n", sbid);
-	} else if (dp_strncmpi(param_list[0], "attach_tb", strlen("attach_tb")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				   "attach_tb",
+				   strlen("attach_tb"))
+				   == 0) {
 		if (num != 3) {
 			TMU_PRINT("Wrong:echo help > cascade\n");
 			return count;
@@ -5612,7 +5633,10 @@ ssize_t tmu_proc_tmu_cascade_write(struct file *file, const char *buf,
 		}
 
 		tmu_token_bucket_shaper_create(tb, ((LINK_B << 3) + LEAF));
-	} else if (dp_strncmpi(param_list[0], "remove_tb", strlen("remove_tb")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				   "remove_tb",
+				   strlen("remove_tb"))
+				   == 0) {
 		if (num != 3) {
 			TMU_PRINT("Wrong: echo help > cascade\n");
 			return count;
@@ -5647,7 +5671,10 @@ ssize_t tmu_proc_tmu_cascade_write(struct file *file, const char *buf,
 		}
 
 		tmu_token_bucket_shaper_delete(tb, ((LINK_B << 3) + LEAF));
-	} else if (dp_strncmpi(param_list[0], "cfg_tb", strlen("cfg_tb")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				   "cfg_tb",
+				   strlen("cfg_tb"))
+				   == 0) {
 		uint32_t tbid, cir, pir, cbs, pbs, mode;
 
 		if (num < 7) {
@@ -5670,7 +5697,10 @@ ssize_t tmu_proc_tmu_cascade_write(struct file *file, const char *buf,
 		pbs = dp_atoi(param_list[5]);
 		mode = dp_atoi(param_list[6]);
 		tmu_shaper_cfg_set(tbid, 1, mode, cir, pir, cbs, pbs);
-	} else if (dp_strncmpi(param_list[0], "create", strlen("create")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				   "create",
+				   strlen("create"))
+				   == 0) {
 		if (num < 4) {
 			TMU_PRINT("Wrong Parameter(try help): echo help > cascade\n");
 			return count;
@@ -5934,27 +5964,60 @@ uint32_t read_write_reg_tbst(uint32_t set_cmd, uint32_t tbid,
 	while ((tmu_r32(tbstc) & TMU_TBSTC_VAL) == 0)
 		continue;
 
-	if (dp_strncmpi(tsbst_reg_name, "TBSTR0", strlen("TBSTR0")) == 0)
+	if (dp_strncmpi(tsbst_reg_name,
+			"TBSTR0",
+			strlen("TBSTR0"))
+			== 0)
 		reg_r_data = tmu_r32(tbstr0);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR1", strlen("TBSTR1")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR1",
+				 strlen("TBSTR1"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr1);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR2", strlen("TBSTR2")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR2",
+				 strlen("TBSTR2"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr2);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR3", strlen("TBSTR3")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR3",
+				 strlen("TBSTR3"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr3);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR4", strlen("TBSTR4")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR4",
+				 strlen("TBSTR4"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr4);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR5", strlen("TBSTR5")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR5",
+				 strlen("TBSTR5"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr5);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR6", strlen("TBSTR6")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR6",
+				 strlen("TBSTR6"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr6);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR7", strlen("TBSTR7")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR7",
+				 strlen("TBSTR7"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr7);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR8", strlen("TBSTR8")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR8",
+				 strlen("TBSTR8"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr8);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR9", strlen("TBSTR9")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR9",
+				 strlen("TBSTR9"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr9);
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR10", strlen("TBSTR10")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR10",
+				 strlen("TBSTR10"))
+				 == 0)
 		reg_r_data = tmu_r32(tbstr10);
 	else {
 		TMU_PRINT("Not valid register name %s?\n", tsbst_reg_name);
@@ -5963,27 +6026,60 @@ uint32_t read_write_reg_tbst(uint32_t set_cmd, uint32_t tbid,
 
 #else
 
-	if (dp_strncmpi(tsbst_reg_name, "TBSTR0", strlen("TBSTR0")) == 0)
+	if (dp_strncmpi(tsbst_reg_name,
+			"TBSTR0",
+			strlen("TBSTR0"))
+			== 0)
 		reg_r_data = simu_tbstr0[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR1", strlen("TBSTR1")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR1",
+				 strlen("TBSTR1"))
+				 == 0)
 		reg_r_data = simu_tbstr1[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR2", strlen("TBSTR2")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR2",
+				 strlen("TBSTR2"))
+				 == 0)
 		reg_r_data = simu_tbstr2[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR3", strlen("TBSTR3")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR3",
+				 strlen("TBSTR3"))
+				 == 0)
 		reg_r_data = simu_tbstr3[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR4", strlen("TBSTR4")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR4",
+				 strlen("TBSTR4"))
+				 == 0)
 		reg_r_data = simu_tbstr4[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR5", strlen("TBSTR5")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR5",
+				 strlen("TBSTR5"))
+				 == 0)
 		reg_r_data = simu_tbstr5[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR6", strlen("TBSTR6")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR6",
+				 strlen("TBSTR6"))
+				 == 0)
 		reg_r_data = simu_tbstr6[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR7", strlen("TBSTR7")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR7",
+				 strlen("TBSTR7"))
+				 == 0)
 		reg_r_data = simu_tbstr7[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR8", strlen("TBSTR8")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR8",
+				 strlen("TBSTR8"))
+				 == 0)
 		reg_r_data = simu_tbstr8[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR9", strlen("TBSTR9")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR9",
+				 strlen("TBSTR9"))
+				 == 0)
 		reg_r_data = simu_tbstr9[tbid];
-	else if (dp_strncmpi(tsbst_reg_name, "TBSTR10", strlen("TBSTR10")) == 0)
+	else if (dp_strncmpi(tsbst_reg_name,
+			     "TBSTR10",
+				 strlen("TBSTR10"))
+				 == 0)
 		reg_r_data = simu_tbstr10[tbid];
 	else {
 		TMU_PRINT("Not valid register name %s?\n", tsbst_reg_name);
@@ -5998,27 +6094,60 @@ uint32_t read_write_reg_tbst(uint32_t set_cmd, uint32_t tbid,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(tsbst_reg_name, "TBSTR0", strlen("TBSTR0")) == 0)
+		if (dp_strncmpi(tsbst_reg_name,
+				"TBSTR0",
+				strlen("TBSTR0"))
+				== 0)
 			tmu_w32(reg_w_data, tbstr0);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR1", strlen("TBSTR1")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR1",
+					 strlen("TBSTR1"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr1);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR2", strlen("TBSTR2")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR2",
+					 strlen("TBSTR2"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr2);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR3", strlen("TBSTR3")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR3",
+					 strlen("TBSTR3"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr3);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR4", strlen("TBSTR4")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR4",
+					 strlen("TBSTR4"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr4);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR5", strlen("TBSTR5")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR5",
+					 strlen("TBSTR5"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr5);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR6", strlen("TBSTR6")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR6",
+					 strlen("TBSTR6"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr6);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR7", strlen("TBSTR7")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR7",
+					 strlen("TBSTR7"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr7);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR8", strlen("TBSTR8")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR8",
+					 strlen("TBSTR8"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr8);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR9", strlen("TBSTR9")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR9",
+					 strlen("TBSTR9"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr9);
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR10", strlen("TBSTR10")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR10",
+					 strlen("TBSTR10"))
+					 == 0)
 			tmu_w32(reg_w_data, tbstr10);
 
 		tmu_w32(TMU_TBSTC_RW_W | tbid, tbstc);
@@ -6028,27 +6157,60 @@ uint32_t read_write_reg_tbst(uint32_t set_cmd, uint32_t tbid,
 
 #else
 
-		if (dp_strncmpi(tsbst_reg_name, "TBSTR0", strlen("TBSTR0")) == 0)
+		if (dp_strncmpi(tsbst_reg_name,
+				"TBSTR0",
+				strlen("TBSTR0"))
+				== 0)
 			simu_tbstr0[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR1", strlen("TBSTR1")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR1",
+					 strlen("TBSTR1"))
+					 == 0)
 			simu_tbstr1[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR2", strlen("TBSTR2")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR2",
+					 strlen("TBSTR2"))
+					 == 0)
 			simu_tbstr2[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR3", strlen("TBSTR3")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR3",
+					 strlen("TBSTR3"))
+					 == 0)
 			simu_tbstr3[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR4", strlen("TBSTR4")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR4",
+					 strlen("TBSTR4"))
+					 == 0)
 			simu_tbstr4[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR5", strlen("TBSTR5")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR5",
+					 strlen("TBSTR5"))
+					 == 0)
 			simu_tbstr5[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR6", strlen("TBSTR6")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR6",
+					 strlen("TBSTR6"))
+					 == 0)
 			simu_tbstr6[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR7", strlen("TBSTR7")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR7",
+					 strlen("TBSTR7"))
+					 == 0)
 			simu_tbstr7[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR8", strlen("TBSTR8")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR8",
+					 strlen("TBSTR8"))
+					 == 0)
 			simu_tbstr8[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR9", strlen("TBSTR9")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR9",
+					 strlen("TBSTR9"))
+					 == 0)
 			simu_tbstr9[tbid] = reg_w_data;
-		else if (dp_strncmpi(tsbst_reg_name, "TBSTR10", strlen("TBSTR10")) == 0)
+		else if (dp_strncmpi(tsbst_reg_name,
+				     "TBSTR10",
+					 strlen("TBSTR10"))
+					 == 0)
 			simu_tbstr10[tbid] = reg_w_data;
 
 #endif
@@ -6073,13 +6235,25 @@ uint32_t read_write_reg_sbit(uint32_t set_cmd, uint32_t sbin,
 	while ((tmu_r32(sbitc) & TMU_SBITC_VAL) == 0)
 		continue;
 
-	if (dp_strncmpi(sbit_reg_name, "SBITR0",strlen("SBITR0")) == 0)
+	if (dp_strncmpi(sbit_reg_name,
+			"SBITR0",
+			strlen("SBITR0"))
+			== 0)
 		reg_r_data = tmu_r32(sbitr0);
-	else if (dp_strncmpi(sbit_reg_name, "SBITR1", strlen("SBITR1")) == 0)
+	else if (dp_strncmpi(sbit_reg_name,
+			     "SBITR1",
+				 strlen("SBITR1"))
+				 == 0)
 		reg_r_data = tmu_r32(sbitr1);
-	else if (dp_strncmpi(sbit_reg_name, "SBITR2", strlen("SBITR2")) == 0)
+	else if (dp_strncmpi(sbit_reg_name,
+			     "SBITR2",
+				 strlen("SBITR2"))
+				 == 0)
 		reg_r_data = tmu_r32(sbitr2);
-	else if (dp_strncmpi(sbit_reg_name, "SBITR3", strlen("SBITR3")) == 0)
+	else if (dp_strncmpi(sbit_reg_name,
+			     "SBITR3",
+				 strlen("SBITR3"))
+				 == 0)
 		reg_r_data = tmu_r32(sbitr3);
 	else {
 		TMU_PRINT("Not valid register name %s?\n", sbit_reg_name);
@@ -6088,13 +6262,25 @@ uint32_t read_write_reg_sbit(uint32_t set_cmd, uint32_t sbin,
 
 #else
 
-	if (dp_strncmpi(sbit_reg_name, "SBITR0", strlen("SBITR0")) == 0)
+	if (dp_strncmpi(sbit_reg_name,
+			"SBITR0",
+			strlen("SBITR0"))
+			== 0)
 		reg_r_data = simu_sbitr0[sbin];
-	else if (dp_strncmpi(sbit_reg_name, "SBITR1", strlen("SBITR1")) == 0)
+	else if (dp_strncmpi(sbit_reg_name,
+			     "SBITR1",
+				 strlen("SBITR1"))
+				 == 0)
 		reg_r_data = simu_sbitr1[sbin];
-	else if (dp_strncmpi(sbit_reg_name, "SBITR2", strlen("SBITR2")) == 0)
+	else if (dp_strncmpi(sbit_reg_name,
+			     "SBITR2",
+				 strlen("SBITR2"))
+				 == 0)
 		reg_r_data = simu_sbitr2[sbin];
-	else if (dp_strncmpi(sbit_reg_name, "SBITR3", strlen("SBITR3")) == 0)
+	else if (dp_strncmpi(sbit_reg_name,
+			     "SBITR3",
+				 strlen("SBITR3"))
+				 == 0)
 		reg_r_data = simu_sbitr3[sbin];
 	else {
 		TMU_PRINT("Not valid register name %s?\n", sbit_reg_name);
@@ -6109,13 +6295,25 @@ uint32_t read_write_reg_sbit(uint32_t set_cmd, uint32_t sbin,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(sbit_reg_name, "SBITR0", strlen("SBITR0")) == 0)
+		if (dp_strncmpi(sbit_reg_name,
+				"SBITR0",
+				strlen("SBITR0"))
+				== 0)
 			tmu_w32(reg_w_data, sbitr0);
-		else if (dp_strncmpi(sbit_reg_name, "SBITR1", strlen("SBITR1")) == 0)
+		else if (dp_strncmpi(sbit_reg_name,
+				     "SBITR1",
+					 strlen("SBITR1"))
+					 == 0)
 			tmu_w32(reg_w_data, sbitr1);
-		else if (dp_strncmpi(sbit_reg_name, "SBITR2", strlen("SBITR2")) == 0)
+		else if (dp_strncmpi(sbit_reg_name,
+				     "SBITR2",
+					 strlen("SBITR2"))
+					 == 0)
 			tmu_w32(reg_w_data, sbitr2);
-		else if (dp_strncmpi(sbit_reg_name, "SBITR3", strlen("SBITR3")) == 0)
+		else if (dp_strncmpi(sbit_reg_name,
+				     "SBITR3",
+					 strlen("SBITR3"))
+					 == 0)
 			tmu_w32(reg_w_data, sbitr3);
 
 		tmu_w32(TMU_SBITC_RW_W | TMU_SBITC_SEL | sbin, sbitc);
@@ -6125,13 +6323,25 @@ uint32_t read_write_reg_sbit(uint32_t set_cmd, uint32_t sbin,
 
 #else
 
-		if (dp_strncmpi(sbit_reg_name, "SBITR0", strlen("SBITR0")) == 0)
+		if (dp_strncmpi(sbit_reg_name,
+				"SBITR0",
+				strlen("SBITR0"))
+				== 0)
 			simu_sbitr0[sbin] = reg_w_data;
-		else if (dp_strncmpi(sbit_reg_name, "SBITR1", strlen("SBITR1")) == 0)
+		else if (dp_strncmpi(sbit_reg_name,
+				     "SBITR1",
+					 strlen("SBITR1"))
+					 == 0)
 			simu_sbitr1[sbin] = reg_w_data;
-		else if (dp_strncmpi(sbit_reg_name, "SBITR2", strlen("SBITR2")) == 0)
+		else if (dp_strncmpi(sbit_reg_name,
+				     "SBITR2",
+					 strlen("SBITR2"))
+					 == 0)
 			simu_sbitr2[sbin] = reg_w_data;
-		else if (dp_strncmpi(sbit_reg_name, "SBITR3", strlen("SBITR3")) == 0)
+		else if (dp_strncmpi(sbit_reg_name,
+				     "SBITR3",
+					 strlen("SBITR3"))
+					 == 0)
 			simu_sbitr3[sbin] = reg_w_data;
 
 #endif
@@ -6156,9 +6366,15 @@ uint32_t read_write_reg_sbot(uint32_t set_cmd, uint32_t sbid,
 	while ((tmu_r32(sbotc) & TMU_SBOTC_VAL) == 0)
 		continue;
 
-	if (dp_strncmpi(sbot_reg_name, "SBOTR0", strlen("SBOTR0")) == 0)
+	if (dp_strncmpi(sbot_reg_name,
+			"SBOTR0",
+			strlen("SBOTR0"))
+			== 0)
 		reg_r_data = tmu_r32(sbotr0);
-	else if (dp_strncmpi(sbot_reg_name, "SBOTR1", strlen("SBOTR1")) == 0)
+	else if (dp_strncmpi(sbot_reg_name,
+			     "SBOTR1",
+				 strlen("SBOTR1"))
+				 == 0)
 		reg_r_data = tmu_r32(sbotr1);
 	else {
 		TMU_PRINT("Not valid register name %s?\n", sbot_reg_name);
@@ -6167,9 +6383,15 @@ uint32_t read_write_reg_sbot(uint32_t set_cmd, uint32_t sbid,
 
 #else
 
-	if (dp_strncmpi(sbot_reg_name, "SBOTR0", strlen("SBOTR0")) == 0)
+	if (dp_strncmpi(sbot_reg_name,
+			"SBOTR0",
+			strlen("SBOTR0"))
+			== 0)
 		reg_r_data = simu_sbotr0[sbid];
-	else if (dp_strncmpi(sbot_reg_name, "SBOTR1", strlen("SBOTR1")) == 0)
+	else if (dp_strncmpi(sbot_reg_name,
+			     "SBOTR1",
+				 strlen("SBOTR1"))
+				 == 0)
 		reg_r_data = simu_sbotr1[sbid];
 	else {
 		TMU_PRINT("Not valid register name %s?\n", sbot_reg_name);
@@ -6184,9 +6406,15 @@ uint32_t read_write_reg_sbot(uint32_t set_cmd, uint32_t sbid,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(sbot_reg_name, "SBOTR0", strlen("SBOTR0")) == 0)
+		if (dp_strncmpi(sbot_reg_name,
+				"SBOTR0",
+				strlen("SBOTR0"))
+				== 0)
 			tmu_w32(reg_w_data, sbotr0);
-		else if (dp_strncmpi(sbot_reg_name, "SBOTR1", strlen("SBOTR1")) == 0)
+		else if (dp_strncmpi(sbot_reg_name,
+				     "SBOTR1",
+					 strlen("SBOTR1"))
+					 == 0)
 			tmu_w32(reg_w_data, sbotr1);
 
 		tmu_w32(TMU_SBOTC_RW_W | TMU_SBOTC_SEL | sbid, sbotc);
@@ -6196,9 +6424,15 @@ uint32_t read_write_reg_sbot(uint32_t set_cmd, uint32_t sbid,
 
 #else
 
-		if (dp_strncmpi(sbot_reg_name, "SBOTR0", strlen("SBOTR0")) == 0)
+		if (dp_strncmpi(sbot_reg_name,
+				"SBOTR0",
+				strlen("SBOTR0"))
+				== 0)
 			simu_sbotr0[sbid] = reg_w_data;
-		else if (dp_strncmpi(sbot_reg_name, "SBOTR1", strlen("SBOTR1")) == 0)
+		else if (dp_strncmpi(sbot_reg_name,
+				     "SBOTR1",
+					 strlen("SBOTR1"))
+					 == 0)
 			simu_sbotr1[sbid] = reg_w_data;
 
 #endif
@@ -6223,9 +6457,15 @@ uint32_t read_write_reg_epot(uint32_t set_cmd, uint32_t epn,
 	while ((tmu_r32(epmtc) & TMU_EPMTC_EOV) == 0)
 		continue;
 
-	if (dp_strncmpi(epot_reg_name, "EPOT0", strlen("EPOT0")) == 0)
+	if (dp_strncmpi(epot_reg_name,
+			"EPOT0",
+			strlen("EPOT0"))
+			== 0)
 		reg_r_data = tmu_r32(epot0);
-	else if (dp_strncmpi(epot_reg_name, "EPOT1", strlen("EPOT1")) == 0)
+	else if (dp_strncmpi(epot_reg_name,
+			     "EPOT1",
+				 strlen("EPOT1"))
+				 == 0)
 		reg_r_data = tmu_r32(epot1);
 	else {
 		TMU_PRINT("Not valid register name %s?\n", epot_reg_name);
@@ -6234,9 +6474,15 @@ uint32_t read_write_reg_epot(uint32_t set_cmd, uint32_t epn,
 
 #else
 
-	if (dp_strncmpi(epot_reg_name, "EPOT0", strlen("EPOT0")) == 0)
+	if (dp_strncmpi(epot_reg_name,
+			"EPOT0",
+			strlen("EPOT0"))
+			== 0)
 		reg_r_data = simu_epot0[epn];
-	else if (dp_strncmpi(epot_reg_name, "EPOT1", strlen("EPOT1")) == 0)
+	else if (dp_strncmpi(epot_reg_name,
+			     "EPOT1",
+				 strlen("EPOT1"))
+				 == 0)
 		reg_r_data = simu_epot1[epn];
 	else {
 		TMU_PRINT("Not valid register name %s?\n", epot_reg_name);
@@ -6251,9 +6497,15 @@ uint32_t read_write_reg_epot(uint32_t set_cmd, uint32_t epn,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(epot_reg_name, "EPOT0", strlen("EPOT0")) == 0)
+		if (dp_strncmpi(epot_reg_name,
+				"EPOT0",
+				strlen("EPOT0"))
+				== 0)
 			tmu_w32(reg_w_data, epot0);
-		else if (dp_strncmpi(epot_reg_name, "EPOT1", strlen("EPOT1")) == 0)
+		else if (dp_strncmpi(epot_reg_name,
+				     "EPOT1",
+					 strlen("EPOT1"))
+					 == 0)
 			tmu_w32(reg_w_data, epot1);
 
 		tmu_w32(TMU_EPMTC_EOW | epn, epmtc);
@@ -6263,9 +6515,15 @@ uint32_t read_write_reg_epot(uint32_t set_cmd, uint32_t epn,
 
 #else
 
-		if (dp_strncmpi(epot_reg_name, "EPOT0", strlen("EPOT0")) == 0)
+		if (dp_strncmpi(epot_reg_name,
+				"EPOT0",
+				strlen("EPOT0"))
+				== 0)
 			simu_epot0[epn] = reg_w_data;
-		else if (dp_strncmpi(epot_reg_name, "EPOT1", strlen("EPOT1")) == 0)
+		else if (dp_strncmpi(epot_reg_name,
+				     "EPOT1",
+					 strlen("EPOT1"))
+					 == 0)
 			simu_epot1[epn] = reg_w_data;
 
 #endif
@@ -6317,9 +6575,15 @@ uint32_t read_write_reg_eptt(uint32_t set_cmd, uint32_t epn,
 		reg_w_data = reg_r_data;
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
-		if (dp_strncmpi(eptt_reg_name, "EPTT0", strlen("EPTT0")) == 0)
+		if (dp_strncmpi(eptt_reg_name,
+				"EPTT0",
+				strlen("EPTT0"))
+				== 0)
 			tmu_w32(reg_w_data, eptt0);
-		else if (dp_strncmpi(eptt_reg_name, "EPTT1", strlen("EPTT1")) == 0)
+		else if (dp_strncmpi(eptt_reg_name,
+				"EPTT1",
+				strlen("EPTT1"))
+				== 0)
 			tmu_w32(reg_w_data, eptt1);
 
 		tmu_w32(TMU_EPMTC_ETW | epn, epmtc);
@@ -6329,9 +6593,15 @@ uint32_t read_write_reg_eptt(uint32_t set_cmd, uint32_t epn,
 
 #else
 
-		if (dp_strncmpi(eptt_reg_name, "EPTT0", strlen("EPTT0")) == 0)
+		if (dp_strncmpi(eptt_reg_name,
+				"EPTT0",
+				strlen("EPTT0"))
+				== 0)
 			simu_eptt0[epn] = reg_w_data;
-		else if (dp_strncmpi(eptt_reg_name, "EPTT1", strlen("EPTT1")) == 0)
+		else if (dp_strncmpi(eptt_reg_name,
+				     "EPTT1",
+					 strlen("EPTT1"))
+					 == 0)
 			simu_eptt1[epn] = reg_w_data;
 
 #endif
@@ -6371,13 +6641,25 @@ uint32_t read_write_reg_epdt(uint32_t set_cmd, uint32_t epn,
 
 #else
 
-	if (dp_strncmpi(epdt_reg_name, "EPDT0", strlen("EPDT0")) == 0)
+	if (dp_strncmpi(epdt_reg_name,
+			"EPDT0",
+			strlen("EPDT0"))
+			== 0)
 		reg_r_data = simu_epdt0[epn];
-	else if (dp_strncmpi(epdt_reg_name, "EPDT1", strlen("EPDT1")) == 0)
+	else if (dp_strncmpi(epdt_reg_name,
+			     "EPDT1",
+				 strlen("EPDT1"))
+				 == 0)
 		reg_r_data = simu_epdt1[epn];
-	else if (dp_strncmpi(epdt_reg_name, "EPDT2", strlen("EPDT2")) == 0)
+	else if (dp_strncmpi(epdt_reg_name,
+			     "EPDT2",
+				 strlen("EPDT2"))
+				 == 0)
 		reg_r_data = simu_epdt2[epn];
-	else if (dp_strncmpi(epdt_reg_name, "EPDT3", strlen("EPDT3")) == 0)
+	else if (dp_strncmpi(epdt_reg_name,
+			     "EPDT3",
+				 strlen("EPDT3"))
+				 == 0)
 		reg_r_data = simu_epdt3[epn];
 	else {
 		TMU_PRINT("Not valid register name %s?\n", epdt_reg_name);
@@ -6392,13 +6674,25 @@ uint32_t read_write_reg_epdt(uint32_t set_cmd, uint32_t epn,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(epdt_reg_name, "EPDT0", strlen("EPDT0")) == 0)
+		if (dp_strncmpi(epdt_reg_name,
+				"EPDT0",
+				strlen("EPDT0"))
+				== 0)
 			tmu_w32(reg_w_data, epdt0);
-		else if (dp_strncmpi(epdt_reg_name, "EPDT1", strlen("EPDT1")) == 0)
+		else if (dp_strncmpi(epdt_reg_name,
+				     "EPDT1",
+					 strlen("EPDT1"))
+					 == 0)
 			tmu_w32(reg_w_data, epdt1);
-		else if (dp_strncmpi(epdt_reg_name, "EPDT2", strlen("EPDT2")) == 0)
+		else if (dp_strncmpi(epdt_reg_name,
+				     "EPDT2",
+					 strlen("EPDT2"))
+					 == 0)
 			tmu_w32(reg_w_data, epdt2);
-		else if (dp_strncmpi(epdt_reg_name, "EPDT3", strlen("EPDT3")) == 0)
+		else if (dp_strncmpi(epdt_reg_name,
+				     "EPDT3",
+					 strlen("EPDT3"))
+					 == 0)
 			tmu_w32(reg_w_data, epdt3);
 
 		tmu_w32(TMU_EPMTC_EDW | epn, epmtc);
@@ -6408,13 +6702,25 @@ uint32_t read_write_reg_epdt(uint32_t set_cmd, uint32_t epn,
 
 #else
 
-		if (dp_strncmpi(epdt_reg_name, "EPDT0", strlen("EPDT0")) == 0)
+		if (dp_strncmpi(epdt_reg_name,
+				"EPDT0",
+				strlen("EPDT0"))
+				== 0)
 			simu_epdt0[epn] = reg_w_data;
-		else if (dp_strncmpi(epdt_reg_name, "EPDT1", strlen("EPDT1")) == 0)
+		else if (dp_strncmpi(epdt_reg_name,
+				     "EPDT1",
+					 strlen("EPDT1"))
+					 == 0)
 			simu_epdt1[epn] = reg_w_data;
-		else if (dp_strncmpi(epdt_reg_name, "EPDT2", strlen("EPDT2")) == 0)
+		else if (dp_strncmpi(epdt_reg_name,
+				     "EPDT2",
+					 strlen("EPDT2"))
+					 == 0)
 			simu_epdt2[epn] = reg_w_data;
-		else if (dp_strncmpi(epdt_reg_name, "EPDT3", strlen("EPDT3")) == 0)
+		else if (dp_strncmpi(epdt_reg_name,
+				     "EPDT3",
+					 strlen("EPDT3"))
+					 == 0)
 			simu_epdt3[epn] = reg_w_data;
 
 #endif
@@ -6538,15 +6844,30 @@ uint32_t read_write_reg_qtht(uint32_t set_cmd, uint32_t qid,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(qtht_reg_name, "QTHT0", strlen("QTHT0")) == 0)
+		if (dp_strncmpi(qtht_reg_name,
+				"QTHT0",
+				strlen("QTHT0"))
+				== 0)
 			tmu_w32(reg_w_data, qtht0);
-		else if (dp_strncmpi(qtht_reg_name, "QTHT1", strlen("QTHT1")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT1",
+					 strlen("QTHT1"))
+					 == 0)
 			tmu_w32(reg_w_data, qtht1);
-		else if (dp_strncmpi(qtht_reg_name, "QTHT2", strlen("QTHT2")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT2",
+					 strlen("QTHT2"))
+					 == 0)
 			tmu_w32(reg_w_data, qtht2);
-		else if (dp_strncmpi(qtht_reg_name, "QTHT3", strlen("QTHT3")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT3",
+					 strlen("QTHT3"))
+					 == 0)
 			tmu_w32(reg_w_data, qtht3);
-		else if (dp_strncmpi(qtht_reg_name, "QTHT4", strlen("QTHT4")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT4",
+					 strlen("QTHT4"))
+					 == 0)
 			tmu_w32(reg_w_data, qtht4);
 
 		tmu_w32(TMU_QMTC_QTW | qid, qmtc);
@@ -6556,15 +6877,30 @@ uint32_t read_write_reg_qtht(uint32_t set_cmd, uint32_t qid,
 
 #else
 
-		if (dp_strncmpi(qtht_reg_name, "QTHT0", strlen("QTHT0")) == 0)
+		if (dp_strncmpi(qtht_reg_name,
+				"QTHT0",
+				strlen("QTHT0"))
+				== 0)
 			simu_qtht0[qid] = reg_w_data;
-		else if (dp_strncmpi(qtht_reg_name, "QTHT1", strlen("QTHT1")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT1",
+					 strlen("QTHT1"))
+					 == 0)
 			simu_qtht1[qid] = reg_w_data;
-		else if (dp_strncmpi(qtht_reg_name, "QTHT2", strlen("QTHT2")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT2",
+					 strlen("QTHT2"))
+					 == 0)
 			simu_qtht2[qid] = reg_w_data;
-		else if (dp_strncmpi(qtht_reg_name, "QTHT3", strlen("QTHT3")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT3",
+					 strlen("QTHT3"))
+					 == 0)
 			simu_qtht3[qid] = reg_w_data;
-		else if (dp_strncmpi(qtht_reg_name, "QTHT4", strlen("QTHT4")) == 0)
+		else if (dp_strncmpi(qtht_reg_name,
+				     "QTHT4",
+					 strlen("QTHT4"))
+					 == 0)
 			simu_qtht4[qid] = reg_w_data;
 
 #endif
@@ -6621,11 +6957,20 @@ uint32_t read_write_reg_qoct(uint32_t set_cmd, uint32_t qid,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(qoct_reg_name, "QOCT0", strlen("QOCT0")) == 0)
+		if (dp_strncmpi(qoct_reg_name,
+				"QOCT0",
+				strlen("QOCT0"))
+				== 0)
 			tmu_w32(reg_w_data, qoct0);
-		else if (dp_strncmpi(qoct_reg_name, "QOCT1", strlen("QOCT1")) == 0)
+		else if (dp_strncmpi(qoct_reg_name,
+				     "QOCT1",
+					 strlen("QOCT1"))
+					 == 0)
 			tmu_w32(reg_w_data, qoct1);
-		else if (dp_strncmpi(qoct_reg_name, "QOCT2", strlen("QOCT2")) == 0)
+		else if (dp_strncmpi(qoct_reg_name,
+				     "QOCT2",
+					 strlen("QOCT2"))
+					 == 0)
 			tmu_w32(reg_w_data, qoct2);
 
 		tmu_w32(TMU_QMTC_QOW | qid, qmtc);
@@ -6635,14 +6980,23 @@ uint32_t read_write_reg_qoct(uint32_t set_cmd, uint32_t qid,
 
 #else
 
-		if (dp_strncmpi(qoct_reg_name, "QOCT0", strlen("QOCT0")) == 0)
+		if (dp_strncmpi(qoct_reg_name,
+				"QOCT0",
+				strlen("QOCT0"))
+				== 0)
 			simu_qoct0[qid] = reg_w_data;
-		else if (dp_strncmpi(qoct_reg_name, "QOCT1", strlen("QOCT1")) == 0)
+		else if (dp_strncmpi(qoct_reg_name,
+				     "QOCT1",
+					 strlen("QOCT1"))
+					 == 0)
 			simu_qoct1[qid] = reg_w_data;
-		else if (dp_strncmpi(qoct_reg_name, "QOCT2", strlen("QOCT2")) == 0)
+		else if (dp_strncmpi(qoct_reg_name,
+				     "QOCT2",
+					 strlen("QOCT2"))
+					 == 0)
 			simu_qoct2[qid] = reg_w_data;
 
-#endif 
+#endif
 	}
 
 	if (set_cmd)
@@ -6700,13 +7054,25 @@ uint32_t read_write_reg_qdct(uint32_t set_cmd, uint32_t qid,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(qdct_reg_name, "QDCT0", strlen("QDCT0")) == 0)
+		if (dp_strncmpi(qdct_reg_name,
+				"QDCT0",
+				strlen("QDCT0"))
+				== 0)
 			tmu_w32(reg_w_data, qdct0);
-		else if (dp_strncmpi(qdct_reg_name, "QDCT1", strlen("QDCT1")) == 0)
+		else if (dp_strncmpi(qdct_reg_name,
+				     "QDCT1",
+					 strlen("QDCT1"))
+					 == 0)
 			tmu_w32(reg_w_data, qdct1);
-		else if (dp_strncmpi(qdct_reg_name, "QDCT2", strlen("QDCT2")) == 0)
+		else if (dp_strncmpi(qdct_reg_name,
+				     "QDCT2",
+					 strlen("QDCT2"))
+					 == 0)
 			tmu_w32(reg_w_data, qdct2);
-		else if (dp_strncmpi(qdct_reg_name, "QDCT3", strlen("QDCT3")) == 0)
+		else if (dp_strncmpi(qdct_reg_name,
+				     "QDCT3",
+					 strlen("QDCT3"))
+					 == 0)
 			tmu_w32(reg_w_data, qdct3);
 
 		tmu_w32(TMU_QMTC_QDW | qid, qmtc);
@@ -6716,13 +7082,25 @@ uint32_t read_write_reg_qdct(uint32_t set_cmd, uint32_t qid,
 
 #else
 
-		if (dp_strncmpi(qdct_reg_name, "QDCT0", strlen("QDCT0")) == 0)
+		if (dp_strncmpi(qdct_reg_name,
+				"QDCT0",
+				strlen("QDCT0"))
+				== 0)
 			simu_qdct0[qid] = reg_w_data;
-		else if (dp_strncmpi(qdct_reg_name, "QDCT1", strlen("QDCT1")) == 0)
+		else if (dp_strncmpi(qdct_reg_name,
+				     "QDCT1",
+					 strlen("QDCT1"))
+					 == 0)
 			simu_qdct1[qid] = reg_w_data;
-		else if (dp_strncmpi(qdct_reg_name, "QDCT2", strlen("QDCT2")) == 0)
+		else if (dp_strncmpi(qdct_reg_name,
+				     "QDCT2",
+					 strlen("QDCT2"))
+					 == 0)
 			simu_qdct2[qid] = reg_w_data;
-		else if (dp_strncmpi(qdct_reg_name, "QDCT3", strlen("QDCT3")) == 0)
+		else if (dp_strncmpi(qdct_reg_name,
+				     "QDCT3",
+					 strlen("QDCT3"))
+					 == 0)
 			simu_qdct3[qid] = reg_w_data;
 
 #endif
@@ -6779,11 +7157,20 @@ uint32_t read_write_reg_qfmt(uint32_t set_cmd, uint32_t qid,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(qfmt_reg_name, "QFMT0", strlen("QFMT0")) == 0)
+		if (dp_strncmpi(qfmt_reg_name,
+				"QFMT0",
+				strlen("QFMT0"))
+				== 0)
 			tmu_w32(reg_w_data, qfmt0);
-		else if (dp_strncmpi(qfmt_reg_name, "QFMT1", strlen("QFMT1")) == 0)
+		else if (dp_strncmpi(qfmt_reg_name,
+				     "QFMT1",
+					 strlen("QFMT1"))
+					 == 0)
 			tmu_w32(reg_w_data, qfmt1);
-		else if (dp_strncmpi(qfmt_reg_name, "QFMT2", strlen("QFMT2")) == 0)
+		else if (dp_strncmpi(qfmt_reg_name,
+				     "QFMT2",
+					 strlen("QFMT2"))
+					 == 0)
 			tmu_w32(reg_w_data, qfmt2);
 
 		tmu_w32(TMU_QMTC_QFW | qid, qmtc);
@@ -6793,11 +7180,19 @@ uint32_t read_write_reg_qfmt(uint32_t set_cmd, uint32_t qid,
 
 #else
 
-		if (dp_strncmpi(qfmt_reg_name, "QFMT0", strlen("QFMT0")) == 0)
+		if (dp_strncmpi(qfmt_reg_name,
+				"QFMT0",
+				strlen("QFMT0"))
+				== 0)
 			simu_qfmt0[qid] = reg_w_data;
-		else if (dp_strncmpi(qfmt_reg_name, "QFMT1", strlen("QFMT1")) == 0)
+		else if (dp_strncmpi(qfmt_reg_name,
+				     "QFMT1",
+					 strlen("QFMT1"))
+					 == 0)
 			simu_qfmt1[qid] = reg_w_data;
-		else if (dp_strncmpi(qfmt_reg_name, "QFMT2", strlen("QFMT2")) == 0)
+		else if (dp_strncmpi(qfmt_reg_name,
+				     "QFMT2",
+					 strlen("QFMT2")) == 0)
 			simu_qfmt2[qid] = reg_w_data;
 
 #endif
@@ -7011,13 +7406,25 @@ uint32_t read_write_reg_gothr(uint32_t set_cmd, uint32_t qid,
 		set_val(reg_w_data, *value, bit_mask, bit_offset);
 #if !defined(CONFIG_LTQ_TMU_DDR_SIMULATE_REG)
 
-		if (dp_strncmpi(gothr_reg_name, "GOTHR0", strlen("GOTHR0")) == 0)
+		if (dp_strncmpi(gothr_reg_name,
+				"GOTHR0",
+				strlen("GOTHR0"))
+				== 0)
 			tmu_w32(reg_w_data, gothr[0]);
-		else if (dp_strncmpi(gothr_reg_name, "GOTHR1", strlen("GOTHR1")) == 0)
+		else if (dp_strncmpi(gothr_reg_name,
+				     "GOTHR1",
+					 strlen("GOTHR1"))
+					 == 0)
 			tmu_w32(reg_w_data, gothr[1]);
-		else if (dp_strncmpi(gothr_reg_name, "GOTHR2", strlen("GOTHR2")) == 0)
+		else if (dp_strncmpi(gothr_reg_name,
+				     "GOTHR2",
+					 strlen("GOTHR2"))
+					 == 0)
 			tmu_w32(reg_w_data, gothr[2]);
-		else if (dp_strncmpi(gothr_reg_name, "GOTHR3", strlen("GOTHR3")) == 0)
+		else if (dp_strncmpi(gothr_reg_name,
+				     "GOTHR3",
+					 strlen("GOTHR3"))
+					 == 0)
 			tmu_w32(reg_w_data, gothr[3]);
 
 #else
@@ -7398,6 +7805,7 @@ static unsigned int get_cbm_clock(void)
 int tmu_reset_mib(u32 index)
 {
 	uint32_t qdc[4];
+
 	if (index >= EGRESS_QUEUE_ID_MAX)
 		return -1;
 	reset_enq_counter(index);
@@ -7410,6 +7818,7 @@ int tmu_reset_mib(u32 index)
 int tmu_reset_mib_all(u32 flag)
 {
 	u32 i;
+
 	for (i = 0; i < EGRESS_QUEUE_ID_MAX; i++)
 		tmu_reset_mib(i);
 	return 0;

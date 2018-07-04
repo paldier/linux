@@ -607,11 +607,14 @@ ssize_t tmu_proc_tmu_reg_write(struct file *file, const char *buf,
 	for (i = 0;
 	     i < sizeof(proc_reg_entries) / sizeof(proc_reg_entries[0]);
 	     i++) {
-		if ((dp_strncmpi(proc_reg_entries[i].regname, param_list[1], strlen(param_list[1])) ==
-		     0)
-		    &&
-		    (dp_strncmpi(proc_reg_entries[i].fieldname, param_list[3], strlen(param_list[3]))
-		     == 0)) {
+		if ((dp_strncmpi(proc_reg_entries[i].regname,
+				 param_list[1],
+				 strlen(param_list[1]))
+				 == 0) &&
+		    (dp_strncmpi(proc_reg_entries[i].fieldname,
+				 param_list[3],
+				 strlen(param_list[3]))
+				 == 0)) {
 			regid = dp_atoi(param_list[2]);
 			/**/ if (cmd)
 				value = dp_atoi(param_list[4]);

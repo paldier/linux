@@ -283,9 +283,7 @@ int tmu_ll_chiptest(int layer_mode, int rate_kbps, int rate_port_flag,
 
 #if defined(TMU_LOCAL_STAT_DEBUG)
 
-/**
-   Dump the TMU information.
-*/
+/* Dump the TMU information. */
 void tmu_dump(struct seq_file *s);
 void tmu_eqt_dump(struct seq_file *s);
 void tmu_ept_dump(struct seq_file *s);

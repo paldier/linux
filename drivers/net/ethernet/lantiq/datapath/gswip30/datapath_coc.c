@@ -493,7 +493,8 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 		}
 
 		coc_unlock();
-	} else if (dp_strncmpi(param_list[0], "threshold0", strlen("threshold0")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+			"threshold0", strlen("threshold0")) == 0) {
 		coc_lock();
 		rmon_threshold.th_d0 = dp_atoi(param_list[1]);
 
@@ -501,7 +502,8 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 			rmon_threshold.th_d0 = 1;
 
 		coc_unlock();
-	} else if (dp_strncmpi(param_list[0], "threshold1", strlen("threshold1")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+			"threshold1", strlen("threshold1")) == 0) {
 		coc_lock();
 		rmon_threshold.th_d1 = dp_atoi(param_list[1]);
 
@@ -509,7 +511,8 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 			rmon_threshold.th_d1 = 1;
 
 		coc_unlock();
-	} else if (dp_strncmpi(param_list[0], "threshold2",strlen("threshold2")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+			"threshold2", strlen("threshold2")) == 0) {
 		coc_lock();
 		rmon_threshold.th_d2 = dp_atoi(param_list[1]);
 
@@ -517,7 +520,8 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 			rmon_threshold.th_d2 = 1;
 
 		coc_unlock();
-	} else if (dp_strncmpi(param_list[0], "threshold3", strlen("threshold3")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+			"threshold3", strlen("threshold3")) == 0) {
 		coc_lock();
 		rmon_threshold.th_d3 = dp_atoi(param_list[1]);
 
@@ -544,20 +548,27 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 		if (dp_strncmpi(param_list[0], "rate1", strlen("rate1")) == 0) {
 			dp_set_meter_rate(LTQ_CPUFREQ_PS_D1, rate);
 
-		} else if (dp_strncmpi(param_list[0], "rate2", strlen("rate2")) == 0) {
+		} else if (dp_strncmpi(param_list[0],
+				"rate2",
+				strlen("rate2")) == 0) {
 			dp_set_meter_rate(LTQ_CPUFREQ_PS_D2, rate);
-		} else if ((dp_strncmpi(param_list[0], "rate3", strlen("rate3")) == 0) ||
-			   (dp_strncmpi(param_list[0], "rate", strlen("rate")) ==
-			    0) /*back-compatiable */) {
+		} else if ((dp_strncmpi(param_list[0],
+				"rate3",
+				strlen("rate3")) == 0) ||
+			   (dp_strncmpi(param_list[0],
+			   "rate",
+			   strlen("rate")) == 0)) { /*back-compatiable */
 			dp_set_meter_rate(LTQ_CPUFREQ_PS_D3, rate);
 		} else {
 			PR_INFO
 			    ("Wrong COC state, it should be D1/D2/D3 only\n");
 		}
-	} else if (dp_strncmpi(param_list[0], "interrupt", strlen("interrupt")) == 0) {/*meter */
+	} else if (dp_strncmpi(param_list[0],
+			"interrupt", strlen("interrupt")) == 0) {/*meter */
 		enable_meter_interrupt();
 		PR_INFO("Enabled meter interurpt\n");
-	} else if (dp_strncmpi(param_list[0], "clear", strlen("clear")) == 0) {	/*meter */
+	} else if (dp_strncmpi(param_list[0],
+			"clear", strlen("clear")) == 0) {	/*meter */
 		clear_meter_interrupt();
 		PR_INFO("Clear meter interurpt src\n");
 	} else {

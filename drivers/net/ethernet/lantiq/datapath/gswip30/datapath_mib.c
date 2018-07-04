@@ -1848,7 +1848,7 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 	if (num < 1)
 		goto help;
 	memset(&qos_stats, 0, sizeof(qos_stats));
-	if (dp_strncmpi(param_list[0], "qos_mib" ,strlen("qos_mib")) == 0) {
+	if (dp_strncmpi(param_list[0], "qos_mib", strlen("qos_mib")) == 0) {
 		s32 port_list[] = {15, 2, 3, 4, 5, 7, 8};
 		int k;
 
@@ -1900,7 +1900,9 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 			}
 			PR_INFO("\n");
 		}
-	} else if (dp_strncmpi(param_list[0], "csum_mib" ,strlen("csum_mib")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+			"csum_mib",
+			strlen("csum_mib")) == 0) {
 		tmu_hal_get_csum_ol_m_local =
 			tmu_hal_get_csum_ol_mib_hook_fn;
 		if (!tmu_hal_get_csum_ol_m_local) {
@@ -1915,7 +1917,9 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 				qos_stats.deqPkts,
 				qos_stats.deqBytes);
 
-	} else if (dp_strncmpi(param_list[0], "qos_mib_clear", strlen("qos_mib_clear")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+			"qos_mib_clear",
+			strlen("qos_mib_clear")) == 0) {
 		tmu_hal_clear_qos_m_local =
 			tmu_hal_clear_qos_mib_hook_fn;
 		if (!tmu_hal_clear_qos_m_local) {
@@ -1929,7 +1933,9 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 			PR_INFO("%s done\n",
 				"tmu_hal_clear_qos_m_local(NULL, NULL, -1, 0)");
 
-	} else if (dp_strncmpi(param_list[0], "csum_mib_clear", strlen("csum_mib_clear")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+			"csum_mib_clear",
+			strlen("csum_mib_clear")) == 0) {
 		tmu_hal_clear_csum_ol_m_local =
 			tmu_hal_clear_csum_ol_mib_hook_fn;
 		if (!tmu_hal_clear_csum_ol_m_local) {

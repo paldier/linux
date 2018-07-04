@@ -189,22 +189,34 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 
 	if (dp_strncmpi(param_list[0], "enable", strlen("enable")) == 0) {
 		for (i = 1; i < num; i++) {
-			if (dp_strncmpi(param_list[i], "cpu", strlen("cpu")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"cpu",
+					strlen("cpu"))
+					== 0) {
 				flag |= 0x1;
 				cpu = 2;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe1", strlen("mpe1")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe1",
+					strlen("mpe1"))
+					== 0) {
 				flag |= 0x2;
 				mpe1 = 2;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe2", strlen("mpe2")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe2",
+					strlen("mpe2"))
+					== 0) {
 				flag |= 0x4;
 				mpe2 = 2;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe3", strlen("mpe3")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe3",
+					strlen("mpe3"))
+					== 0) {
 				flag |= 0x8;
 				mpe3 = 2;
 			}
@@ -222,24 +234,39 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 			 "flag=0x%x mpe3/2/1/cpu=%d/%d/%d/%d\n", flag, mpe3,
 			 mpe2, mpe1, cpu);
 		dp_set_gsw_parser_30(flag, cpu, mpe1, mpe2, mpe3);
-	} else if (dp_strncmpi(param_list[0], "disable", strlen("disable")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				"disable",
+				strlen("disable"))
+				== 0) {
 		for (i = 1; i < num; i++) {
-			if (dp_strncmpi(param_list[i], "cpu", strlen("cpu")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"cpu",
+					strlen("cpu"))
+					== 0) {
 				flag |= 0x1;
 				cpu = 0;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe1", strlen("mpe1")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe1",
+					strlen("mpe1"))
+					== 0) {
 				flag |= 0x2;
 				mpe1 = 0;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe2", strlen("mpe2")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe2",
+					strlen("mpe2"))
+					== 0) {
 				flag |= 0x4;
 				mpe2 = 0;
 			}
 
-			if (dp_strncmpi(param_list[i], "mpe3", strlen("mpe3")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"mpe3",
+					strlen("mpe3"))
+					== 0) {
 				flag |= 0x8;
 				mpe3 = 0;
 			}
@@ -257,7 +284,10 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 			 "flag=0x%x mpe3/2/1/cpu=%d/%d/%d/%d\n", flag, mpe3,
 			 mpe2, mpe1, cpu);
 		dp_set_gsw_parser_30(flag, cpu, mpe1, mpe2, mpe3);
-	} else if (dp_strncmpi(param_list[0], "refresh", strlen("refresh")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				     "refresh",
+					 strlen("refresh"))
+					 == 0) {
 		dp_get_gsw_parser_30(NULL, NULL, NULL, NULL);
 		PR_INFO("value:cpu=%d mpe1=%d mpe2=%d mpe3=%d\n", pinfo[0].v,
 			pinfo[1].v, pinfo[2].v, pinfo[3].v);
@@ -304,7 +334,10 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 			return count;
 		}
 
-	} else if (dp_strncmpi(param_list[0], "unmark", strlen("unmark")) == 0) {
+	} else if (dp_strncmpi(param_list[0],
+				     "unmark",
+					 strlen("unmark"))
+					 == 0) {
 		/*: All packets set to same mpe flag as specified */
 		memset(&pce, 0, sizeof(pce));
 		pce.pattern.nIndex = pce_rule_id;
@@ -974,7 +1007,10 @@ static ssize_t proc_gsw_rmon_write(struct file *file, const char *buf,
 		if (dp_strncmpi(param_list[1], "Full", strlen("Full")) == 0) {
 			rmon_display_port_full = 1;
 			goto EXIT_OK;
-		} else if (dp_strncmpi(param_list[1], "Basic", strlen("Basic")) == 0) {
+		} else if (dp_strncmpi(param_list[1],
+				     "Basic",
+					 strlen("Basic"))
+					 == 0) {
 			rmon_display_port_full = 0;
 			goto EXIT_OK;
 		}
@@ -2396,7 +2432,8 @@ ssize_t proc_gsw_route_write(struct file *file, const char *buf,
 		PR_INFO("parameter %d not enough. count=%d\n", num, count);
 		goto help;
 	}
-	if (dp_strncmpi(param_list[0], "help", strlen("help")) == 0)	/* help */
+	if (dp_strncmpi(param_list[0],
+			"help", strlen("help")) == 0)	/* help */
 		goto help;
 
 	/* delete an entry */
@@ -2489,7 +2526,10 @@ ssize_t proc_gsw_route_write(struct file *file, const char *buf,
 				PR_INFO("Wong IP format for SrcIP\n");
 				goto exit;
 			}
-		} else if (dp_strncmpi(param_list[i], "DstIP", strlen("DstIP")) == 0) {
+		} else if (dp_strncmpi(param_list[i],
+				     "DstIP",
+					 strlen("DstIP"))
+					 == 0) {
 			tmp =
 			    pton(param_list[i + 1],
 				 &rt_entry->routeEntry.pattern.nDstIP);
@@ -2503,16 +2543,28 @@ ssize_t proc_gsw_route_write(struct file *file, const char *buf,
 				PR_INFO("Wong IP format for DstIP\n");
 				goto exit;
 			}
-		} else if (dp_strncmpi(param_list[i], "SrcPort", strlen("SrcPort")) == 0)
+		} else if (dp_strncmpi(param_list[i],
+				     "SrcPort",
+					 strlen("SrcPort"))
+					 == 0)
 			rt_entry->routeEntry.pattern.nSrcPort =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "DstPort", strlen("DstPort")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "DstPort",
+					 strlen("DstPort"))
+					 == 0)
 			rt_entry->routeEntry.pattern.nDstPort =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "ExtId", strlen("ExtId")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "ExtId",
+					 strlen("ExtId"))
+					 == 0)
 			rt_entry->routeEntry.pattern.nRoutExtId =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "SrcMac", strlen("SrcMac")) == 0) {
+		else if (dp_strncmpi(param_list[i],
+				     "SrcMac",
+					 strlen("SrcMac"))
+					 == 0) {
 			rt_entry->routeEntry.action.bMAC_SrcEnable = 1;
 			mac_stob(param_list[i + 1],
 				 rt_entry->routeEntry.action.nSrcMAC);
@@ -2525,7 +2577,10 @@ ssize_t proc_gsw_route_write(struct file *file, const char *buf,
 				rt_entry->routeEntry.action.eSessRoutingMode =
 				    GSW_ROUTE_MODE_ROUTING;
 		} /*below is all actions */
-		else if (dp_strncmpi(param_list[i], "DstMac", strlen("DstMac")) == 0) {
+		else if (dp_strncmpi(param_list[i],
+				     "DstMac",
+					 strlen("DstMac"))
+					 == 0) {
 			rt_entry->routeEntry.action.bMAC_DstEnable = 1;
 			mac_stob(param_list[i + 1],
 				 rt_entry->routeEntry.action.nDstMAC);
@@ -2536,7 +2591,10 @@ ssize_t proc_gsw_route_write(struct file *file, const char *buf,
 						     */
 				rt_entry->routeEntry.action.eSessRoutingMode =
 				    GSW_ROUTE_MODE_ROUTING;
-		} else if (dp_strncmpi(param_list[i], "NatIP", strlen("NatIP")) == 0) {
+		} else if (dp_strncmpi(param_list[i],
+				     "NatIP",
+					 strlen("NatIP"))
+					 == 0) {
 			tmp =
 			    pton(param_list[i + 1],
 				 &rt_entry->routeEntry.action.nNATIPaddr);
@@ -2554,66 +2612,117 @@ ssize_t proc_gsw_route_write(struct file *file, const char *buf,
 			    GSW_ROUTE_MODE_NAT)
 				rt_entry->routeEntry.action.eSessRoutingMode =
 				GSW_ROUTE_MODE_NAT;	/* NAT */
-		} else if (dp_strncmpi(param_list[i], "NatPort", strlen("NatPort")) == 0) {
+		} else if (dp_strncmpi(param_list[i],
+				     "NatPort",
+					 strlen("NatPort"))
+					 == 0) {
 			rt_entry->routeEntry.action.nTcpUdpPort =
 			    dp_atoi(param_list[i + 1]);
 			if (rt_entry->routeEntry.action.eSessRoutingMode <
 			    GSW_ROUTE_MODE_NAPT)
 				rt_entry->routeEntry.action.eSessRoutingMode =
 				GSW_ROUTE_MODE_NAPT;/* NAPT */
-		} else if (dp_strncmpi(param_list[i], "MTU", strlen("MTU")) == 0)
+		} else if (dp_strncmpi(param_list[i],
+				     "MTU",
+					 strlen("MTU"))
+					 == 0)
 			rt_entry->routeEntry.action.nMTUvalue =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "PPPoEmode", strlen("PPPoEmode")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "PPPoEmode",
+					 strlen("PPPoEmode"))
+					 == 0)
 			rt_entry->routeEntry.action.bPPPoEmode =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "PPPoEId", strlen("PPPoEId")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "PPPoEId",
+					 strlen("PPPoEId"))
+					 == 0)
 			rt_entry->routeEntry.action.nPPPoESessId =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "TunType", strlen("TunType")) == 0) {
+		else if (dp_strncmpi(param_list[i],
+				     "TunType",
+					 strlen("TunType"))
+					 == 0) {
 			rt_entry->routeEntry.action.bTunnel_Enable = 1;
 			rt_entry->routeEntry.action.eTunType =
 			    dp_atoi(param_list[i + 1]);
-		} else if (dp_strncmpi(param_list[i], "TunIndex", strlen("TunIndex")) == 0) {
+		} else if (dp_strncmpi(param_list[i],
+				     "TunIndex",
+					 strlen("TunIndex"))
+					 == 0) {
 			rt_entry->routeEntry.action.bTunnel_Enable = 1;
 			rt_entry->routeEntry.action.eTunType =
 			    dp_atoi(param_list[i + 1]);
 
-		} else if (dp_strncmpi(param_list[i], "MeterId", strlen("MeterId")) == 0) {
+		} else if (dp_strncmpi(param_list[i],
+				     "MeterId",
+					 strlen("MeterId"))
+					 == 0) {
 			rt_entry->routeEntry.action.bMeterAssign = 1;
 			rt_entry->routeEntry.action.nMeterId =
 			    dp_atoi(param_list[i + 1]);
 
-		} else if (dp_strncmpi(param_list[i], "FID", strlen("FID")) == 0)
+		} else if (dp_strncmpi(param_list[i],
+				     "FID",
+					 strlen("FID"))
+					 == 0)
 			rt_entry->routeEntry.action.nFID =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "FlowId", strlen("FlowId")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "FlowId",
+					 strlen("FlowId"))
+					 == 0)
 			rt_entry->routeEntry.action.nFlowId =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "OutDscp", strlen("OutDscp")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "OutDscp",
+					 strlen("OutDscp"))
+					 == 0)
 			rt_entry->routeEntry.action.eOutDSCPAction =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "InDscp", strlen("InDscp")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "InDscp",
+					 strlen("InDscp"))
+					 == 0)
 			rt_entry->routeEntry.action.bInnerDSCPRemark =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "Dscp", strlen("Dscp")) == 0) {
+		else if (dp_strncmpi(param_list[i],
+				     "Dscp",
+					 strlen("Dscp"))
+					 == 0) {
 			rt_entry->routeEntry.action.nDSCP =
 			    dp_atoi(param_list[i + 1]);
 			dscp_f = 1;
-		} else if (dp_strncmpi(param_list[i], "class", strlen("class")) == 0) {
+		} else if (dp_strncmpi(param_list[i],
+				     "class",
+					 strlen("class"))
+					 == 0) {
 			rt_entry->routeEntry.action.bTCremarking = 1;
 			rt_entry->routeEntry.action.nTrafficClass =
 			    dp_atoi(param_list[i + 1]);
-		} else if (dp_strncmpi(param_list[i], "ttl", strlen("ttl")) == 0)
+		} else if (dp_strncmpi(param_list[i],
+				     "ttl",
+					 strlen("ttl"))
+					 == 0)
 			rt_entry->routeEntry.action.bTTLDecrement =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "dir", strlen("dir")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "dir",
+					 strlen("dir"))
+					 == 0)
 			rt_entry->routeEntry.action.eSessDirection =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "DstPmac", strlen("DstPmac")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "DstPmac",
+					 strlen("DstPmac"))
+					 == 0)
 			rt_entry->routeEntry.action.nDstPortMap =
 			    dp_atoi(param_list[i + 1]);
-		else if (dp_strncmpi(param_list[i], "Subif", strlen("Subif")) == 0)
+		else if (dp_strncmpi(param_list[i],
+				     "Subif",
+					 strlen("Subif"))
+					 == 0)
 			rt_entry->routeEntry.action.nDstSubIfId =
 			    dp_atoi(param_list[i + 1]);
 		else {
@@ -2819,10 +2928,13 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 		PR_INFO("parameter %d not enough/more. count=%d\n", num, count);
 		goto help;
 	}
-	if (dp_strncmpi(param_list[0], "help", strlen("help")) == 0)	/* help */
+	if (dp_strncmpi(param_list[0],
+			"help", strlen("help")) == 0)	/* help */
 		goto help;
 	/* set pmac */
-	if (dp_strncmpi(param_list[0], "set", strlen("set")) != 0) {
+	if (dp_strncmpi(param_list[0],
+			"set",
+			strlen("set")) != 0) {
 		PR_INFO("wrong command: %s\n", param_list[0]);
 		goto help;
 	}
@@ -2842,7 +2954,8 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 		ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_pmac_ops
 				   .Pmac_Eg_CfgGet, gsw_handle, &pmac);
 		for (i = start_param; i < num; i += 2) {
-			if (dp_strncmpi(param_list[i], "Class", strlen("Class")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"Class", strlen("Class")) == 0) {
 				char *p = param_list[i + 1];
 
 				char *tail = p + strlen(p);
@@ -2857,7 +2970,10 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 				*tmp = 0;
 				class_s = dp_atoi(p);
 				class_e = dp_atoi(tmp + 1);
-			} else if (dp_strncmpi(param_list[i], "FlowID", strlen("FlowID")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					     "FlowID",
+						 strlen("FlowID"))
+						 == 0) {
 				char *p = param_list[i + 1];
 				char *tail = p + strlen(p);
 				char *tmp;
@@ -2871,34 +2987,70 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 				*tmp = 0;
 				flow_s = dp_atoi(p);
 				flow_e = dp_atoi(tmp + 1);
-			} else if (dp_strncmpi(param_list[i], "DestPort", strlen("DestPort")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					     "DestPort",
+						 strlen("DestPort"))
+						 == 0) {
 				PMAC_EG_SET(nDestPortId, param_list[i + 1]);
-			} else if (dp_strncmpi(param_list[i], "RxDmaCH", strlen("RxDmaCH")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+					     "RxDmaCH",
+						 strlen("RxDmaCH"))
+						 == 0) {
 				PMAC_EG_SET(nRxDmaChanId, param_list[i + 1]);
 			}
 #ifdef xxxxx
 			/*below global flag cannot be editted here*/
-			else if (dp_strncmpi(param_list[i], "MPE1", strlen("MPE1")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "MPE1",
+						 strlen("MPE1"))
+						 == 0)
 				PMAC_EG_SET(bMpe1Flag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "MPE2", strlen("MPE2")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "MPE2",
+						 strlen("MPE2"))
+						 == 0)
 				PMAC_EG_SET(bMpe2Flag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "DEC", strlen("DEC")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "DEC",
+						 strlen("DEC"))
+						 == 0)
 				PMAC_EG_SET(bDecFlag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "ENC", strlen("ENC")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "ENC",
+						 strlen("ENC"))
+						 == 0)
 				PMAC_EG_SET(bEncFlag, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "ProcFlag", strlen("ProcFlag")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "ProcFlag",
+						 strlen("ProcFlag"))
+						 == 0)
 				PMAC_EG_SET(bProcFlagsSelect,
 					    param_list[i + 1]);
 #endif
-			else if (dp_strncmpi(param_list[i], "RemL2Hdr", strlen("RemL2Hdr")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "RemL2Hdr",
+						 strlen("RemL2Hdr"))
+						 == 0)
 				PMAC_EG_SET(bRemL2Hdr, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "RemNum", strlen("RemNum")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "RemNum",
+						 strlen("RemNum"))
+						 == 0)
 				PMAC_EG_SET(numBytesRem, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "FCS", strlen("FCS")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "FCS",
+						 strlen("FCS"))
+						 == 0)
 				PMAC_EG_SET(bFcsEna, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "PmacEna", strlen("PmacEna")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "PmacEna",
+						 strlen("PmacEna"))
+						 == 0)
 				PMAC_EG_SET(bPmacEna, param_list[i + 1]);
-			else if (dp_strncmpi(param_list[i], "TcEnable", strlen("TcEnable")) == 0)
+			else if (dp_strncmpi(param_list[i],
+					     "TcEnable",
+						 strlen("TcEnable"))
+						 == 0)
 				PMAC_EG_SET(bTCEnable, param_list[i + 1]);
 			else {
 				PR_INFO("wrong parameter[%d]: %s\n",
@@ -2952,34 +3104,57 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 		ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_pmac_ops
 				   .Pmac_Ig_CfgGet, gsw_handle, &pmac);
 		for (i = start_param; i < num; i += 2) {
-			if (dp_strncmpi(param_list[i], "TxDmaCH", strlen("TxDmaCH")) == 0) {
+			if (dp_strncmpi(param_list[i],
+					"TxDmaCH",
+					strlen("TxDmaCH"))
+					== 0) {
 				PMAC_IG_SET(nTxDmaChanId, param_list[i + 1]);
-			} else if (dp_strncmpi(param_list[i], "ErrDrop", strlen("ErrDrop")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+						"ErrDrop",
+						strlen("ErrDrop"))
+						== 0) {
 				PMAC_IG_SET(bErrPktsDisc, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "ClassEna", strlen("ClassEna")) == 0) {
+						"ClassEna",
+						strlen("ClassEna"))
+						== 0) {
 				PMAC_IG_SET(bClassEna, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "ClassDefault", strlen("ClassDefault")) == 0) {
+						"ClassDefault",
+						strlen("ClassDefault"))
+						== 0) {
 				PMAC_IG_SET(bClassDefault, param_list[i + 1]);
-			} else if (dp_strncmpi(param_list[i], "PmacEna", strlen("PmacEna")) == 0) {
+			} else if (dp_strncmpi(param_list[i],
+						"PmacEna",
+						strlen("PmacEna"))
+						== 0) {
 				PMAC_IG_SET(bPmapEna, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "PmacDefault", strlen("PmacDefault")) == 0) {
+						"PmacDefault",
+						strlen("PmacDefault"))
+						== 0) {
 				PMAC_IG_SET(bPmapDefault, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "SubIdDefault", strlen("SubIdDefault")) == 0) {
+						"SubIdDefault",
+						strlen("SubIdDefault"))
+						== 0) {
 				 /*changed from bSubIdDefault in GSWIP3.1 */
 				//PMAC_IG_SET(bSubIdDefault, param_list[i + 1]);
 				PMAC_IG_SET(eSubId, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "SpIdDefault", strlen("SpIdDefault")) == 0) {
+						"SpIdDefault",
+						strlen("SpIdDefault"))
+						== 0) {
 				PMAC_IG_SET(bSpIdDefault, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					      "PmacPresent", strlen("PmacPresent")) == 0) {
+						"PmacPresent",
+						strlen("PmacPresent"))
+						== 0) {
 				PMAC_IG_SET(bPmacPresent, param_list[i + 1]);
 			} else if (dp_strncmpi(param_list[i],
-					    "DefaultPmacHdr", strlen("DefaultPmacHdr")) == 0) {
+						"DefaultPmacHdr",
+						strlen("DefaultPmacHdr"))
+						== 0) {
 				char *p = param_list[i + 1];
 				char *tail = p + strlen(p);
 
@@ -2997,7 +3172,9 @@ static ssize_t proc_gsw_pmac_write(struct file *file, const char *buf,
 			PR_ERR("GSW_PMAC_IG_CFG_SET returned failure\n");
 			goto exit;
 		}
-	} else if (dp_strncmpi(param_list[start_param - 1], "reset", strlen("reset")) == 0) {
+	} else if (dp_strncmpi(param_list[start_param - 1],
+				"reset",
+				strlen("reset")) == 0) {
 		GSW_reset_t reset;
 
 		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.Reset,
@@ -3229,10 +3406,12 @@ static void pmac_eg_cfg(char *param_list[], int num, dp_pmac_cfg_t *pmac_cfg)
 	for (i = 2; i < num; i += 2) {
 		for (j = 0; j < ARRAY_SIZE(egress_entries); j++) {
 			if (dp_strncmpi(param_list[i],
-				       egress_entries[j].name, strlen(egress_entries[j].name)))
+					egress_entries[j].name,
+					strlen(egress_entries[j].name)))
 				continue;
 			if (dp_strncmpi(egress_entries[j].name,
-				       "rm_l2hdr", strlen("rm_l2hdr")) == 0) {
+					"rm_l2hdr",
+					strlen("rm_l2hdr")) == 0) {
 				if (dp_atoi(param_list[i + 1]) > 0) {
 					pmac_cfg->eg_pmac.rm_l2hdr = 1;
 					value = dp_atoi(param_list[i + 1]);
@@ -3282,9 +3461,10 @@ ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 
 		for (i = 2; i < num; i += 2) {
 			for (j = 0; j < ARRAY_SIZE(ingress_entries); j++) {
-				if (dp_strncmpi
-				    (param_list[i],
-				     ingress_entries[j].name, strlen(ingress_entries[j].name)) == 0) {
+				if (dp_strncmpi(param_list[i],
+						ingress_entries[j].name,
+						strlen(ingress_entries[j].name))
+						== 0) {
 					value = dp_atoi(param_list[i + 1]);
 					ingress_entries[j].
 					    ingress_callback(&pmac_cfg,

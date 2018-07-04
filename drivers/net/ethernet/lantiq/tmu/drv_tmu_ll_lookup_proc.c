@@ -7,7 +7,7 @@
 #define CARE_FLAG      0
 #define CARE_NOT_FLAG  1
 #if 1
-#define LIST_ALL_CASES(t, mask, not_care)  \
+#define LIST_ALL_CASES(t, mask, not_care) \
 	for (t[0] = 0;  t[0] < ((mask[0] == not_care) ? 2 : 1); t[0]++) \
 	for (t[1] = 0;  t[1] < ((mask[1] == not_care) ? 2 : 1); t[1]++) \
 	for (t[2] = 0;  t[2] < ((mask[2] == not_care) ? 2 : 1); t[2]++) \
