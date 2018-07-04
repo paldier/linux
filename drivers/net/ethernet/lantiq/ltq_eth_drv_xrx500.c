@@ -807,6 +807,9 @@ static int ltq_gsw_pmac_init(void)
 	/* Enable the CPU port MAC address spoofing detection */
 	gsw_reg_set_bit(ops, 0x480, 0x4000);
 
+	/*PMAC control register 2 to disable LCHKS*/
+	gsw_reg_clr_bit(ops, 0xd05, 0x3);
+
 	/* Do the GSW-R configuration */
 	ops = gsw_get_swcore_ops(1);
 
@@ -956,6 +959,9 @@ static int ltq_gsw_pmac_init(void)
 	gsw_reg_set_val(ops, 0x454, 0x1);
 
 	gsw_reg_set_val(ops, 0x455, 0x1);
+
+	/*PMAC control register 2 to disable LCHKS*/
+	gsw_reg_clr_bit(ops, 0xd05, 0x3);
 
 	pr_info("\n\t GSW PMAC Init Done!!!\n");
 	return 0;
