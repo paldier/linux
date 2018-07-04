@@ -59,7 +59,8 @@ static void *parse_ptp_packet(struct sk_buff *skb,
 static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 				struct sk_buff *skb);
 static int xgmac_ptp_register(void *pdev);
-static void xgmac_extts_isr_handler(struct mac_prv_data *pdata);
+static void xgmac_extts_isr_handler(struct mac_prv_data *pdata,
+				    u32 tstamp_sts);
 
 void xgmac_config_timer_reg(void *pdev)
 {
@@ -555,7 +556,7 @@ int xgmac_ptp_isr_hdlr(void *pdev)
 	/* Auxilairy Timestamp stored interrupt */
 	if (tstamp_sts & 0x4) {
 		if (XGMAC_RGRD(pdata, MAC_AUX_CTRL) & 0x30)
-			xgmac_extts_isr_handler(pdata);
+			xgmac_extts_isr_handler(pdata, tstamp_sts);
 	}
 
 	return ret;
@@ -607,9 +608,10 @@ static u64 xgmac_get_auxtimestamp(struct mac_prv_data *pdata)
 	return nsec;
 }
 
-static void xgmac_extts_isr_handler(struct mac_prv_data *pdata)
+static void xgmac_extts_isr_handler(struct mac_prv_data *pdata,
+				    u32 tstamp_sts)
 {
-	u8 val = XGMAC_RGRD_BITS(pdata, MAC_TSTAMP_STSR, ATSSTN);
+	u8 val = MAC_GET_VAL(tstamp_sts, MAC_TSTAMP_STSR, ATSSTN);
 	struct ptp_clock_event event;
 
 	if (val & AUX_TRIG_0) {

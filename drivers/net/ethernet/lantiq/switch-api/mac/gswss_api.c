@@ -22,66 +22,66 @@ int gswss_cfg0_1588(void *pdev, u32 ref_time, u32 dig_time, u32 bin_time,
 	cfg0 = GSWSS_RGRD(pdata, CFG0_1588);
 
 	if (ref_time == 0)
-		mac_printf("\tREF_TIME: PON_PCS is the master\n");
+		mac_dbg("\tREF_TIME: PON_PCS is the master\n");
 	else if (ref_time == 1)
-		mac_printf("\tREF_TIME: PCIE0 is the master\n");
+		mac_dbg("\tREF_TIME: PCIE0 is the master\n");
 	else if (ref_time == 2)
-		mac_printf("\tREF_TIME: PCIE1 is the master\n");
+		mac_dbg("\tREF_TIME: PCIE1 is the master\n");
 	else if (ref_time == 3)
-		mac_printf("\tREF_TIME: XGMAC2 is the master\n");
+		mac_dbg("\tREF_TIME: XGMAC2 is the master\n");
 	else if (ref_time == 4)
-		mac_printf("\tREF_TIME: XGMAC3 is the master\n");
+		mac_dbg("\tREF_TIME: XGMAC3 is the master\n");
 	else if (ref_time == 5)
-		mac_printf("\tREF_TIME: XGMAC4 is the master\n");
+		mac_dbg("\tREF_TIME: XGMAC4 is the master\n");
 	else
 		goto end;
 
 	if (dig_time == 0)
-		mac_printf("\tDIG_TIME: PON_PCS is the master\n");
+		mac_dbg("\tDIG_TIME: PON_PCS is the master\n");
 	else if (dig_time == 1)
-		mac_printf("\tDIG_TIME: PCIE0 is the master\n");
+		mac_dbg("\tDIG_TIME: PCIE0 is the master\n");
 	else if (dig_time == 2)
-		mac_printf("\tDIG_TIME: PCIE1 is the master\n");
+		mac_dbg("\tDIG_TIME: PCIE1 is the master\n");
 	else if (dig_time == 3)
-		mac_printf("\tDIG_TIME: XGMAC2 is the master\n");
+		mac_dbg("\tDIG_TIME: XGMAC2 is the master\n");
 	else if (dig_time == 4)
-		mac_printf("\tDIG_TIME: XGMAC3 is the master\n");
+		mac_dbg("\tDIG_TIME: XGMAC3 is the master\n");
 	else if (dig_time == 5)
-		mac_printf("\tDIG_TIME: XGMAC4 is the master\n");
+		mac_dbg("\tDIG_TIME: XGMAC4 is the master\n");
 	else
 		goto end;
 
 	if (bin_time == 0)
-		mac_printf("\tBIN_TIME: PON_PCS is the master\n");
+		mac_dbg("\tBIN_TIME: PON_PCS is the master\n");
 	else if (bin_time == 1)
-		mac_printf("\tBIN_TIME: PCIE0 is the master\n");
+		mac_dbg("\tBIN_TIME: PCIE0 is the master\n");
 	else if (bin_time == 2)
-		mac_printf("\tBIN_TIME: PCIE1 is the master\n");
+		mac_dbg("\tBIN_TIME: PCIE1 is the master\n");
 	else if (bin_time == 3)
-		mac_printf("\tBIN_TIME: XGMAC2 is the master\n");
+		mac_dbg("\tBIN_TIME: XGMAC2 is the master\n");
 	else if (bin_time == 4)
-		mac_printf("\tBIN_TIME: XGMAC3 is the master\n");
+		mac_dbg("\tBIN_TIME: XGMAC3 is the master\n");
 	else if (bin_time == 5)
-		mac_printf("\tBIN_TIME: XGMAC4 is the master\n");
+		mac_dbg("\tBIN_TIME: XGMAC4 is the master\n");
 	else
 		goto end;
 
 	if (pps_sel == 0)
-		mac_printf("\tPPS_SEL: PON_PCS is the master\n");
+		mac_dbg("\tPPS_SEL: PON_PCS is the master\n");
 	else if (pps_sel == 1)
-		mac_printf("\tPPS_SEL: PCIE0 is the master\n");
+		mac_dbg("\tPPS_SEL: PCIE0 is the master\n");
 	else if (pps_sel == 2)
-		mac_printf("\tPPS_SEL: PCIE1 is the master\n");
+		mac_dbg("\tPPS_SEL: PCIE1 is the master\n");
 	else if (pps_sel == 3)
-		mac_printf("\tPPS_SEL: XGMAC2 is the master\n");
+		mac_dbg("\tPPS_SEL: XGMAC2 is the master\n");
 	else if (pps_sel == 4)
-		mac_printf("\tPPS_SEL: XGMAC3 is the master\n");
+		mac_dbg("\tPPS_SEL: XGMAC3 is the master\n");
 	else if (pps_sel == 5)
-		mac_printf("\tPPS_SEL: XGMAC4 is the master\n");
+		mac_dbg("\tPPS_SEL: XGMAC4 is the master\n");
 	else if (pps_sel == 6)
-		mac_printf("\tPPS_SEL: PON PPS100US is the master\n");
+		mac_dbg("\tPPS_SEL: PON PPS100US is the master\n");
 	else if (pps_sel == 7)
-		mac_printf("\tPPS_SEL: Software trigger\n");
+		mac_dbg("\tPPS_SEL: Software trigger\n");
 	else
 		goto end;
 
@@ -112,55 +112,55 @@ int gswss_cfg1_1588(void *pdev, u32 trig0_sel, u32 trig1_sel, u32 sw_trig)
 	cfg0 = GSWSS_RGRD(pdata, CFG1_1588);
 
 	if (trig0_sel == 0)
-		mac_printf("\tTRIG0: PON is the master\n");
+		mac_dbg("\tTRIG0: PON is the master\n");
 	else if (trig0_sel == 1)
-		mac_printf("\tTRIG0: PCIE0 is the master\n");
+		mac_dbg("\tTRIG0: PCIE0 is the master\n");
 	else if (trig0_sel == 2)
-		mac_printf("\tTRIG0: PCIE1 is the master\n");
+		mac_dbg("\tTRIG0: PCIE1 is the master\n");
 	else if (trig0_sel == 3)
-		mac_printf("\tTRIG0: XGMAC2 is the master\n");
+		mac_dbg("\tTRIG0: XGMAC2 is the master\n");
 	else if (trig0_sel == 4)
-		mac_printf("\tTRIG0: XGMAC3 is the master\n");
+		mac_dbg("\tTRIG0: XGMAC3 is the master\n");
 	else if (trig0_sel == 5)
-		mac_printf("\tTRIG0: XGMAC4 is the master\n");
+		mac_dbg("\tTRIG0: XGMAC4 is the master\n");
 	else if (trig0_sel == 6)
-		mac_printf("\tTRIG0: PON100US is the master\n");
+		mac_dbg("\tTRIG0: PON100US is the master\n");
 	else if (trig0_sel == 8)
-		mac_printf("\tTRIG0: EXTPPS0 is the master\n");
+		mac_dbg("\tTRIG0: EXTPPS0 is the master\n");
 	else if (trig0_sel == 9)
-		mac_printf("\tTRIG0: EXTPPS1 is the master\n");
+		mac_dbg("\tTRIG0: EXTPPS1 is the master\n");
 	else if (trig0_sel == 10)
-		mac_printf("\tTRIG0: Software Trigger\n");
+		mac_dbg("\tTRIG0: Software Trigger\n");
 	else
 		goto end;
 
 	if (trig1_sel == 0)
-		mac_printf("\tTRIG1: PON is the master\n");
+		mac_dbg("\tTRIG1: PON is the master\n");
 	else if (trig1_sel == 1)
-		mac_printf("\tTRIG1: PCIE0 is the master\n");
+		mac_dbg("\tTRIG1: PCIE0 is the master\n");
 	else if (trig1_sel == 2)
-		mac_printf("\tTRIG1: PCIE1 is the master\n");
+		mac_dbg("\tTRIG1: PCIE1 is the master\n");
 	else if (trig1_sel == 3)
-		mac_printf("\tTRIG1: XGMAC2 is the master\n");
+		mac_dbg("\tTRIG1: XGMAC2 is the master\n");
 	else if (trig1_sel == 4)
-		mac_printf("\tTRIG1: XGMAC3 is the master\n");
+		mac_dbg("\tTRIG1: XGMAC3 is the master\n");
 	else if (trig1_sel == 5)
-		mac_printf("\tTRIG1: XGMAC4 is the master\n");
+		mac_dbg("\tTRIG1: XGMAC4 is the master\n");
 	else if (trig1_sel == 6)
-		mac_printf("\tTRIG1: PON100US is the master\n");
+		mac_dbg("\tTRIG1: PON100US is the master\n");
 	else if (trig1_sel == 8)
-		mac_printf("\tTRIG1: EXTPPS0 is the master\n");
+		mac_dbg("\tTRIG1: EXTPPS0 is the master\n");
 	else if (trig1_sel == 9)
-		mac_printf("\tTRIG1: EXTPPS1 is the master\n");
+		mac_dbg("\tTRIG1: EXTPPS1 is the master\n");
 	else if (trig1_sel == 10)
-		mac_printf("\tTRIG1: Software Trigger\n");
+		mac_dbg("\tTRIG1: Software Trigger\n");
 	else
 		goto end;
 
 	if (sw_trig == 0)
-		mac_printf("\tSW_TRIG: 0\n");
+		mac_dbg("\tSW_TRIG: 0\n");
 	else if (sw_trig == 1)
-		mac_printf("\tSW_TRIG: 1\n");
+		mac_dbg("\tSW_TRIG: 1\n");
 
 	MAC_SET_VAL(cfg0, CFG1_1588, TRIG1SEL, trig1_sel);
 	MAC_SET_VAL(cfg0, CFG1_1588, TRIG0SEL, trig0_sel);
