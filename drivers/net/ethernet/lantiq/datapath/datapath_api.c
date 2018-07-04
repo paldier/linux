@@ -2173,10 +2173,7 @@ static void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 	pmac->tcp_h_offset = tcp_h_offset >> 2;
 }
 
-static void set_ptp_recid(struct pmac_tx_hdr *pmac, int rec_id)
-{
-	pmac->record_id_msb = rec_id;
-}
+
 int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 		struct sk_buff *skb, int32_t len, uint32_t flags)
 {
@@ -2314,18 +2311,19 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 			(skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
 #endif
 		{	ops = dp_port_prop[inst].mac_ops[dp_info->port_id];
-			if(ops)
-				rec_id = ops->do_tx_hwts(ops, skb);
-
+			if(!ops) {
+				err_ret = DP_XMIT_PTP_ERR;
+				goto lbl_err_ret;
+			}
+			rec_id = ops->do_tx_hwts(ops, skb);
 			if(rec_id < 0) {
 				err_ret = DP_XMIT_PTP_ERR;
 				goto lbl_err_ret;
 			}
-
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_PTP, &pmac,
 							desc_0, desc_1,
 							dp_info2);
-			set_ptp_recid(&pmac, rec_id);
+			pmac.record_id_msb = rec_id;
 		}
 #endif
 	} else if (dp_info->alloc_flags & DP_F_FAST_DSL) { /*some with pmac*/
