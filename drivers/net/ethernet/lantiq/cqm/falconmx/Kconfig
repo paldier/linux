@@ -9,4 +9,4 @@ config CBM_LS_ENABLE
 	---help---
 	Turn on this option to enable CBM LS and TCP packet Marking
 	in HW.
-endmenu 
+endmenu
