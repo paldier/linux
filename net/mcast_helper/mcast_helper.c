@@ -117,6 +117,11 @@ mch_acl_enabled	= 1;
 #endif
 
 
+static int mch_major = -1;
+static struct cdev mcast_cdev;
+static struct class *mcast_class = NULL;
+static bool device_created;
+
 #ifdef CONFIG_SYSCTL
 static struct ctl_table_header *mcast_acl_sysctl_header;
 static struct ctl_table_header *mcast_accl_sysctl_header;
@@ -2114,7 +2119,7 @@ int mcast_helper_sig_check_update_ip(struct sk_buff *skb)
 			}
 			/*update the oifindex bitmap to be used for evaluating after timer expires */
 #ifdef CONFIG_MCAST_HELPER_ACL
-			gimc_rec->oifbitmap |= 1 << skb->dev->ifindex;
+			gimc_rec->oifbitmap |= 1ULL << skb->dev->ifindex;
 #endif
 		}
 
@@ -2168,7 +2173,7 @@ int mcast_helper_sig_check_update_ip6(struct sk_buff *skb)
 		}
 		/*update the oifindex bitmap to be used for evaluating after timer expires */
 #ifdef CONFIG_MCAST_HELPER_ACL
-		gimc_rec->oifbitmap |= 1 << skb->dev->ifindex;
+		gimc_rec->oifbitmap |= 1ULL << skb->dev->ifindex;
 #endif
 	}
 
@@ -2226,7 +2231,7 @@ static void mcast_helper_timer_handler(unsigned long data)
 	MCAST_MEMBER_t *gitxmc_rec = NULL;
 	unsigned int i=0;
 	unsigned int delflag=1;
-	unsigned int oifbitmap=0;
+	unsigned long long int oifbitmap = 0;
 	unsigned int flag = 0;
 
 	if (mch_iptype == IPV6)
@@ -2322,23 +2327,36 @@ static int __init mcast_helper_init_module(void)
 	int ret_val;
 	int index = 0;
 	/*
-	 *Register the mcast device (atleast try)
+	 * Alloc the chrdev region for mcast helper
 	 */
-	ret_val = register_chrdev(MCH_MAJOR_NUM, DEVICE_NAME, &mcast_helper_fops);
+	ret_val = alloc_chrdev_region(&mch_major , 0 ,1 , DEVICE_NAME);
 
 	/*
 	 *Negative values signify an error
 	 */
 	if (ret_val < 0) {
 		printk(KERN_ALERT "%s failed with %d\n",
-				"Sorry, registering the mcast  device ", ret_val);
+		       "Sorry, alloc_chrdev_region failed for the mcast  device ", ret_val);
 		return ret_val;
 	}
 
 	printk(KERN_INFO "%s The major device number is %d.\n",
-			"Registeration is a success", MCH_MAJOR_NUM);
+	       "Registeration is a success", MAJOR(mch_major));
 
-	for (index = 0; index < GINDX_LOOP_COUNT; index++) {
+	/* Create device class (before allocation of the array of devices) */
+	mcast_class = class_create(THIS_MODULE, DEVICE_NAME);
+	if (IS_ERR(mcast_class)) {
+		ret_val = PTR_ERR(mcast_class);
+		goto fail;
+	}
+	if (device_create(mcast_class, NULL, mch_major, NULL, "mcast") == NULL)
+		goto fail;
+	device_created = 1;
+	cdev_init(&mcast_cdev, &mcast_helper_fops);
+	if (cdev_add(&mcast_cdev, mch_major, 1) == -1)
+		goto fail;
+
+	for (index = 0 ; index < GINDX_LOOP_COUNT ;index++) {
 		g_mcast_grpindex[index] = 0 ;
 	}
 
@@ -2357,11 +2375,22 @@ static int __init mcast_helper_init_module(void)
 	mcast_helper_init_timer(MCH_UPDATE_TIMER);
 
 	return 0;
+fail:
+	if (device_created) {
+		device_destroy(mcast_class, mch_major);
+		cdev_del(&mcast_cdev);
+	}
+	if (mcast_class)
+		class_destroy(mcast_class);
+	if (mch_major != -1)
+		unregister_chrdev_region(mch_major, 1);
+
+	return -1;
 }
 
-/*=============================================================================
- *function name: mcast_helper_exit_module
- *description  : Mcast helper module exit handler
+ /*=============================================================================
+ * function name : mcast_helper_exit_module
+ * description   : Mcast helper module exit handler
  *===========================================================================*/
 
 static void __exit mcast_helper_exit_module(void)
@@ -2386,7 +2415,14 @@ static void __exit mcast_helper_exit_module(void)
 	remove_proc_entry("mcast_helper", NULL);
 	remove_proc_entry("mcast_helper6", NULL);
 	remove_proc_entry("proc_entry", NULL);
-	unregister_chrdev(MCH_MAJOR_NUM, DEVICE_NAME);
+	if (device_created) {
+		device_destroy(mcast_class, mch_major);
+		cdev_del(&mcast_cdev);
+	}
+	if (mcast_class)
+		class_destroy(mcast_class);
+	if (mch_major != -1)
+	unregister_chrdev_region(mch_major, 1);
 }
 
 

@@ -26,10 +26,14 @@
 #define MCAST_HELPER_H
 #include <uapi/linux/in.h> 
 #include <linux/ioctl.h>
-#define MCH_MAJOR_NUM 240
-#define MCH_MEMBER_ENTRY_ADD _IOR(MCH_MAJOR_NUM, 0, char *)
-#define MCH_MEMBER_ENTRY_UPDATE _IOR(MCH_MAJOR_NUM, 1, char *)
-#define MCH_MEMBER_ENTRY_REMOVE _IOR(MCH_MAJOR_NUM, 2, char *)
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/module.h>
+
+#define MCH_MAGIC 'M'
+#define MCH_MEMBER_ENTRY_ADD _IOR(MCH_MAGIC, 0, char *)
+#define MCH_MEMBER_ENTRY_UPDATE _IOR(MCH_MAGIC, 1, char *)
+#define MCH_MEMBER_ENTRY_REMOVE _IOR(MCH_MAGIC, 2, char *)
 
 #define LTQ_MC_F_REGISTER 0x01
 #define LTQ_MC_F_DEREGISTER 0x02
@@ -128,7 +132,7 @@ typedef struct  _mcast_gimc_t {
 	unsigned int grpIdx;	/* Group Index */
 	MCAST_STREAM_t mc_stream; /* Five tuple info */
 #ifdef CONFIG_MCAST_HELPER_ACL
-	unsigned int oifbitmap; /* Output interface bitmap */
+	unsigned long long int oifbitmap; /* Output interface bitmap */
 	unsigned int probeFlag; /* Probe Packet generate flag enable(1)/disable(0) */
 #endif
 	struct list_head list;	/**< Creating Global List  */
