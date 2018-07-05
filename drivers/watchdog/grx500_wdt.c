@@ -220,7 +220,8 @@ static irqreturn_t grx500wdt_irq(int irqno, void *param)
 	struct watchdog_device *grx500_wdt;
 
 	grx500_wdt = &per_cpu(grx500wdt, smp_processor_id());
-	grx500wdt_start(grx500_wdt);
+	/* enable this for dump data */
+/*	grx500wdt_start(grx500_wdt);*/
 	WARN_ONCE(1, " IRQ %d triggered as WDT%d Timer Overflow on CPU %d!\n",
 		irqno, grx500_wdt->id, smp_processor_id());
 
@@ -266,7 +267,7 @@ static int grx500wdt_probe(struct platform_device *pdev)
 	setup_percpu_irq(irq, &grx500wdt_irqaction);
 
 	/* Get the Clock frequency */
-	clk = devm_clk_get(&pdev->dev, "cpuclk");
+	clk = devm_clk_get(&pdev->dev, "freq");
 	if (IS_ERR(clk)) {
 		dev_err(&pdev->dev, "Failed to get CPU clock: %ld\n",
 			PTR_ERR(clk));
