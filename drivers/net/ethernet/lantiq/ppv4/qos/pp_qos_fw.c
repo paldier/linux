@@ -543,7 +543,7 @@ void create_move_cmd(
 		cmd.rlm = -1;
 
 	fill_preds(qdev->nodes, dst, cmd.preds, 6);
-	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_MOVE %u-->%u type:%d, q:%d, port:%u",
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_MOVE %u-->%u type:%d, q:%d, port:%u\n",
 			qdev->drvcmds.cmd_id,
 			qdev->drvcmds.cmd_fw_id,
 			src,
