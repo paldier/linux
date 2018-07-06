@@ -902,16 +902,17 @@ static void mcast_helper_delete_gitxmc_record(MCAST_MEMBER_t * gitxmc_rec,MCAST_
 {
 	unsigned int flag = 0;
 
-	if (gitxmc_rec == NULL)
-	  return;
+	if ((gitxmc_rec == NULL) || (gimc_rec == NULL))
+		return;
 
-	if (gimc_rec->mc_stream.sIP.ipType == IPV4) {
-		if (mch_acl_enabled){
-			flag = mcast_helper_update_mac_list(gitxmc_rec,gimc_rec,macaddr,action);
-			mcast_helper_invoke_return_callback(gimc_rec->grpIdx,netdev,(MCAST_STREAM_t *)&(gimc_rec->mc_stream),flag, gitxmc_rec->macaddr_count);
-		}
-
+#ifdef CONFIG_MCAST_HELPER_ACL
+	if ((mch_acl_enabled == 1) && (gitxmc_rec->aclBlocked == 1)) {
+		return;
 	}
+#endif
+
+	flag = mcast_helper_update_mac_list(gitxmc_rec,gimc_rec,macaddr,action);
+	mcast_helper_invoke_return_callback(gimc_rec->grpIdx, netdev, (MCAST_STREAM_t *)&(gimc_rec->mc_stream), flag, gitxmc_rec->macaddr_count);
 }
 
 /*=============================================================================
@@ -2113,6 +2114,8 @@ int mcast_helper_sig_check_update_ip(struct sk_buff *skb)
 #ifdef CONFIG_MCAST_HELPER_ACL
 					gitxmc_rec->aclBlocked = 0;
 #endif
+					flag = mcast_helper_update_mac_list(gitxmc_rec,gimc_rec,NULL,MC_F_ADD);
+					mcast_helper_invoke_return_callback(gimc_rec->grpIdx,gitxmc_rec->memDev,(MCAST_STREAM_t *)&(gimc_rec->mc_stream),flag, gitxmc_rec->macaddr_count);
 
 				}
 
