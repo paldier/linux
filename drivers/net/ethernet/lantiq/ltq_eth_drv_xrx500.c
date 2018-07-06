@@ -1235,18 +1235,18 @@ static int xrx500_of_iface(struct xrx500_hw *hw, struct device_node *iface,
 	else
 		snprintf(name, sizeof(name), "eth0_%d", hw->num_devs);
 
-	ret = of_property_read_u32(iface, "dp-dev-port",
+	ret = of_property_read_u32(iface, "intel,dp-dev-port",
 				   &dp_dev_port_param);
 	if (ret < 0) {
-		pr_info("ERROR : Property dp-dev-port could not be read from DT for if %s\n",
+		pr_info("ERROR : Property intel,dp-dev-port not read from DT for if %s\n",
 			name);
 		return ret;
 	}
 
-	ret = of_property_read_u32(iface, "dp-port-id",
+	ret = of_property_read_u32(iface, "intel,dp-port-id",
 				   &dp_port_id_param);
 	if (ret < 0) {
-		pr_info("ERROR : Property dp-port-id could not be read from DT for if %s\n",
+		pr_info("ERROR : Property intel,dp-port-id not read from DT for if %s\n",
 			name);
 		return ret;
 	}
