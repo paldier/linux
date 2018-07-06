@@ -847,8 +847,7 @@ static int ltq_gsw_pmac_init(void)
 				eg_cfg.bPmacEna = 1;
 				/*PTM_Bonding_Mode*/
 				eg_cfg.bFcsEna = (k == 13) ? 1 : 0;
-				eg_cfg.bRemL2Hdr = ((k == 12) ||
-						    (k == 14)) ? 1 : 0;
+				eg_cfg.bRemL2Hdr = 0;
 				/*CAPWAP_HD_BYTES*/
 				eg_cfg.numBytesRem = (k == 14) ? 1 : 0;
 				eg_cfg.nResDW1	   = 0;
