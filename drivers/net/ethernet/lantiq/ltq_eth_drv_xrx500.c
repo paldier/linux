@@ -406,6 +406,7 @@ static void ltq_tx_timeout(struct net_device *dev)
 static int ltq_set_mac_address(struct net_device *dev, void *p)
 {
 	struct sockaddr *addr = p;
+	struct ltq_switch_priv_t *priv = netdev_priv(dev);
 
 	pr_debug("set_mac_addr called\n");
 	if (netif_running(dev))
@@ -416,6 +417,13 @@ static int ltq_set_mac_address(struct net_device *dev, void *p)
 
 	memcpy(dev->dev_addr, addr->sa_data, dev->addr_len);
 
+	if (priv->xgmac_id >= 0) {
+		struct mac_ops *ops;
+
+		ops = gsw_get_mac_ops(0, priv->xgmac_id);
+		if (ops)
+			ops->set_macaddr(ops, dev->dev_addr);
+	}
 	return 0;
 }
 
@@ -969,6 +977,7 @@ ltq_eth_drv_eth_addr_setup(struct net_device *dev, int port, int wan)
 	int i = 0;
 	u8 *macaddr_param = NULL;
 	u8 values[ETH_ALEN] = {0};
+	struct ltq_switch_priv_t *priv = netdev_priv(dev);
 
 	if (is_valid_ether_addr(dev->dev_addr))
 		return;
@@ -994,6 +1003,14 @@ ltq_eth_drv_eth_addr_setup(struct net_device *dev, int port, int wan)
 		eth_hw_addr_random(dev);
 		pr_debug("using random mac for port %d.\n", port);
 	}
+	if (priv->xgmac_id >= 0) {
+		struct mac_ops *ops;
+
+		ops = gsw_get_mac_ops(0, priv->xgmac_id);
+		if (ops)
+			ops->set_macaddr(ops, dev->dev_addr);
+	}
+
 }
 
 #ifdef CONFIG_USERSPACE_LINK_NOTIFICATION
@@ -1209,7 +1226,7 @@ static int xrx500_of_iface(struct xrx500_hw *hw, struct device_node *iface,
 	struct ltq_switch_priv_t *priv;
 	struct device_node *port;
 	const __be32 *wan;
-	u32 dp_dev_port_param, dp_port_id_param;
+	u32 dp_dev_port_param, dp_port_id_param, xgmac_id_param;
 	dp_cb_t cb = {0};
 	u32 dp_port_id = 0;
 	char name[16];
@@ -1254,6 +1271,16 @@ static int xrx500_of_iface(struct xrx500_hw *hw, struct device_node *iface,
 		pr_info("ERROR : Property intel,dp-port-id not read from DT for if %s\n",
 			name);
 		return ret;
+	}
+
+	ret = of_property_read_u32(iface, "intel,xgmac-id",
+				   &xgmac_id_param);
+	if (ret < 0) {
+		pr_debug("Property intel,xgmac-id not exist for if %s\n",
+			 name);
+		priv->xgmac_id = -1;
+	} else {
+		priv->xgmac_id = xgmac_id_param;
 	}
 
 	strcpy(hw->devs[hw->num_devs]->name, name);
