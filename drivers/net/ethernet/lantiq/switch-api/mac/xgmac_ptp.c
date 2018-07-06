@@ -332,7 +332,6 @@ static void tx_hwtstamp(struct mac_prv_data *pdata,
 		shhwtstamp->hwtstamp = ktime_get_real();
 
 	skb_complete_tx_timestamp(pdata->ptp_tx_skb, shhwtstamp);
-	skb_put(pdata->ptp_tx_skb, pdata->ptp_tx_skb->len);
 	pdata->ptp_tx_skb = NULL;
 }
 
