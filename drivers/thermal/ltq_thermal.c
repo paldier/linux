@@ -247,9 +247,9 @@ static int ltq_thermal_probe(struct platform_device *pdev)
 	priv->dev = &pdev->dev;
 	platform_set_drvdata(pdev, priv);
 
-	priv->chiptop = syscon_regmap_lookup_by_phandle(node, "lantiq,chiptop");
+	priv->chiptop = syscon_regmap_lookup_by_phandle(node, "intel,syscon");
 	if (IS_ERR(priv->chiptop)) {
-		dev_err(&pdev->dev, "Failed to find lantiq,chiptop regmap\n");
+		dev_err(&pdev->dev, "Failed to find intel,syscon regmap\n");
 		return PTR_ERR(priv->chiptop);
 	}
 

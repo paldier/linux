@@ -8,7 +8,7 @@ Required properties:
 - compatible:
   - "lantiq,ts-xrx500" for Lantiq GRX500 SoC
 
-- lantiq,chiptop: phandle to syscon node
+- intel,syscon: phandle to syscon node
 
 
 Example of sensor definition:
@@ -17,7 +17,7 @@ ts: ts@080000 {
 	#thermal-sensor-cells = <0>;
 
 	compatible = "lantiq,ts-xrx500";
-	lantiq,chiptop = <&sysconf>;
+	intel,syscon = <&sysconf>;
 };
 
 
