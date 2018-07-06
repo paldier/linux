@@ -613,6 +613,69 @@ int mac_get_mtu(void *pdev)
 	return mtu;
 }
 
+static int mac_set_rxcrccheck(void *pdev, u8 disable)
+{
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->mac_lock);
+#endif
+
+	xgmac_set_rxcrc(pdev, disable);
+
+	if (disable) {
+		/* Packet dont have FCS and FCS is not removed */
+		gswss_set_mac_rxfcs_op(pdev, MODE0);
+	} else {
+		/* Packet have FCS and FCS is removed */
+		gswss_set_mac_rxfcs_op(pdev, MODE2);
+	}
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->mac_lock);
+#endif
+
+	return 0;
+}
+
+static int mac_set_sptag(void *pdev, u8 mode)
+{
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->mac_lock);
+#endif
+
+	gswss_set_mac_txsptag_op(pdev, mode);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->mac_lock);
+#endif
+
+	return 0;
+}
+
+static int mac_set_macaddr(void *pdev, u8 *mac_addr)
+{
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->mac_lock);
+#endif
+
+	lmac_set_pauseframe_addr(pdev, mac_addr);
+
+	/* Program MAC Address */
+	xgmac_set_mac_address(pdev, mac_addr);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->mac_lock);
+#endif
+
+	return 0;
+}
+
+
 int mac_set_pfsa(void *pdev, u8 *mac_addr, u32 mode)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -1264,6 +1327,11 @@ void mac_init_fn_ptrs(struct mac_ops *mac_op)
 	mac_op->do_tx_hwts = xgmac_tx_hwts;
 	mac_op->mac_get_ts_info = xgmac_get_ts_info;
 #endif
+
+	mac_op->set_macaddr = mac_set_macaddr;
+	mac_op->set_rx_crccheck = mac_set_rxcrccheck;
+	mac_op->set_sptag = mac_set_sptag;
+
 	mac_op->mac_int_en = mac_int_enable;
 	mac_op->mac_int_dis = mac_int_disable;
 

@@ -28,6 +28,31 @@ struct mac_ops {
 	 * return	OUT  !0:Flow Ctrl operation Set Error
 	 */
 	int(*set_flow_ctl)(void *, u32);
+	/* This function Sets the Mac Adress in xgmac.
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 * param[in/out]IN:	*mac_addr MAC source address to Set
+	 * return	OUT	-1:	Source Address Set Error
+	 */
+	int(*set_macaddr)(void *, u8 *);
+	/* This function Enables/Disables Rx CRC check.
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 * param[in/out]IN:	disable	Disable=1, Enable=0
+	 * return	OUT	-1:	Set Failed
+	 */
+	int(*set_rx_crccheck)(void *, u8);
+	/* This function configure treatment of special tag
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 * param[in/out]IN:	mode	0 - packet does not have special tag
+	 *				1 - packet has special tag and special tag is replaced
+	 *				2 - packet has special tag and no modification
+	 *				3 - packet has special tag and special tag is removed
+	 * return	OUT	-1:	Set Failed
+	 */
+#define SPTAG_MODE_NOTAG	0
+#define SPTAG_MODE_REPLACE	1
+#define SPTAG_MODE_KEEP		2
+#define SPTAG_MODE_REMOVE	3
+	int(*set_sptag)(void *, u8);
 	/* This function Gets the Flow Ctrl operation in Both XGMAC and LMAC.
 	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
 	 * return	OUT:	mode	0 - Auto Mode based on GPHY/XPCS link.
@@ -176,7 +201,7 @@ struct mac_ops {
 	int(*get_mtu)(void *);
 	/* This function Sets the Pause frame Source Address
 	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
-	 * param[in/out]IN:	*mac_addrMAC source address to Set
+	 * param[in/out]IN:	*mac_addr MAC source address to Set
 	 * param[in/out]IN:	mode
 	 *			1 - PORT specific MAC source address
 	 *			0 - COMMON MAC source address

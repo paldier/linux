@@ -99,7 +99,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 			dp_info->dma0_mask_template[i].field.redir = 0;
 		}
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-		dp_info->pmac_template[TEMPL_PTP].ptp= 1;
+		dp_info->pmac_template[TEMPL_PTP].ptp = 1;
 #endif
 	} else if (flags & DP_F_DIRECTLINK) { /*always with pmac*/
 		/*normal dirctpath without checksum support
@@ -767,6 +767,58 @@ static int dp_platform_set(int inst, u32 flag)
 	return 0;
 }
 
+#define DP_GSWIP_CRC_DISABLE 1
+#define DP_GSWIP_FCS_DISABLE 0
+#define DP_GSWIP_FLOW_CTL_DISABLE 4
+static int pon_config(int inst, int ep, struct dp_port_data *data, u32 flags)
+{
+	struct core_ops *gsw_handle;
+	GSW_return_t ret;
+	struct mac_ops *mac_ops;
+	GSW_CPU_PortCfg_t cpu_port_cfg;
+
+	mac_ops = dp_port_prop[inst].mac_ops[ep];
+	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	memset((void *)&cpu_port_cfg, 0x00, sizeof(cpu_port_cfg));
+	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
+			   gsw_handle, &cpu_port_cfg);
+	if (ret != GSW_statusOk) {
+		PR_ERR("fail in getting CPU port config\r\n");
+		return -1;
+	}
+	/* Enable the Egress and Ingress Special Tag */
+	cpu_port_cfg.nPortId = ep;
+	cpu_port_cfg.bSpecialTagIngress = 1;
+	cpu_port_cfg.bSpecialTagEgress = 1;
+	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgSet,
+			   gsw_handle, &cpu_port_cfg);
+	if (ret != GSW_statusOk) {
+		PR_ERR("Fail in configuring CPU port\n");
+		return -1;
+	}
+
+	/* Disable Rx CRC check. Value '0'-enable, '1'-disable */
+	mac_ops->set_rx_crccheck(mac_ops, DP_GSWIP_CRC_DISABLE);
+
+	/* TX FCS generation disable. Value '1'-enable, '0'-disable */
+	if (data->flag_ops & DP_F_DATA_FCS_DISABLE)
+		mac_ops->set_fcsgen(mac_ops, DP_GSWIP_FCS_DISABLE);
+
+	/* Disables RX/TX Flow control */
+	mac_ops->set_flow_ctl(mac_ops, DP_GSWIP_FLOW_CTL_DISABLE);
+	mac_ops->set_sptag(mac_ops, SPTAG_MODE_REPLACE);
+
+	return 0;
+}
+
+static int dp_port_spl_cfg(int inst, int ep, struct dp_port_data *data,
+			   u32 flags)
+{
+	if (flags & (DP_F_GPON | DP_F_EPON))
+		pon_config(inst, ep, data, flags);
+	return 0;
+}
+
 static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			     u32 flags)
 {
@@ -811,6 +863,7 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			   CBM_QUEUE_MAP_F_MPE1_DONTCARE |
 			   CBM_QUEUE_MAP_F_MPE2_DONTCARE);
 	dp_node_reserve(inst, ep, data, flags);
+	dp_port_spl_cfg(inst, ep, data, flags);
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
 	if (DP_DBG_FLAG_QOS & dp_dbg_flag) {
 		for (i = 0; i < port_info->deq_port_num; i++) {

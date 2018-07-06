@@ -619,6 +619,7 @@ enum dp_port_data_flag {
 	DP_F_DATA_EVEN_FIRST = BIT(2), /*!< reserve dp_port in even number*/
 	DP_F_DATA_RESV_Q = BIT(3), /*!< reserve QOS queue */
 	DP_F_DATA_RESV_SCH = BIT(4), /*!< reserve QOS scheduler */
+	DP_F_DATA_FCS_DISABLE = BIT(5), /*!< Disable FCS for PON port on SOC */
 };
 
 /*! @brief typedef struct dp_port_data */
