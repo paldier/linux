@@ -210,7 +210,7 @@ static int get_tsinfo(struct net_device *dev, struct ethtool_ts_info *ts_info)
 	priv = netdev_priv(dev);
 
 	ops = gsw_get_mac_ops(0, (priv->dp_port_id - 2));
-	if(ops)
+	if (ops)
 		ops->mac_get_ts_info(ops, ts_info);
 
 	return 0;
@@ -231,9 +231,9 @@ static const struct ethtool_ops ethtool_ops = {
 	.set_settings		= set_settings,
 	.nway_reset		= nway_reset,
 	.get_link		= ethtool_op_get_link,
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)	
-	.get_ts_info 		= get_tsinfo,
-#endif	
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+	.get_ts_info		= get_tsinfo,
+#endif
 };
 
 /* open the network device interface*/
