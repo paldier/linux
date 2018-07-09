@@ -5017,10 +5017,10 @@ int tmu_queue_raw_dump(struct seq_file *s, int pos)
 	tmu_proc_eqt_print(s, i, 0);
 	if (g_queue_dump == 1) {
 		SEQ_PRINTF(s, "\n");
-		pos++;
-	} else {
-		pos++;
 	}
+	if (seq_has_overflowed(s))
+		return pos;
+	pos++;
 	if ((pos + proc_queue_start_id >= EGRESS_QUEUE_ID_MAX) ||
 	    (pos + proc_queue_start_id > proc_queue_end_id)) {
 
