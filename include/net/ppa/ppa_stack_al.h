@@ -1857,7 +1857,7 @@ void *ppa_mem_cache_alloc(PPA_MEM_CACHE *p_cache);
   - PPA_FAILURE, if the memory cache free operation fails. \n
   \note
  */
-void ppa_mem_cache_free(void *buf, PPA_MEM_CACHE *p_cache);
+int32_t ppa_mem_cache_free(void *buf, PPA_MEM_CACHE *p_cache);
 /*! \brief This function does a byte copy from source buffer to destination buffer for the specified number of bytes.
   \param[in] dst Pointer to destination buffer to copy to.
   \param[in] src Pointer to source buffer to copy from.
