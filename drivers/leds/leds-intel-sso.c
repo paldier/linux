@@ -4,19 +4,18 @@
  *
  * Copyright (C) 2018 Intel Corporation.
  */
-#include <linux/kernel.h>
-#include <linux/module.h>
+#include <linux/clk.h>
+#include <linux/debugfs.h>
+#include <linux/gpio/consumer.h>
 #include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/leds.h>
+#include <linux/mfd/syscon.h>
+#include <linux/module.h>
 #include <linux/of.h>
 #include <linux/property.h>
 #include <linux/platform_device.h>
-#include <linux/mfd/syscon.h>
 #include <linux/regmap.h>
-#include <linux/leds.h>
-#include <linux/clk.h>
-#include <linux/gpio/consumer.h>
-#include <linux/debugfs.h>
-#include <linux/proc_fs.h>
 #include <linux/uaccess.h>
 
 /* reg definition */
@@ -670,6 +669,9 @@ sso_led_create_write(struct file *s, const char __user *buffer,
 	struct device *dev;
 	int i;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	priv = file_inode(s)->i_private;
 	dev = priv->dev;
 	copy_from_user(buf, buffer, sizeof(buf) - 1);
@@ -750,6 +752,9 @@ sso_led_delete_write(struct file *s, const char __user *buffer,
 	struct list_head *p, *n;
 	struct sso_led *led;
 	int i;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	priv = file_inode(s)->i_private;
 	copy_from_user(buf, buffer, sizeof(buf) - 1);
@@ -866,17 +871,17 @@ static int sso_led_proc_init(struct sso_led_priv *priv)
 	if (!priv->debugfs)
 		return -ENOMEM;
 
-	file = debugfs_create_file("create", 0644, priv->debugfs,
+	file = debugfs_create_file("create", 0200, priv->debugfs,
 				   priv, &sso_led_create_fops);
 	if (!file)
 		goto __proc_err;
 
-	file = debugfs_create_file("delete", 0644, priv->debugfs,
+	file = debugfs_create_file("delete", 0200, priv->debugfs,
 				   priv, &sso_led_delete_fops);
 	if (!file)
 		goto __proc_err;
 
-	file = debugfs_create_file("show", 0644, priv->debugfs,
+	file = debugfs_create_file("show", 0400, priv->debugfs,
 				   priv, &sso_led_show_fops);
 	if (!file)
 		goto __proc_err;
