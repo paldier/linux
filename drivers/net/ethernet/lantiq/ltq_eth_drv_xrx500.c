@@ -3,7 +3,7 @@
  * Copyright (C) 2016~2018 Intel Corporation.
  */
 
-#undef CONFIG_USERSPACE_LINK_NOTIFICATION
+#define CONFIG_USERSPACE_LINK_NOTIFICATION
 
 #include <linux/version.h>
 #include <linux/module.h>
@@ -1015,18 +1015,24 @@ enum eth_attr {
 
 #define ETH_LINK_A_MAX (__ETH_A_MAX - 1)
 
+enum eth_multicast_groups {
+	ETH_MCGRP,
+};
+
+/* VRX318 TC message multicast group */
+static struct genl_multicast_group eth_grps[] = {
+	[ETH_MCGRP] = {.name = "eth_mcgrp",},
+};
+
 /* VRX318 TC message genelink family */
-struct genl_family eth_gnl_family = {
+static struct genl_family eth_gnl_family = {
 	.id = GENL_ID_GENERATE, /* To generate an id for the family*/
 	.hdrsize = 0,
 	.name = "eth_drv_notify", /*family name, used by userspace application*/
 	.version = 1, /*version number  */
 	.maxattr = ETH_LINK_A_MAX,
-};
-
-/* VRX318 TC message multicast group */
-struct genl_multicast_group eth_grp = {
-	.name = "eth_mcgrp",
+	.mcgrps = eth_grps,
+	.n_mcgrps = ARRAY_SIZE(eth_grps),
 };
 
 /* API definition for the driver to send TC notify messages to user application
@@ -1035,7 +1041,8 @@ struct genl_multicast_group eth_grp = {
  * tc_msg: 1-link is up,0- link is down
  * ln_no: interface name
  */
-int ltq_eth_nl_msg_send(int pid, int link_status, int speed, char *if_name)
+static int
+ltq_eth_nl_msg_send(int pid, int link_status, int speed, char *if_name)
 {
 	struct sk_buff *skb;
 	int ret;
@@ -1065,7 +1072,8 @@ int ltq_eth_nl_msg_send(int pid, int link_status, int speed, char *if_name)
 		nla_put_string(skb, ETH_A_LINK_STATUS, "down");
 	}
 	genlmsg_end(skb, msg_head);
-	ret = genlmsg_multicast(skb, pid, eth_grp.id, GFP_KERNEL);
+	ret = genlmsg_multicast(&eth_gnl_family, skb, pid,
+				ETH_MCGRP, GFP_KERNEL);
 
 	if (ret != 0 && ret != -ESRCH) {
 		pr_err("failed to send out the multicast message:ret = %d\n",
@@ -1078,7 +1086,7 @@ out:
 	return ret;
 }
 
-int ltq_eth_genetlink_init(void)
+static int ltq_eth_genetlink_init(void)
 {
 	int ret;
 
@@ -1088,32 +1096,14 @@ int ltq_eth_genetlink_init(void)
 	if (ret != 0) {
 		pr_err("Family registeration fail:%s\n",
 		       eth_gnl_family.name);
-		goto failure;
 	}
 
-	ret = genl_register_mc_group(&eth_gnl_family, &eth_grp);
-
-	if (ret != 0) {
-		pr_err("register mc group fail: %i, grp name: %s\n",
-		       ret, eth_grp.name);
-		genl_unregister_family(&eth_gnl_family);
-		goto failure;
-	} else
-		pr_info("register mc group pass: %i, grp name: %s, grp id:%d\n",
-			ret, eth_grp.name, eth_grp.id);
-
-	return 0;
-
-failure:
 	return ret;
 }
 
-void ltq_eth_genetlink_exit(void)
+static void ltq_eth_genetlink_exit(void)
 {
 	int ret;
-
-	/* unregister mc groups */
-	genl_unregister_mc_group(&eth_gnl_family, &eth_grp);
 
 	/*unregister the family*/
 	ret = genl_unregister_family(&eth_gnl_family);
