@@ -57,6 +57,8 @@ struct dp_dev {
 	struct list_head ctp_list;
 	const struct net_device_ops *old_dev_ops;
 	struct net_device_ops new_dev_ops;
+	const struct ethtool_ops *old_ethtool_ops;
+	struct ethtool_ops new_ethtool_ops;
 #ifdef CONFIG_NET_SWITCHDEV
 	struct switchdev_ops *old_swdev_ops;
 	struct switchdev_ops new_swdev_ops;

@@ -11,6 +11,5 @@ ifneq ($(CONFIG_LTQ_DATAPATH_SWITCHDEV),)
 obj-$(CONFIG_LTQ_DATAPATH) += datapath_swdev.o
 endif
 
-ifneq ($(CONFIG_LTQ_DATAPATH_PTP1588),)
 obj-$(CONFIG_LTQ_DATAPATH) += datapath_ioctl.o
-endif
+

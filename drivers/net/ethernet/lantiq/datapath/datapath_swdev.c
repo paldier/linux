@@ -30,6 +30,7 @@
 #include "datapath_swdev.h"
 #include "datapath.h"
 #include "datapath_instance.h"
+#include "datapath_ioctl.h"
 
 static void dp_swdev_insert_bridge_id_entry(struct br_info *);
 static void dp_swdev_remove_bridge_id_entry(struct br_info *);
@@ -1036,16 +1037,67 @@ int dp_notif_br_alloc(struct net_device *br_dev)
 }
 
 /*Register netdev_ops for switchdev*/
-static int dp_set_netdev_ops(struct dp_dev *dp_dev)
+static int dp_set_netdev_ops(struct dp_dev *dp_dev,
+			     struct net_device *dp_port)
 {
+	int err = DP_SUCCESS;
+
 	if (!dp_dev)
 		return -1;
-	dp_dev->new_dev_ops.ndo_bridge_setlink = dp_ndo_bridge_setlink;
-	dp_dev->new_dev_ops.ndo_bridge_getlink = dp_ndo_bridge_getlink;
-	dp_dev->new_dev_ops.ndo_bridge_dellink = dp_ndo_bridge_dellink;
-	dp_dev->new_dev_ops.ndo_fdb_add = switchdev_port_fdb_add;
-	dp_dev->new_dev_ops.ndo_fdb_del = switchdev_port_fdb_del;
-	dp_dev->new_dev_ops.ndo_fdb_dump = switchdev_port_fdb_dump;
+	err = dp_ops_set((void **)&dp_port->netdev_ops,
+			 offsetof(const struct net_device_ops,
+				  ndo_bridge_setlink),
+			 sizeof(*dp_port->netdev_ops),
+			 (void **)&dp_dev->old_dev_ops,
+			 &dp_dev->new_dev_ops,
+			 &dp_ndo_bridge_setlink);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->netdev_ops,
+			 offsetof(const struct net_device_ops,
+				  ndo_bridge_getlink),
+			 sizeof(*dp_port->netdev_ops),
+			 (void **)&dp_dev->old_dev_ops,
+			 &dp_dev->new_dev_ops,
+			 &dp_ndo_bridge_getlink);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->netdev_ops,
+			 offsetof(const struct net_device_ops,
+				  ndo_bridge_dellink),
+			 sizeof(*dp_port->netdev_ops),
+			 (void **)&dp_dev->old_dev_ops,
+			 &dp_dev->new_dev_ops,
+			 &dp_ndo_bridge_dellink);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->netdev_ops,
+			 offsetof(const struct net_device_ops,
+				  ndo_fdb_add),
+			 sizeof(*dp_port->netdev_ops),
+			 (void **)&dp_dev->old_dev_ops,
+			 &dp_dev->new_dev_ops,
+			 &switchdev_port_fdb_add);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->netdev_ops,
+			 offsetof(const struct net_device_ops,
+				  ndo_fdb_del),
+			 sizeof(*dp_port->netdev_ops),
+			 (void **)&dp_dev->old_dev_ops,
+			 &dp_dev->new_dev_ops,
+			 &switchdev_port_fdb_del);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->netdev_ops,
+			 offsetof(const struct net_device_ops,
+				  ndo_fdb_dump),
+			 sizeof(*dp_port->netdev_ops),
+			 (void **)&dp_dev->old_dev_ops,
+			 &dp_dev->new_dev_ops,
+			 &switchdev_port_fdb_dump);
+	if (err)
+		return DP_FAILURE;
 	return 0;
 }
 
@@ -1053,6 +1105,8 @@ static int dp_set_netdev_ops(struct dp_dev *dp_dev)
 int dp_port_register_switchdev(struct dp_dev  *dp_dev,
 			       struct net_device *dp_port)
 {
+	int err = DP_SUCCESS;
+
 	if (!dp_port) {
 		PR_ERR("cannot support switchdev if dev is NULL\n");
 		return -1;
@@ -1062,69 +1116,55 @@ int dp_port_register_switchdev(struct dp_dev  *dp_dev,
 			PR_ERR("netdev_ops not defined\n");
 			return -1;
 		}
-		/*backup ops*/
-		if (!dp_dev->old_dev_ops) {
-			dp_dev->old_dev_ops = NULL;
-			dp_dev->old_dev_ops = dp_port->netdev_ops;
-			dp_dev->new_dev_ops = *dp_port->netdev_ops;
-			dp_set_netdev_ops(dp_dev);
-			dp_port->netdev_ops = (const struct net_device_ops *)
-						&dp_dev->new_dev_ops;
-		} else if (dp_port->netdev_ops ==
-				(const struct net_device_ops *)
-				&dp_dev->new_dev_ops) {
-			dp_set_netdev_ops(dp_dev);
-		} else {
-			PR_ERR("error in old dev ops assignment\n");
-		}
-		dp_dev->old_swdev_ops = NULL;
-		if (dp_dev->old_swdev_ops)
-			dp_dev->old_swdev_ops = (struct switchdev_ops *)
-							dp_port->switchdev_ops;
-		if (dp_port->switchdev_ops)
-			dp_dev->new_swdev_ops = *dp_port->switchdev_ops;
-		/*tune new ops */
-		dp_dev->new_swdev_ops.switchdev_port_attr_get =
-							dp_swdev_port_attr_get;
-		dp_dev->new_swdev_ops.switchdev_port_attr_set =
-							dp_swdev_port_attr_set;
-		dp_dev->new_swdev_ops.switchdev_port_obj_add =
-							dp_swdev_port_obj_add;
-		dp_dev->new_swdev_ops.switchdev_port_obj_del =
-							dp_swdev_port_obj_del;
-		dp_dev->new_swdev_ops.switchdev_port_obj_dump =
-							dp_swdev_port_obj_dump;
-#ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
-		dp_dev->new_dev_ops.ndo_vlan_rx_add_vid =
-				dp_swdev_vlan_rx_add,
-		dp_dev->new_dev_ops.ndo_vlan_rx_kill_vid =
-				dp_swdev_vlan_rx_kill,
-		dp_dev->new_dev_ops.ndo_change_proto_down =
-				dp_swdev_port_change_proto_down,
-		dp_dev->new_dev_ops.ndo_neigh_destroy =
-				dp_swdev_port_neigh_destroy,
-#endif
-		/*change to new ops */
-		dp_port->switchdev_ops =
-			(const struct switchdev_ops *)&dp_dev->new_swdev_ops;
-		DP_DEBUG(DP_DBG_FLAG_SWDEV,
-			 "dp_port_register_switchdev done:%s\n",
-			 dp_port->name);
+	/* switchdev ops register */
+	err = dp_ops_set((void **)&dp_port->switchdev_ops,
+			 offsetof(const struct switchdev_ops,
+				  switchdev_port_attr_get),
+			 sizeof(*dp_port->switchdev_ops),
+			 (void **)&dp_dev->old_swdev_ops,
+			 &dp_dev->new_swdev_ops,
+			 &dp_swdev_port_attr_get);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->switchdev_ops,
+			 offsetof(const struct switchdev_ops,
+				  switchdev_port_attr_set),
+			 sizeof(*dp_port->switchdev_ops),
+			 (void **)&dp_dev->old_swdev_ops,
+			 &dp_dev->new_swdev_ops,
+			 &dp_swdev_port_attr_set);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->switchdev_ops,
+			 offsetof(const struct switchdev_ops,
+				  switchdev_port_obj_add),
+			 sizeof(*dp_port->switchdev_ops),
+			 (void **)&dp_dev->old_swdev_ops,
+			 &dp_dev->new_swdev_ops,
+			 &dp_swdev_port_obj_add);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->switchdev_ops,
+			 offsetof(const struct switchdev_ops,
+				  switchdev_port_obj_del),
+			 sizeof(*dp_port->switchdev_ops),
+			 (void **)&dp_dev->old_swdev_ops,
+			 &dp_dev->new_swdev_ops,
+			 &dp_swdev_port_obj_del);
+	if (err)
+		return DP_FAILURE;
+	err = dp_ops_set((void **)&dp_port->switchdev_ops,
+			 offsetof(const struct switchdev_ops,
+				  switchdev_port_obj_dump),
+			 sizeof(*dp_port->switchdev_ops),
+			 (void **)&dp_dev->old_swdev_ops,
+			 &dp_dev->new_swdev_ops,
+			 &dp_swdev_port_obj_dump);
+	if (err)
+		return DP_FAILURE;
+	dp_set_netdev_ops(dp_dev, dp_port);
 	}
 	return 0;
-}
-
-void dp_port_deregister_switchdev(struct dp_dev *dp_dev,
-				  struct net_device *dev)
-{
-	if (dp_dev->old_swdev_ops)
-		dev->switchdev_ops = dp_dev->old_swdev_ops;
-	if (dp_dev->old_dev_ops) {
-		if (dev->netdev_ops != dp_dev->old_dev_ops) {
-			dev->netdev_ops = dp_dev->old_dev_ops;
-			dp_dev->old_dev_ops = NULL;
-		}
-	}
 }
 
 void dp_switchdev_exit(void)

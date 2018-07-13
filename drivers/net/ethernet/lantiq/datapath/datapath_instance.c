@@ -29,9 +29,7 @@
 #include "datapath.h"
 #include "datapath_instance.h"
 #include "datapath_swdev_api.h"
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 #include "datapath_ioctl.h"
-#endif
 int dp_cap_num;
 struct dp_hw_cap hw_cap_list[DP_MAX_HW_CAP];
 
@@ -193,7 +191,7 @@ struct dp_dev *dp_dev_lookup(struct hlist_head *head,
 }
 
 static int dp_ndo_setup_tc(struct net_device *dev, u32 handle,
-		    __be16 protocol, struct tc_to_netdev *tc)
+			   __be16 protocol, struct tc_to_netdev *tc)
 {
 #if IS_ENABLED(CONFIG_PPA)
 	if (qos_mgr_hook_setup_tc)
@@ -218,6 +216,7 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 	u8 new_f = 0;
 	u32 idx;
 	struct subif_basic *subif;
+	int err = DP_SUCCESS;
 
 	if (!dev && !subif_name) {
 		PR_ERR("Why dev/subif_name both NULL?\n");
@@ -273,27 +272,15 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 		/*backup ops*/
 		if (dev) {
 			dev->features |= NETIF_F_HW_TC;
-			if (!dev->netdev_ops) {
-				PR_ERR("netdev_ops not defined\n");
-				return -1;
-			}
-			if (!dp_dev->old_dev_ops) {
-				dp_dev->old_dev_ops = NULL;
-				dp_dev->old_dev_ops = dev->netdev_ops;
-				dp_dev->new_dev_ops = *dev->netdev_ops;
-				dp_dev->new_dev_ops.ndo_setup_tc =
-							dp_ndo_setup_tc;
-				dev->netdev_ops =
-					(const struct net_device_ops *)
-							&dp_dev->new_dev_ops;
-			} else if (dev->netdev_ops ==
-					(const struct net_device_ops *)
-					&dp_dev->new_dev_ops) {
-				dp_dev->new_dev_ops.ndo_setup_tc =
-							dp_ndo_setup_tc;
-			} else {
-				PR_ERR("error in old dev ops assignment\n");
-			}
+			err = dp_ops_set((void **)&dev->netdev_ops,
+					 offsetof(const struct net_device_ops,
+						  ndo_setup_tc),
+					 sizeof(*dev->netdev_ops),
+					 (void **)&dp_dev->old_dev_ops,
+					 &dp_dev->new_dev_ops,
+					 (unsigned long)&dp_ndo_setup_tc);
+			if (err)
+				return DP_FAILURE;
 		}
 #endif
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
@@ -346,22 +333,10 @@ int dp_inst_del_dev(struct net_device *dev, char *subif_name, int inst, int ep,
 
 			if (!dp_dev->count) { /*move to free list */
 				hlist_del(&dp_dev->hlist);
-#if IS_ENABLED(CONFIG_PPA)
-	if (dp_dev->old_dev_ops) {
-		if (dev->netdev_ops != dp_dev->old_dev_ops) {
-			dev->netdev_ops = dp_dev->old_dev_ops;
-			dp_dev->old_dev_ops = NULL;
-		}
-	}
-#endif
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
-				dp_port_deregister_switchdev(dp_dev, dev);
-#endif				/*do't really free now
+				/*do't really free now
 				 *in case network stack is holding the callback
 				 */
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-				dp_deregister_ptp_ioctl(dp_dev,dev,inst);
-#endif
+				dp_ops_reset(dp_dev, dev);
 				hlist_add_head(&dp_dev->hlist,
 					       &dp_dev_list_free[idx]);
 			}

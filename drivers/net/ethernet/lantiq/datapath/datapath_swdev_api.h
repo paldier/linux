@@ -12,8 +12,6 @@
 int dp_switchdev_init(void);
 int dp_port_register_switchdev(struct dp_dev *dp_dev,
 			       struct net_device *dp_port);
-void dp_port_deregister_switchdev(struct dp_dev *dp_dev,
-				  struct net_device *dp_port);
 int dp_del_br_if(struct net_device *dev, struct net_device *br_dev,
 		 int inst, int bport);
 int dp_notif_br_alloc(struct net_device *br_dev);

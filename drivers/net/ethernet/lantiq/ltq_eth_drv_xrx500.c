@@ -198,6 +198,7 @@ static int set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 	return -ENODEV;
 }
 
+<<<<<<< HEAD
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 static int get_tsinfo(struct net_device *dev, struct ethtool_ts_info *ts_info)
 {
@@ -214,6 +215,8 @@ static int get_tsinfo(struct net_device *dev, struct ethtool_ts_info *ts_info)
 }
 #endif
 
+=======
+>>>>>>> DRVLIB_SW-778 : dp single API for different ops callback registration (netdev_ops,ethtool_ops,switchdev_ops
 /* Reset the device */
 static int nway_reset(struct net_device *dev)
 {
@@ -230,9 +233,6 @@ static const struct ethtool_ops ethtool_ops = {
 	.get_link		= ethtool_op_get_link,
 	.get_link_ksettings	= phy_ethtool_get_link_ksettings,
 	.set_link_ksettings	= phy_ethtool_set_link_ksettings,
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-	.get_ts_info		= get_tsinfo,
-#endif
 };
 
 /* open the network device interface*/
@@ -661,10 +661,6 @@ static int ltq_eth_init(struct net_device *dev)
 				priv->port[i].num);
 		dev->ethtool_ops = &ethtool_ops;
 	}
-
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-	dev->ethtool_ops = &ethtool_ops;
-#endif
 
 	priv->dp_subif.subif = 0;
 	priv->dp_subif.port_id = priv->dp_port_id;
