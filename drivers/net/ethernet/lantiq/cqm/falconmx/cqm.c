@@ -3695,6 +3695,7 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	if (cbm_hw_init(pdev))
 		return -1;
 	configure_ports(cqm_ctrl->cqm_cfg);
+	cbm_w32(cqm_ctrl->enq + IP_OCC_EN, 0);
 	cbm_w32((cqm_ctrl->cqm + CBM_BSL_CTRL), CBM_BSL_CTRL_BSL1_EN_MASK |
 		CBM_BSL_CTRL_BSL2_EN_MASK);
 	/*Enable the EQM and DQM contollers*/
