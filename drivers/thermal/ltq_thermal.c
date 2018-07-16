@@ -34,6 +34,21 @@ struct ltq_thermal;
 struct ltq_thermal_tsens_data {
 	void (*init)(struct platform_device *pdev, struct ltq_thermal *p);
 	int (*get_temp)(struct ltq_thermal *p);
+	u8 sensors_count;
+};
+
+struct ltq_thermal_sensor {
+	int id;
+
+	struct thermal_zone_device *tzd;
+
+	struct ltq_thermal_tsens_data *pdata;
+
+	int temp;
+	int last_temp;
+	int emul_temp;
+
+	void *drvdata;
 };
 
 struct ltq_thermal {
@@ -42,6 +57,9 @@ struct ltq_thermal {
 	struct device *dev;
 	struct ltq_thermal_tsens_data *tdata;
 	struct thermal_zone_device *tzd;
+
+	struct ltq_thermal_sensor *sensors;
+	int count;
 
 	int temp;
 	int last_temp;
@@ -142,6 +160,7 @@ int ltq_grx500_get_temp(struct ltq_thermal *priv)
 static struct ltq_thermal_tsens_data ltq_grx500_data = {
 	.init		= ltq_grx500_init,
 	.get_temp	= ltq_grx500_get_temp,
+	.sensors_count	= 2,
 };
 
 static int ltq_thermal_get_temp(void *data, int *temp)
@@ -243,6 +262,13 @@ static int ltq_thermal_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to find intel,syscon regmap\n");
 		return PTR_ERR(priv->chiptop);
 	}
+
+	priv->count = priv->tdata->sensors_count;
+	priv->sensors = devm_kzalloc(&pdev->dev, priv->count *
+				     sizeof(struct ltq_thermal_sensor),
+				     GFP_KERNEL);
+	if (!priv->sensors)
+		return -ENOMEM;
 
 	/* Init sensor */
 	priv->tdata->init(pdev, priv);
