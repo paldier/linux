@@ -30,10 +30,11 @@
 #include  "thermal_core.h"
 
 struct ltq_thermal;
+struct ltq_thermal_sensor;
 
 struct ltq_thermal_tsens_data {
 	void (*init)(struct platform_device *pdev, struct ltq_thermal *p);
-	int (*get_temp)(struct ltq_thermal *p);
+	int (*get_temp)(struct ltq_thermal_sensor *s);
 	u8 sensors_count;
 };
 
@@ -76,6 +77,7 @@ struct ltq_thermal {
 #define TSOVH_INT_DIS		0
 
 #define CH_SEL_MASK		0x700
+#define CH_SEL_OFFSET		0x8
 
 #define TS_EN_MASK		0x800
 #define TS_EN_WORKING		0
@@ -111,7 +113,7 @@ void  ltq_grx500_init(struct platform_device *pdev, struct ltq_thermal *priv)
 			   SOC_NC|TS_EN_SHUNT);
 }
 
-int ltq_grx500_get_temp(struct ltq_thermal *priv)
+int ltq_grx500_get_temp(struct ltq_thermal_sensor *sensor)
 {
 	u32 reg;
 	bool ready = false;
@@ -119,10 +121,14 @@ int ltq_grx500_get_temp(struct ltq_thermal *priv)
 	int a0 = -40;
 	int v1 = 3800;
 	int v2 = 3421;
+	struct ltq_thermal *priv = sensor->drvdata;
 
+	if (!priv)
+		return -EINVAL;
 
 	/* Select a channel */
-	regmap_update_bits(priv->chiptop, CTRL_REG, CH_SEL_MASK, 0x100);
+	regmap_update_bits(priv->chiptop, CTRL_REG, CH_SEL_MASK,
+			   sensor->id << CH_SEL_OFFSET);
 
 	/* Enable the temp sensor */
 	regmap_update_bits(priv->chiptop, CTRL_REG, SOC_MASK|TS_EN_MASK,
@@ -164,7 +170,7 @@ static int ltq_thermal_get_temp(void *data, int *temp)
 		return -EINVAL;
 
 	if (!sensor->emul_temp)
-		*temp = sensor->pdata->get_temp(sensor->drvdata);
+		*temp = sensor->pdata->get_temp(sensor);
 	else
 		*temp = sensor->emul_temp;
 
