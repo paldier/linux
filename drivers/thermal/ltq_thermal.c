@@ -55,16 +55,9 @@ struct ltq_thermal {
 	struct regmap	*chiptop;
 
 	struct device *dev;
-	struct ltq_thermal_tsens_data *tdata;
-	struct thermal_zone_device *tzd;
 
 	struct ltq_thermal_sensor *sensors;
 	int count;
-
-	int temp;
-	int last_temp;
-
-	int emul_temp;
 };
 
 #define CTRL_REG  0x100
