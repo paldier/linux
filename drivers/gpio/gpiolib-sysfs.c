@@ -446,6 +446,9 @@ static ssize_t export_store(struct class *class,
 	struct gpio_desc	*desc;
 	int			status;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	status = kstrtol(buf, 0, &gpio);
 	if (status < 0)
 		goto done;
@@ -487,6 +490,9 @@ static ssize_t unexport_store(struct class *class,
 	long			gpio;
 	struct gpio_desc	*desc;
 	int			status;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	status = kstrtol(buf, 0, &gpio);
 	if (status < 0)
