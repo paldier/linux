@@ -4929,8 +4929,8 @@ static int nl80211_new_station(struct sk_buff *skb, struct genl_info *info)
 	    !info->attrs[NL80211_ATTR_PEER_AID])
 		return -EINVAL;
 
-	if (!info->attrs[NL80211_ATTR_STA_RSSI])
-		return -EINVAL;
+	if (info->attrs[NL80211_ATTR_STA_RSSI])
+		params.rssi = nla_get_u32(info->attrs[NL80211_ATTR_STA_RSSI]);
 
 	mac_addr = nla_data(info->attrs[NL80211_ATTR_MAC]);
 	params.supported_rates =
@@ -4968,8 +4968,6 @@ static int nl80211_new_station(struct sk_buff *skb, struct genl_info *info)
 		params.aid = nla_get_u16(info->attrs[NL80211_ATTR_STA_AID]);
 	if (!params.aid || params.aid > IEEE80211_MAX_AID)
 		return -EINVAL;
-
-	params.rssi = nla_get_u32(info->attrs[NL80211_ATTR_STA_RSSI]);
 
 	if (info->attrs[NL80211_ATTR_STA_CAPABILITY]) {
 		params.capability =
