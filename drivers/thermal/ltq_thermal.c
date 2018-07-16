@@ -29,16 +29,9 @@
 
 #include  "thermal_core.h"
 
-enum ltq_soc {
-	LTQ_SOC_GRX500
-};
-
 struct ltq_thermal;
 
 struct ltq_thermal_tsens_data {
-	enum ltq_soc	soc;
-	char		*name;
-
 	void (*init)(struct platform_device *pdev, struct ltq_thermal *p);
 	int (*get_temp)(struct ltq_thermal *p);
 };
@@ -147,8 +140,6 @@ int ltq_grx500_get_temp(struct ltq_thermal *priv)
 
 /* Temperature sensor specific data */
 static struct ltq_thermal_tsens_data ltq_grx500_data = {
-	.soc		= LTQ_SOC_GRX500,
-	.name		= "TempSensor for GRX500",
 	.init		= ltq_grx500_init,
 	.get_temp	= ltq_grx500_get_temp,
 };
