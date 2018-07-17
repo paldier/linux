@@ -35,7 +35,6 @@ struct ltq_thermal_sensor;
 struct ltq_thermal_tsens_data {
 	void (*init)(struct platform_device *pdev, struct ltq_thermal *p);
 	int (*get_temp)(struct ltq_thermal_sensor *s);
-	u8 sensors_count;
 };
 
 struct ltq_thermal_sensor {
@@ -159,7 +158,6 @@ int ltq_grx500_get_temp(struct ltq_thermal_sensor *sensor)
 static struct ltq_thermal_tsens_data ltq_grx500_data = {
 	.init		= ltq_grx500_init,
 	.get_temp	= ltq_grx500_get_temp,
-	.sensors_count	= 2,
 };
 
 static int ltq_thermal_get_temp(void *data, int *temp)
@@ -262,7 +260,12 @@ static int ltq_thermal_probe(struct platform_device *pdev)
 		return PTR_ERR(priv->chiptop);
 	}
 
-	priv->count = pdata->sensors_count;
+	if (device_property_read_u32(&pdev->dev, "#thermal-sensor-cells",
+				     &priv->count)) {
+		/* register single cell if #thermal-sensor-cells is missing */
+		priv->count = 0;
+	}
+
 	priv->sensors = devm_kzalloc(&pdev->dev, priv->count *
 				     sizeof(struct ltq_thermal_sensor),
 				     GFP_KERNEL);
