@@ -47,7 +47,7 @@ struct xrx500_hw {
 /**
  * This structure is used internal purpose
  */
-struct ltq_switch_priv_t {
+struct ltq_eth_priv {
 	/*!< network device interface Statistics */
 	struct rtnl_link_stats64 stats;
 	/*!< structure of dma device information */
@@ -88,7 +88,7 @@ struct ltq_switch_priv_t {
 	#define FLAG_ADV_1000HALF       0x00010000
 	#define FLAG_ADV_1000FULL       0x00020000
 	#define FLAG_INTERNAL_PHY       0x00100000
-} ltq_switch_priv_t;
+};
 
 /**
  * This structure is used internal purpose
