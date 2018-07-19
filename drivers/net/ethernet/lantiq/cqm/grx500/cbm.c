@@ -330,10 +330,8 @@ s32 pmac, u32 flags)
 			if ((ptr->pmac == pmac) &&
 			    (!(ptr->egp_type & DP_F_MPE_ACCEL)) &&
 			    (!(ptr->egp_type & DP_F_DIRECTPATH_RX)) &&
-			#ifndef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
-				(!(ptr->egp_type & DP_F_CHECKSUM))
-			#endif
-			) {
+			    (IS_ENABLED(CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND)
+			     || (!(ptr->egp_type & DP_F_CHECKSUM)))) {
 				spin_unlock_irqrestore(&cbm_port_mapping,
 						       lock_flags);
 				return ptr;
@@ -412,7 +410,7 @@ struct cbm_egp_map epg_lookup_table[] = {
 	{17,	6,			 DP_F_FAST_ETH_LAN},
 	{18,	CBM_PMAC_NOT_APPL, DP_F_FAST_DSL_DOWNSTREAM},
 	{19,	15,			 DP_F_FAST_ETH_WAN},
-	#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+	#if IS_ENABLED(CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND)
 	{20,	CBM_PMAC_DYNAMIC, DP_F_CHECKSUM},
 	#else
 	{20,	CBM_PMAC_NOT_APPL, DP_F_CHECKSUM},
@@ -3142,7 +3140,7 @@ s32 direct_dp_enable(u32 port_id, u32 flags, u32 type)
 	return CBM_SUCCESS;
 }
 
-#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND)
 s32 checksum_dp_enable(u32 port_id, u32 flags, u32 type)
 {
 	int j, queue_number;
@@ -3342,7 +3340,7 @@ dp_enable(
 		if ((local_entry->egp_type == DP_F_DIRECT) && (flags & CBM_PORT_F_DISABLE))
 			goto UNLOCK;
 	}
-	#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+	#if IS_ENABLED(CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND)
 	else if (local_entry && (local_entry->egp_type == DP_F_CHECKSUM))
 		checksum_dp_enable(port_id, flags, local_entry->egp_type);
 	#endif
