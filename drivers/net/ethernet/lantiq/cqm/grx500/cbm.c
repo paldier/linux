@@ -1590,7 +1590,7 @@ static struct sk_buff *cbm_alloc_skb_grx500(
 	void *buf = NULL;
 	struct sk_buff *skbuf = NULL;
 
-	size = SKB_DATA_ALIGN(size + CBM_DMA_DATA_OFFSET + NET_SKB_PAD)
+	size = SKB_DATA_ALIGN(size + CBM_GRX550_DMA_DATA_OFFSET + NET_SKB_PAD)
 			 + SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
 	if (size > CBM_STD_BUF_SIZE)
 		flag = CBM_PORT_F_JUMBO_BUF;
@@ -1600,7 +1600,7 @@ static struct sk_buff *cbm_alloc_skb_grx500(
 					 size,
 					 priority);
 		if (skbuf)
-			skb_reserve(skbuf, CBM_DMA_DATA_OFFSET);
+			skb_reserve(skbuf, CBM_GRX550_DMA_DATA_OFFSET);
 		else
 			cbm_buffer_free_grx500(smp_processor_id(), buf, 0);
 	}
