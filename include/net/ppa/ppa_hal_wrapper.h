@@ -23,12 +23,6 @@
 #define MAX_RT_SESS_CAPS 3
 #define MAX_MC_SESS_CAPS 2
 #define MAX_QOS_CAPS 2
-typedef struct ppa_hsel_cnode{
-	PPA_HLIST_NODE  cap_list;
-	uint8_t wt;
-	PPA_HAL_ID hal_id;
-	PPA_API_CAPS cap;
-} PPA_HSEL_CAP_NODE;
 extern uint8_t ppa_drv_get_num_tunnel_entries(void);
 extern uint8_t ppa_drv_get_num_registred_hals(void);
 extern uint32_t ppa_drv_generic_hal_register(uint32_t hal_id, ppa_generic_hook_t generic_hook);

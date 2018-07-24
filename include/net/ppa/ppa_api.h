@@ -163,6 +163,13 @@ typedef enum {
 	SESS_NAT_LOOPBACK,
 	MAX_CAPS
 } PPA_API_CAPS;
+typedef struct ppa_hsel_cnode{
+	PPA_HLIST_NODE  cap_list;
+	uint8_t wt;
+	PPA_HAL_ID hal_id;
+	PPA_API_CAPS cap;
+} PPA_HSEL_CAP_NODE;
+
 #define MAX_TUNNEL_ENTRIES 16
 #define FLAG_SESSION_HI_PRIO 0x0001
 #define FLAG_SESSION_SWAPPED 0x0002
