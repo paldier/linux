@@ -1740,7 +1740,7 @@ cbm_cpu_pkt_tx_grx500(
 	struct dma_tx_desc_2 *desc_2 = (struct dma_tx_desc_2 *)&skb->DW2;
 	u32 new_buf;
 	s32 tot_len, buf_size;
-	s32 clone_f, no_hdr_room_f;
+	s32 clone_f, no_hdr_room_f = 0;
 
 	tot_len = skb->len;
 	clone_f = skb_cloned(skb);
@@ -1768,6 +1768,7 @@ cbm_cpu_pkt_tx_grx500(
 		if (cbm_linearise_buf(skb, data, buf_size, (new_buf + CBM_FIXED_RX_OFFSET))) {
 			pr_err("Error in linearising\n");
 			cbm_buffer_free(smp_processor_id(), (void *)new_buf, 0);
+			dev_kfree_skb_any(skb);
 			return CBM_FAILURE;
 		}
 		tmp_data_ptr = new_buf + CBM_FIXED_RX_OFFSET;
@@ -2140,7 +2141,7 @@ static int do_dq_cbm_poll(struct napi_struct *napi, int budget)
 			/* Build the SKB */
 			data_len = desc_list->desc.desc3 & 0x0000FFFF;
 			data_ptr = (unsigned int)__va(desc_list->desc.desc2);
-			data_offset = (desc_list->desc.desc3 & 0x3800000) >> 23);
+			data_offset = (desc_list->desc.desc3 & 0x3800000) >> 23;
 			dma_map_single(
 			g_cbm_ctrl.dev,
 			(void *)(data_ptr + data_offset),

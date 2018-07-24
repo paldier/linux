@@ -12,7 +12,7 @@
 #define CBM_PORT_NOT_APPL 255
 #define LS_PORT_NUM             4
 #define CBM_MAX_INT_LINES       8
-#define CBM_DMA_DESC_OWN        1/*belong to DMA*/
+#define CBM_DMA_DESC_OWN        1U/*belong to DMA*/
 #define CBM_DMA_DATA_OFFSET     122
 #define DEFAULT_WAIT_CYCLES     20
 #define DEFAULT_LS_QTHH         7

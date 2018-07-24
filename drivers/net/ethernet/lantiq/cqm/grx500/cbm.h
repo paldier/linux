@@ -476,8 +476,8 @@ struct flow_id {
 	u32 q2:4;
 	u32 q1:4;
 	u32 q0:4;
-};
 #endif
+};
 
 struct cbm_egp_tmu_map {
 	u32 egp_type;
