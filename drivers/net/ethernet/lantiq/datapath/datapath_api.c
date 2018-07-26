@@ -1093,6 +1093,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 		end = start + 1;
 	}
 #endif
+	subif->flag_pmapper = 0;
 	DP_LIB_LOCK(&dp_lock);
 	for (k = start; k < end; k++) {
 		if (dp_port_info[inst][k].status != PORT_SUBIF_REGISTERED)
@@ -1153,6 +1154,9 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 								 subif);
 					subif_flag[num] = PORT_SUBIF(inst, k, i,
 								subif_flag);
+					if (dp_port_info[inst][k].subif_info[i].
+						ctp_dev)
+						subif->flag_pmapper = 1;
 					bport = PORT_SUBIF(inst, k, i, bp);
 					if (num &&
 					    (bport != dp_port_info[inst][k].

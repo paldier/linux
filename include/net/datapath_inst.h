@@ -108,6 +108,7 @@ struct inst_info {
 				  struct dp_pmapper *mapper, u32 flag);
 	int (*dp_get_gsw_pmapper)(int inst, int bport, int lport,
 				  struct dp_pmapper *mapper, u32 flag);
+	int (*dp_ctp_tc_map_set)(struct dp_tc_cfg *tc, int flag);
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
 	int swdev_flag;
 	int (*swdev_alloc_bridge_id)(int inst);

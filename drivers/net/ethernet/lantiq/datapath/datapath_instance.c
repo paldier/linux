@@ -247,7 +247,6 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 			dp_dev->count = 0;
 			dp_dev->subif_name[0] = 0;
 			dp_dev->fid = 0;
-			//dp_port_info[inst][0].subif_info[0].fid = dp_dev->fid;
 			INIT_LIST_HEAD(&dp_dev->ctp_list);
 			new_f = 1;
 		}

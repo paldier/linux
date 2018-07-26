@@ -289,6 +289,9 @@ typedef struct dp_subif {
 			  *   in case need call API dp_vlan_set to apply VLAN
 			  *   rule to CTP or bridge port
 			  */
+	u32 flag_pmapper : 1; /*!< output: flag to indicate whether this
+			       *   device is pmapper device
+			       */
 } dp_subif_t;
 
 typedef dp_subif_t PPA_SUBIF; /*!< @brief structure type dp_subif PPA_SUBIF*/

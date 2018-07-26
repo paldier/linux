@@ -2301,6 +2301,8 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 	char *param_list[10];
 	dp_pmac_cfg_t pmac_cfg;
 	int inst = 0;
+	int flag1 = 0;
+	struct dp_tc_cfg *tc;
 
 	memset(&pmac_cfg, 0, sizeof(dp_pmac_cfg_t));
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
@@ -2346,11 +2348,34 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 			PR_INFO("pmac set configuration failed\n");
 			return -1;
 		}
+	} else if (dp_strncmpi(param_list[0], "ctp_tc",
+		   strlen("ctp_tc")) == 0) {
+		tc = kzalloc(sizeof(*tc), GFP_KERNEL);
+		if (!tc) {
+			PR_ERR("failed to alloc ctp tc %d bytes\n",
+			       sizeof(*tc));
+			return 0;
+		}
+		tc->dev = dev_get_by_name(&init_net, param_list[1]);
+		tc->tc = dp_atoi(param_list[2]);
+		if (tc->tc > 15) {
+			PR_ERR("traffic class value range 0-15 only\n");
+			goto exit;
+		}
+		tc->force = 0;
+		if (dp_port_prop[inst].info.dp_ctp_tc_map_set(tc, flag1))
+			PR_ERR("ctp_tc_set fail\n");
+		else
+			PR_ERR("ctp_tc_set success\n");
+		kfree(tc);
 	} else {
 		PR_INFO("wrong command\n");
 		goto help;
 	}
 
+	return count;
+ exit:
+	kfree(tc);
 	return count;
  help:
 	PR_INFO("echo %s > /proc/dp/ep\n",
@@ -2366,6 +2391,7 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 		"egress [ep_port]",
 		"['rx_dmachan/fcs/pmac/res_dw1/res1_dw0/res2_dw0] [value]");
 	PR_INFO("echo egress [ep_port] ['rm_l2hdr'] [value] > /proc/dp/ep\n");
+	PR_INFO("echo ctp_tc [dev] [val] > /proc/dp/ep\n");
 	return count;
 }
 

@@ -36,6 +36,7 @@
 #include <net/datapath_api.h>
 #include <net/datapath_api_gswip31.h>
 #include "../datapath.h"
+#include "../datapath_instance.h"
 #include "datapath_proc.h"
 #include "datapath_ppv4.h"
 #include "datapath_misc.h"
@@ -1324,6 +1325,50 @@ static int subif_platform_set_unexplicit(int inst, int port_id,
 	return 0;
 }
 
+static int ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
+{
+	struct dp_dev *dp_dev;
+	struct core_ops *gsw_handle;
+	GSW_CTP_portConfig_t ctp_tc_cfg;
+	dp_subif_t subif = {0};
+
+	memset(&ctp_tc_cfg, 0, sizeof(ctp_tc_cfg));
+
+	if (dp_get_netif_subifid(tc->dev, NULL, NULL, NULL, &subif, 0)) {
+		DP_DEBUG(DP_DBG_FLAG_DBG, "get subifid fail(%s)\n",
+			 tc->dev ? tc->dev->name : "NULL");
+	} else {
+	if (subif.flag_pmapper) {
+		PR_ERR("Cannot support ctp tc set for pmmapper dev(%s)\n",
+		       tc->dev ? tc->dev->name : "NULL");
+		return -1;
+	}
+	gsw_handle = dp_port_prop[subif.inst].ops[GSWIP_L];
+	ctp_tc_cfg.nLogicalPortId = subif.port_id;
+	ctp_tc_cfg.nSubIfIdGroup = subif.subif;
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigGet,
+			 gsw_handle, &ctp_tc_cfg) != 0) {
+		PR_ERR("Failed to get CTP info for ep=%d subif=%d\n",
+		       dp_dev->ep, dp_dev->ctp);
+		return -1;
+	}
+	ctp_tc_cfg.eMask = GSW_CTP_PORT_CONFIG_MASK_FORCE_TRAFFIC_CLASS;
+	ctp_tc_cfg.nDefaultTrafficClass = tc->tc;
+	if (tc->force)
+		ctp_tc_cfg.bForcedTrafficClass = tc->force;
+	else
+		ctp_tc_cfg.bForcedTrafficClass = 0;
+
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigSet,
+			 gsw_handle, &ctp_tc_cfg) != 0) {
+		PR_ERR("CTP tc set fail for ep=%d subif=%d tc=%d force=%d\n",
+		       dp_dev->ep, dp_dev->ctp, tc->tc, tc->force);
+		return -1;
+	}
+	}
+	return 0;
+}
+
 static int not_valid_rx_ep(int ep)
 {
 	return (((ep >= 3) && (ep <= 6)) || (ep == 2) || (ep > 15));
@@ -1421,6 +1466,7 @@ int register_dp_cap_gswip31(int flag)
 	cap.info.dp_qos_platform_set = qos_platform_set;
 	cap.info.dp_set_gsw_pmapper = dp_set_gsw_pmapper_31;
 	cap.info.dp_get_gsw_pmapper = dp_get_gsw_pmapper_31;
+	cap.info.dp_ctp_tc_map_set = ctp_tc_map_set;
 #ifdef CONFIG_LTQ_DATAPATH_HAL_GSWIP31_MIB
 	cap.info.dp_get_port_vap_mib = dp_get_port_vap_mib_31;
 	cap.info.dp_clear_netif_mib = dp_clear_netif_mib_31;
