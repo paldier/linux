@@ -153,10 +153,12 @@ int dp_ops_reset(struct dp_dev *dp_dev,
 		dev->ethtool_ops = dp_dev->old_ethtool_ops;
 		dp_dev->old_ethtool_ops = NULL;
 	}
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
 	if (dev->switchdev_ops == &dp_dev->new_swdev_ops) {
 		dev->switchdev_ops = dp_dev->old_swdev_ops;
 		dp_dev->old_swdev_ops = NULL;
 	}
+#endif
 	return DP_SUCCESS;
 }
 
