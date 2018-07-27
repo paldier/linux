@@ -2057,6 +2057,44 @@ static int sysrst_execute_ngi_reset(
 }
 #endif
 #ifdef SUPPORT_RCU_DRIVER
+/* Get software arbitration property from device tree */
+static unsigned int sysrst_get_sw_arbitration(const char *name)
+{
+	unsigned int delay;
+	struct device_node *np;
+	int index;
+
+	np = g_sysrst_dev->of_node;
+	index = of_property_match_string(np, "reset-names", name);
+	if (index < 0) {
+		sysrst_dbg("Failed to get matching reset names\n");
+		return 0;
+	}
+
+	if (of_property_read_u32_index(np, "sw-arbitration-delay-us",
+				       index, &delay)) {
+		sysrst_dbg("Failed to get sw-arbitration-delay-us property\n");
+		return 0;
+	}
+
+	sysrst_dbg("sw-arbitration delay %u\n", delay);
+	return delay;
+}
+
+static int sysrst_wait_status_bit(struct reset_control *ctrl, int cond)
+{
+	unsigned int retry = 4;
+
+	while (retry--) {
+		if (reset_control_status(ctrl) == cond)
+			return 0;
+
+		udelay(10);
+	}
+
+	return -ETIMEDOUT;
+}
+
 /*!
  * \fn		static int sysrst_execute_rcu_reset(
  *			unsigned char *rcu_array_domain)
@@ -2076,6 +2114,8 @@ static int sysrst_execute_rcu_reset(unsigned int rst_id,
 	unsigned long sys_flags;
 	unsigned char *affected_rcu = NULL;
 	struct reset_control *ctrl;
+	char *name;
+	unsigned int delay;
 
 	/* sanity check */
 	if (rst_id > SYSRST_DOMAIN_MAX || module_id > SYSRST_MODULE_MAX) {
@@ -2106,19 +2146,33 @@ static int sysrst_execute_rcu_reset(unsigned int rst_id,
 		sysrst_dbg("Reset RCU [%d] module[%d]", affected_rcu[index],
 			   module_id);
 
+		name = g_system_domain_name[affected_rcu[index]];
+
 		/* reset RCU hardware */
-		ctrl = devm_reset_control_get_exclusive(g_sysrst_dev,
-				g_system_domain_name[affected_rcu[index]]);
+		ctrl = devm_reset_control_get_exclusive(g_sysrst_dev, name);
 		if (IS_ERR_OR_NULL(ctrl)) {
 			pr_err("Failed to get reset ctrl\n");
 			index++;
 			continue;
 		}
 
-		/* assert and wait until status is valid */
+		/* assert */
 		reset_control_assert(ctrl);
-		while (!reset_control_status(ctrl))
-			;
+
+		/* deassert if software arbitration */
+		delay = sysrst_get_sw_arbitration(name);
+		if (delay) {
+			/* wait until status is set */
+			if (sysrst_wait_status_bit(ctrl, 1))
+				pr_warn("Timedout: reset stat never set\n");
+
+			udelay(delay);
+			reset_control_deassert(ctrl);
+
+			/* wait until status is cleared */
+			if (sysrst_wait_status_bit(ctrl, 0))
+				pr_warn("Timedout: reset stat never cleared\n");
+		}
 
 		reset_control_put(ctrl);
 		index++;
