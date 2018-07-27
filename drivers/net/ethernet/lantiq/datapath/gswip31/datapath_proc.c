@@ -2074,8 +2074,7 @@ static ssize_t proc_swdev_brctl_write(struct file *file,
 	buf1[0] = 0;
 
 	if (dp_strncmpi(param_list[0], "brctl", strlen("brctl")) == 0) {
-		br_info = dp_swdev_bridge_entry_lookup(param_list[1],
-						       0);
+		br_info = dp_swdev_bridge_entry_lookup(param_list[1]);
 		if (br_info) {
 			print_bridge(br_info->fid, br_info->inst);
 			list_for_each_entry(temp_list,  &br_info->bp_list,

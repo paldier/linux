@@ -123,7 +123,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		 */
 		DP_DEBUG(DP_DBG_FLAG_NOTIFY, "Bridge name:%s\n",
 			 br_dev ? br_dev->name : "NULL");
-		br_info = dp_swdev_bridge_entry_lookup(br_dev->name, 0);
+		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 		if (br_info) {
 			dp_dev->fid = br_info->fid;
 		} else {

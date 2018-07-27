@@ -62,24 +62,30 @@ u16 dp_swdev_cal_hash(unsigned char *name)
 	return (u16)(hash & 0x3F);
 }
 
+int dp_get_fid_by_brname(struct net_device *dev)
+{
+	struct br_info *br_info;
+
+	br_info = dp_swdev_bridge_entry_lookup(dev->name);
+	if (!br_info)
+		return -1;
+	else
+		return br_info->fid;
+}
+
 int dp_swdev_chk_bport_in_br(struct net_device *bp_dev, int bport, int inst)
 {
 	struct net_device *br_dev;
 	struct bridge_member_port *temp_list = NULL;
 	struct br_info *br_info;
 	int found = 0;
-	bool f_unlock = false;
 
-	if (!rtnl_is_locked()) {
-		rtnl_lock();
-		f_unlock = true;
-	}
 	br_dev = netdev_master_upper_dev_get(bp_dev);
-	if (f_unlock)
-		rtnl_unlock();
 	if (!br_dev)
 		return -1;
-	br_info = dp_swdev_bridge_entry_lookup(br_dev->name, inst);
+	br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
+	if (!br_info)
+		return -1;
 	list_for_each_entry(temp_list, &br_info->bp_list, list) {
 		if (temp_list->portid == bport) {
 			found = 1;
@@ -93,23 +99,28 @@ int dp_swdev_chk_bport_in_br(struct net_device *bp_dev, int bport, int inst)
 	return -1;
 }
 
-struct br_info *dp_swdev_bridge_entry_lookup(char *br_name,
-					     int inst)
+struct br_info *dp_swdev_bridge_entry_lookup(char *br_name)
 {
 	u16 idx;
 	struct br_info *br_item = NULL;
 	struct hlist_head *tmp;
+	int i = 0;
 
 	idx = dp_swdev_cal_hash(br_name);
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "hash index:%d\n", idx);
-	tmp = (&g_bridge_id_entry_hash_table[inst][idx]);
-	hlist_for_each_entry(br_item, tmp, br_hlist) {
-		if (br_item) {
-			if (strcmp(br_name, br_item->br_device_name) == 0) {
-				DP_DEBUG(DP_DBG_FLAG_SWDEV,
-					 "hash entry found(%s)\n",
-					 br_name);
-				return br_item;
+	for (i = 0; i < DP_MAX_INST; i++) {
+		tmp = (&g_bridge_id_entry_hash_table[i][idx]);
+		hlist_for_each_entry(br_item, tmp, br_hlist) {
+			if (br_item) {
+				if (strcmp(br_name,
+					   br_item->br_device_name) == 0) {
+					DP_DEBUG(DP_DBG_FLAG_SWDEV,
+						 "hash entry found(%s)\n",
+						 br_name);
+					return br_item;
+				}
+			} else {
+				break;
 			}
 		}
 	}
@@ -230,8 +241,7 @@ static int dp_swdev_clr_gswip_cfg(struct bridge_id_entry_item *br_item,
 			 "bport not added so no action required\n");
 		return 0;
 	}
-	br_info = dp_swdev_bridge_entry_lookup(br_item->br_device_name,
-					       br_item->inst);
+	br_info = dp_swdev_bridge_entry_lookup(br_item->br_device_name);
 	if (!br_info)
 		return 0;
 	if (dp_swdev_del_bport_from_list(br_info, br_item->portid)) {
@@ -262,11 +272,6 @@ static int dp_swdev_cfg_vlan(struct bridge_id_entry_item *br_item,
 	u32 idx, inst;
 	int vap;
 
-	/*br_info = dp_swdev_bridge_entry_lookup(br_item->br_device_name,
-	 *br_item->inst);
-	 *if (!br_info)
-	 *	return 0;
-	 */
 	/*if (br_info->flag & LOGIC_DEV_REGISTER) {*/
 	if (br_item->flags & LOGIC_DEV_REGISTER) {
 		/*get_vlan_via_dev(dev, &vlan_prop);*/
@@ -315,12 +320,13 @@ static int dp_swdev_filter_vlan(struct net_device *dev,
 		/* current bridge member port*/
 		br_item->portid = subif.bport;
 		swdev_lock();
-		br_info = dp_swdev_bridge_entry_lookup(br_dev->name,
-						       subif.inst);
+		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 		if (br_info) {
 			strcpy(br_item->br_device_name,
 			       br_info->br_device_name);
 			br_item->fid = br_info->fid;
+		} else {
+			return -EOPNOTSUPP;
 		}
 		switchdev_trans_item_enqueue(trans, br_item,
 					     kfree, &br_item->tritem);
@@ -383,8 +389,7 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 			return 0;
 		}
 	} else {
-		br_info = dp_swdev_bridge_entry_lookup(br_item->br_device_name,
-						       br_item->inst);
+		br_info = dp_swdev_bridge_entry_lookup(br_item->br_device_name);
 		if (!br_info)
 			return 0;
 		br_info->flag = 0;
@@ -469,8 +474,7 @@ static int dp_swdev_add_if(struct net_device *dev,
 		/* current bridge member port*/
 		br_item->portid = subif.bport;
 		swdev_lock();
-		br_info = dp_swdev_bridge_entry_lookup(br_dev->name,
-						       subif.inst);
+		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 		if (br_info) {
 			strcpy(br_item->br_device_name,
 			       br_info->br_device_name);
@@ -519,23 +523,12 @@ static int dp_swdev_del_if(struct net_device *dev,
 {
 	struct br_info *br_info;
 	struct bridge_id_entry_item *br_item;
-	struct net_device *base, *master_dev;
+	struct net_device *base;
 	struct bridge_member_port *temp_list = NULL;
 	dp_subif_t subif = {0};
 	int port, inst;
-	bool f_unlock = false;
 	u8 *addr = (u8 *)dev->dev_addr;
 
-	if (!rtnl_is_locked()) {
-		rtnl_lock();
-		f_unlock = true;
-	}
-	master_dev = netdev_master_upper_dev_get(attr->orig_dev);
-	if (f_unlock)
-		rtnl_unlock();
-
-	DP_DEBUG(DP_DBG_FLAG_SWDEV, "%s MASTER DEV %s\n", __func__,
-		 master_dev ? master_dev->name : "NULL");
 	/* SWITCHDEV_TRANS_PREPARE phase */
 	if (switchdev_trans_ph_prepare(trans)) {
 		/*Get current BR_PORT ID from DP*/
@@ -551,8 +544,7 @@ static int dp_swdev_del_if(struct net_device *dev,
 			/*TODO need to check dequeue if no memory*/
 			return -ENOMEM;
 		swdev_lock();
-		br_info = dp_swdev_bridge_entry_lookup(br_dev->name,
-						       subif.inst);
+		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 		if (br_info) {
 			br_item->fid = br_info->fid;
 			br_item->inst = subif.inst;
@@ -639,14 +631,13 @@ int dp_del_br_if(struct net_device *dev, struct net_device *br_dev,
 	struct br_info *br_info;
 	struct bridge_id_entry_item *br_item;
 	struct bridge_member_port *temp_list = NULL;
-	dp_subif_t subif = {0};
 	u8 *addr = (u8 *)dev->dev_addr;
 
 	br_item = kmalloc(sizeof(*br_item), GFP_KERNEL);
 	if (!br_item)
 		return -1;
 	swdev_lock();
-	br_info = dp_swdev_bridge_entry_lookup(br_dev->name, subif.inst);
+	br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 	if (br_info) {
 		br_item->fid = br_info->fid;
 		br_item->inst = inst;
@@ -681,7 +672,6 @@ static int dp_swdev_port_attr_set(struct net_device *dev,
 {
 	int err = -EOPNOTSUPP;
 	struct net_device *br_dev;
-	bool f_unlock = false;
 #ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
 	{
 		struct net_device *br_dev =
@@ -708,13 +698,7 @@ static int dp_swdev_port_attr_set(struct net_device *dev,
 	/* switchdev attr orig dev -> bridge port dev pointer
 	 *then get the bridge dev from switchdev attr's orig dev
 	 */
-	if (!rtnl_is_locked()) {
-		rtnl_lock();
-		f_unlock = true;
-	}
 	br_dev = netdev_master_upper_dev_get(attr->orig_dev);
-	if (f_unlock)
-		rtnl_unlock();
 	if (!br_dev)
 		return -EOPNOTSUPP;
 #if 1
@@ -765,18 +749,11 @@ static int dp_swdev_port_attr_get(struct net_device *dev,
 	struct net_device *br_dev;
 	struct br_info *br_info;
 	dp_subif_t subif = {0};
-	bool f_unlock = false;
 	/*For this api default err return value "-EOPNOTSUPP"
 	 * cannot be set as this blocks bridgeport offload_fwd_mark
 	 * setting at linux bridge level("nbp_switchdev_mark_set")
 	 */
-	if (!rtnl_is_locked()) {
-		rtnl_lock();
-		f_unlock = true;
-	}
 	br_dev = netdev_master_upper_dev_get(attr->orig_dev);
-	if (f_unlock)
-		rtnl_unlock();
 	if (!br_dev)
 		return 0;
 
@@ -789,8 +766,7 @@ static int dp_swdev_port_attr_get(struct net_device *dev,
 
 	switch (attr->id) {
 	case SWITCHDEV_ATTR_ID_PORT_PARENT_ID:
-		br_info = dp_swdev_bridge_entry_lookup(br_dev->name,
-						       subif.inst);
+		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 		if (!br_info)
 			return 0;
 		if (br_info->fid < 0)
@@ -817,7 +793,6 @@ static int dp_swdev_port_obj_add(struct net_device *dev,
 {
 	int err = -EOPNOTSUPP;
 	struct net_device *br_dev;
-	bool f_unlock = false;
 #ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
 	{
 		struct net_device *br_dev = netdev_master_upper_dev_get(dev);
@@ -845,18 +820,12 @@ static int dp_swdev_port_obj_add(struct net_device *dev,
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "%s id:%d flags:%d dev name:%s\r\n",
 		 __func__, obj->id,
 		 obj->flags, dev->name);
-	if (!rtnl_is_locked()) {
-		rtnl_lock();
-		f_unlock = true;
-	}
 	br_dev = netdev_master_upper_dev_get(obj->orig_dev);
-	if (f_unlock)
-		rtnl_unlock();
 	if (!br_dev)
 		return err;
 	switch (obj->id) {
 	case SWITCHDEV_OBJ_ID_PORT_VLAN:
-		dp_swdev_filter_vlan(obj->orig_dev, obj, trans, br_dev);
+		err = dp_swdev_filter_vlan(obj->orig_dev, obj, trans, br_dev);
 		break;
 	case SWITCHDEV_OBJ_ID_PORT_FDB:
 		break;
