@@ -552,7 +552,7 @@ static int pmac_glbl_cfg(struct core_ops *ops, u8 pmacid)
 	glbl_cfg.eShortFrmChkType = GSW_PMAC_SHORT_LEN_ENA_UNTAG;
 	glbl_cfg.bLongFrmChkDis = 1;
 	glbl_cfg.bProcFlagsEgCfgEna = 1;
-	glbl_cfg.eProcFlagsEgCfg = GSW_PMAC_PROC_FLAGS_FLAG;
+	glbl_cfg.eProcFlagsEgCfg = GSW_PMAC_PROC_FLAGS_MIX;
 
 	ops->gsw_pmac_ops.Pmac_Gbl_CfgSet(ops, &glbl_cfg);
 
