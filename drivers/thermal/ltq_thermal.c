@@ -29,11 +29,10 @@
 
 #include  "thermal_core.h"
 
-struct ltq_thermal;
 struct ltq_thermal_sensor;
 
-struct ltq_thermal_tsens_data {
-	void (*init)(struct platform_device *pdev, struct ltq_thermal *p);
+struct ltq_thermal_sensor_ops {
+	void (*init)(struct ltq_thermal_sensor *s);
 	int (*get_temp)(struct ltq_thermal_sensor *s);
 };
 
@@ -42,7 +41,7 @@ struct ltq_thermal_sensor {
 
 	struct thermal_zone_device *tzd;
 
-	struct ltq_thermal_tsens_data *pdata;
+	const struct ltq_thermal_sensor_ops *ops;
 
 	int temp;
 	int last_temp;
@@ -88,8 +87,10 @@ struct ltq_thermal {
 #define	TS_CODE		0x00000FFF
 #define	TS_DV		0x80000000
 
-void  ltq_grx500_init(struct platform_device *pdev, struct ltq_thermal *priv)
+void  ltq_grx500_init(struct ltq_thermal_sensor *sensor)
 {
+	struct ltq_thermal *priv = sensor->drvdata;
+
 	dev_dbg(priv->dev, "%s\n", __func__);
 
 	/* Stop data conversion, disable overheat IRQ, power down sensor */
@@ -155,7 +156,7 @@ int ltq_grx500_get_temp(struct ltq_thermal_sensor *sensor)
 }
 
 /* Temperature sensor specific data */
-static struct ltq_thermal_tsens_data ltq_grx500_data = {
+static struct ltq_thermal_sensor_ops ltq_grx500_ops = {
 	.init		= ltq_grx500_init,
 	.get_temp	= ltq_grx500_get_temp,
 };
@@ -168,7 +169,7 @@ static int ltq_thermal_get_temp(void *data, int *temp)
 		return -EINVAL;
 
 	if (!sensor->emul_temp)
-		*temp = sensor->pdata->get_temp(sensor);
+		*temp = sensor->ops->get_temp(sensor);
 	else
 		*temp = sensor->emul_temp;
 
@@ -231,7 +232,7 @@ static struct thermal_zone_of_device_ops ops = {
 static const struct of_device_id ltq_thermal_match[] = {
 	{
 		.compatible = "lantiq,ts-xrx500",
-		.data       = &ltq_grx500_data,
+		.data       = &ltq_grx500_ops,
 	},
 	{ /* sentinel */ },
 };
@@ -241,7 +242,7 @@ static int ltq_thermal_probe(struct platform_device *pdev)
 
 	struct ltq_thermal *priv;
 	struct device_node *node = pdev->dev.of_node;
-	struct ltq_thermal_tsens_data *pdata =
+	const struct ltq_thermal_sensor_ops *sens_ops =
 		of_device_get_match_data(&pdev->dev);
 	int i;
 
@@ -277,10 +278,10 @@ static int ltq_thermal_probe(struct platform_device *pdev)
 
 		sensor->id = i;
 		sensor->drvdata = priv;
-		sensor->pdata = pdata;
+		sensor->ops = sens_ops;
 
 		/* Init sensor */
-		sensor->pdata->init(pdev, priv);
+		sensor->ops->init(sensor);
 
 		/* Register sensor */
 		sensor->tzd = devm_thermal_zone_of_sensor_register(&pdev->dev,
