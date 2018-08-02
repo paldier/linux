@@ -521,7 +521,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 	}
 
 	/*PR_INFO("search range: start=%d end=%d\n",start, end);*/
-	/*allocate a free subif */
+    /*allocate a free subif */
 	for (i = start; i < end; i++) {
 		if (port_info->subif_info[i].flags) /*used already & not free*/
 			continue;
@@ -2294,6 +2294,10 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 							dp_info2);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 			insert_pmac_f = 1;
+#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+			if (aca_portid > 0)
+				desc_1->field.ep = aca_portid;
+#endif
 		} else { /*no pmac */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
 							desc_0, desc_1,
