@@ -28,6 +28,9 @@
 #include <linux/irqchip/mips-gic.h>
 #include <lantiq.h>
 #include <lantiq_soc.h>
+#ifdef CONFIG_LTQ_UMT_518_FW_SG
+#include <linux/mips_tc_sg.h>
+#endif
 
 #include <net/datapath_proc_api.h>
 #include "ltq_hwmcpy_addr.h"
@@ -905,11 +908,20 @@ void umt_callback_fn(void *param)
 	struct umt_port *port = NULL;
 	struct mcpy_umt *pumt = mcpy_get_umt();
 	u32 umt_ep_dst_local = 0x0;
-
+#ifdef CONFIG_LTQ_UMT_518_FW_SG
+	struct mips_tc_sg_mem *shared_mem;
+	u32 *_addr;
+#endif
 	jiffies1++;
 	if (pumt->status != UMT_ENABLE)
 		return;
+#ifdef CONFIG_LTQ_UMT_518_FW_SG
+	_addr = (u32 *)param;
+	shared_mem = (struct mips_tc_sg_mem *)(*_addr);
 
+	if (shared_mem)
+		mips_tc_sg(shared_mem);
+#endif
 	for (i = 0; i < UMT_PORTS_NUM; i++) {
 		port = &pumt->ports[i];
 		umt_ep_dst_local = port->umt_ep_dst;
@@ -956,7 +968,7 @@ int umt_reset_port_dq_idx(u32 cbm_id)
 	return 0;
 }
 #endif
-
+static u32 g_mips_tc_shared_ctxt_mem;
 /* TODO: Register UMT error interrupt Handler */
 int umt_init(struct mcpy_ctrl *pctrl)
 {
@@ -982,14 +994,21 @@ int umt_init(struct mcpy_ctrl *pctrl)
 
 	for (i = 0; i < UMT_PORTS_NUM; i++)
 		umt_port_init(pumt, node, i);
-
+#ifdef CONFIG_LTQ_UMT_518_FW_SG
+	mips_tc_init(&g_mips_tc_shared_ctxt_mem);
+#endif
 	umt_proc_init(pumt);
 	pumt->status = UMT_ENABLE;
 
 #ifdef CONFIG_LTQ_UMT_SW_MODE
 	param.yield_pin = LTQ_UMT_SW_YIELD_PIN;
 	param.interval = g_umt_interval;
+#ifdef CONFIG_LTQ_UMT_518_FW_SG
+	param.mips_tc_shared_ctxt_mem = g_mips_tc_shared_ctxt_mem;
+	gptc_ht_yield_init(&param, umt_callback_fn, &g_mips_tc_shared_ctxt_mem);
+#else
 	gptc_ht_yield_init(&param, umt_callback_fn, NULL);
+#endif
 #endif
 
 	mcpy_dbg(MCPY_INFO, "UMT initialize success on processor: %d !\n",

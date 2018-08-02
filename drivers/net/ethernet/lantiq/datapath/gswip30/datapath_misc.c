@@ -188,7 +188,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->pmac_template[TEMPL_OTHERS].redirect = 1;
 		/*dp_info->pmac_template[TEMPL_OTHERS].tcp_chksum = 1; */
 		dp_info->pmac_template[TEMPL_OTHERS].class_en = 1;
-		SET_PMAC_PORTMAP(&dp_info->pmac_template[TEMPL_CHECKSUM],
+		SET_PMAC_PORTMAP(&dp_info->pmac_template[TEMPL_OTHERS],
 				 portid);
 		dp_info->dma1_template[TEMPL_OTHERS].field.enc = 1;
 		dp_info->dma1_template[TEMPL_OTHERS].field.dec = 1;

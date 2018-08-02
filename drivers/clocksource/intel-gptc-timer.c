@@ -612,7 +612,7 @@ static int gptc_of_parse_timer(struct gptc *gptc)
 			timer->cpuid = 0;
 			list_add_tail(&timer->ht_yield, &gptc_ht_yield_list);
 			break;
-		default:
+			default:
 			break;
 		}
 	}
@@ -962,9 +962,12 @@ static void tc_thread(u32 arg0, u32 arg1)
 			gptc_irq_ack(timer);
 			gic_clear_edge(timer->irq);
 
+			gptc_stop_counter(timer);
 			/* Do the call back stuff */
 			if (timer->call_back)
 				timer->call_back(timer->call_back_param);
+			gptc_mode_setup(timer, true);
+			gptc_reload_and_run(timer);
 		}
 	}
 }
@@ -1045,7 +1048,7 @@ int gptc_ht_yield_init(struct gptc_ht_yield *param, void *call_back,
 			interval = param->interval;
 			/* interval is the unit of microsecond */
 			cycles = interval * (timer->frequency / 1000000);
-			gptc_mode_setup(timer, false);
+			gptc_mode_setup(timer, true);
 			gptc_reload_counter(timer, cycles);
 			gptc_reload_and_run(timer);
 

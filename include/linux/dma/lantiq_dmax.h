@@ -1326,6 +1326,9 @@ int ltq_dma_chan_desc_endian_cfg(u32 chan, u32 endian_type);
  * by shutdown routines.
  */
 int ltq_dma_chan_desc_endian_disable(u32 chan);
+
+u32 ltq_dma_chan_get_desc_vir_base(u32 chan);
+
 /* @ } */
 #endif /* LANTIQ_DMAX_H */
 

@@ -2289,7 +2289,7 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 #endif
 		} else if (flags & DP_TX_DSL_FCS) {/* after checksum check */
 			/* w/ pmac for FCS purpose*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
+			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
 							desc_0, desc_1,
 							dp_info2);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);

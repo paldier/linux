@@ -9,6 +9,7 @@
 struct gptc_ht_yield {
 	u32 yield_pin;
 	u32 interval;
+	u32 mips_tc_shared_ctxt_mem;
 };
 
 int gptc_ht_yield_init(struct gptc_ht_yield *param, void *call_back,

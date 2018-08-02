@@ -80,7 +80,7 @@ static const struct mcpy_cfg mcpy_def_cfg[MCPY_PORTS_NUM] = {
 #undef MCPY_DBG_DEF
 #define MCPY_DBG_DEF(name, value)       #name,
 char *g_mcpy_dbg_list[] = {
-        MCPY_DBG_LIST
+	MCPY_DBG_LIST
 };
 #undef MCPY_DBG_DEF
 
@@ -339,6 +339,18 @@ void setup_percpu_yqmask(u32 mask, int cpu)
 	preempt_enable();
 }
 EXPORT_SYMBOL(setup_percpu_yqmask);
+
+static void setup_tc_percpu(void *data, int cpu)
+{
+	preempt_disable();
+	if (cpu != smp_processor_id())
+		smp_call_function_single(cpu,
+			(smp_call_func_t)umt_init,
+			(void *)data, 1);
+	else
+		umt_init(data);
+	preempt_enable();
+}
 
 static inline void mcpy_yield(u32 yield_pin)
 {
@@ -1336,7 +1348,11 @@ static int mcpy_xrx500_probe(struct platform_device *pdev)
 	/* Link platform with driver data for retrieving */
 	platform_set_drvdata(pdev, pctrl);
 	mcpy_proc_init(pctrl);
+	#ifdef CONFIG_LTQ_UMT_518_FW_SG
+	setup_tc_percpu((void *)pctrl, 0);
+	#else
 	umt_init(pctrl);
+	#endif
 
 	mcpy_dbg(MCPY_INFO, "HW MCPY driver: Version: %s, Init Done!\n",
 		 MCPY_DRV_VERSION);

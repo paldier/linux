@@ -44,7 +44,7 @@
  * or else if will take default number of  descriptors per channel
  */
 
-#define MAX_DMA_DESC_NUM               8
+#define MAX_DMA_DESC_NUM               256
 
 
 /*!

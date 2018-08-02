@@ -629,4 +629,13 @@ config LTQ_UMT_SW_MODE
 	  In SW mode, a dedicated TC on VPE is used to update
 	  the UMT counter in the destination port.
 
+config LTQ_UMT_518_FW_SG
+    bool "Lantiq MIPS FW TC to support 518 Bonding SG"
+    default n
+    depends on LTQ_HWMCPY && LTQ_UMT_SW_MODE
+    ---help---
+      MIPS FW TC to support 518 Bonding scatter-gather
+      memory to overhaul hardware limitaton.
+
+
 endif

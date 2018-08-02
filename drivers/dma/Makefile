@@ -68,6 +68,7 @@ obj-$(CONFIG_TI_EDMA) += edma.o
 obj-$(CONFIG_XGENE_DMA) += xgene-dma.o
 obj-$(CONFIG_ZX_DMA) += zx296702_dma.o
 obj-$(CONFIG_LTQ_UMT_EXPAND_MODE) += ltq_umt_expand.o
+obj-$(CONFIG_LTQ_UMT_518_FW_SG) += mips_tc_sg.o
 obj-$(CONFIG_LTQ_HWMCPY) += ltq_hwmcpy.o
 
 obj-y += qcom/

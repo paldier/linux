@@ -710,6 +710,21 @@ dma_addr_t ltq_dma_chan_get_desc_phys_base(u32 chan)
 }
 EXPORT_SYMBOL(ltq_dma_chan_get_desc_phys_base);
 
+static u32 dma_chan_get_desc_vir_base(struct dmax_chan *ch)
+{
+	return ch->desc_base;
+}
+
+u32 ltq_dma_chan_get_desc_vir_base(u32 chan)
+{
+	struct dmax_chan *pch = dma_chan_l2p(chan);
+
+	if (WARN_ON(!pch))
+		return -EINVAL;
+	return dma_chan_get_desc_vir_base(pch);
+}
+EXPORT_SYMBOL(ltq_dma_chan_get_desc_vir_base);
+
 /* DMA channel related configuration */
 static void dma_chan_on(struct dmax_chan *pch)
 {
