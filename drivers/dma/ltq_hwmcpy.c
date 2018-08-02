@@ -1348,7 +1348,7 @@ static int mcpy_xrx500_probe(struct platform_device *pdev)
 	/* Link platform with driver data for retrieving */
 	platform_set_drvdata(pdev, pctrl);
 	mcpy_proc_init(pctrl);
-	#ifdef CONFIG_LTQ_UMT_518_FW_SG
+	#if 0 // def CONFIG_LTQ_UMT_518_FW_SG
 	setup_tc_percpu((void *)pctrl, 0);
 	#else
 	umt_init(pctrl);
