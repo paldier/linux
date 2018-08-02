@@ -1392,7 +1392,6 @@ int xgmac_config_subsec_inc(void *pdev, u32 ptp_clk)
 	if (XGMAC_RGRD_BITS(pdata, MAC_TSTAMP_CR, TSCTRLSSR) == 0)
 		val = (val * 1000) / 465;
 
-	printk("Value in xgmac_config_subsec_inc %d\n", val);
 	XGMAC_RGWR_BITS(pdata, MAC_SUBSEC_INCR, SSINC, val);
 
 	return 0;
