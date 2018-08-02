@@ -708,12 +708,12 @@ void xgmac_init_pdata(struct mac_prv_data *pdata, int idx)
 	pdata->enable_mtl_int		= MASK(MTL_Q_IER, TXUIE) |
 					  MASK(MTL_Q_IER, ABPSIE) |
 					  MASK(MTL_Q_IER, RXOIE);
-	/* Calc as (2^32 * 50Mhz)/ 500Mhz */
-	pdata->def_addend		= 0x19999999;
+	/* Calc as (2^32 * 250Mhz)/ 500Mhz */
+	pdata->def_addend		= 0x80000000;
 	pdata->sec			= 0;
 	pdata->nsec			= 0;
 	pdata->ptp_clk			= PTP_CLK;
-	pdata->one_nsec_accuracy	= 0;
+	pdata->one_nsec_accuracy	= 1;
 	pdata->ss_addr_base		= adap_priv_data.ss_addr_base;
 	pdata->lmac_addr_base		= LEGACY_MAC_BASE;
 #if defined(PC_UTILITY) || defined(CHIPTEST)

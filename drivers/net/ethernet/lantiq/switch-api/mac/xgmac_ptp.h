@@ -61,6 +61,18 @@ enum {
 #define PTP_OFFS_MSG_TYPE		0
 #define PTP_OFFS_FLAGS			6
 
+/* To achieve 20 ns accuracy need 50 MHz clock update frequency
+ * To achieve 4 ns 50 * (20/4) Mhz
+ * Xgmac cannot have same clock update frequency and ptp clock frequency
+ */
+
+#define CLOCK_PRECISION_NS		4
+#define CLOCK_UPDATE_FREQ		(50 * (20/CLOCK_PRECISION_NS))
+
+/* Linux PTP driver cannot handle bigger values and erroneously
+ * converts any value > +32767999 to -32768000.
+ */
+#define MAX_FREQ_ADJUSTMENT		32767999
 
 #define IS_2STEP(pdata)	(pdata->tstamp_config.tx_type == HWTSTAMP_TX_ON)
 #define IS_1STEP(pdata)	(pdata->tstamp_config.tx_type == HWTSTAMP_TX_ONESTEP_SYNC)

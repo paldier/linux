@@ -73,10 +73,10 @@ void xgmac_config_timer_reg(void *pdev)
 	hw_if->config_subsec_inc(pdev, pdata->ptp_clk);
 
 	/* Calculate the def addend:
-	 * addend = 2^32 / (PTP ref clock / 50Mhz)
-	 *        = (2^32 * 50Mhz) / PTP ref clock
+	 * addend = 2^32 / (PTP ref clock / CLOCK_UPDATE_FREQ)
+	 *        = (2^32 * CLOCK_UPDATE_FREQ) / PTP ref clock
 	 */
-	temp = (u64)(50000000ULL << 32);
+	temp = (u64)((CLOCK_UPDATE_FREQ * 1000000ULL) << 32);
 	pdata->def_addend = div_u64(temp, pdata->ptp_clk);
 
 	hw_if->config_addend(pdev, pdata->def_addend);
@@ -94,8 +94,8 @@ static int xgmac_adj_freq(struct ptp_clock_info *ptp, s32 ppb)
 	struct mac_prv_data *pdata =
 		container_of(ptp, struct mac_prv_data, ptp_clk_info);
 	struct mac_ops *hw_if = &pdata->ops;
-	u64 adj;
-	u32 diff, addend;
+	u64 adj, diff;
+	u32 addend;
 	int neg_adj = 0;
 
 	pr_debug("Calling adjust_freq: %d\n", ppb);
@@ -105,14 +105,15 @@ static int xgmac_adj_freq(struct ptp_clock_info *ptp, s32 ppb)
 		ppb = -ppb;
 	}
 
-	addend = pdata->def_addend;
-	adj = addend;
-	adj *= ppb;
-	/* div_u64 will divided the "adj" by "NSEC_TO_SEC"
-	 * and return the quotient.
+	/* Frequency adjustment is feq_delta = ppb / 1.000.000.000
+	 * addend = def_addend / ( 1 - ppb/1.000.000.000)
+	 * So addend in integer arithmetic becomes
+	 * addend = (def_addend * 1.000.000.000) / (1.000.000.000 - ppb)
 	 */
-	diff = div_u64(adj, NSEC_TO_SEC);
-	addend = neg_adj ? (addend - diff) : (addend + diff);
+	adj = (pdata->def_addend * NSEC_TO_SEC);
+	diff = (NSEC_TO_SEC - ppb);
+
+	addend = div_u64(adj, diff);
 
 	spin_lock_bh(&pdata->ptp_lock);
 
@@ -747,7 +748,7 @@ static int xgmac_ptp_register(void *pdev)
 		 "%s", "xgmac_clk");
 
 	info->owner = THIS_MODULE;
-	info->max_adj = pdata->ptp_clk;
+	info->max_adj = MAX_FREQ_ADJUSTMENT;
 	info->n_ext_ts = N_EXT_TS;
 	info->adjfreq = xgmac_adj_freq;
 	info->adjtime = xgmac_adj_time;
