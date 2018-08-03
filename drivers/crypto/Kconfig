@@ -555,4 +555,11 @@ config CRYPTO_DEV_ROCKCHIP
 
 source "drivers/crypto/chelsio/Kconfig"
 
+config CRYPTO_DEV_LANTIQ_EIP123
+   tristate "Support Lantiq EIP123 hardware crypto engine"
+   depends on LANTIQ && SOC_TYPE_GRX500_TEP
+   default n
+   help
+      Selects Hardware accelerated EIP123 crypto drivers.
+
 endif # CRYPTO_HW
