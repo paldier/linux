@@ -260,11 +260,9 @@ static int ltq_thermal_probe(struct platform_device *pdev)
 		return PTR_ERR(priv->chiptop);
 	}
 
-	if (device_property_read_u32(&pdev->dev, "#thermal-sensor-cells",
-				     &priv->count)) {
-		/* register single cell if #thermal-sensor-cells is missing */
-		priv->count = 0;
-	}
+	device_property_read_u32(&pdev->dev, "#thermal-sensor-cells",
+				 &priv->count);
+	priv->count++;
 
 	priv->sensors = devm_kzalloc(&pdev->dev, priv->count *
 				     sizeof(struct ltq_thermal_sensor),
