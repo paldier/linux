@@ -390,21 +390,17 @@ static void ltq_spi_bits_per_word_set(struct spi_device *spi)
 {
 	struct ltq_spi *hw = ltq_spi_to_hw(spi);
 	u32 bm;
+	u8 bits_per_word = spi->bits_per_word;
 
 	/*
 	 * Use either default value of SPI device or value
 	 * from current transfer.
 	 */
-	/* 
-	 * current transfer not set correct value, 
-	 * not use this value.
-	 */
-//	if (hw->curr_transfer && hw->curr_transfer->bits_per_word)
-//		if (hw->curr_transfer->bits_per_word <= 32)
-//			bits_per_word = hw->curr_transfer->bits_per_word;
+	if (hw->curr_transfer && hw->curr_transfer->bits_per_word)
+		bits_per_word = hw->curr_transfer->bits_per_word;
 
 	/* CON.BM value = bits_per_word - 1 */
-	bm = (spi->bits_per_word - 1) << LTQ_SPI_CON_BM_SHIFT;
+	bm = (bits_per_word - 1) << LTQ_SPI_CON_BM_SHIFT;
 
 	ltq_spi_reg_clearbit(hw, LTQ_SPI_CON_BM_MASK <<
 			     LTQ_SPI_CON_BM_SHIFT, LTQ_SPI_CON);
@@ -428,13 +424,8 @@ static void ltq_spi_speed_set(struct spi_device *spi)
 	 * Use either default value of SPI device or value
 	 * from current transfer.
 	 */
-	/* 
-	 * current transfer not set correct value, 
-	 * not use this value.
-	 */
-//	if (hw->curr_transfer && hw->curr_transfer->speed_hz)
-//		if ((hw->curr_transfer->speed_hz <= spi->max_speed_hz) && (hw->curr_transfer->speed_hz >= 1000))
-//			speed_hz = hw->curr_transfer->speed_hz;
+	if (hw->curr_transfer && hw->curr_transfer->speed_hz)
+		speed_hz = hw->curr_transfer->speed_hz;
 
 	/*
 	 * Maximum SPI clock frequency in master mode is half of
