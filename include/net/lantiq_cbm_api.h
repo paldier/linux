@@ -439,7 +439,6 @@ typedef union {
 		uint32_t	resv:6;/*resv*/
 	};
 	uint32_t	flags; /*!< Flags stored in DDR CBM Queue map table. Currently, only flag defined is CBM_F_QUEUE_DROP */
-	uint32_t	mode;
 } cbm_queue_map_entry_t;
 
 /*!

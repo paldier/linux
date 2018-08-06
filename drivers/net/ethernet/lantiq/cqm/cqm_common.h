@@ -102,7 +102,7 @@ struct cbm_ops {
 				 cbm_queue_map_entry_t **entries,
 				 u32 flags);
 	s32 (*cbm_queue_map_set)(int cbm_inst, s32 queue_id,
-				 cbm_queue_map_entry_t *entry, u32 flags);
+				 cbm_queue_map_entry_t *entry, u32 mode, u32 flags);
 	s32 (*cqm_qid2ep_map_get)(int qid, int *port);
 	s32 (*cqm_qid2ep_map_set)(int qid, int port);
 	s32 (*cqm_mode_table_get)(int cbm_inst, int *mode,

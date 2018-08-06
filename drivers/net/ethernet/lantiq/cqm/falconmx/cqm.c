@@ -616,9 +616,9 @@ static s32 mode_table_get(int cbm_inst, int *mode,
 }
 
 static s32 mode_table_set(int cbm_inst, cbm_queue_map_entry_t *entry,
-			  u32 flags)
+			  u32 mode, u32 flags)
 {
-	u32 mpe, ep, mode;
+	u32 mpe, ep;
 	struct cqm_qidt_elm qidt_idx = {0};
 	struct cqm_qidt_elm qidt_elm = {0};
 	int state;
@@ -627,7 +627,6 @@ static s32 mode_table_set(int cbm_inst, cbm_queue_map_entry_t *entry,
 
 	mpe = (entry->mpe1 & 0x1) | ((entry->mpe2 & 0x1) << 1);
 	ep = entry->ep;
-	mode = entry->mode;
 	state = STATE_EP;
 	while (state != STATE_NONE) {
 		switch (state) {
