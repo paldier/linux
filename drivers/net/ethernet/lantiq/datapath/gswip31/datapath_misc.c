@@ -1467,6 +1467,9 @@ int register_dp_cap_gswip31(int flag)
 	cap.info.dp_set_gsw_pmapper = dp_set_gsw_pmapper_31;
 	cap.info.dp_get_gsw_pmapper = dp_get_gsw_pmapper_31;
 	cap.info.dp_ctp_tc_map_set = ctp_tc_map_set;
+	cap.info.dp_meter_alloc = dp_meter_alloc_31;
+	cap.info.dp_meter_add = dp_meter_add_31;
+	cap.info.dp_meter_del = dp_meter_del_31;
 #ifdef CONFIG_LTQ_DATAPATH_HAL_GSWIP31_MIB
 	cap.info.dp_get_port_vap_mib = dp_get_port_vap_mib_31;
 	cap.info.dp_clear_netif_mib = dp_clear_netif_mib_31;

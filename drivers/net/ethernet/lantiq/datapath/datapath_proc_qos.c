@@ -11,13 +11,18 @@
 #include <net/datapath_proc_api.h>
 #include "datapath.h"
 
+/*meter alloc,add macros*/
+#define DP_MTR_ALC(id, flag) \
+	dp_port_prop[0].info.dp_meter_alloc(&(id), (flag))
+#define DP_MTR_CFGAPI(func, dev, meter, flag) \
+	dp_port_prop[0].info.func((dev), &(meter), (flag))
+
 #define PROC_MAX_BOX_LVL (DP_MAX_SCH_LVL + 1) /* Sched/Port both map to a box */
 /* max direct child per scheduler/port */
 #define PROC_DP_MAX_CHILD_PER_SCH_PORT DP_MAX_CHILD_PER_NODE
 #define PROC_MAX_Q_PER_PORT 16 /* max queues per port */
 #define PROC_DP_MAX_SCH_PER_PORT 4 /* max schedulers per port */
 #define PROC_DP_MAX_LEAF 8 /* max leaf per scheduler */
-
 struct location {
 	int x1, y1; /* start axis */
 	int x2, y2; /* end axis */
@@ -948,6 +953,20 @@ void qos_create_qos_help(void)
 		"resume/suspend");
 	PR_INFO("                enable/disable: only for queue/port\n");
 	PR_INFO("                resume/suspend: for all nodes\n");
+	PR_INFO(" METER ADD/DELETE: echo meter <dev> %s",
+		"<alloc/dealloc/add/delete>\n");
+	PR_INFO("<port_flag> <trfic_dir> <trfic_type> <cir> <pir> <cbs> %s",
+		"<pbs> <type> > /sys/kernel/debug/dp/qos");
+	PR_INFO("     dev: CTP/BP/Bridge device name\n");
+	PR_INFO("     alloc/deallc/add/del: meter operation\n");
+	PR_INFO("     port_flag: opt flag for CTP/BP/br/clrMrk/CPUtrfic\n");
+	PR_INFO("     trfic_dir: opt ingress or egress data\n");
+	PR_INFO("     trfic_type: traffic flow type(unicast,multicast,..\n");
+	PR_INFO("     cir: opt committed information rate in bit/s\n");
+	PR_INFO("     pir: opt Peak information rate in bit/s\n");
+	PR_INFO("     cbs: opt committed burst size in bytes\n");
+	PR_INFO("     pbs: opt peak burst size in bytes\n");
+	PR_INFO("     type:opt type single/dual rate(strTCM,trTCM\n");
 }
 
 ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
@@ -1189,6 +1208,102 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		if (dp_shaper_conf_set(&shaper_cfg, 0)) {
 			PR_ERR("dp_shaper_conf_set failed\n");
 			return count;
+		}
+	} else if (dp_strncmpi(param_list[0], "meter",
+			       strlen("meter")) == 0) {
+		struct dp_meter_cfg meter = {
+			.type = srTCM,
+			.cir = 5000000,
+			.pir = 5000000,
+			.cbs = 1023,
+			.pbs = 1023,
+			.col_mode = 0,
+			.dir = DP_DIR_EGRESS,
+			.mode = DP_PCP_8P0D,
+			.flow = DP_UKNOWN_UNICAST
+			};
+			struct net_device *dev;
+			int ret;
+			int meter_flag = DP_METER_ATTACH_CTP, meterid = -1;
+
+		dev = dev_get_by_name(&init_net, param_list[1]);
+		if (!dev) {
+			PR_ERR(" dev NULL\n");
+			return count;
+		}
+		if (dp_strncmpi(param_list[2], "dealloc",
+				strlen("dealloc")) == 0) {
+			meterid = dp_atoi(param_list[3]);
+			ret = DP_MTR_ALC(meterid, DP_F_DEREGISTER);
+			if (ret < 0) {
+				PR_ERR("Fail to get meter dealloc\n");
+				return count;
+			}
+			PR_INFO("Meter dealloc succes, MeterId:=%d\n",
+				meterid);
+		} else if (dp_strncmpi(param_list[2], "alloc",
+				strlen("alloc")) == 0) {
+			ret = DP_MTR_ALC(meterid, 0);
+			if (ret < 0) {
+				PR_ERR("Fail to get meter alloc\n");
+				return count;
+			}
+			PR_INFO("Meter alloc succes, MeterId:=%d\n", meterid);
+		} else if ((dp_strncmpi(param_list[2], "del",
+			   strlen("del")) == 0) ||
+			   (dp_strncmpi(param_list[2], "add",
+			   strlen("add")) == 0)) {
+			int param_val;
+
+			if (!param_list[3]) {
+				PR_ERR("meterid NULLL\n");
+				return count;
+			}
+			param_val = dp_atoi(param_list[3]);
+			if (param_val < 0) {
+				PR_ERR("meterid less then 0");
+				return count;
+			}
+			meter.meter_id = param_val;
+			param_val = dp_atoi(param_list[4]);
+			if (param_val)
+				meter_flag = param_val;
+			param_val = dp_atoi(param_list[5]);
+			if (param_val)
+				meter.dir = param_val;
+			param_val = dp_atoi(param_list[6]);
+			if (param_val)
+				meter.flow = param_val;
+			param_val = dp_atoi(param_list[7]);
+			if (param_val)
+				meter.cir = param_val;
+			param_val = dp_atoi(param_list[8]);
+			if (param_val)
+				meter.pir = param_val;
+			param_val = dp_atoi(param_list[9]);
+			if (param_val)
+				meter.cbs = param_val;
+			param_val = dp_atoi(param_list[10]);
+			if (param_val)
+				meter.pbs = param_val;
+			param_val = dp_atoi(param_list[11]);
+			if (param_val)
+				meter.type =  param_val;
+			meter.mode = DP_PCP_8P0D;
+			if (dp_strncmpi(param_list[2], "add",
+					strlen("add")) == 0)
+				ret = DP_MTR_CFGAPI(dp_meter_add, dev,
+						    meter, meter_flag);
+			else
+				ret = DP_MTR_CFGAPI(dp_meter_del, dev,
+						    meter, meter_flag);
+			if (ret < 0) {
+				PR_ERR("meter %s failed\n",
+				       param_list[2]);
+				return count;
+			}
+			PR_ERR("meterid:=%d %s success\n",
+			       meter.meter_id, param_list[2]);
 		}
 	} else if (dp_strncmpi(param_list[0], "set_node",
 			       strlen("set_node")) == 0) {
