@@ -125,6 +125,9 @@ struct nand_flash_dev spinand_flash_ids[] = {
 		 LP_OPTIONS | SPINAND_NEED_PLANE_SELECT, 2, 64},
 	{"SPI NAND MT29F1G01ABB 1Gbit",
 		{ .id = {0x2c, 0x15} }, 2048, 128, 0x20000, LP_OPTIONS, 2, 128},
+	{"SPI NAND MT29F2G01ABBG 2Gbit 1,8v",
+		{ .id = {0x2c, 0x25} }, 2048, 256, 0x20000,
+		 LP_OPTIONS | SPINAND_NEED_PLANE_SELECT, 2, 64},
 	{"SPI NAND TC58CVG0S3 1Gbit",
 		{ .id = {0x98, 0xc2} }, 2048, 128, 0x20000, LP_OPTIONS, 2, 64},
 	{"SPI NAND TC58CVG1S3 2Gbit",
@@ -136,6 +139,12 @@ struct nand_flash_dev spinand_flash_ids[] = {
 	{"SPI NAND MX35LFE4AB 2Gbit",
 		{ .id = {0xc2, 0x22} }, 2048, 256, 0x20000,
 		 LP_OPTIONS | SPINAND_NEED_PLANE_SELECT, 2, 64},
+	{"SPI NAND 1Gbit 3,3v WN25N01GV",
+		{ .id = {0xef, 0xaa} }, 2048, 128, 0x20000, LP_OPTIONS, 2, 64},
+	{"SPI NAND 1Gbit 1,8v WN25N01GW",
+		{ .id = {0xef, 0xba} }, 2048, 128, 0x20000, LP_OPTIONS, 2, 64},
+	{"SPI NAND 2Gbit 3,3v WN25M02GV",
+		{ .id = {0xef, 0xab} }, 2048, 256, 0x20000, LP_OPTIONS, 2, 64},
 };
 #if 0
 /**
