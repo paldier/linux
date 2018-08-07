@@ -89,10 +89,9 @@ static void mac_irq_tasklet(unsigned long data)
 				}
 			}
 		}
-
-		/* Enable Corresponding XGMAC and LMAC Interrupts back */
-		ops->mac_int_en(ops);
 	}
+	/* Enable Corresponding XGMAC and LMAC Interrupts back */
+	ops->mac_int_en(ops);
 }
 
 static int mac_irq_init(struct mac_prv_data *pdata)
