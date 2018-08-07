@@ -1081,7 +1081,6 @@ static s32 queue_map_get(int cbm_inst, s32 queue_id, s32 *num_entries,
 			       (offset_1 << 2));
 		mode >>= (temp_entry[i].ep << 1);
 		mode = mode & 0x3;
-		temp_entry[i].mode = mode;
 		sel_field = (index & 0xf) |
 			     (((index & 0x3c00) >> 6) & 0xf0);
 		switch (mode) {

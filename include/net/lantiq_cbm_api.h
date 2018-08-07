@@ -1231,6 +1231,7 @@ s32
 cqm_mode_table_set(
 	int cbm_inst,
 	cbm_queue_map_entry_t *entry,
+	u32 mode,
 	u32 flags
 	);
 

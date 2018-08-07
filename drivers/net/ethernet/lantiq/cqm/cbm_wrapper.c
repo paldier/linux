@@ -29,11 +29,11 @@ EXPORT_SYMBOL(cbm_queue_map_get);
 
 s32 cbm_queue_map_set(int cbm_inst, s32 queue_id,
 		      cbm_queue_map_entry_t *entry,
-		      u32 mode, u32 flags)
+		      u32 flags)
 {
 	if (g_cbm_ops->cbm_queue_map_set)
 		return g_cbm_ops->cbm_queue_map_set(
-		cbm_inst, queue_id, entry, mode, flags);
+		cbm_inst, queue_id, entry, flags);
 	else
 		return CBM_FAILURE;
 }
@@ -58,10 +58,12 @@ s32 cqm_qid2ep_map_get(int qid, int *port)
 EXPORT_SYMBOL(cqm_qid2ep_map_get);
 
 s32
-cqm_mode_table_set(int cbm_inst, cbm_queue_map_entry_t *entry, u32 flags)
+cqm_mode_table_set(int cbm_inst, cbm_queue_map_entry_t *entry, u32 mode,
+		   u32 flags)
 {
 	if (g_cbm_ops->cqm_mode_table_set)
-		return g_cbm_ops->cqm_mode_table_set(cbm_inst, entry, flags);
+		return g_cbm_ops->cqm_mode_table_set(cbm_inst, entry, mode,
+						     flags);
 	else
 		return CBM_FAILURE;
 }
