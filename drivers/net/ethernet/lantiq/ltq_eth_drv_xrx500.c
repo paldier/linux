@@ -1210,7 +1210,8 @@ static int xrx500_of_iface(struct xrx500_hw *hw, struct device_node *iface,
 	int ret;
 
 	/* alloc the network device */
-	hw->devs[hw->num_devs] = alloc_etherdev(sizeof(struct ltq_eth_priv));
+	hw->devs[hw->num_devs] = alloc_etherdev_mq(sizeof(struct ltq_eth_priv),
+						   g_soc_data.queue_num);
 
 	if (!hw->devs[hw->num_devs]) {
 		pr_debug("allocated failed for interface %d\n",
@@ -2123,11 +2124,13 @@ static int ltq_eth_drv_remove(struct platform_device *pdev)
 static const struct ltq_net_soc_data xrx500_net_data = {
 	.need_defer = true,
 	.hw_checksum = true,
+	.queue_num = 1,
 };
 
 static const struct ltq_net_soc_data falconmx_net_data = {
 	.need_defer = false,
 	.hw_checksum = false,
+	.queue_num = 8,
 };
 
 static const struct of_device_id ltq_eth_drv_match[] = {

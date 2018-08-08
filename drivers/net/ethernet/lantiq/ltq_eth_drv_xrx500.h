@@ -121,5 +121,6 @@ extern int g_xway_gphy_fw_loaded;
 struct ltq_net_soc_data {
 	bool need_defer;
 	bool hw_checksum;
+	unsigned int queue_num;
 };
 #endif /* _LANTIQ_ETH_DRV_H_ */
