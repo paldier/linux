@@ -132,6 +132,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 			seq_printf(s, "%s ", dp_port_type_str[i]);
 	}
 	seq_puts(s, "\n");
+	seq_printf(s, "    mode:              %d\n", port->cqe_lu_mode);
 	seq_printf(s, "    cb->rx_fn:         0x%0x\n", (u32)port->cb.rx_fn);
 	seq_printf(s, "    cb->restart_fn:    0x%0x\n",
 		   (u32)port->cb.restart_fn);

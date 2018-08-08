@@ -970,119 +970,43 @@ int dp_counter_mode_set(struct dp_counter_conf *cfg, int flag);
  */
 int dp_counter_mode_get(struct dp_counter_conf *cfg, int flag);
 
-/*! @brief dp_q_map_mode */
-enum dp_q_map_mode {
-	DP_Q_MAP_MODE0 = 0, /*!< flowid[7-6] dec/enc mpe2/1 dp_port class[3-0]*/
-	DP_Q_MAP_MODE1, /*!< subif[7-4] mpe2/1 dp_port subif[3-0] */
-	DP_Q_MAP_MODE2, /*!< subif_hi[11-8] mpe2/1 dp_port class[3-0] */
-	DP_Q_MAP_MODE3 /*!< subif_hi[4-0] mpe2/1 dp_port class[2-0] */
-};
-
-/*! @brief dp_q_map_mode0 */
-struct dp_q_map_mode0 {
+/*! @brief dp_q_map*/
+struct dp_q_map {
 	u32	mpe1; /*!< MPE1 Flag: 1 bit*/
 	u32	mpe2; /*!< MPE2 Flag:1 bit */
 	u32	dp_port; /*!< logical port id: 4 bits*/
 	u32	flowid; /*!< FlowId (Bits 7:6): 2 bit */
+	u32	subif; /*!< subif*/
 	u32	dec; /*!< VPN Decrypt flag: 1 bit*/
 	u32	enc; /*!< VPN Encrypt flag: 1 bit*/
 	u32	class; /*!< Traffic Class: 4 bits*/
 };
 
-/*! @brief dp_q_map_mode0_mask dont' care bit per field */
-struct dp_q_map_mode0_mask {
+/*! @brief dp_q_map_mask*/
+struct dp_q_map_mask {
 	u32	flowid:1; /*!< FlowId don't care */
 	u32	dec:1; /*!< DEC Decrypt flag don't care */
 	u32	enc:1; /*!< ENC Encrypt flag don't care */
 	u32	mpe1:1; /*!< MPE1 Flag don't care */
 	u32	mpe2:1; /*!< MPE2 Flag don't care */
-	u32	dp_port:4; /*!< logical port don't care */
-	u32	class:4; /*!< Traffic Class don't care */
-};
-
-/*! @brief dp_q_map_mode1*/
-struct dp_q_map_mode1 {
-	u32	mpe1; /*!< MPE1 Flag */
-	u32	mpe2; /*!< MPE2 Flag */
-	u32	dp_port; /*!< logical port */
-	u32	subif; /*!< subif_hi[7-0]*/
-};
-
-/*! @brief dp_q_map_mode1_mask dont' care bit per field */
-struct dp_q_map_mode1_mask {
-	u32	subif:1; /*!< subif_hi[7-4] don't care */
-	u32	mpe1:1; /*!< MPE1 Flag don't care */
-	u32	mpe2:1; /*!< MPE2 Flag don't care */
-	u32	dp_port:4; /*!< logical port don't care */
-};
-
-/*! @brief dp_q_map_mode2*/
-struct dp_q_map_mode2 {
-	u32	mpe1; /*!< MPE1 Flag: 1 bit */
-	u32	mpe2; /*!< MPE2 Flag: 1 bit */
-	u32	dp_port; /*!< logical port: 4 bits*/
-	u32	subif; /*!< subif_hi[7-4]*/
-	u32	class; /*!< class[3-0]*/
-};
-
-/*! @brief dp_q_map_mode2_mask dont' care bit per field */
-struct dp_q_map_mode2_mask {
-	u32	subif:1; /*!< subif_hi[7-4] don't care */
-	u32	mpe1:1; /*!< MPE1 Flag don't care */
-	u32	mpe2:1; /*!< MPE2 Flag don't care */
-	u32	dp_port:4; /*!< logical port don't care */
-	u32	class:1; /*!< subif_hi[3-0] don't care */
-};
-
-/*! @brief dp_q_map_mode3*/
-struct dp_q_map_mode3 {
-	u32	mpe1; /*!< MPE1 Flag: 1 bits */
-	u32	mpe2; /*!< MPE2 Flag: 1 bits */
-	u32	dp_port; /*!< logical port: 4 bits */
-	u32	subif; /*!< subif_hi[4-0]: 5 bits*/
-	u32	class; /*!< class[2-0]: 3 bits */
-};
-
-/*! @brief dp_q_map_mode3_mask dont' care bit per field */
-struct dp_q_map_mode3_mask {
-	u32	subif:1; /*!< subif_hi[7-4] don't care */
-	u32	mpe1:1; /*!< MPE1 Flag don't care */
-	u32	mpe2:1; /*!< MPE2 Flag don't care */
-	u32	dp_port:4; /*!< logical port don't care */
-	u32	class:1; /*!< subif_hi[3-0] don't care */
-};
-
-/*! @brief dp_q_map*/
-union dp_q_map {
-	struct dp_q_map_mode0 map0; /*!< dp_q_map_f_mode0 setting */
-	struct dp_q_map_mode1 map1; /*!< dp_q_map_f_mode1 setting */
-	struct dp_q_map_mode2 map2; /*!< dp_q_map_f_mode2 setting */
-	struct dp_q_map_mode3 map3; /*!< dp_q_map_f_mode3 setting */
-};
-
-/*! @brief dp_q_map_mask*/
-union dp_q_map_mask {
-	struct dp_q_map_mode0_mask mask0; /*!< don't care mask for this mode*/
-	struct dp_q_map_mode1_mask mask1; /*!< don't care mask for this mode*/
-	struct dp_q_map_mode2_mask mask2; /*!< don't care mask for this mode*/
-	struct dp_q_map_mode3_mask mask3; /*!< don't care mask for this mode*/
+	u32	subif:1; /*!< subif don't care */
+	u32	dp_port:1; /*!< logical port don't care */
+	u32	class:1; /*!< Traffic Class don't care */
 };
 
 /*! @brief queue_map_set*/
 struct dp_queue_map_set {
 	int inst; /*!< input: dp instance. For SOC side, it is always zero */
 	int q_id; /*!< queue id */
-	enum dp_q_map_mode qm_mode; /*!< map mode */
-	union dp_q_map map;  /*!< lookup map value */
-	union dp_q_map_mask mask; /*!< lookup map don't care flag setting:
-				   *  1 - means don't care this bit setting
-				   */
+	struct dp_q_map map;  /*!< lookup map value */
+	struct dp_q_map_mask mask; /*!< lookup map don't care flag setting:
+				    *  1 - means don't care this bit setting
+				    */
 };
 
 /*! @brief queue_map_entry*/
 struct dp_queue_map_entry {
-	enum dp_q_map_mode qm_mode; /*!< map mode */
-	union dp_q_map qmap;    /*!< map setting */
+	struct dp_q_map qmap;    /*!< map setting */
 };
 
 /*! @brief queue_map_get*/

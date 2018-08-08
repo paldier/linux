@@ -537,6 +537,7 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 int dp_platform_queue_set(int inst, u32 flag)
 {
 	int ret, i;
+	u32 mode;
 	struct ppv4_queue q = {0};
 	cbm_queue_map_entry_t lookup = {0};
 	struct cbm_cpu_port_data cpu_data = {0};
@@ -566,7 +567,6 @@ int dp_platform_queue_set(int inst, u32 flag)
 		PR_INFO("drop queue: %d\n", priv->ppv4_drop_q);
 	}
 	/*Map all lookup entry to drop queue at the beginning*/
-	lookup.mode = CQE_LU_MODE0;
 	cbm_queue_map_set(dp_port_prop[inst].cbm_inst, priv->ppv4_drop_q,
 			  &lookup,
 			  CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE |
@@ -581,9 +581,10 @@ int dp_platform_queue_set(int inst, u32 flag)
 
 	/*Set CPU port to Mode0 only*/
 	dp_port_info[inst][0].cqe_lu_mode = CQE_LU_MODE0;
-	lookup.mode = CQE_LU_MODE0;
+	mode = CQE_LU_MODE0;
 	lookup.ep = PMAC_CPU_ID;
 	cqm_mode_table_set(dp_port_prop[inst].cbm_inst, &lookup,
+			   mode,
 			   CBM_QUEUE_MAP_F_MPE1_DONTCARE |
 			   CBM_QUEUE_MAP_F_MPE2_DONTCARE);
 
@@ -653,7 +654,6 @@ int dp_platform_queue_set(int inst, u32 flag)
 		if (!f_cpu_q) {
 			f_cpu_q = 1;
 			/*Map all CPU port's lookup to its 1st queue only */
-			lookup.mode = CQE_LU_MODE0;
 			lookup.ep = PMAC_CPU_ID;
 			cbm_queue_map_set(dp_port_prop[inst].cbm_inst,
 					  q_port.qid,
@@ -823,6 +823,7 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			     u32 flags)
 {
 	int idx, i;
+	u32 mode;
 	cbm_queue_map_entry_t lookup = {0};
 	struct hal_priv *priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
 	struct gsw_itf *itf;
@@ -856,12 +857,14 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			port_info->tx_pkt_credit;
 		dp_deq_port_tbl[inst][i + idx].dp_port = ep;
 	}
-	lookup.mode = dp_port_info[inst][ep].cqe_lu_mode;
+	mode = dp_port_info[inst][ep].cqe_lu_mode;
 	lookup.ep = ep;
 	/*Set all mode based on MPE1/2 to same single mode as specified */
 	cqm_mode_table_set(dp_port_prop[inst].cbm_inst, &lookup,
+			   mode,
 			   CBM_QUEUE_MAP_F_MPE1_DONTCARE |
 			   CBM_QUEUE_MAP_F_MPE2_DONTCARE);
+
 	dp_node_reserve(inst, ep, data, flags);
 	dp_port_spl_cfg(inst, ep, data, flags);
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)

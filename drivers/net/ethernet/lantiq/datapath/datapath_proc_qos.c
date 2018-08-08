@@ -1270,62 +1270,19 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 
 		qmap_set.q_id = dp_atoi(param_list[1]);
 
-		if (dp_strncmpi(param_list[2], "mode0", strlen("mode0")) == 0) {
-			if (num < 10) {
-				PR_INFO("Wrong Parameter(try help):%s\n",
-					"echo help > /sys/kernel/debug/dp/qos");
-				return count;
-			}
-			qmap_set.qm_mode = DP_Q_MAP_MODE0;
-			qmap_set.map.map0.mpe1 = dp_atoi(param_list[3]);
-			qmap_set.map.map0.mpe2 = dp_atoi(param_list[4]);
-			qmap_set.map.map0.dp_port = dp_atoi(param_list[5]);
-			qmap_set.map.map0.flowid = dp_atoi(param_list[6]);
-			qmap_set.map.map0.dec = dp_atoi(param_list[7]);
-			qmap_set.map.map0.enc = dp_atoi(param_list[8]);
-			qmap_set.map.map0.class = dp_atoi(param_list[9]);
-		} else if (dp_strncmpi(param_list[2], "mode1",
-				       strlen("mode1")) == 0) {
-			if (num < 7) {
-				PR_INFO("Wrong Parameter(try help):%s\n",
-					"echo help > /sys/kernel/debug/dp/qos");
-				return count;
-			}
-			qmap_set.qm_mode = DP_Q_MAP_MODE1;
-			qmap_set.map.map1.mpe1 = dp_atoi(param_list[3]);
-			qmap_set.map.map1.mpe2 = dp_atoi(param_list[4]);
-			qmap_set.map.map1.dp_port = dp_atoi(param_list[5]);
-			qmap_set.map.map1.subif = dp_atoi(param_list[6]);
-		} else if (dp_strncmpi(param_list[2], "mode2",
-				       strlen("mode2")) == 0) {
-			if (num < 7) {
-				PR_INFO("Wrong Parameter(try help):%s\n",
-					"echo help > /sys/kernel/debug/dp/qos");
-				return count;
-			}
-			qmap_set.qm_mode = DP_Q_MAP_MODE2;
-			qmap_set.map.map2.mpe1 = dp_atoi(param_list[3]);
-			qmap_set.map.map2.mpe2 = dp_atoi(param_list[4]);
-			qmap_set.map.map2.dp_port = dp_atoi(param_list[5]);
-			qmap_set.map.map2.subif = dp_atoi(param_list[6]);
-			qmap_set.map.map2.class = dp_atoi(param_list[7]);
-		} else if (dp_strncmpi(param_list[2], "mode3",
-				       strlen("mode3")) == 0) {
-			if (num < 7) {
-				PR_INFO("Wrong Parameter(try help):%s\n",
-					"echo help > /sys/kernel/debug/dp/qos");
-				return count;
-			}
-			qmap_set.qm_mode = DP_Q_MAP_MODE3;
-			qmap_set.map.map3.mpe1 = dp_atoi(param_list[3]);
-			qmap_set.map.map3.mpe2 = dp_atoi(param_list[4]);
-			qmap_set.map.map3.dp_port = dp_atoi(param_list[5]);
-			qmap_set.map.map3.subif = dp_atoi(param_list[6]);
-			qmap_set.map.map3.class = dp_atoi(param_list[7]);
-		} else {
-			PR_ERR("unknown mode provided!\n");
+		if (num < 10) {
+			PR_INFO("Wrong Parameter(try help):%s\n",
+				"echo help > /sys/kernel/debug/dp/qos");
+			return count;
 		}
-
+		qmap_set.map.mpe1 = dp_atoi(param_list[2]);
+		qmap_set.map.mpe2 = dp_atoi(param_list[3]);
+		qmap_set.map.dp_port = dp_atoi(param_list[4]);
+		qmap_set.map.flowid = dp_atoi(param_list[5]);
+		qmap_set.map.dec = dp_atoi(param_list[6]);
+		qmap_set.map.enc = dp_atoi(param_list[7]);
+		qmap_set.map.class = dp_atoi(param_list[8]);
+		qmap_set.map.subif = dp_atoi(param_list[9]);
 		if (dp_queue_map_set(&qmap_set, 0)) {
 			PR_ERR("dp_queue_map_set failed\n");
 			return count;

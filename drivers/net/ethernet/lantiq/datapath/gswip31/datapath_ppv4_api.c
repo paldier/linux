@@ -3946,42 +3946,14 @@ int dp_queue_map_get_31(struct dp_queue_map_get *cfg, int flag)
 	}
 
 	for (i = 0; i < num_entry; i++) {
-		if (cfg->qmap_entry[i].qm_mode == DP_Q_MAP_MODE0) {
-			cfg->qmap_entry[i].qmap.map0.flowid =
-							qmap_entry[i].flowid;
-			cfg->qmap_entry[i].qmap.map0.dec = qmap_entry[i].dec;
-			cfg->qmap_entry[i].qmap.map0.enc = qmap_entry[i].enc;
-			cfg->qmap_entry[i].qmap.map0.mpe1 = qmap_entry[i].mpe1;
-			cfg->qmap_entry[i].qmap.map0.mpe2 = qmap_entry[i].mpe2;
-			cfg->qmap_entry[i].qmap.map0.dp_port = qmap_entry[i].ep;
-			cfg->qmap_entry[i].qmap.map0.class = qmap_entry[i].tc;
-		} else if (cfg->qmap_entry[i].qm_mode == DP_Q_MAP_MODE1) {
-			cfg->qmap_entry[i].qm_mode = qmap_entry[i].mode;
-			cfg->qmap_entry[i].qmap.map1.subif =
-							qmap_entry[i].sub_if_id;
-			cfg->qmap_entry[i].qmap.map1.mpe1 = qmap_entry[i].mpe1;
-			cfg->qmap_entry[i].qmap.map1.mpe2 = qmap_entry[i].mpe2;
-			cfg->qmap_entry[i].qmap.map1.dp_port = qmap_entry[i].ep;
-		} else if (cfg->qmap_entry[i].qm_mode == DP_Q_MAP_MODE2) {
-			cfg->qmap_entry[i].qm_mode = qmap_entry[i].mode;
-			cfg->qmap_entry[i].qmap.map2.subif =
-							qmap_entry[i].sub_if_id;
-			cfg->qmap_entry[i].qmap.map2.mpe1 = qmap_entry[i].mpe1;
-			cfg->qmap_entry[i].qmap.map2.mpe2 = qmap_entry[i].mpe2;
-			cfg->qmap_entry[i].qmap.map2.dp_port = qmap_entry[i].ep;
-			cfg->qmap_entry[i].qmap.map2.class = qmap_entry[i].tc;
-		} else if (cfg->qmap_entry[i].qm_mode == DP_Q_MAP_MODE3) {
-			cfg->qmap_entry[i].qm_mode = qmap_entry[i].mode;
-			cfg->qmap_entry[i].qmap.map3.subif =
-							qmap_entry[i].sub_if_id;
-			cfg->qmap_entry[i].qmap.map3.mpe1 = qmap_entry[i].mpe1;
-			cfg->qmap_entry[i].qmap.map3.mpe2 = qmap_entry[i].mpe2;
-			cfg->qmap_entry[i].qmap.map3.dp_port = qmap_entry[i].ep;
-			cfg->qmap_entry[i].qmap.map3.class = qmap_entry[i].tc;
-		} else {
-			PR_ERR("queue map not found for q:%d\n", cfg->q_id);
-			res = DP_FAILURE;
-		}
+		cfg->qmap_entry[i].qmap.flowid = qmap_entry[i].flowid;
+		cfg->qmap_entry[i].qmap.dec = qmap_entry[i].dec;
+		cfg->qmap_entry[i].qmap.enc = qmap_entry[i].enc;
+		cfg->qmap_entry[i].qmap.mpe1 = qmap_entry[i].mpe1;
+		cfg->qmap_entry[i].qmap.mpe2 = qmap_entry[i].mpe2;
+		cfg->qmap_entry[i].qmap.dp_port = qmap_entry[i].ep;
+		cfg->qmap_entry[i].qmap.class = qmap_entry[i].tc;
+		cfg->qmap_entry[i].qmap.subif = qmap_entry[i].sub_if_id;
 	}
 
 EXIT:
@@ -4017,82 +3989,37 @@ int dp_queue_map_set_31(struct dp_queue_map_set *cfg, int flag)
 		return DP_FAILURE;
 	}
 
-	if (cfg->qm_mode == DP_Q_MAP_MODE0) {
-		qmap_cfg.mode = cfg->qm_mode;
-		qmap_cfg.mpe1 = cfg->map.map0.mpe1;
-		qmap_cfg.mpe2 = cfg->map.map0.mpe2;
-		qmap_cfg.ep = cfg->map.map0.dp_port;
-		qmap_cfg.flowid = cfg->map.map0.flowid;
-		qmap_cfg.dec = cfg->map.map0.dec;
-		qmap_cfg.enc = cfg->map.map0.enc;
-		qmap_cfg.tc = cfg->map.map0.class;
-		if (cfg->mask.mask0.mpe1)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE1_DONTCARE;
-		if (cfg->mask.mask0.mpe2)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE2_DONTCARE;
-		if (cfg->mask.mask0.dp_port)
-			cqm_flags |= CBM_QUEUE_MAP_F_EP_DONTCARE;
-		if (cfg->mask.mask0.flowid) {
-			cqm_flags |= CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE;
-			cqm_flags |= CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE;
-		}
-		if (cfg->mask.mask0.dec)
-			cqm_flags |= CBM_QUEUE_MAP_F_DE_DONTCARE;
-		if (cfg->mask.mask0.enc)
-			cqm_flags |= CBM_QUEUE_MAP_F_EN_DONTCARE;
-		if (cfg->mask.mask0.class)
-			cqm_flags |= CBM_QUEUE_MAP_F_TC_DONTCARE;
-	} else if (cfg->qm_mode == DP_Q_MAP_MODE1) {
-		qmap_cfg.mode = cfg->qm_mode;
-		qmap_cfg.mpe1 = cfg->map.map1.mpe1;
-		qmap_cfg.mpe2 = cfg->map.map1.mpe2;
-		qmap_cfg.ep = cfg->map.map1.dp_port;
-		qmap_cfg.sub_if_id = cfg->map.map1.subif;
-		if (cfg->mask.mask1.mpe1)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE1_DONTCARE;
-		if (cfg->mask.mask1.mpe2)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE2_DONTCARE;
-		if (cfg->mask.mask1.dp_port)
-			cqm_flags |= CBM_QUEUE_MAP_F_EP_DONTCARE;
-		if (cfg->mask.mask1.subif)
-			cqm_flags |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
-	} else if (cfg->qm_mode == DP_Q_MAP_MODE2) {
-		qmap_cfg.mode = cfg->qm_mode;
-		qmap_cfg.mpe1 = cfg->map.map2.mpe1;
-		qmap_cfg.mpe2 = cfg->map.map2.mpe2;
-		qmap_cfg.ep = cfg->map.map2.dp_port;
-		qmap_cfg.sub_if_id = cfg->map.map2.subif;
-		qmap_cfg.tc = cfg->map.map2.class;
-		if (cfg->mask.mask2.mpe1)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE1_DONTCARE;
-		if (cfg->mask.mask2.mpe2)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE2_DONTCARE;
-		if (cfg->mask.mask2.dp_port)
-			cqm_flags |= CBM_QUEUE_MAP_F_EP_DONTCARE;
-		if (cfg->mask.mask2.subif)
-			cqm_flags |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
-		if (cfg->mask.mask2.class)
-			cqm_flags |= CBM_QUEUE_MAP_F_TC_DONTCARE;
-	} else if (cfg->qm_mode == DP_Q_MAP_MODE3) {
-		qmap_cfg.mode = cfg->qm_mode;
-		qmap_cfg.mpe1 = cfg->map.map3.mpe1;
-		qmap_cfg.mpe2 = cfg->map.map3.mpe2;
-		qmap_cfg.ep = cfg->map.map3.dp_port;
-		qmap_cfg.sub_if_id = cfg->map.map3.subif;
-		qmap_cfg.tc = cfg->map.map3.class;
-		if (cfg->mask.mask3.mpe1)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE1_DONTCARE;
-		if (cfg->mask.mask3.mpe2)
-			cqm_flags |= CBM_QUEUE_MAP_F_MPE2_DONTCARE;
-		if (cfg->mask.mask3.dp_port)
-			cqm_flags |= CBM_QUEUE_MAP_F_EP_DONTCARE;
-		if (cfg->mask.mask3.subif)
-			cqm_flags |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
-		if (cfg->mask.mask3.class)
-			cqm_flags |= CBM_QUEUE_MAP_F_TC_DONTCARE;
-	} else {
-		PR_ERR("Incorrect qm_mode provided:%d\n", cfg->qm_mode);
-		return DP_FAILURE;
+	qmap_cfg.mpe1 = cfg->map.mpe1;
+	qmap_cfg.mpe2 = cfg->map.mpe2;
+	qmap_cfg.ep = cfg->map.dp_port;
+	qmap_cfg.flowid = cfg->map.flowid;
+	qmap_cfg.dec = cfg->map.dec;
+	qmap_cfg.enc = cfg->map.enc;
+	qmap_cfg.tc = cfg->map.class;
+	qmap_cfg.sub_if_id = cfg->map.subif;
+	if (cfg->mask.mpe1)
+		cqm_flags |= CBM_QUEUE_MAP_F_MPE1_DONTCARE;
+	if (cfg->mask.mpe2)
+		cqm_flags |= CBM_QUEUE_MAP_F_MPE2_DONTCARE;
+	if (cfg->mask.dp_port)
+		cqm_flags |= CBM_QUEUE_MAP_F_EP_DONTCARE;
+	if (cfg->mask.flowid) {
+		cqm_flags |= CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE;
+		cqm_flags |= CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE;
+	}
+	if (cfg->mask.dec)
+		cqm_flags |= CBM_QUEUE_MAP_F_DE_DONTCARE;
+	if (cfg->mask.enc)
+		cqm_flags |= CBM_QUEUE_MAP_F_EN_DONTCARE;
+	if (cfg->mask.class)
+		cqm_flags |= CBM_QUEUE_MAP_F_TC_DONTCARE;
+	if (cfg->mask.dp_port)
+		cqm_flags |= CBM_QUEUE_MAP_F_EP_DONTCARE;
+	if (cfg->mask.subif) {
+		cqm_flags |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
+		if (dp_port_info[cfg->inst][cfg->map.dp_port].gsw_mode ==
+				GSW_LOGICAL_PORT_9BIT_WLAN)
+			cqm_flags |= CBM_QUEUE_MAP_F_SUBIF_LSB_DONTCARE;
 	}
 
 	if (cbm_queue_map_set(cfg->inst, cfg->q_id, &qmap_cfg, cqm_flags)) {

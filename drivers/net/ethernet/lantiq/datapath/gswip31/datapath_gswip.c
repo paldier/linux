@@ -600,6 +600,7 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	ctp_assign.nFirstCtpPortId = 0;
 	ctp_assign.nNumberOfCtpPort = assign->num;
 	dp_port_info[inst][ep].cqe_lu_mode = assign->lookup_mode;
+	dp_port_info[inst][ep].gsw_mode = (u32)assign->emode;
 	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops
 			  .CTP_PortAssignmentAlloc,
 			  gsw_handle,

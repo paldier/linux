@@ -443,7 +443,7 @@ struct pmac_port_info {
 	u32 vap_offset; /*shift bits to get vap value */
 	u32 vap_mask; /*get final vap after bit shift */
 	u8  cqe_lu_mode; /*cqe lookup mode */
-
+	u32 gsw_mode; /*gswip mode for subif */
 	u32 flag_other; /*save flag from cbm_dp_port_alloc */
 	u32 deq_port_base; /*CQE Dequeue Port */
 	u32 deq_port_num;  /*for PON IP: 64 ports, others: 1 */

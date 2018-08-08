@@ -333,6 +333,7 @@ int find_pattern(int port_id, struct seq_file *s, int qid)
 	int arr[] = {13, 12, 11, 10, 9, 8, /*7,6,5,4, */ 3, 2, 1, 0 };
 	int inst = 0;
 	struct hal_priv *priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
+	u32 mode = dp_port_info[inst][port_id].cqe_lu_mode;
 
 	left_n = 1 << (LOOKUP_FIELD_BITS - 4);	/*maximum lookup entried */
 	lookup_match_num = 0;
@@ -355,27 +356,31 @@ int find_pattern(int port_id, struct seq_file *s, int qid)
 		if (!f) {
 			f = 1;
 			proc_printf(s,
-				    "EP%-2d:%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s\n",
+				    "EP%-2d:%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%5s%s%d\n",
 				    tmp_pattern_port_id, "F2", "F1",
 				    "DEC", "ENC", "MPE2", "MPE1", "EP3",
 				    "EP2", "EP1", "EP0", "C3", "C2", "C1",
-				    "C0", "qid", "id");
+				    "C0", "qid", "id", "mode", "=", mode);
 		}
 		deq_port = priv->qos_queue_stat[lookup_match_qid[i]].deq_port;
 		flag_s = get_dma_flags_str31(deq_port, flag_buf,
 					     sizeof(flag_buf));
 
-		proc_printf(s, "    ");
-		for (j = LOOKUP_FIELD_BITS - 1; j >= 0; j--) {
-			if ((lookup_match_mask[i] >> j) & 1)
-				proc_printf(s, "%5c", 'x');
-			else
-				proc_printf(s, "%5d",
-					    (lookup_match_index[i] >> j) &
-					    1);
+		if (lookup_match_qid[i] != priv->ppv4_drop_q) {
+			proc_printf(s, "    ");
+			for (j = LOOKUP_FIELD_BITS - 1; j >= 0; j--) {
+				if ((lookup_match_mask[i] >> j) & 1)
+					proc_printf(s, "%5c", 'x');
+				else
+					proc_printf(s, "%5d",
+						    (lookup_match_index[i] >> j)
+									& 1);
+			}
+
+			proc_printf(s, "  ->%-3d(0x%04x)%s\n",
+				    lookup_match_qid[i],
+				    lookup_match_index[i], flag_s);
 		}
-		proc_printf(s, "->%-3d(0x%04x)%s\n", lookup_match_qid[i],
-			    lookup_match_index[i], flag_s);
 	}
 	if (s && seq_has_overflowed(s))
 		return -1;
