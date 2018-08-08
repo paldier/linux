@@ -481,13 +481,11 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 		ts_hdr_len = 10;
 
 	/* copy the bits out of the skb, and then trim the skb length */
-	skb_copy_bits(skb, skb->len - ts_hdr_len, tmpregval, ts_hdr_len);
+	skb_copy_bits(skb, skb->len - 8, tmpregval, 8);
 	__pskb_trim(skb, skb->len - ts_hdr_len);
 
-	/* GSWIP HW attach upper 2 bytes with 0 for timestamp */
-	regval = (0xffffffff00000000 & tmpregval[0]) |
-		 (tmpregval[0] & 0xffff) << 16
-		 | (tmpregval[1] & 0xffff000000000000) >> 48;
+        regval = tmpregval[0];
+
 
 	/* The timestamp is recorded in little endian format, and is stored at
 	 * the end of the packet.
@@ -497,6 +495,7 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 	 */
 	ns = le64_to_cpu(regval);
 
+        printk("ns = %llx\n",ns);
 	shhwtstamp = skb_hwtstamps(skb);
 	memset(shhwtstamp, 0, sizeof(struct skb_shared_hwtstamps));
 	shhwtstamp->hwtstamp = ns_to_ktime(ns);

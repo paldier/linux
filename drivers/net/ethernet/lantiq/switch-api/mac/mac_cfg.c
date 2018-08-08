@@ -804,7 +804,10 @@ int mac_enable_ts(void *pdev)
 	/* Tell adaption layer to remove Special Tag in Tx Directon */
 	gswss_set_mac_txsptag_op(pdev, MODE3);
 
-	mac_int_enable(pdev);
+	/* Tell adaption layer to remove FCS in Rx Direction */
+	gswss_set_mac_rxfcs_op(pdev, MODE3);
+	
+        mac_int_enable(pdev);
 	xgmac_set_mac_int(pdev, XGMAC_TSTAMP_EVNT, 1);
 
 #ifdef __KERNEL__

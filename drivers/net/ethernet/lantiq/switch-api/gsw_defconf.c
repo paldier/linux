@@ -441,6 +441,7 @@ static int pmac_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 					eg_cfg.bMpe2Flag	= ((j & 3) >> 1);
 					eg_cfg.bMpe1Flag	= (j & 1);
 					eg_cfg.nFlowIDMsb	= k;
+					eg_cfg.bFcsEna	= 1;
 
 					/* All other fields set to 0. */
 					ops->gsw_pmac_ops.Pmac_Eg_CfgSet(ops,
@@ -471,10 +472,10 @@ int pmac_get_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dst_port)
 	printk("\nGSWIP PMAC EG CFG\n");
 
 	printk("\n\nDestination portId = %d\n\n", dst_port);
-	printk("%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s\n",
+	printk("%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s\n",
 	       "PmacId", "RxDmaChId", "BslTrafCls", "BslSegDis",
 	       "PmacEna", "RedirEna", "DestPortId", "TrafCls", "Mpe1",
-	       "Mpe2", "FlowId");
+	       "Mpe2", "FlowId", "FcsEn");
 
 	for (k = 0; k <= 3; k++) {
 		for (i = 0; i <= 3; i++) {
@@ -494,7 +495,7 @@ int pmac_get_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dst_port)
 
 				ops->gsw_pmac_ops.Pmac_Eg_CfgGet(ops,
 								 &eg_cfg);
-				printk("%10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d",
+				printk("%10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d",
 				       eg_cfg.nPmacId,
 				       eg_cfg.nRxDmaChanId,
 				       eg_cfg.nBslTrafficClass,
@@ -505,7 +506,8 @@ int pmac_get_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dst_port)
 				       eg_cfg.nTrafficClass,
 				       eg_cfg.bMpe1Flag,
 				       eg_cfg.bMpe2Flag,
-				       eg_cfg.nFlowIDMsb);
+				       eg_cfg.nFlowIDMsb,
+                                       eg_cfg.bFcsEna);
 				printk("\n");
 			}
 		}
@@ -525,7 +527,7 @@ static int pmac_glbl_cfg(struct core_ops *ops, u8 pmacid)
 	glbl_cfg.nPmacId = pmacid;
 	glbl_cfg.bJumboEna = 1;
 	glbl_cfg.nMaxJumboLen = 10000;
-	glbl_cfg.bTxFCSDis = 1;
+	glbl_cfg.bTxFCSDis = 0;
 	glbl_cfg.bRxFCSDis = 1;
 	glbl_cfg.eShortFrmChkType = GSW_PMAC_SHORT_LEN_ENA_UNTAG;
 	glbl_cfg.bLongFrmChkDis = 1;
