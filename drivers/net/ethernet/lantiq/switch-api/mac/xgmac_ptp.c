@@ -452,23 +452,6 @@ int xgmac_rx_hwts(void *pdev, struct sk_buff *skb)
 	return 0;
 }
 
-u64 ntoh64(const u64 *input)
-{
-	u64 rval;
-	u8 *data = (u8 *)&rval;
-
-	data[0] = *input >> 56;
-	data[1] = *input >> 48;
-	data[2] = *input >> 40;
-	data[3] = *input >> 32;
-	data[4] = *input >> 24;
-	data[5] = *input >> 16;
-	data[6] = *input >> 8;
-	data[7] = *input >> 0;
-
-	return rval;
-}
-
 /* Update the received timestamp in skbhwtstamp
  * which will be used by PTP app
  */
@@ -502,9 +485,7 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 	 * Field: 00  		SYSTIMH    	SYSTIML
 	 */
 
-#if !defined(CONFIG_CPU_BIG_ENDIAN)
-	regval = ntoh64(regval);
-#endif
+	regval = be64_to_cpu(regval);
 
 	ns = ((((regval & 0xffffffff00000000) >> 32) * NSEC_TO_SEC) +
 	      (regval & 0x00000000ffffffff));
