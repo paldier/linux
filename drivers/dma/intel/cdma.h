@@ -218,9 +218,9 @@
 /** Default packet drop enabled for channel   */
 #define DMA_DEF_CHAN_BASED_PKT_DROP_EN	0
 /** Default Transmit burst length  */
-#define DMA_PORT_DEFAULT_TX_BURST_LEN	IFX_DMA_BURSTL_2
+#define DMA_PORT_DEFAULT_TX_BURST_LEN	IFX_DMA_BURSTL_8
 /** Default Receive burst length  */
-#define DMA_PORT_DEFAULT_RX_BURST_LEN	IFX_DMA_BURSTL_2
+#define DMA_PORT_DEFAULT_RX_BURST_LEN	IFX_DMA_BURSTL_8
 
 /** default enabled interrupts */
 #define DMA_CIE_DEFAULT			(DMA_CIE_DESCPT | DMA_CIE_EOP)
