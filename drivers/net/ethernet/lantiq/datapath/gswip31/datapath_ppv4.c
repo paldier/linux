@@ -821,3 +821,103 @@ EXIT:
 	t = NULL;
 	return res;
 }
+
+/**
+ * __mark_ppv4_port - Mark the allocated ppv4 ports.
+ * @inst:	DP instance ID.
+ * @*priv:	hal private structure info.
+ * @base:	base of the continuous allocated ports.
+ * @mark:	no of ports allocated to be marked as 1.
+ **/
+static void __mark_ppv4_port(int inst, int base, int mark)
+{
+	int tmp;
+	struct hal_priv *priv = HAL(inst);
+
+	for (tmp = base; (tmp < mark) && (tmp < MAX_PPV4_PORTS); tmp++)
+		priv->ppv4_port_map.flags[tmp] = 1;
+}
+
+/**
+ * ppv4_alloc_port_31 -	Allocate continuous requested deq_ports.
+ * @inst:			DP instance ID
+ * @deq_port_num:	no'of continuous PPV4 ports to be allocated.
+ *
+ * Returns the base of the continuous allocated ports.
+ * else -ERROR.
+ **/
+int ppv4_alloc_port_31(int inst, int deq_port_num)
+{
+	u32 base, match;
+	struct hal_priv *priv = HAL(inst);
+
+	for (base = 0; base < MAX_PPV4_PORTS; base++) {
+		for (match = 0; (match < deq_port_num) && ((base + match)
+		     < MAX_PPV4_PORTS); match++) {
+			if (priv->ppv4_port_map.flags[base + match])
+				break;
+		}
+		if (match == deq_port_num) {
+			__mark_ppv4_port(inst, base, (base + match));
+			return (base + PPV4_PORT_BASE);
+		}
+	}
+	return DP_FAILURE; /* port not found */
+}
+
+/**
+ * ppv4_port_free_31 - Unmark the ppv4 ports for inst.
+ * @inst:			DP instance ID.
+ * @base:			base of continuous allocated PPV4 ports.
+ * @deq_port_num:	no'of continuous PPV4 ports allocated.
+ *
+ * Free the ports allocated by ppv4_alloc_port_31() by marking zero.
+ **/
+int ppv4_port_free_31(int inst, int base, int deq_port_num)
+{
+	u32 tmp;
+	struct hal_priv *priv = HAL(inst);
+
+	/* Expecting base always greater than PPV4_PORT_BASE */
+	if (base < PPV4_PORT_BASE)
+		return DP_FAILURE;
+
+	base = base - PPV4_PORT_BASE;
+	for (tmp = base; (tmp < MAX_PPV4_PORTS) && deq_port_num; tmp++) {
+		priv->ppv4_port_map.flags[tmp] = 0;
+		deq_port_num--;
+	}
+
+	return DP_SUCCESS;
+}
+
+/**
+ * ppv4_alloc_ring_31 - Allocate ring buffer for port
+ * @size:	size of the descriptor.
+ * @phy:	Phy addr of ring.
+ * @virt:	Virt addr of the ring.
+ *
+ * Allocate the ring buffer of @size(*DP_TXIN_RING_SIZE_DEF) requested by
+ * caller.
+ **/
+int ppv4_alloc_ring_31(int size, void **phy, void **virt)
+{
+	*virt = kmalloc(DP_TXIN_RING_SIZE_DEF * size, GFP_KERNEL);
+	if (!virt)
+		return -DP_FAILURE;
+
+	*phy = virt_to_phys(virt);
+
+	return DP_SUCCESS;
+}
+
+/**
+ * ppv4_ring_free_31 - Free ring buffer.
+ * @ptr:	virt addr of the ring.
+ *
+ * Free the ring buffer allocated by ppv4_alloc_ring_31().
+ **/
+void ppv4_ring_free_31(void *ptr)
+{
+	kfree(ptr);
+}

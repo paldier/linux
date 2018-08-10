@@ -23,6 +23,8 @@
 #define VAP_DSL_OFFSET 3
 #define NEW_CBM_API 1
 #define PMAPPER_DISC_CTP 255
+#define MAX_PPV4_PORTS 38
+#define PPV4_PORT_BASE 90
 
 #define GSWIP_O_DEV_NAME 1
 #define GSWIP_L GSWIP_O_DEV_NAME
@@ -78,6 +80,10 @@ struct resv_info {
 	struct resv_sch *resv_sched; /*!< reserved schedulers info */
 };
 
+struct ppv4_port_map_table {
+	int flags[MAX_PPV4_PORTS];
+};
+
 struct pp_qos_dev;
 struct hal_priv {
 	struct cqm_deq_stat deq_port_stat[MAX_CQM_DEQ];
@@ -95,6 +101,7 @@ struct hal_priv {
 	u32 ppv4_tmp_p; /* workaround for ppv4 queue allocate to
 			 * to get physical queue id
 			 */
+	struct ppv4_port_map_table ppv4_port_map;/* PPV4 Ports table map */
 };
 
 struct datapath_ctrl {

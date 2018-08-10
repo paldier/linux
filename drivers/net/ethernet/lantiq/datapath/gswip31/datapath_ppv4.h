@@ -203,5 +203,9 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag);
 extern struct cqm_deq_stat deq_port_stat[MAX_CQM_DEQ];
 extern struct pp_queue_stat qos_queue_stat[MAX_QUEUE];
 int init_ppv4_qos(int inst, int flag);
+int ppv4_alloc_port_31(int inst, int deq_port_num);
+int ppv4_port_free_31(int inst, int base, int deq_port_num);
+int ppv4_alloc_ring_31(int size, void **phy, void **virt);
+void ppv4_ring_free_31(void *ptr);
 #endif /* DATAPATH_PPV4_H */
 
