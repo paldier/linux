@@ -2099,6 +2099,17 @@ typedef enum {
 	GSW_CPU_PARSER_RESERVED = 3
 } GSW_CPU_ParserHeaderCfg_t;
 
+/** \brief FCS and Pad Insertion operations for GSWIP 3.1
+    Used by \ref GSW_CPU_PortCfgSet/Get. */
+typedef enum {
+	/** CRC Pad Insertion Enable */
+	GSW_CRC_PAD_INS_EN	= 0,
+	/** CRC Insertion Enable Pad Insertion Disable */
+	GSW_CRC_EN_PAD_DIS	= 1,
+	/** CRC Pad Insertion Disable */
+	GSW_CRC_PAD_INS_DIS	= 2
+} GSW_FCS_TxOps_t;
+
 /** \brief Defines one port that is directly connected to the CPU and its applicable settings.
     Used by \ref GSW_CPU_PORT_CFG_SET and \ref GSW_CPU_PORT_CFG_GET. */
 typedef struct {
@@ -2136,6 +2147,8 @@ typedef struct {
 	GSW_CPU_ParserHeaderCfg_t  eMPE2ParserCfg;
 	/** GSWIP-3.0 specific Parser Header Config for both MPE-1 and MPE-2 set flag (i.e. MPE1=1, MPE2=1). */
 	GSW_CPU_ParserHeaderCfg_t  eMPE1MPE2ParserCfg;
+	/** GSWIP-3.1 FCS tx Operations. */
+	GSW_FCS_TxOps_t bFcsTxOps;
 } GSW_CPU_PortCfg_t;
 
 /** \brief Ethernet layer-2 header selector, when adding or removing on

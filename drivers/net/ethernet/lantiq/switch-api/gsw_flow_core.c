@@ -17135,7 +17135,7 @@ GSW_return_t GSW_CPU_PortCfgGet(void *cdev, GSW_CPU_PortCfg_t *parm)
 					goto UNLOCK_AND_RETURN;
 				}
 
-				parm->bFcsGenerate = ops->get_fcsgen(ops);
+				parm->bFcsTxOps = ops->get_fcsgen(ops);
 #endif
 			}
 		}
@@ -17182,6 +17182,7 @@ GSW_return_t GSW_CPU_PortCfgSet(void *cdev, GSW_CPU_PortCfg_t *parm)
 	u8 pidx = parm->nPortId;
 	u32 RST, AS, AST, RXSH;
 	u32 ret;
+
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -17267,8 +17268,8 @@ GSW_return_t GSW_CPU_PortCfgSet(void *cdev, GSW_CPU_PortCfg_t *parm)
 					ret = GSW_statusErr;
 					goto UNLOCK_AND_RETURN;
 				}
-
-				ops->set_fcsgen(ops, 1);
+				
+				ops->set_fcsgen(ops, parm->bFcsTxOps);
 #endif
 			}
 		}

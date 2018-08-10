@@ -723,14 +723,12 @@ int mac_set_fcs_gen(void *pdev, u32 val)
 	spin_lock_bh(&pdata->mac_lock);
 #endif
 
-	/* CRC Insertion enable, PAD insertion Disable */
-	if (val == 1)
-		gswss_set_xgmac_crc_ctrl(pdev, 1);
-	else
-		/* CRC and PAD Insertion Disable */
-		gswss_set_xgmac_crc_ctrl(pdev, 2);
+	gswss_set_xgmac_crc_ctrl(pdev, val);
 
-	lmac_set_txfcs(pdev, val);
+	if ((val == GSW_CRC_PAD_INS_EN) || (val == GSW_CRC_EN_PAD_DIS))
+		lmac_set_txfcs(pdev, 1);
+	else
+		lmac_set_txfcs(pdev, 0);
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
@@ -748,7 +746,7 @@ int mac_get_fcs_gen(void *pdev)
 	spin_lock_bh(&pdata->mac_lock);
 #endif
 
-	tx_fcs = lmac_get_txfcs(pdev);
+	tx_fcs = gswss_get_xgmac_crc_ctrl(pdev);
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
@@ -804,10 +802,8 @@ int mac_enable_ts(void *pdev)
 	/* Tell adaption layer to remove Special Tag in Tx Directon */
 	gswss_set_mac_txsptag_op(pdev, MODE3);
 
-	/* Tell adaption layer to remove FCS in Rx Direction */
-	gswss_set_mac_rxfcs_op(pdev, MODE3);
-	
-        mac_int_enable(pdev);
+	mac_int_enable(pdev);
+
 	xgmac_set_mac_int(pdev, XGMAC_TSTAMP_EVNT, 1);
 
 #ifdef __KERNEL__
@@ -1037,6 +1033,9 @@ int mac_init(void *pdev)
 	 * with EEE Capability ON/Auto.
 	 */
 	gswss_set_eee_cap(pdev, EEE_CAP_OFF);
+
+	/* Tell adaption layer to remove FCS in Rx Direction */
+	gswss_set_mac_rxfcs_op(pdev, MODE3);
 
 	/* Set XGMAC Port to MDIO Clause 22 */
 	mdio_set_clause(pdev, 1, pdata->mac_idx);

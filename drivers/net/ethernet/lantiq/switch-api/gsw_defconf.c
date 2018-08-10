@@ -441,7 +441,7 @@ static int pmac_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 					eg_cfg.bMpe2Flag	= ((j & 3) >> 1);
 					eg_cfg.bMpe1Flag	= (j & 1);
 					eg_cfg.nFlowIDMsb	= k;
-					eg_cfg.bFcsEna	= 1;
+					eg_cfg.bFcsEna		= 1;
 
 					/* All other fields set to 0. */
 					ops->gsw_pmac_ops.Pmac_Eg_CfgSet(ops,
@@ -507,7 +507,7 @@ int pmac_get_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dst_port)
 				       eg_cfg.bMpe1Flag,
 				       eg_cfg.bMpe2Flag,
 				       eg_cfg.nFlowIDMsb,
-                                       eg_cfg.bFcsEna);
+				       eg_cfg.bFcsEna);
 				printk("\n");
 			}
 		}

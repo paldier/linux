@@ -255,6 +255,7 @@ int gswss_adap_reset(void *pdev, u32 reset);
 int gswss_set_xgmac_tx_disable(void *pdev, u32 val);
 int gswss_set_xgmac_rx_disable(void *pdev, u32 val);
 int gswss_set_xgmac_crc_ctrl(void *pdev, u32 val);
+int gswss_get_xgmac_crc_ctrl(void *pdev);
 
 int gswss_get_mtu(void *pdev);
 u32 gswss_get_flowctrl_tx(void *pdev);

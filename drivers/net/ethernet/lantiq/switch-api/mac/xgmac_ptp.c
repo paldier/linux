@@ -460,6 +460,7 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 {
 	__le64 regval;
 	u32 ts_hdr_len = 8;
+	u32 copy_hdr_len = 8;
 	struct skb_shared_hwtstamps *shhwtstamp = NULL;
 	u64 ns;
 
@@ -468,13 +469,18 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 	 * (8 bytes tstamp + 2 bytes Year)
 	 * Get the register setting for clk src
 	 */
-	if (pdata->hw_feat.ts_src == 2)
+	if (pdata->hw_feat.ts_src == 2) {
 		ts_hdr_len = 8;
-	else if (pdata->hw_feat.ts_src == 1 || pdata->hw_feat.ts_src == 3)
+		copy_hdr_len = 8;
+	} else if (pdata->hw_feat.ts_src == 1 || pdata->hw_feat.ts_src == 3) {
+		/* Since 2 bytes is fixed as 0, copy only 8 bytes */
+		copy_hdr_len = 8;
+		/* Skb timestamp stripping should be still 10 bytes */
 		ts_hdr_len = 10;
+	}
 
 	/* copy the bits out of the skb, and then trim the skb length */
-	skb_copy_bits(skb, skb->len - 8, regval, 8);
+	skb_copy_bits(skb, skb->len - copy_hdr_len, &regval, copy_hdr_len);
 	__pskb_trim(skb, skb->len - ts_hdr_len);
 
 
