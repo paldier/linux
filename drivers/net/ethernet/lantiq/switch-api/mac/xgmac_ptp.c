@@ -458,7 +458,7 @@ int xgmac_rx_hwts(void *pdev, struct sk_buff *skb)
 static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 				struct sk_buff *skb)
 {
-	__le64 regval;
+	__be64 regval;
 	u32 ts_hdr_len = 8;
 	u32 copy_hdr_len = 8;
 	struct skb_shared_hwtstamps *shhwtstamp = NULL;
@@ -495,8 +495,6 @@ static void xgmac_get_rx_tstamp(struct mac_prv_data *pdata,
 
 	ns = ((((regval & 0xffffffff00000000) >> 32) * NSEC_TO_SEC) +
 	      (regval & 0x00000000ffffffff));
-
-	printk("ns = %llx\n", ns);
 
 	shhwtstamp = skb_hwtstamps(skb);
 	memset(shhwtstamp, 0, sizeof(struct skb_shared_hwtstamps));
