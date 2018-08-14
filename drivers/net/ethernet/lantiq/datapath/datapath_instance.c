@@ -277,7 +277,7 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 					 sizeof(*dev->netdev_ops),
 					 (void **)&dp_dev->old_dev_ops,
 					 &dp_dev->new_dev_ops,
-					 (unsigned long)&dp_ndo_setup_tc);
+					 &dp_ndo_setup_tc);
 			if (err)
 				return DP_FAILURE;
 		}

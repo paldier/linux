@@ -1121,3 +1121,20 @@ int print_symbol_name(unsigned long addr)
 	return 0;
 }
 
+int dp_ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
+
+{
+	dp_subif_t subif = {0};
+
+	if (dp_get_netif_subifid(tc->dev, NULL, NULL, NULL, &subif, 0)) {
+		DP_DEBUG(DP_DBG_FLAG_DBG, "get subifid fail(%s)\n",
+			 tc->dev ? tc->dev->name : "NULL");
+		return DP_FAILURE;
+	} else {
+		if (!dp_port_prop[subif.inst].info.dp_ctp_tc_map_set)
+			return DP_FAILURE;
+		return dp_port_prop[subif.inst].info.
+					dp_ctp_tc_map_set(tc, flag);
+	}
+}
+EXPORT_SYMBOL(dp_ctp_tc_map_set);

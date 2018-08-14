@@ -62,15 +62,17 @@ u16 dp_swdev_cal_hash(unsigned char *name)
 	return (u16)(hash & 0x3F);
 }
 
-int dp_get_fid_by_brname(struct net_device *dev)
+int dp_get_fid_by_brname(struct net_device *dev, int *inst)
 {
 	struct br_info *br_info;
 
 	br_info = dp_swdev_bridge_entry_lookup(dev->name);
-	if (!br_info)
+	if (!br_info) {
 		return -1;
-	else
+	} else {
+		*inst = br_info->inst;
 		return br_info->fid;
+	}
 }
 
 int dp_swdev_chk_bport_in_br(struct net_device *bp_dev, int bport, int inst)
