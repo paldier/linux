@@ -11,12 +11,6 @@ config LTQ_PPV4
 	present in the FALCONMX series of SoCs to manage the network buffers
 	in HW.
 
-# fallback if full driver is not included
-config LTQ_PPV4_QOS_SLIM
-	bool
-	depends on LTQ_PPV4 && !LTQ_PPV4_QOS
-	default y
-
 config LTQ_PPV4_QOS
 	tristate "QoS driver"
 	depends on LTQ_PPV4
@@ -29,12 +23,6 @@ config LTQ_PPV4_QOS
 config LTQ_PPV4_QOS_TEST
 	bool "Enable test code for QoS driver"
 	depends on LTQ_PPV4_QOS
-
-
-config LTQ_PPV4_BM_SLIM
-	bool
-	depends on LTQ_PPV4 && !LTQ_PPV4_BM
-	default y
 
 config LTQ_PPV4_BM
 	tristate "BM driver"

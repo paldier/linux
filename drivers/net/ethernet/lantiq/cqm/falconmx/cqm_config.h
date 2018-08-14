@@ -1,11 +1,7 @@
 #ifndef __CQM_CONFIG_H__
 #define __CQM_CONFIG_H__
 
-#ifdef CONFIG_LTQ_PPV4_BM_SLIM
-#include <net/bm_drv_slim.h>
-#else
 #include "../../ppv4/bm/pp_bm_drv.h"
-#endif
 
 #define CQM_FMX_NUM_BM_POOLS	4
 #define CQM_FMX_NUM_POOLS	(CQM_FMX_NUM_BM_POOLS + 1)

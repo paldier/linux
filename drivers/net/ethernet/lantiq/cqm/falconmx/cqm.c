@@ -2939,9 +2939,6 @@ static int bm_init(struct platform_device *pdev)
 	for (j = 0; j < CQM_FMX_NUM_BM_POLICY; j++)
 		bmgr_policy_configure(&p_param[j], &i);
 
-#ifdef CONFIG_LTQ_PPV4_BM_SLIM
-	new_init_bm();
-#endif
 	return CBM_SUCCESS;
 }
 
