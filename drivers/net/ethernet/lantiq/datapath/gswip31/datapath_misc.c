@@ -1145,6 +1145,8 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	if (q_port.f_deq_port_en)
 		data->act = TRIGGER_CQE_DP_ENABLE;
 #endif
+	/* update caller dp_subif_data.q_id with allocated queue number */
+	data->subif_data->q_id = q_port.qid;
 	/*update subif table */
 	port_info->subif_info[subif_ix].qid = q_port.qid;
 	port_info->subif_info[subif_ix].q_node = q_port.q_node;
