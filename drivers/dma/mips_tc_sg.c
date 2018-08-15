@@ -30,7 +30,6 @@
 #include <linux/dma/lantiq_dmax.h>
 #include <lantiq.h>
 #include <lantiq_soc.h>
-#include <lantiq_irq.h>
 
 #include <net/datapath_proc_api.h>
 #include <linux/ltq_hwmcpy.h>
