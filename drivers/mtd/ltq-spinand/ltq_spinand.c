@@ -48,11 +48,10 @@
 /*============================================================================*/
 static int spinand_set_otp(struct spi_device *spi, u8 *otp);
 static int spinand_get_otp(struct spi_device *spi, u8 *otp);
-static int spinand_disable_protection(struct spinand_info *info);
+static int spinand_set_otp_mask(struct spi_device *spi, u8 otp, u8 mask);
 static int spinand_lock_block(struct spi_device *spi_nand, u8 lock);
 static int wait_till_ready(struct spi_device *spi);
 static int spinand_read_status(struct spi_device *spi, uint8_t *status);
-static int spinand_enable_ecc(struct spi_device *spi);
 /*
  * mtd_to_privbuf - [INTERN] to convert mtd_info* to spinand_privbuf*
  * @mtd: MTD device structure
@@ -212,6 +211,15 @@ static struct nand_ecclayout gd5f_ecc_layout_128 = {
 static int spi_nand_manufacture_init(struct mtd_info *mtd, struct nand_chip *chip, struct nand_flash_dev *type)
 {
 	struct spinand_info *info = (struct spinand_info *)chip->priv;
+	u8 config = 0;
+
+	/* Default config for all flash:
+	 * clear OTP mode, enable ECC, enable QE for quad
+	 */
+	config &= ~OTP_ENABLE;
+	config |= OTP_ECC_ENABLE;
+	if (info->spi->mode & (SPI_RX_QUAD | SPI_TX_QUAD))
+		config |= OTP_QE_BIT;
 
 	switch (type->mfr_id) {
 	case NAND_MFR_MICRON:
@@ -290,9 +298,9 @@ static int spi_nand_manufacture_init(struct mtd_info *mtd, struct nand_chip *chi
 		break;
 	}
 
-	/* set QE bit for quad */
-	if (info->spi->mode & (SPI_RX_QUAD | SPI_TX_QUAD))
-		spinand_disable_protection(info);
+	spinand_set_otp_mask(info->spi, config, OTP_ENABLE |
+			     OTP_ECC_ENABLE | OTP_BUF_MODE |
+			     OTP_QE_BIT);
 
 	return 0;
 }
@@ -400,86 +408,6 @@ static int spinand_cmd(struct spi_device *spi, struct spinand_cmd *cmd)
 	}
 
 	return spi_sync(spi, &message);
-}
-
-static int spinand_read_protection(struct spi_device *spi, uint8_t *status)
-{
-	struct spinand_cmd cmd = {0};
-	int ret;
-
-	cmd.cmd = CMD_READ_REG;
-	cmd.n_addr = 1;
-	cmd.addr[0] = REG_BLOCK_LOCK;
-	cmd.n_rx = 1;
-	cmd.rx_buf = status;
-
-	ret = spinand_cmd(spi, &cmd);
-	if (ret < 0)
-		dev_err(&spi->dev, "err: %d read status register\n", ret);
-
-	return ret;
-}
-
-static int spinand_disable_protection(struct spinand_info *info)
-{
-	int ret;
-	u8 qe = 0, protection, status;
-
-	pr_debug("[%s]spi mode=0x%x\n", __func__, info->spi->mode);
-
-	spinand_read_protection(info->spi, &protection);
-	while ((protection & BL_ALL_LOCKED) != 0) {
-		/* safety try to unlock after reset */
-		ret = spinand_lock_block(info->spi, BL_ALL_UNLOCKED);
-		/* elapse 1ms before issuing any other command */
-		udelay(1000);
-
-		if (wait_till_ready(info->spi))
-			dev_err(&info->spi->dev, "WAIT timedout!\n");
-
-		spinand_read_protection(info->spi, &protection);
-		pr_debug("[%s] protection=0x%x\n", __func__, protection);
-	}
-
-	ret = spinand_get_otp(info->spi, &qe);
-	pr_debug("[%s]Feature read reg=0x%x\n", __func__, qe);
-
-	/* set qe bit */
-	if (info->spi->mode & (SPI_TX_QUAD | SPI_RX_QUAD))
-		qe |= OTP_QE_BIT;
-	else
-		qe &= ~OTP_QE_BIT;
-
-	ret = spinand_set_otp(info->spi, &qe);
-	pr_debug("[%s]Feature write qe=0x%x\n", __func__, qe);
-	wait_till_ready(info->spi);
-
-	while (!(qe & OTP_ECC_MASK)) {
-		ret = spinand_enable_ecc(info->spi);
-		pr_debug("[%s]Feature write reg=0x%x\n", __func__, qe);
-		/* elapse 1ms before issuing any other command */
-		udelay(1000);
-
-		if (wait_till_ready(info->spi))
-			dev_err(&info->spi->dev, "WAIT timedout!\n");
-		ret = spinand_get_otp(info->spi, &qe);
-		pr_debug("[%s]Feature read reg=0x%x\n", __func__, qe);
-		/* elapse 1ms before issuing any other command */
-		udelay(1000);
-	}
-	while (qe & OTP_ENABLE) {
-		qe &= ~OTP_ENABLE;
-		ret = spinand_set_otp(info->spi, &qe);
-		pr_debug("[%s]Feature write reg=0x%x\n", __func__, qe);
-		ret = spinand_get_otp(info->spi, &qe);
-		pr_debug("[%s]Feature read reg=0x%x\n", __func__, qe);
-	}
-
-	ret = spinand_read_protection(info->spi, &protection);
-	ret = spinand_get_otp(info->spi, &qe);
-	ret = spinand_read_status(info->spi, &status);
-	pr_debug("[%s]0xA0reg=0x%x, 0xB0reg=0x%x, 0xC0Reg=0x%x\n", __func__, protection, qe, status);
-	return ret;
 }
 
 /*
@@ -660,59 +588,19 @@ static int spinand_set_otp(struct spi_device *spi, u8 *otp)
 	return retval;
 }
 
-/**
- * spinand_enable_ecc - [INTERN] send command 0x1f to write the SPI Nand OTP register
- * @spi: the spi device.
- *
- * Description:
- *   There is one bit( bit 0x10 ) to set or to clear the internal ECC.
- *   Enable chip internal ECC, set the bit to 1
- *   Disable chip internal ECC, clear the bit to 0
- */
-static int spinand_enable_ecc(struct spi_device *spi)
+/* set_otp with mask */
+static int spinand_set_otp_mask(struct spi_device *spi, u8 otp, u8 mask)
 {
-	int retval;
-	u8 otp = 0;
+	u8 val;
+	int ret;
 
-	retval = spinand_get_otp(spi, &otp);
-	if (retval < 0)
-		return retval;
+	ret = spinand_get_otp(spi, &val);
+	if (ret)
+		return ret;
 
-	if ((otp & OTP_ECC_MASK) == OTP_ECC_MASK)
-		return 0;
-	otp |= OTP_ECC_MASK;
-	retval = spinand_set_otp(spi, &otp);
-	if (retval < 0)
-		return retval;
-	return spinand_get_otp(spi, &otp);
-}
+	val = (val & ~mask) | otp;
 
-/**
- * spinand_disable_ecc - [INTERN] send command 0x1f to write the SPI Nand OTP register
- * @spi: the spi device.
- *-
- * Description:
- *   There is one bit( bit 0x10 ) to set or to clear the internal ECC.
- *   Enable chip internal ECC, set the bit to 1
- *   Disable chip internal ECC, clear the bit to 0
- */
-static int spinand_disable_ecc(struct spi_device *spi)
-{
-	int retval;
-	u8 otp = 0;
-
-	retval = spinand_get_otp(spi, &otp);
-	if (retval < 0)
-		return retval;
-
-	if ((otp & OTP_ECC_MASK) == OTP_ECC_MASK) {
-		otp &= ~OTP_ECC_MASK;
-		retval = spinand_set_otp(spi, &otp);
-		if (retval < 0)
-			return retval;
-		return spinand_get_otp(spi, &otp);
-	}
-	return 0;
+	return spinand_set_otp(spi, &otp);
 }
 
 /**
@@ -1189,7 +1077,7 @@ static void spinand_reset(struct spi_device *spi)
 		dev_err(&spi->dev, "WAIT timedout!\n");
 
 	/* safety enable On-Die ECC again in case */
-	spinand_enable_ecc(spi);
+	spinand_set_otp_mask(spi, OTP_ECC_ENABLE, OTP_ECC_ENABLE);
 
 	return;
 }

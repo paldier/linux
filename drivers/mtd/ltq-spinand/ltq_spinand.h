@@ -60,7 +60,7 @@
 
 /* OTP register defines*/
 #define OTP_QE_BIT			0x01
-#define OTP_ECC_MASK                    0X10
+#define OTP_BUF_MODE                    0x08
 #define OTP_ECC_ENABLE                  0x10
 #define OTP_ENABLE                      0x40
 
