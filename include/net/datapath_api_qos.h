@@ -1161,11 +1161,11 @@ struct dp_meter_cfg {
 	 /*!< color marking mode */
 	enum dp_col_marking mode;
 	 /*!< traffic flow type for bridge/PCE rule mode only */
-	union {
+	union dp_pce{
 		enum dp_meter_traffic_type flow;
 		/*!< PCE table rule index */
 		u32 pce_idx;
-	};
+	}dp_pce;
 };
 
 /*!< API dp_meter_alloc: allocate a meter resource
@@ -1175,7 +1175,7 @@ struct dp_meter_cfg {
  *	   DP_F_DEREGISTER - free an already allocated meter
  *
  */
-int dp_meter_alloc(int *meterid, int flag);
+int dp_meter_alloc(int inst, int *meterid, int flag);
 
 /*!< API dp_meter_add: setup meter/color marking and apply it to CTP/BP/Bridge
  * accordingly

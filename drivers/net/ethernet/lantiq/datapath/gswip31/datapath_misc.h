@@ -164,9 +164,11 @@ int dp_children_get_31(struct dp_node_child *cfg, int flag);
 int dp_free_children_via_parent_31(struct dp_node_alloc *node, int flag);
 int dp_node_reserve(int inst, int ep, struct dp_port_data *data, int flags);
 int dp_qos_level_get_31(struct dp_qos_level *dp, int flag);
-int dp_meter_alloc_31(int *meterid, int flag);
-int dp_meter_add_31(struct net_device *dev, struct dp_meter_cfg *meter, int flag);
-int dp_meter_del_31(struct net_device *dev, struct dp_meter_cfg *meter, int flag);
+int dp_meter_alloc_31(int inst, int *meterid, int flag);
+int dp_meter_add_31(struct net_device *dev,
+		    struct dp_meter_cfg *meter, int flag);
+int dp_meter_del_31(struct net_device *dev,
+		    struct dp_meter_cfg *meter, int flag);
 
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
 GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param);

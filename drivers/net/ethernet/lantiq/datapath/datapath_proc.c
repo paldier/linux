@@ -22,6 +22,12 @@
 #include "datapath.h"
 #include "datapath_instance.h"
 
+/*meter alloc,add macros*/
+#define DP_METER_ALLOC(inst, id, flag) \
+	dp_port_prop[(inst)].info.dp_meter_alloc(inst, &(id), (flag))
+#define DP_METER_CFGAPI(inst, func, dev, meter, flag) \
+	dp_port_prop[(inst)].info.func((dev), &(meter), (flag))
+
 #define DP_PROC_NAME       "dp"
 #define DP_PROC_BASE       "/proc/" DP_PROC_NAME "/"
 #define DP_PROC_PARENT     ""
@@ -39,6 +45,7 @@
 #define PROC_TX_PKT "tx"
 #define PROC_QOS  "qos"
 #define PROC_ASYM_VLAN  "asym_vlan"
+#define PROC_METER "meter"
 
 static int tmp_inst;
 static ssize_t proc_port_write(struct file *file, const char *buf,
@@ -55,6 +62,9 @@ static ssize_t proc_dt_write(struct file *file, const char *buf,
 			     size_t count, loff_t *ppos);
 static ssize_t proc_logical_dev_write(struct file *file, const char *buf,
 				      size_t count, loff_t *ppos);
+static ssize_t proc_meter_write(struct file *file, const char *buf,
+				size_t count, loff_t *ppos);
+static void meter_create_help(void);
 static int proc_port_init(void);
 
 int proc_port_init(void)
@@ -2198,6 +2208,142 @@ help:   /*                        [0]         [1]         [2]     [3] [4]*/
 	return count;
 }
 
+void meter_create_help(void)
+{
+	PR_INFO("METER ADD/DELETE: echo meter <dev> %s",
+		"<alloc/dealloc/add/delete>\n");
+	PR_INFO("<port_flag> <trfic_dir> <trfic_type> <cir> <pir> <cbs> %s",
+		"<pbs> <type> > /sys/kernel/debug/dp/qos");
+	PR_INFO("     dev: CTP/BP/Bridge device name\n");
+	PR_INFO("     alloc/deallc/add/del: meter operation\n");
+	PR_INFO("     port_flag: opt flag for CTP/BP/br/clrMrk/CPUtrfic\n");
+	PR_INFO("     trfic_dir: opt ingress or egress data\n");
+	PR_INFO("     trfic_type: traffic flow type(unicast,multicast,..\n");
+	PR_INFO("     cir: opt committed information rate in bit/s\n");
+	PR_INFO("     pir: opt Peak information rate in bit/s\n");
+	PR_INFO("     cbs: opt committed burst size in bytes\n");
+	PR_INFO("     pbs: opt peak burst size in bytes\n");
+	PR_INFO("     type:opt type single/dual rate(strTCM,trTCM\n");
+}
+
+ssize_t proc_meter_write(struct file *file, const char *buf, size_t count,
+			 loff_t *ppos)
+{
+	int len;
+	char str[100];
+	char *param_list[16] = { 0 };
+	unsigned int level = 0, num = 0;
+
+	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
+	len -= copy_from_user(str, buf, len);
+	str[len] = 0;
+
+	if (!len)
+		return count;
+
+	num = dp_split_buffer(str, param_list, ARRAY_SIZE(param_list));
+	level = num - 3;
+
+	if ((num <= 1 || num > ARRAY_SIZE(param_list)) ||
+	    (dp_strncmpi(param_list[0], "help", strlen("help")) == 0))
+		meter_create_help();
+	else if (dp_strncmpi(param_list[0], "meter",
+			     strlen("meter")) == 0) {
+		int inst = 0;
+		struct dp_meter_cfg meter = {
+			.type = srTCM,
+			.cir = 5000000,
+			.pir = 5000000,
+			.cbs = 1023,
+			.pbs = 1023,
+			.col_mode = 0,
+			.dir = DP_DIR_EGRESS,
+			.mode = DP_PCP_8P0D,
+			.dp_pce.flow = DP_UKNOWN_UNICAST,
+			.dp_pce.pce_idx = 0
+		};
+		struct net_device *dev;
+		int ret;
+		int meter_flag = DP_METER_ATTACH_CTP, meterid = -1;
+
+		dev = dev_get_by_name(&init_net, param_list[1]);
+		if (!dev) {
+			PR_ERR(" dev NULL\n");
+			return count;
+		}
+		if (dp_strncmpi(param_list[2], "dealloc",
+				strlen("dealloc")) == 0) {
+			meterid = dp_atoi(param_list[3]);
+			ret = DP_METER_ALLOC(inst, meterid, DP_F_DEREGISTER);
+			if (ret < 0) {
+				PR_ERR("Fail to get meter dealloc\n");
+				return count;
+			}
+		PR_INFO("Meter dealloc succes, MeterId:=%d\n",
+			meterid);
+		} else if (dp_strncmpi(param_list[2], "alloc",
+				       strlen("alloc")) == 0) {
+			ret = DP_METER_ALLOC(inst, meterid, 0);
+			if (ret < 0) {
+				PR_ERR("Fail to get meter alloc\n");
+				return count;
+			}
+			PR_INFO("Meter alloc succes, MeterId:=%d\n", meterid);
+		} else if ((dp_strncmpi(param_list[2], "del",
+					strlen("del")) == 0) ||
+					(dp_strncmpi(param_list[2], "add",
+					strlen("add")) == 0)) {
+			int param_val;
+
+			if (!param_list[3]) {
+				PR_ERR("meterid NULLL\n");
+				return count;
+			}
+			param_val = dp_atoi(param_list[3]);
+			if (param_val < 0) {
+				PR_ERR("meterid less then 0");
+				return count;
+			}
+			meter.meter_id = param_val;
+			if (param_list[4])
+				meter_flag = dp_atoi(param_list[4]);
+			if (param_list[5])
+				meter.dir = dp_atoi(param_list[5]);
+			if (param_list[6])
+				meter.dp_pce.flow = dp_atoi(param_list[6]);
+			if (param_list[7])
+				meter.cir = dp_atoi(param_list[7]);
+			if (param_list[8])
+				meter.pir = dp_atoi(param_list[8]);
+			if (param_list[9])
+				meter.cbs = dp_atoi(param_list[9]);
+			if (param_list[10])
+				meter.pbs = dp_atoi(param_list[10]);
+			if (param_list[11])
+				meter.type = dp_atoi(param_list[11]);
+			meter.mode = DP_PCP_8P0D;
+			if (dp_strncmpi(param_list[2], "add",
+					strlen("add")) == 0)
+				ret = DP_METER_CFGAPI(inst, dp_meter_add, dev,
+						      meter, meter_flag);
+			else
+				ret = DP_METER_CFGAPI(inst, dp_meter_del, dev,
+						      meter, meter_flag);
+			if (ret < 0) {
+				PR_ERR("meter %s failed\n",
+				       param_list[2]);
+				return count;
+			}
+			PR_INFO("meterid:=%d %s success\n",
+				meter.meter_id, param_list[2]);
+		}
+	} else {
+		PR_INFO("Wrong Paramters\n");
+		meter_create_help();
+	}
+	return count;
+}
+
 static struct dp_proc_entry dp_proc_entries[] = {
 	/*name single_callback_t multi_callback_t/_start write_callback_t */
 #if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
@@ -2214,6 +2360,7 @@ static struct dp_proc_entry dp_proc_entries[] = {
 	{PROC_TX_PKT, NULL, NULL, NULL, proc_tx_pkt},
 	{PROC_QOS, NULL, qos_dump, qos_dump_start, proc_qos_write},
 	{PROC_ASYM_VLAN, NULL, NULL, NULL, proc_asym_vlan},
+	{PROC_METER, NULL, NULL, NULL, proc_meter_write},
 
 	/*the last place holder */
 	{NULL, NULL, NULL, NULL, NULL}
