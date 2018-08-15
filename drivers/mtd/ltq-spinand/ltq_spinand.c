@@ -227,7 +227,8 @@ static int spi_nand_manufacture_init(struct mtd_info *mtd, struct nand_chip *chi
 //		if (mtd->oobsize== 64)
 //			chip->ecc.layout = &micron_ecc_layout_64;
 
-		chip->ecc.strength = 4; /* 4 bits correction per page region (512 bytes) */
+		/* 4 bits/sector for 64 Bytes OOB, doubled for 128 Bytes OOB */
+		chip->ecc.strength = mtd->oobsize / 16;
 		chip->ecc.size     = mtd->writesize >> 2;
 		//chip->ecc.steps    = 4; /* 4 regions within page  NOTE: removed here since it is calculated in nand_scan_tail */
 		chip->ecc.bytes    = 8; /* pretty sure it is 8 bytes ECC per sub page from oob layout */
