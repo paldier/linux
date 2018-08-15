@@ -294,6 +294,24 @@ static int spi_nand_manufacture_init(struct mtd_info *mtd, struct nand_chip *chi
 		}
 
 		break;
+
+	case NAND_MFR_WINBOND:
+		chip->ecc.strength = 1;
+		chip->ecc.size = 512;
+		chip->ecc.bytes = 8;
+
+		/* Winbond devices with 64-bytes OOB use 8th-byte OOB as ECC.
+		 * Therefore we move the BBT out of OOB to avoid conflict.
+		 * Refer to Winbond spec section 5, and also
+		 * initial comments on nand_bbt.c.
+		 */
+		chip->bbt_options |= NAND_BBT_NO_OOB;
+
+		/* no QE bit, set buffer mode */
+		config &= ~OTP_QE_BIT;
+		config |= OTP_BUF_MODE;
+		break;
+
 	default:
 		break;
 	}
