@@ -488,6 +488,9 @@
 #define SESSION_FLAG2_VALID_IPSEC_OUTBOUND_SA 0x00000100
 #define SESSION_FLAG2_VALID_IPSEC_OUTBOUND_LAN 0x00000200
 #define SESSION_FLAG2_VALID_L2_SNAT 0x00000400
+/* Container Session Flags */
+#define SESSION_FLAG2_VETH 0x00001000
+#define SESSION_FLAG2_CONTAINER 0x00002000
 /* Other flags */
 #define FLG_PPA_PROCESSED			0x100	/* this used to mark ecah packets which are processed by ppa datapath driver*/
 #define SESSION_FLAG_TC_REMARK		 0x40000000 /*Flag to sepcify bit 30 in extmark which specifies packet classified by iptables when set to 1*/

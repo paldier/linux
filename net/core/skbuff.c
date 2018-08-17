@@ -259,6 +259,9 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
 	skb->data = data;
 	skb_reset_tail_pointer(skb);
 	skb->end = skb->tail + size;
+#ifdef CONFIG_PPA
+	skb->ptr_ppa_pitem = 0;
+#endif
 	skb->mac_header = (typeof(skb->mac_header))~0U;
 	skb->transport_header = (typeof(skb->transport_header))~0U;
 
@@ -725,6 +728,9 @@ void kfree_skb(struct sk_buff *skb)
 		smp_rmb();
 	else if (likely(!atomic_dec_and_test(&skb->users)))
 		return;
+#ifdef CONFIG_PPA
+	skb->ptr_ppa_pitem = 0;
+#endif
 	trace_kfree_skb(skb, __builtin_return_address(0));
 	__kfree_skb(skb);
 }
@@ -878,6 +884,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	       offsetof(struct sk_buff, headers_start));
 #ifdef CONFIG_NETWORK_EXTMARK
 	new->extmark	 = old->extmark;
+#endif
+#ifdef CONFIG_PPA
+	new->ptr_ppa_pitem = old->ptr_ppa_pitem;
 #endif
 	CHECK_SKB_FIELD(protocol);
 	CHECK_SKB_FIELD(csum);

@@ -809,6 +809,9 @@ struct sk_buff {
 #if defined(CONFIG_LTQ_CBM) || IS_ENABLED(CONFIG_DIRECTCONNECT_DP_API)
 	__u32 DW0, DW1, DW2, DW3;
 #endif
+#ifdef CONFIG_PPA
+	__u32			ptr_ppa_pitem;
+#endif
 
 	/* private: */
 	__u32			headers_end[0];
