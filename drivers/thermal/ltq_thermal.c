@@ -116,11 +116,11 @@ void  ltq_grx500_init(struct ltq_thermal_sensor *sensor)
 int ltq_grx500_get_temp(struct ltq_thermal_sensor *sensor)
 {
 	u32 reg;
-	bool ready = false;
 	int T, v;
 	int a0 = -40;
 	int v1 = 3800;
 	int v2 = 3421;
+	int ret;
 	struct ltq_thermal *priv = sensor->drvdata;
 
 	if (!priv)
@@ -135,17 +135,17 @@ int ltq_grx500_get_temp(struct ltq_thermal_sensor *sensor)
 			   SOC_START | TS_EN_WORKING);
 
 	/* Wait for and read out the measurement */
-	while (!ready) {
-		regmap_read(priv->chiptop, DATA_REG, &reg);
-		if ((reg & TS_DV) > 0)
-			ready = true;
-	}
-
-	v = reg & TS_CODE;
+	ret  = regmap_read_poll_timeout(priv->chiptop, DATA_REG, reg,
+					(reg & TS_DV) > 0, 50, 2000);
 
 	/* Disable the temp sensor */
 	regmap_update_bits(priv->chiptop, CTRL_REG, SOC_MASK | TS_EN_MASK,
 			   SOC_NC | TS_EN_SHUNT);
+
+	if (ret)
+		return -EIO;  /* temp read timeouted */
+
+	v = reg & TS_CODE;
 
 	/* Temperature interpolation */
 	T = (int)(a0 * 1000000 + (-435356 * (v - v1)) +
