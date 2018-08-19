@@ -249,6 +249,7 @@ struct cmd_remove_node {
 	struct cmd base;
 	unsigned int phy;
 	unsigned int data; /* rlm in queue, otherwise irrlevant */
+	unsigned int is_alias_slave; /* Relevant in Queue only */
 };
 
 struct cmd_update_preds {
@@ -257,6 +258,7 @@ struct cmd_update_preds {
 	uint16_t preds[6];
 	unsigned int phy;
 	unsigned int rlm;
+	unsigned int is_alias_slave;
 };
 
 struct port_properties {
@@ -330,6 +332,7 @@ struct cmd_add_queue {
 	unsigned int parent;
 	unsigned int port;
 	uint16_t preds[6];
+	unsigned int is_alias_slave;
 	struct queue_properties prop;
 };
 
@@ -337,6 +340,7 @@ struct cmd_set_queue {
 	struct cmd base;
 	unsigned int phy;
 	struct queue_properties prop;
+	unsigned int is_alias_slave;
 	uint32_t modified;
 };
 
@@ -563,8 +567,9 @@ void create_remove_node_cmd(
 		unsigned int phy,
 		unsigned int data)
 {
-	struct cmd_remove_node cmd;
+	struct cmd_remove_node cmd = {0};
 	enum cmd_type ctype;
+	const struct qos_node *node;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
@@ -577,7 +582,13 @@ void create_remove_node_cmd(
 		ctype = CMD_TYPE_REMOVE_SCHED;
 		break;
 	case TYPE_QUEUE:
+	{
 		ctype = CMD_TYPE_REMOVE_QUEUE;
+		node = get_const_node_from_phy(qdev->nodes, phy);
+		if (node->data.queue.alias_master_id != PP_QOS_INVALID_ID) {
+			cmd.is_alias_slave = 1;
+		}
+	}
 		break;
 	case TYPE_UNKNOWN:
 		QOS_ASSERT(0, "Unexpected unknow type\n");
@@ -592,10 +603,10 @@ void create_remove_node_cmd(
 	cmd.phy = phy;
 	cmd.data = data;
 
-	QOS_LOG_DEBUG("cmd %u:%u %s %u rlm %u\n",
+	QOS_LOG_DEBUG("cmd %u:%u %s %u rlm %u alias %u\n",
 			qdev->drvcmds.cmd_id,
 			qdev->drvcmds.cmd_fw_id,
-			cmd_str[ctype], phy, data);
+			cmd_str[ctype], phy, data, cmd.is_alias_slave);
 	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
 	if (ctype != CMD_TYPE_REMOVE_PORT)
 		add_suspend_port(qdev, get_port(qdev->nodes, phy));
@@ -622,14 +633,17 @@ void create_update_preds_cmd(struct pp_qos_dev *qdev, unsigned int phy)
 	node = get_const_node_from_phy(qdev->nodes, phy);
 	cmd.node_type = node->type;
 	cmd.rlm = node->data.queue.rlm;
+	cmd.is_alias_slave =
+			(node->data.queue.alias_master_id == PP_QOS_INVALID_ID)
+			? 0 : 1;
 
-	QOS_LOG_DEBUG(
-			"cmd %u:%u CMD_TYPE_UPDATE_PREDECESSORS %u:%u-->%u-->%u-->%u-->%u-->%u\n",
-			qdev->drvcmds.cmd_id,
-			qdev->drvcmds.cmd_fw_id,
-			phy,
-			cmd.preds[0], cmd.preds[1], cmd.preds[2],
-			cmd.preds[3], cmd.preds[4], cmd.preds[5]);
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_UPDATE_PREDECESSORS %u:%u-->%u-->%u-->%u-->%u-->%u\n",
+		      qdev->drvcmds.cmd_id,
+		      qdev->drvcmds.cmd_fw_id,
+		      phy,
+		      cmd.preds[0], cmd.preds[1], cmd.preds[2],
+		      cmd.preds[3], cmd.preds[4], cmd.preds[5]);
+
 	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
 	qdev->drvcmds.cmd_fw_id++;
 }
@@ -829,21 +843,25 @@ static void create_add_queue_cmd(
 		unsigned int rlm)
 {
 	struct cmd_add_queue cmd;
+	const struct qos_node *node;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
 
 	memset(&cmd, 0, sizeof(cmd));
-	cmd_init(
-			qdev,
-			&(cmd.base),
-			CMD_TYPE_ADD_QUEUE,
-			sizeof(cmd),
-			CMD_FLAGS_WRAP_PARENT_SUSPEND_RESUME);
+	cmd_init(qdev,
+		 &(cmd.base),
+		 CMD_TYPE_ADD_QUEUE,
+		 sizeof(cmd),
+		 CMD_FLAGS_WRAP_PARENT_SUSPEND_RESUME);
 	cmd.phy = phy;
 	cmd.parent = parent;
 
 	cmd.port = get_port(qdev->nodes, phy);
+	node = get_const_node_from_phy(qdev->nodes, phy);
+	cmd.is_alias_slave =
+			(node->data.queue.alias_master_id == PP_QOS_INVALID_ID)
+			? 0 : 1;
 
 	fill_preds(qdev->nodes, phy, cmd.preds, 6);
 	set_cmd_queue_properties(&cmd.prop, conf, rlm);
@@ -855,7 +873,6 @@ static void create_add_queue_cmd(
 	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
 	add_suspend_port(qdev, cmd.port);
 	qdev->drvcmds.cmd_fw_id++;
-
 }
 
 static void _create_set_queue_cmd(
@@ -867,6 +884,7 @@ static void _create_set_queue_cmd(
 		uint32_t modified)
 {
 	struct cmd_set_queue cmd;
+	const struct qos_node *node;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
@@ -875,16 +893,20 @@ static void _create_set_queue_cmd(
 		create_add_queue_cmd(qdev, conf, phy, parent, rlm);
 	} else {
 		memset(&cmd, 0, sizeof(cmd));
-		cmd_init(
-				qdev,
-				&(cmd.base),
-				CMD_TYPE_SET_QUEUE,
-				sizeof(cmd),
-				CMD_FLAGS_WRAP_SUSPEND_RESUME |
-				CMD_FLAGS_WRAP_PARENT_SUSPEND_RESUME);
+		cmd_init(qdev,
+			 &(cmd.base),
+			 CMD_TYPE_SET_QUEUE,
+			 sizeof(cmd),
+			 CMD_FLAGS_WRAP_SUSPEND_RESUME |
+			 CMD_FLAGS_WRAP_PARENT_SUSPEND_RESUME);
 		cmd.phy = phy;
 		set_cmd_queue_properties(&cmd.prop, conf, rlm);
 		cmd.modified = modified;
+		node = get_const_node_from_phy(qdev->nodes, phy);
+		cmd.is_alias_slave =
+				(node->data.queue.alias_master_id == PP_QOS_INVALID_ID)
+				? 0 : 1;
+
 		cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
 		qdev->drvcmds.cmd_fw_id++;
 	}
@@ -1194,6 +1216,7 @@ struct fw_set_queue {
 	unsigned int queue_wred_max_allowed;
 	unsigned int queue_wred_fixed_drop_prob_green;
 	unsigned int queue_wred_fixed_drop_prob_yellow;
+	unsigned int is_alias_slave;
 };
 
 struct fw_internal {
@@ -1459,7 +1482,7 @@ static uint32_t *fw_write_add_queue_cmd(
 
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_ADD_QUEUE);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(23);
+	*buf++ = qos_u32_to_uc(24);
 	*buf++ = qos_u32_to_uc(cmd->phy);
 	*buf++ = qos_u32_to_uc(cmd->port);
 	*buf++ = qos_u32_to_uc(cmd->prop.rlm);
@@ -1489,6 +1512,7 @@ static uint32_t *fw_write_add_queue_cmd(
 		*buf++ = qos_u32_to_uc(0);
 	else
 		*buf++ = qos_u32_to_uc(cmd->prop.queue_wred_max_allowed);
+	*buf++ = qos_u32_to_uc(cmd->is_alias_slave);
 	return buf;
 }
 
@@ -1504,7 +1528,7 @@ static uint32_t *fw_write_set_queue_cmd(
 
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_SET_QUEUE);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(26);
+	*buf++ = qos_u32_to_uc(27);
 	*buf++ = qos_u32_to_uc(phy);
 	*buf++ = qos_u32_to_uc(queue->rlm);
 	*buf++ = qos_u32_to_uc(common->valid | child->valid);
@@ -1528,6 +1552,7 @@ static uint32_t *fw_write_set_queue_cmd(
 	*buf++ = qos_u32_to_uc(queue->queue_wred_slope_green);
 	*buf++ = qos_u32_to_uc(queue->queue_wred_min_guaranteed);
 	*buf++ = qos_u32_to_uc(queue->queue_wred_max_allowed);
+	*buf++ = qos_u32_to_uc(queue->is_alias_slave);
 
 	return buf;
 }
@@ -1591,9 +1616,10 @@ static uint32_t *fw_write_remove_queue_cmd(
 {
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_REMOVE_QUEUE);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(2);
+	*buf++ = qos_u32_to_uc(3);
 	*buf++ = qos_u32_to_uc(cmd->phy);
 	*buf++ = qos_u32_to_uc(cmd->data);
+	*buf++ = qos_u32_to_uc(cmd->is_alias_slave);
 	return buf;
 }
 
@@ -1862,6 +1888,10 @@ static uint32_t *restart_node(
 	} else if (node_queue(node)) {
 		cmd->base.pos = cur;
 		queue.rlm = node->data.queue.rlm;
+		queue.is_alias_slave =
+			(node->data.queue.alias_master_id == PP_QOS_INVALID_ID)
+			? 0 : 1;
+
 		QOS_LOG_DEBUG("CMD_INTERNAL_RESTART_QUEUE: %u\n", phy);
 		cur = fw_write_set_queue_cmd(
 				cur,
@@ -2099,7 +2129,9 @@ static uint32_t *set_queue_cmd_wrapper(
 		return buf;
 	}
 
+	queue->is_alias_slave = cmd->is_alias_slave;
 	queue->valid = valid;
+
 	return fw_write_set_queue_cmd(
 			buf,
 			cmd->phy,
@@ -2182,6 +2214,8 @@ static uint32_t *update_preds_cmd_wrapper(
 	} else {
 		fwdata->type_data.queue.valid = 0;
 		fwdata->type_data.queue.rlm = cmd->rlm;
+		fwdata->type_data.queue.is_alias_slave = cmd->is_alias_slave;
+
 		return fw_write_set_queue_cmd(
 				buf,
 				cmd->phy,

@@ -33,7 +33,7 @@
 /******************************************************************************/
 /*                              CONF                                          */
 /******************************************************************************/
-#define PPV4_QOS_DRV_VER "1.0.3-fl"
+#define PPV4_QOS_DRV_VER "1.0.4-fl"
 
 #define NUM_OF_NODES	2048U
 #define NUM_OF_QUEUES	256U
@@ -155,6 +155,8 @@ struct qos_node {
 			uint16_t	rlm;
 			uint8_t		green_slope;
 			uint8_t		yellow_slope;
+			uint16_t	alias_slave_id;
+			uint16_t	alias_master_id;
 		} queue;
 	} data;
 

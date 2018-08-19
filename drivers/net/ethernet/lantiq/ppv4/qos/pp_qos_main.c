@@ -605,7 +605,8 @@ out:
 static int _pp_qos_queue_set(
 		struct pp_qos_dev *qdev,
 		unsigned int id,
-		const struct pp_qos_queue_conf *conf);
+		const struct pp_qos_queue_conf *conf,
+		struct qos_node *alias_node);
 static int _pp_qos_queue_conf_get(
 		struct pp_qos_dev *qdev,
 		unsigned int id,
@@ -733,7 +734,8 @@ static int check_queue_conf_validity(
 		unsigned int id,
 		const struct pp_qos_queue_conf *conf,
 		struct qos_node *node,
-		uint32_t *modified)
+		uint32_t *modified,
+		struct qos_node *alias_node)
 {
 	unsigned int phy;
 	int rc;
@@ -756,7 +758,17 @@ static int check_queue_conf_validity(
 
 		/* New queue which has id, but no phy was allocated for it */
 		node_queue_init(qdev, node);
-		node->data.queue.rlm = pp_pool_get(qdev->rlms);
+
+		if (alias_node == NULL) {
+			node->data.queue.alias_master_id = PP_QOS_INVALID_ID;
+			node->data.queue.alias_slave_id = PP_QOS_INVALID_ID;
+			node->data.queue.rlm = pp_pool_get(qdev->rlms);
+		} else {
+			node->data.queue.alias_master_id = get_id_from_phy(qdev->mapping, get_phy_from_node(qdev->nodes, alias_node));
+			node->data.queue.alias_slave_id = PP_QOS_INVALID_ID;
+			node->data.queue.rlm = alias_node->data.queue.rlm;
+		}
+
 		if (node->data.queue.rlm == QOS_INVALID_RLM) {
 			QOS_LOG_ERR("Can't get free rlm\n");
 			return  -EBUSY;
@@ -939,7 +951,26 @@ static int _pp_qos_queue_remove(struct pp_qos_dev *qdev, int id)
 	if (!node)
 		return -EINVAL;
 
-	rc  = node_remove(qdev, node);
+	// Can't delete a master aliased queue, which has active slave
+	if (node->data.queue.alias_slave_id != PP_QOS_INVALID_ID) {
+		QOS_LOG_ERR("Can't remove master aliased queue (slave is %d)\n",
+			node->data.queue.alias_slave_id);
+		return -EINVAL;
+	}
+
+	// In case this is a slave alised queue, update its master
+	if (node->data.queue.alias_master_id != PP_QOS_INVALID_ID) {
+		struct qos_node *master_node;
+
+		master_node = get_conform_node(qdev,
+				node->data.queue.alias_master_id, node_queue);
+		if (!master_node)
+			return -EINVAL;
+
+		master_node->data.queue.alias_slave_id = PP_QOS_INVALID_ID;
+	}
+
+	rc = node_remove(qdev, node);
 	return rc;
 }
 
@@ -984,7 +1015,8 @@ out:
 static int _pp_qos_queue_set(
 		struct pp_qos_dev *qdev,
 		unsigned int id,
-		const struct pp_qos_queue_conf *conf)
+		const struct pp_qos_queue_conf *conf,
+		struct qos_node *alias_node)
 {
 	int rc;
 	unsigned int phy;
@@ -999,19 +1031,18 @@ static int _pp_qos_queue_set(
 	modified = 0;
 	nodep = NULL;
 
-	rc = check_queue_conf_validity(qdev, id, conf, &node, &modified);
+	rc = check_queue_conf_validity(qdev, id, conf,
+			&node, &modified, alias_node);
 	parent_changed = QOS_BITS_IS_SET(modified, QOS_MODIFIED_PARENT);
 	if (rc)
 		goto out;
 
 	if (parent_changed) {
-		parent = get_node_from_phy(
-				qdev->nodes,
-				node.child_prop.parent_phy);
-		phy = phy_alloc_by_parent(
-				qdev,
-				parent,
-				conf->queue_child_prop.priority);
+		parent = get_node_from_phy(qdev->nodes,
+					   node.child_prop.parent_phy);
+		phy = phy_alloc_by_parent(qdev,
+					  parent,
+					  conf->queue_child_prop.priority);
 		if (!QOS_PHY_VALID(phy)) {
 			rc = -EINVAL;
 			goto out;
@@ -1037,15 +1068,13 @@ static int _pp_qos_queue_set(
 			map_id_phy(qdev->mapping, id, phy);
 		}
 
-		parent = get_node_from_phy(
-				qdev->nodes,
-				nodep->child_prop.parent_phy);
+		parent = get_node_from_phy(qdev->nodes,
+					   nodep->child_prop.parent_phy);
 	} else {
 		phy = get_phy_from_id(qdev->mapping, id);
 		nodep = get_node_from_phy(qdev->nodes, phy);
-		parent = get_node_from_phy(
-				qdev->nodes,
-				nodep->child_prop.parent_phy);
+		parent = get_node_from_phy(qdev->nodes,
+					   nodep->child_prop.parent_phy);
 
 		/* Child of WSP changes priority i.e. position */
 		if ((parent->parent_prop.arbitration ==
@@ -1081,13 +1110,13 @@ out:
 				release_rlm(qdev->rlms, node.data.queue.rlm);
 		}
 	}
+
 	return rc;
 }
 
-int pp_qos_queue_set(
-		struct pp_qos_dev *qdev,
-		unsigned int id,
-		const struct pp_qos_queue_conf *conf)
+int pp_qos_queue_set(struct pp_qos_dev *qdev,
+		     unsigned int id,
+		     const struct pp_qos_queue_conf *conf)
 {
 	int rc;
 
@@ -1098,9 +1127,60 @@ int pp_qos_queue_set(
 		goto out;
 	}
 
-	rc = _pp_qos_queue_set(qdev, id, conf);
+	rc = _pp_qos_queue_set(qdev, id, conf, NULL);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
+out:
+	QOS_UNLOCK(qdev);
+	return rc;
+}
+
+int pp_qos_queue_set_aliased_queue(struct pp_qos_dev *qdev,
+				   unsigned int id,
+				   const struct pp_qos_queue_conf *conf,
+				   unsigned int alias_master_id)
+{
+	int rc;
+	unsigned int phy;
+	struct qos_node *node;
+
+	QOS_LOCK(qdev);
+	PP_QOS_ENTER_FUNC();
+	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	/* Check if node id is valid */
+	phy = get_phy_from_id(qdev->mapping, alias_master_id);
+	if (!QOS_PHY_VALID(phy)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	node = get_conform_node(qdev, alias_master_id, node_queue);
+	if (!node) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = _pp_qos_queue_set(qdev, id, conf, node);
+	if (!rc) {
+		// Retrieve the master alias node again since it might have
+		// been relocated in the DB
+		node = get_conform_node(qdev, alias_master_id, node_queue);
+		if (!node) {
+			rc = -EINVAL;
+			goto out;
+		}
+
+		node->data.queue.alias_master_id = PP_QOS_INVALID_ID;
+		node->data.queue.alias_slave_id = id;
+	}
+
+	update_cmd_id(&qdev->drvcmds);
+	transmit_cmds(qdev);
+
 out:
 	QOS_UNLOCK(qdev);
 	return rc;
@@ -1115,7 +1195,7 @@ int _pp_qos_queue_block(struct pp_qos_dev *qdev, unsigned int id)
 	if (rc)
 		return rc;
 	conf.blocked = 1;
-	return _pp_qos_queue_set(qdev, id, &conf);
+	return _pp_qos_queue_set(qdev, id, &conf, NULL);
 }
 
 /**
@@ -1155,7 +1235,7 @@ int _pp_qos_queue_unblock(struct pp_qos_dev *qdev, unsigned int id)
 		return rc;
 
 	conf.blocked = 0;
-	return _pp_qos_queue_set(qdev, id, &conf);
+	return _pp_qos_queue_set(qdev, id, &conf, NULL);
 }
 
 /**
