@@ -1598,6 +1598,8 @@ static long mcast_helper_ioctl(struct file *f, unsigned int cmd, unsigned long a
 			netdev = mcast_helper_dev_get_by_name(&init_net, mcast_mem.memIntrfName);
 			rxnetdev = mcast_helper_dev_get_by_name(&init_net, mcast_mem.rxIntrfName);
 #endif
+			if (rxnetdev == NULL || netdev == NULL)
+				return -ENXIO;
 
 			rtnl_lock();
 			upper_dev = netdev_master_upper_dev_get(rxnetdev);
