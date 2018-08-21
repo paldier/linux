@@ -417,6 +417,9 @@ int32_t (*ppa_hook_reset_qos_wfq)(uint32_t portid, uint32_t queueid, uint32_t fl
 int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle, __be16 protocol, struct tc_to_netdev *tc) = NULL;
 EXPORT_SYMBOL(qos_mgr_hook_setup_tc);
 
+int32_t (*qos_mgr_hook_setup_tc_ext)(struct net_device *dev, u32 handle, __be16 protocol, struct tc_to_netdev *tc, int32_t deq_idx, int32_t port_id) = NULL;
+EXPORT_SYMBOL(qos_mgr_hook_setup_tc_ext);
+
 #ifdef CONFIG_INTEL_IPQOS_MARK_SKBPRIO
 /*
  * Function to mark priority based on specific criteria

@@ -25,6 +25,7 @@
  */
 #ifdef __KERNEL__
 extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle, __be16 protocol, struct tc_to_netdev *tc);
+extern int32_t (*qos_mgr_hook_setup_tc_ext)(struct net_device *dev, u32 handle, __be16 protocol, struct tc_to_netdev *tc, int32_t deq_idx, int32_t port_id);
 #endif /*end of __KERNEL__*/
 /* @} */
 #endif  /*  __QOS_MGR_TC_HOOK_H */
