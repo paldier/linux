@@ -279,6 +279,14 @@ int32_t ppa_drv_reset_tmu_qos_mib (
 }
 EXPORT_SYMBOL(ppa_drv_reset_tmu_qos_mib);
 #endif
+
+int32_t ppa_drv_tmu_set_checksum_queue_map (uint32_t pmac_port)
+{
+	if( !tmu_hal_set_checksum_queue_map_hook_fn ) return PPA_EINVAL;
+	return tmu_hal_set_checksum_queue_map_hook_fn (pmac_port);
+
+}
+EXPORT_SYMBOL(ppa_drv_tmu_set_checksum_queue_map);
 #endif
 
 int ppa_drv_get_dslwan_qid_with_vcc(struct atm_vcc *vcc)
