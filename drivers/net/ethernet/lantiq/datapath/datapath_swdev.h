@@ -63,7 +63,6 @@ int dp_swdev_bridge_id_entry_free(int instance);
 int dp_swdev_bridge_id_entry_init(void);
 struct br_info *dp_swdev_bridge_entry_lookup(char *br_name);
 int dp_swdev_chk_bport_in_br(struct net_device *bp_dev, int bport, int inst);
-int dp_get_fid_by_brname(struct net_device *dev, int *inst);
 u16 crc_cal(const u8 *data, u16 len);
 u16 dp_swdev_cal_hash(u8 *dev_name);
 void dp_switchdev_exit(void);

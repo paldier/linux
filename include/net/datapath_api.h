@@ -1263,5 +1263,15 @@ int dp_free_buffer(int inst, struct dp_buffer *buffer, u32 flag);
  */
 int dp_dma_chan_irq_rx_enable(int inst, struct dp_dma_ch *ch, int flag);
 
+/*!
+ *@brief Datapath Swdev API to get FID from bridge name
+ *@param[in] dev: network device pointer
+ *@param[out] inst: DP instance ID
+ *@return Returns GSWIP bridge id i.e. FID
+ */
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+int dp_get_fid_by_brname(struct net_device *dev, int *inst);
+#endif
+
 #endif /*DATAPATH_API_H */
 

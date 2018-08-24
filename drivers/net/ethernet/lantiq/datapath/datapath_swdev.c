@@ -74,6 +74,7 @@ int dp_get_fid_by_brname(struct net_device *dev, int *inst)
 		return br_info->fid;
 	}
 }
+EXPORT_SYMBOL(dp_get_fid_by_brname);
 
 int dp_swdev_chk_bport_in_br(struct net_device *bp_dev, int bport, int inst)
 {
