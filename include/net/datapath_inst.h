@@ -37,6 +37,12 @@ enum DP_HW_CAP_VER {
 	GSWIP31_VER
 };
 
+struct dp_meter_subif {
+	int fid;
+	int inst;
+	dp_subif_t subif;
+};
+
 struct dp_inst_info {
 	int inst; /*! for register, it will be filled by DP,
 		   *  for de-register, the caller fill the instance id
@@ -111,9 +117,11 @@ struct inst_info {
 	int (*dp_ctp_tc_map_set)(struct dp_tc_cfg *tc, int flag);
 	int (*dp_meter_alloc)(int inst, int *meterid, int flag);
 	int (*dp_meter_add)(struct net_device *dev,
-			    struct dp_meter_cfg *meter, int flag);
+			    struct dp_meter_cfg *meter, int flag,
+			    struct dp_meter_subif *mtr_subif);
 	int (*dp_meter_del)(struct net_device *dev,
-			    struct dp_meter_cfg *meter, int flag);
+			    struct dp_meter_cfg *meter, int flag,
+			    struct dp_meter_subif *mtr_subif);
 
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
 	int swdev_flag;

@@ -1143,29 +1143,30 @@ int dp_meter_alloc(int inst, int *meterid, int flag)
 {
 	if (!dp_port_prop[inst].info.dp_meter_alloc)
 		return DP_FAILURE;
-	return dp_port_prop[inst].info.
-			dp_meter_alloc(inst, meterid, flag);
+	return dp_port_prop[inst].info.dp_meter_alloc(inst,
+						      meterid, flag);
 }
 EXPORT_SYMBOL(dp_meter_alloc);
 
 int dp_meter_add(struct net_device *dev, struct dp_meter_cfg *meter,
 		 int flag)
 {
-	dp_subif_t subif = {0};
-	int inst = 0, fid = 0;
+	struct dp_meter_subif mtr_subif = {0};
 
 	if ((flag & DP_METER_ATTACH_CTP) ||
 	    (flag & DP_METER_ATTACH_BRPORT) ||
 	    (flag & DP_METER_ATTACH_PCE)) {
-		if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
-			DP_DEBUG(DP_DBG_FLAG_DBG, "get subifid fail:%s\n",
-				 dev ? dev->name : "NULL");
+		if (dp_get_netif_subifid(dev, NULL, NULL,
+		    NULL, &mtr_subif.subif, 0)) {
+			DP_DEBUG(DP_DBG_FLAG_DBG,
+			"get subifid fail:%s\n",
+			dev ? dev->name : "NULL");
 			return DP_FAILURE;
 		}
-		inst = subif.inst;
+		mtr_subif.inst =  mtr_subif.subif.inst;
 	} else if (flag & DP_METER_ATTACH_BRIDGE) {
-		fid = dp_get_fid_by_brname(dev, &inst);
-		if (fid < 0) {
+		mtr_subif.fid = dp_get_fid_by_brname(dev, &mtr_subif.inst);
+		if (mtr_subif.fid < 0) {
 			PR_ERR("fid less then 0\n");
 			return DP_FAILURE;
 		}
@@ -1174,31 +1175,32 @@ int dp_meter_add(struct net_device *dev, struct dp_meter_cfg *meter,
 		return DP_FAILURE;
 	}
 
-	if (!dp_port_prop[inst].info.dp_meter_add)
+	if (!dp_port_prop[mtr_subif.inst].info.dp_meter_add)
 		return DP_FAILURE;
-	return dp_port_prop[inst].info.
-			dp_meter_add(dev, meter, flag);
+	return dp_port_prop[mtr_subif.inst].info.dp_meter_add(dev, meter,
+						    flag, &mtr_subif);
 }
 EXPORT_SYMBOL(dp_meter_add);
 
 int dp_meter_del(struct net_device *dev, struct dp_meter_cfg *meter,
 		 int flag)
 {
-	dp_subif_t subif = {0};
-	int inst = 0, fid = 0;
+	struct dp_meter_subif mtr_subif = {0};
 
 	if ((flag & DP_METER_ATTACH_CTP) ||
 	    (flag & DP_METER_ATTACH_BRPORT) ||
 	    (flag & DP_METER_ATTACH_PCE)) {
-		if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
-			DP_DEBUG(DP_DBG_FLAG_DBG, "get subifid fail:%s\n",
-				 dev ? dev->name : "NULL");
+		if (dp_get_netif_subifid(dev, NULL, NULL,
+		    NULL, &mtr_subif.subif, 0)) {
+			DP_DEBUG(DP_DBG_FLAG_DBG,
+			"get subifid fail:%s\n",
+			dev ? dev->name : "NULL");
 			return DP_FAILURE;
 		}
-		inst = subif.inst;
+		mtr_subif.inst = mtr_subif.subif.inst;
 	} else if (flag & DP_METER_ATTACH_BRIDGE) {
-		fid = dp_get_fid_by_brname(dev, &inst);
-		if (fid < 0) {
+		mtr_subif.fid = dp_get_fid_by_brname(dev, &mtr_subif.inst);
+		if (mtr_subif.fid < 0) {
 			PR_ERR("fid less then 0\n");
 			return DP_FAILURE;
 		}
@@ -1207,9 +1209,9 @@ int dp_meter_del(struct net_device *dev, struct dp_meter_cfg *meter,
 		return DP_FAILURE;
 	}
 
-	if (!dp_port_prop[inst].info.dp_meter_del)
+	if (!dp_port_prop[mtr_subif.inst].info.dp_meter_del)
 		return DP_FAILURE;
-	return dp_port_prop[inst].info.
-			dp_meter_del(dev, meter, flag);
+	return dp_port_prop[mtr_subif.inst].info.dp_meter_del(dev, meter,
+						    flag, &mtr_subif);
 }
 EXPORT_SYMBOL(dp_meter_del);

@@ -25,8 +25,8 @@
 /*meter alloc,add macros*/
 #define DP_METER_ALLOC(inst, id, flag) \
 	dp_port_prop[(inst)].info.dp_meter_alloc(inst, &(id), (flag))
-#define DP_METER_CFGAPI(inst, func, dev, meter, flag) \
-	dp_port_prop[(inst)].info.func((dev), &(meter), (flag))
+#define DP_METER_CFGAPI(inst, func, dev, meter, flag, mtr_subif) \
+	dp_port_prop[(inst)].info.func((dev), &(meter), (flag), (mtr_subif))
 
 #define DP_PROC_NAME       "dp"
 #define DP_PROC_BASE       "/proc/" DP_PROC_NAME "/"
@@ -2265,14 +2265,22 @@ ssize_t proc_meter_write(struct file *file, const char *buf, size_t count,
 		struct net_device *dev;
 		int ret;
 		int meter_flag = DP_METER_ATTACH_CTP, meterid = -1;
-
+		struct dp_meter_subif mtr_subif = {0};
+		
+		mtr_subif.inst = inst;
 		dev = dev_get_by_name(&init_net, param_list[1]);
 		if (!dev) {
 			PR_ERR(" dev NULL\n");
 			return count;
 		}
+		ret = dp_get_netif_subifid(dev, NULL, NULL, NULL,
+					   &mtr_subif.subif, 0);
+		if ( ret < 0) {
+			PR_ERR("subif fails\n");
+			return count;
+		}
 		if (dp_strncmpi(param_list[2], "dealloc",
-				strlen("dealloc")) == 0) {
+				strlen("dealloc") + 1) == 0) {
 			meterid = dp_atoi(param_list[3]);
 			ret = DP_METER_ALLOC(inst, meterid, DP_F_DEREGISTER);
 			if (ret < 0) {
@@ -2282,7 +2290,7 @@ ssize_t proc_meter_write(struct file *file, const char *buf, size_t count,
 		PR_INFO("Meter dealloc succes, MeterId:=%d\n",
 			meterid);
 		} else if (dp_strncmpi(param_list[2], "alloc",
-				       strlen("alloc")) == 0) {
+				       strlen("alloc") + 1) == 0) {
 			ret = DP_METER_ALLOC(inst, meterid, 0);
 			if (ret < 0) {
 				PR_ERR("Fail to get meter alloc\n");
@@ -2290,9 +2298,9 @@ ssize_t proc_meter_write(struct file *file, const char *buf, size_t count,
 			}
 			PR_INFO("Meter alloc succes, MeterId:=%d\n", meterid);
 		} else if ((dp_strncmpi(param_list[2], "del",
-					strlen("del")) == 0) ||
+					strlen("del") + 1) == 0) ||
 					(dp_strncmpi(param_list[2], "add",
-					strlen("add")) == 0)) {
+					strlen("add")+ 1) == 0)) {
 			int param_val;
 
 			if (!param_list[3]) {
@@ -2325,10 +2333,10 @@ ssize_t proc_meter_write(struct file *file, const char *buf, size_t count,
 			if (dp_strncmpi(param_list[2], "add",
 					strlen("add")) == 0)
 				ret = DP_METER_CFGAPI(inst, dp_meter_add, dev,
-						      meter, meter_flag);
+						      meter, meter_flag, &mtr_subif);
 			else
 				ret = DP_METER_CFGAPI(inst, dp_meter_del, dev,
-						      meter, meter_flag);
+						      meter, meter_flag, &mtr_subif);
 			if (ret < 0) {
 				PR_ERR("meter %s failed\n",
 				       param_list[2]);

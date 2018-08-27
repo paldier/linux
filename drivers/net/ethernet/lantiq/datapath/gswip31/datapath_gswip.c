@@ -14,7 +14,6 @@
 #include <net/datapath_api.h>
 #include "../datapath.h"
 #include "datapath_misc.h"
-
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
 #include "datapath_gswip_simulate.h"
 #endif
@@ -1042,7 +1041,7 @@ int dp_meter_alloc_31(int inst, int *meterid, int flag)
 }
 
 int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
-		    int flag)
+		    int flag, struct dp_meter_subif *mtr_subif)
 {
 	struct core_ops *gsw_handle;
 	GSW_QoS_meterCfg_t meter_cfg;
@@ -1051,27 +1050,13 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	GSW_CTP_portConfig_t *ctp_cfg = NULL;
 	GSW_BRIDGE_config_t *br_cfg = NULL;
 	GSW_return_t ret;
-	dp_subif_t subif = {0};
-	int bret = 0, fid = 0, inst = 0;
+	int bret = 0;
 
-	if ((flag & DP_METER_ATTACH_CTP) ||
-	    (flag & DP_METER_ATTACH_BRPORT) ||
-	    (flag & DP_METER_ATTACH_PCE)) {
-		ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
-		if (ret < 0) {
-			PR_ERR("dp_get_netif_subifid fail:%s\n", dev->name);
-			return -1;
-		}
-		inst = subif.inst;
-	} else if (flag & DP_METER_ATTACH_BRIDGE) {
-		fid = dp_get_fid_by_brname(dev, &inst);
-		if (fid < 0) {
-			PR_ERR("fid less then 0\n");
-			return -1;
-		}
+	if(!mtr_subif) {
+		PR_ERR("mtr_subif NULL\n");
+		return -1;
 	}
-
-	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
 	if (!gsw_handle)
 		return -1;
 
@@ -1122,7 +1107,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	if (flag & DP_METER_ATTACH_CTP) {/* CTP port Flag */
 		struct pmac_port_info *port_info;
 
-		if (subif.flag_pmapper) {
+		if (mtr_subif->subif.flag_pmapper) {
 			PR_ERR("can't use CTP,pmapper is enable\n");
 			bret = -1;
 			goto err;
@@ -1133,14 +1118,15 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		port_info = &dp_port_info[subif.inst][subif.port_id];
+		port_info =
+		&dp_port_info[mtr_subif->subif.inst][mtr_subif->subif.port_id];
 		if (!port_info) {
 			PR_ERR(" port_info is NULL\n");
 			bret = -1;
 			goto err;
 		}
-		ctp_cfg->nLogicalPortId = subif.port_id;
-		ctp_cfg->nSubIfIdGroup  = GET_VAP(subif.subif,
+		ctp_cfg->nLogicalPortId = mtr_subif->subif.port_id;
+		ctp_cfg->nSubIfIdGroup  = GET_VAP(mtr_subif->subif.subif,
 						 port_info->vap_offset,
 						 port_info->vap_mask);
 		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigGet,
@@ -1171,7 +1157,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		}
 	}
 	if (flag & DP_METER_ATTACH_BRPORT) {/*BRIDGE port Flag*/
-		if (!subif.flag_bp) {
+		if (!mtr_subif->subif.flag_bp) {
 			PR_ERR("flag_bp value 0\n");
 			bret = -1;
 			goto err;
@@ -1182,7 +1168,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		bp_cfg->nBridgePortId = subif.bport;
+		bp_cfg->nBridgePortId = mtr_subif->subif.bport;
 		ret = GSW_CORE_API(gsw_handle,
 				   gsw_brdgport_ops.BridgePort_ConfigGet,
 				   bp_cfg);
@@ -1234,7 +1220,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		br_cfg->nBridgeId = fid;
+		br_cfg->nBridgeId = mtr_subif->fid;
 		ret = GSW_CORE_API(gsw_handle,
 				   gsw_brdg_ops.Bridge_ConfigGet,
 				   br_cfg);
@@ -1278,7 +1264,7 @@ err:
 }
 
 int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
-		    int flag)
+		    int flag, struct dp_meter_subif *mtr_subif)
 {
 	struct core_ops *gsw_handle;
 	GSW_BRIDGE_portConfig_t *bp_cfg = NULL;
@@ -1286,30 +1272,13 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	GSW_CTP_portConfig_t *ctp_cfg = NULL;
 	GSW_BRIDGE_config_t *br_cfg = NULL;
 	GSW_return_t ret;
-	dp_subif_t subif = {0};
-	int bret = 0, fid = 0, inst = 0;
+	int bret = 0;
 
-	if ((flag & DP_METER_ATTACH_CTP) ||
-	    (flag & DP_METER_ATTACH_BRPORT) ||
-	    (flag & DP_METER_ATTACH_PCE)) {
-		ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
-		if (ret < 0) {
-			PR_ERR("dp_get_netif_subifid fail:%s\n", dev->name);
-			return -1;
-		}
-		inst = subif.inst;
-	} else if (flag & DP_METER_ATTACH_BRIDGE) {
-		fid = dp_get_fid_by_brname(dev, &inst);
-		if (fid < 0) {
-			PR_ERR("fid less then 0\n");
-			return -1;
-		}
-	} else {
-		PR_ERR("Meter Flag not set\n");
+	if (!mtr_subif) {
+		PR_ERR(" mtr_subif NULL\n");
 		return -1;
 	}
-
-	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
 	if (!gsw_handle)
 		return -1;
 
@@ -1334,7 +1303,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	if (flag & DP_METER_ATTACH_CTP) {
 		struct pmac_port_info *port_info;
 
-		if (subif.flag_pmapper) {
+		if (mtr_subif->subif.flag_pmapper) {
 			PR_ERR("flag_pmapper is set\n");
 			bret = -1;
 			goto err;
@@ -1345,14 +1314,14 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		port_info = &dp_port_info[subif.inst][subif.port_id];
+		port_info = &dp_port_info[mtr_subif->subif.inst][mtr_subif->subif.port_id];
 		if (!port_info) {
 			PR_ERR(" port_info is NULL\n");
 			bret = -1;
 			goto err;
 		}
-		ctp_cfg->nLogicalPortId = subif.port_id;
-		ctp_cfg->nSubIfIdGroup = GET_VAP(subif.subif,
+		ctp_cfg->nLogicalPortId = mtr_subif->subif.port_id;
+		ctp_cfg->nSubIfIdGroup = GET_VAP(mtr_subif->subif.subif,
 							port_info->vap_offset,
 							port_info->vap_mask);
 		if (meter->dir == DP_DIR_EGRESS)
@@ -1380,7 +1349,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		}
 	}
 	if (flag & DP_METER_ATTACH_BRPORT) {
-		if (!subif.flag_bp) {
+		if (!mtr_subif->subif.flag_bp) {
 			PR_ERR("flag_bp is 0\n");
 			bret = -1;
 			goto err;
@@ -1391,7 +1360,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		bp_cfg->nBridgePortId = subif.bport;
+		bp_cfg->nBridgePortId = mtr_subif->subif.bport;
 		ret = GSW_CORE_API(gsw_handle,
 				   gsw_brdgport_ops.BridgePort_ConfigGet,
 				   bp_cfg);
@@ -1440,7 +1409,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		br_cfg->nBridgeId = fid;
+		br_cfg->nBridgeId = mtr_subif->fid;
 		ret = GSW_CORE_API(gsw_handle, gsw_brdg_ops.Bridge_ConfigGet,
 				   br_cfg);
 		if (ret != GSW_statusOk) {
