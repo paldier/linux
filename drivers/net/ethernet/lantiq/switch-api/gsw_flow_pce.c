@@ -2229,8 +2229,8 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 						parm->action.ePortMapAction =
 							GSW_PCE_ACTION_PORTMAP_REGULAR;
 					}
-				} else if (((ptbl.val[10]) || (ptbl.val[11]) || (ptbl.val[12])) &&
-					   ((ptbl.val[13]) || (ptbl.val[14]) || (ptbl.val[15])) &&
+				} else if (((ptbl.val[10]) || (ptbl.val[11]) || (ptbl.val[12])) ||
+					   ((ptbl.val[13]) || (ptbl.val[14]) || (ptbl.val[15])) ||
 					   ((ptbl.val[16]) || (ptbl.val[17]))) {
 					/* It is 'traffic-flow' portmap type */
 					for (i = 0; i <= 7; i++)
