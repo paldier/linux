@@ -1030,12 +1030,13 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 			/** Clear core_init */
 			memset(&ext_core_init, 0, sizeof(ethsw_core_init_t));
 
-#if 0
-			/*hardcoded temp setting to power on F24s
-			  Note : will be removed when check in ugw 8*/
+#if defined(DEBUG_AX3000_F24S) && DEBUG_AX3000_F24S
+			/*hardcoded temp setting to power on F24s AX3000 model
+			  Note :Only for debugging purpose, macro is disabled
+			  when check in to ugw 8.x*/
 			gsw1_w32(0x800,	(volatile void *)0xb6080120);
 			gsw1_w32(0x7c,	(volatile void *)0xbc003c1c);
-			gsw1_w32(0x180,	(volatile void *)0xba003d10);
+			gsw1_w32(0x1806,	(volatile void *)0xba003d10);
 			gsw1_w32(0x100800,  (volatile void *)0xb6080120);
 			gsw1_w32(0x80000000,  (volatile void *)0xb6000010);
 			gsw1_w32(0x0,  (volatile void *)0xb6000010);

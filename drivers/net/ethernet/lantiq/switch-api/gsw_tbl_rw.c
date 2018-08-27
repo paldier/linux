@@ -489,6 +489,7 @@ int gsw_pce_table_write(void *cdev, pctbl_prog_t *ptdata)
 	/*KEY REG*/
 	j = gswdev->pce_tbl_info[ptdata->table].num_key;
 
+
 	if (ptdata->kformat)
 		j *= 4;
 
@@ -508,8 +509,6 @@ int gsw_pce_table_write(void *cdev, pctbl_prog_t *ptdata)
 
 	for (i = 0; i < j; i++) {
 		gsw_w32_raw(cdev, gswdev->pce_tbl_reg.value[i], ptdata->val[i]);
-//		printk("gswdev->pce_tbl_reg.value[%d] =%x\n", i, gswdev->pce_tbl_reg.value[i]);
-//		printk("ptdata->val[%d] =%x\n", i, ptdata->val[i]);
 	}
 
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_KEYFORM_SHIFT,

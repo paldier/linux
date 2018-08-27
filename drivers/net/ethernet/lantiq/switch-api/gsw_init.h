@@ -24,6 +24,7 @@
 #define CONFIG_LTQ_PMAC		1
 #define CONFIG_LTQ_RMON		1
 
+#define DEBUG_AX3000_F24S		0
 
 #define CONFIG_MAC  1
 

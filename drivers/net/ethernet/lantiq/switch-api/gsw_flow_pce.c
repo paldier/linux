@@ -543,74 +543,79 @@ const PCE_MICROCODE pce_mc_max_ifx_tag_m_30 = {/* V30_13 */
 #define PCE_MC_M(val, msk, ns, out, len, type, flags, ipv4_len) \
 	{ val, msk, (ns<<10 | out<<4 | len>>1),\
 		(len&1)<<15 | type<<13 | flags<<9 | ipv4_len<<8 }
+
+
 const PCE_MICROCODE pce_mc_max_ifx_tag_m = {
 	/*-----------------------------------------------------------------*/
 	/**   value    mask   ns  out_fields   L  type   flags   ipv4_len **/
 	/*-----------------------------------------------------------------*/
-	PCE_MC_M(0x88c3, 0xFFFF, 1, GOUT_ITAG0, 4, INSTR, GFLAG_ITAG, 0),
-	PCE_MC_M(0x8100, 0xFFFF, 2, GOUT_VTAG0, 2, INSTR, GFLAG_VLAN, 0),
-	PCE_MC_M(0x88A8, 0xFFFF, 1, GOUT_VTAG0, 2, INSTR, GFLAG_VLAN, 0),
-	PCE_MC_M(0x8100, 0xFFFF, 1, GOUT_VTAG0, 2, INSTR, GFLAG_VLAN, 0),
-	PCE_MC_M(0x8864, 0xFFFF, 17, GOUT_ETHTYP, 1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0800, 0xFFFF, 21, GOUT_ETHTYP,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x86DD, 0xFFFF, 22, GOUT_ETHTYP,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x8863, 0xFFFF, 16, GOUT_ETHTYP, 1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0xF800, 10, GOUT_NONE, 0, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 40, GOUT_ETHTYP,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0600, 0x0600, 40, GOUT_ETHTYP,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 12, GOUT_NONE, 1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0xAAAA, 0xFFFF, 14, GOUT_NONE, 1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0300, 0xFF00, 41, GOUT_NONE,	0, INSTR, GFLAG_SNAP, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_DIP7,	3, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 18, GOUT_DIP7, 3, INSTR, GFLAG_PPPOE, 0),
-	PCE_MC_M(0x0021, 0xFFFF, 21, GOUT_NONE,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0057, 0xFFFF, 22, GOUT_NONE,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 40, GOUT_NONE,	0, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x4000, 0xF000, 24, GOUT_IP0,	4, INSTR, GFLAG_IPV4, 1),
-	PCE_MC_M(0x6000, 0xF000, 27, GOUT_IP0,	3, INSTR, GFLAG_IPV6, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 25, GOUT_IP3,	2, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 26, GOUT_SIP0,	4, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 40, GOUT_NONE,	0, LENACCU, GFLAG_NO, 0),
-	PCE_MC_M(0x1100, 0xFF00, 39, GOUT_PROT,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0600, 0xFF00, 39, GOUT_PROT,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0xFF00, 33, GOUT_IP3,	17, INSTR, GFLAG_HOP, 0),
-	PCE_MC_M(0x2B00, 0xFF00, 33, GOUT_IP3,	17, INSTR, GFLAG_NN1, 0),
-	PCE_MC_M(0x3C00, 0xFF00, 33, GOUT_IP3,	17, INSTR, GFLAG_NN2, 0),
-	PCE_MC_M(0x0000, 0x0000, 39, GOUT_PROT,	1, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x00E0, 35, GOUT_NONE, 0, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 40, GOUT_NONE, 0, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0xFF00, 33, GOUT_NONE,	0, IPV6,  GFLAG_HOP, 0),
-	PCE_MC_M(0x2B00, 0xFF00, 33, GOUT_NONE,	0, IPV6,  GFLAG_NN1, 0),
-	PCE_MC_M(0x3C00, 0xFF00, 33, GOUT_NONE,	0, IPV6,  GFLAG_NN2, 0),
-	PCE_MC_M(0x0000, 0x0000, 40, GOUT_PROT,	1, IPV6,  GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 40, GOUT_SIP0,	16, INSTR, GFLAG_NO, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_APP0,	4, INSTR, GFLAG_IGMP, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
-	PCE_MC_M(0x0000, 0x0000, 41, GOUT_NONE,	0, INSTR, GFLAG_END, 0),
+	PCE_MC_M(0x88c3 , 0xFFFF , 1 , GOUT_ITAG0 , 4 , INSTR , GFLAG_ITAG ,	0),
+	PCE_MC_M(0x8100 , 0xFFFF , 4 , GOUT_STAG0 , 2 , INSTR , GFLAG_SVLAN ,  0),
+	PCE_MC_M(0x88A8 , 0xFFFF , 4 , GOUT_STAG0 , 2 , INSTR , GFLAG_SVLAN ,  0),
+	PCE_MC_M(0x9100 , 0xFFFF , 4 , GOUT_STAG0 , 2 , INSTR , GFLAG_SVLAN ,  0),
+	PCE_MC_M(0x8100 , 0xFFFF , 5 , GOUT_VTAG0 , 2 , INSTR , GFLAG_VLAN ,	0),
+	PCE_MC_M(0x88A8 , 0xFFFF , 6 , GOUT_VTAG0 , 2 , INSTR , GFLAG_VLAN ,	0),
+	PCE_MC_M(0x9100 , 0xFFFF , 4 , GOUT_VTAG0 , 2 , INSTR , GFLAG_VLAN ,	0),
+	PCE_MC_M(0x8864 , 0xFFFF , 20 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
+	PCE_MC_M(0x0800 , 0xFFFF , 24 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
+	PCE_MC_M(0x86DD , 0xFFFF , 25 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
+	PCE_MC_M(0x8863 , 0xFFFF , 19 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
+	PCE_MC_M(0x0000 , 0xF800 , 13 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
+	PCE_MC_M(0x0600 , 0x0600 , 44 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
+	PCE_MC_M(0x0000 , 0x0000 , 15 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0xAAAA , 0xFFFF , 17 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0300 , 0xFF00 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_SNAP ,	0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_DIP7 , 3 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 21 , GOUT_DIP7 , 3 , INSTR , GFLAG_PPPOE ,  0),
+	PCE_MC_M(0x0021 , 0xFFFF , 24 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0057 , 0xFFFF , 25 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x4000 , 0xF000 , 27 , GOUT_IP0 , 4 , INSTR , GFLAG_IPV4 , 1),
+	PCE_MC_M(0x6000 , 0xF000 , 30 , GOUT_IP0 , 3 , INSTR , GFLAG_IPV6 ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 28 , GOUT_IP3 , 2 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 29 , GOUT_SIP0 , 4 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , LENACCU , GFLAG_NO ,	0),
+	PCE_MC_M(0x1100 , 0xFF00 , 43 , GOUT_PROT , 1 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0600 , 0xFF00 , 43 , GOUT_PROT , 1 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0xFF00 , 41 , GOUT_IP3 , 17 , INSTR , GFLAG_HOP ,  0),
+	PCE_MC_M(0x2B00 , 0xFF00 , 41 , GOUT_IP3 , 17 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x3C00 , 0xFF00 , 41 , GOUT_IP3 , 17 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 43 , GOUT_PROT , 1 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0xFF00 , 41 , GOUT_NONE , 0 , IPV6 , GFLAG_HOP ,  0),
+	PCE_MC_M(0x2B00 , 0xFF00 , 41 , GOUT_NONE , 0 , IPV6 , GFLAG_NO ,  0),
+	PCE_MC_M(0x3C00 , 0xFF00 , 41 , GOUT_NONE , 0 , IPV6 , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x00FC , 44 , GOUT_PROT , 0 , IPV6 , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , IPV6 , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x00F8 , 36 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_SIP0 , 16 , INSTR , GFLAG_NO ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 45 , GOUT_APP0 , 3 , INSTR , GFLAG_IGMP , 0),
+	PCE_MC_M(0x1000 , 0x1000 , 46 , GOUT_NONE , 0 , INSTR , GFLAG_NN2 , 0),
+	PCE_MC_M(0x2000 , 0x2000 , 47 , GOUT_NONE , 0 , INSTR , GFLAG_NN1 , 0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_IGMP1 , 1 , INSTR , GFLAG_NO , 0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
+	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END , 0),
 };
 
 /* find a matched entry if already written or empty entry and fill */
@@ -1498,6 +1503,71 @@ int pce_table_init(ltq_pce_table_t *ptable)
 	return GSW_statusOk;
 }
 
+int gsw_pmicro_code_init_f24s(void *cdev)
+{
+	u16 i, j, cnt = 0;
+	pctbl_prog_t tbl_entry;
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+
+		printk("PCE f24s micro-code init\n");
+		/* Disable all physical port  */
+
+		for (j = 0; j < gswdev->pnum; j++) {
+		printk("gswdev->pnum =%d j= %d\n",gswdev->pnum,j);			
+			gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (j * 0x6)),
+				SDMA_PCTRL_PEN_SHIFT, SDMA_PCTRL_PEN_SIZE, 0);
+		}	
+	
+		gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
+		PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x0);
+	
+		/* Download the microcode  */
+		for (i = 0; i < 64 /* PCE_MICRO_TABLE_SIZE */; i++) {
+				memset(&tbl_entry, 0, sizeof(tbl_entry));
+				tbl_entry.val[3] = pce_mc_max_ifx_tag_m[i].val_3;
+				tbl_entry.val[2] = pce_mc_max_ifx_tag_m[i].val_2;
+				tbl_entry.val[1] = pce_mc_max_ifx_tag_m[i].val_1;
+				tbl_entry.val[0] = pce_mc_max_ifx_tag_m[i].val_0;
+				tbl_entry.pcindex = i;
+				tbl_entry.table = PCE_PARS_INDEX;
+				gsw_pce_table_write(cdev, &tbl_entry);
+			}
+
+		gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
+			PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x1);
+	
+		for (j = 0; j < gswdev->pnum; j++) {
+			gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (j * 0x6)),
+				SDMA_PCTRL_PEN_SHIFT, SDMA_PCTRL_PEN_SIZE, 1);
+		}
+		/* Enable RMON Counter for all ports */
+		for (j = 0; j < gswdev->pnum; j++) {
+			gsw_w32(cdev, (BM_PCFG_CNTEN_OFFSET + (j * 0x2)),
+				BM_PCFG_CNTEN_SHIFT, BM_PCFG_CNTEN_SIZE, 1);
+		}
+		gsw_w32(cdev, BM_QUEUE_GCTRL_GL_MOD_OFFSET,
+			BM_QUEUE_GCTRL_GL_MOD_SHIFT,
+			BM_QUEUE_GCTRL_GL_MOD_SIZE, 0);
+
+#if 0
+		printk("PARSER CODE DUMP\n\n");
+		for (i = 0; i < 64 /* PCE_MICRO_TABLE_SIZE */; i++) {
+			memset(&tbl_entry, 0, sizeof(tbl_entry));
+			tbl_entry.pcindex = i;
+			tbl_entry.table = PCE_PARS_INDEX;
+			tbl_entry.val[3] = pce_mc_max_ifx_tag_m[i].val_3;
+			tbl_entry.val[2] = pce_mc_max_ifx_tag_m[i].val_2;
+			gsw_pce_table_read(cdev, &tbl_entry);
+			printk("0x%04x , 0x%04x , 0x%04x , 0x%04x\n",tbl_entry.val[0],tbl_entry.val[1],tbl_entry.val[2],tbl_entry.val[3]);
+		}
+		printk("\n\nPARSER CODE DUMP Complete\n\n");
+#endif
+
+	return 0;
+}
+
+
+
 /* PCE Table Micro Code Init routine */
 int gsw_pmicro_code_init(void *cdev)
 {
@@ -1609,6 +1679,7 @@ int gsw_pmicro_code_init(void *cdev)
 	}
 
 	if ((gswdev->gipver == LTQ_GSWIP_2_2) ||
+		(gswdev->gipver == LTQ_GSWIP_2_2_ETC) ||
 	    (gswdev->gipver == LTQ_GSWIP_3_0) ||
 	    (IS_VRSN_31(gswdev->gipver)))
 		Gl_Mod_Size = BM_QUEUE_GCTRL_GL_MOD_SIZE2;
@@ -1632,7 +1703,7 @@ int pce_action_delete(void *cdev, ltq_pce_table_t *pthandle, u32 index)
 		return GSW_statusErr;
 	}
 
-	PCE_ASSERT(index >= PCE_TABLE_SIZE);
+	PCE_ASSERT(index >= (gswdev->tftblsize));
 	memset(&ptbl, 0, sizeof(pctbl_prog_t));
 	memset(&pthandle->pce_act[index], 0, sizeof(GSW_PCE_action_t));
 	/* Remove rule action from HW */
@@ -1677,7 +1748,7 @@ int pce_pattern_delete(void *cdev, ltq_pce_table_t *pthandle, u32 index)
 		return GSW_statusErr;
 	}
 
-	PCE_ASSERT(index >= PCE_TABLE_SIZE);
+	PCE_ASSERT(index >= (gswdev->tftblsize));
 
 	/* Check if an entry is currently programmed and remove it. */
 	if (pthandle->ptblused[index] == 0)
@@ -1711,12 +1782,15 @@ int pce_pattern_delete(void *cdev, ltq_pce_table_t *pthandle, u32 index)
 	/* Parer flags field */
 	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->parse1_msb_idx,
 			      pce_tm_flags_tbl_delete)
-	/* Payload1 field */
-	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->payload1_idx,
-			      pce_tm_payload_tbl_delete)
-	/* payload2 field */
-	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->payload2_idx,
-			      pce_tm_payload_tbl_delete)
+	if (IS_VRSN_30_31(gswdev->gipver)) {
+		/* Payload1 field */
+		IFX_PCE_TM_IDX_DELETE(0xFF, ptable->payload1_idx,
+			      		pce_tm_payload_tbl_delete)
+		/* payload2 field */
+		IFX_PCE_TM_IDX_DELETE(0xFF, ptable->payload2_idx,
+			      		pce_tm_payload_tbl_delete)
+	}
+
 	/* DIP MSB */
 	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->dip_msb_idx,
 			      ip_dasa_msb_tbl_del)
@@ -1780,7 +1854,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	u32   i, j, idx = parm->pattern.nIndex;
 	pce_table_t  *ptable;
 	static pctbl_prog_t ptbl;
-	PCE_ASSERT(idx >= PCE_TABLE_SIZE);
+	PCE_ASSERT(idx >= (gswdev->tftblsize));
 	/* Initialize to zero */
 	memset(parm, 0, sizeof(GSW_PCE_rule_t));
 	memset(&ptbl, 0, sizeof(pctbl_prog_t));
@@ -1796,7 +1870,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	gsw_pce_table_read(cdev, &ptbl); //Read given entry
 
 	/* Exclude flags */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		if ((ptbl.key[15] >> 0) & 0x1)
 			parm->pattern.bDstMAC_Exclude = 1;
 
@@ -1910,12 +1984,12 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	}
 
 	/* Port ID field value */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (gswdev->gipver >= LTQ_GSWIP_3_0) {
 		if ((ptbl.key[0] & 0x1F) != 0x1F) { //Is pattern enabled?
 			parm->pattern.nPortId = ptbl.key[0] & 0xF;
 			parm->pattern.bPortIdEnable = 1;
 		}
-	} else if (gswdev->gipver == LTQ_GSWIP_2_2) {
+	} else if (gswdev->gipver <= LTQ_GSWIP_2_2_ETC) {
 		if ((ptbl.key[0] & 0xF) != 0xF) { //Is pattern enabled?
 			parm->pattern.nPortId = ptbl.key[0] & 0x7;
 			parm->pattern.bPortIdEnable = 1;
@@ -1927,8 +2001,37 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		parm->pattern.nDSCP = (ptbl.key[6] >> 8) & 0x3F;
 		parm->pattern.bDSCP_Enable = 1;
 	}
+	
+	/* Applicable for 3.0 or less*/
+	if (gswdev->gipver <= LTQ_GSWIP_3_0) {
+		if (ptbl.val[0] & 0x1) { //If port-map action set.
+			if (ptbl.val[1] == 0x0) { //If port-map IDs not set.
+				if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
+					//If port-map type is 'tflow'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_DISCARD;
+				} else if (((ptbl.val[4] >> 2) & 0x3) == 0x0) {
+					//If port-map type is 'default'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_REGULAR;
+				}
+			} else if (ptbl.val[1] != 0x0) { //If port-map IDs set.
+				parm->action.nForwardPortMap[0] = ptbl.val[1];
+	
+				if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
+					//If port-map type is 'tflow'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_ALTERNATIVE;
+				} else if ((((ptbl.val[4] >> 2) & 0x3) == 0x1)) {
+					//If port-map type is 'MC router'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_CPU;
+				}
+			}
+		}
+	}
 
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		/* Inner DSCP field value */
 		if (((ptbl.key[9] >> 8) & 0x7F) != 0x7F) { //Is pattern enabled?
 			parm->pattern.nInnerDSCP = (ptbl.key[9] >> 8) & 0x3F;
@@ -1956,6 +2059,9 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		/* Processing path type action value */
 		if (ptbl.val[8] & 0x1)
 			parm->action.eProcessPath_Action = (ptbl.val[8] >> 1) & 0x3;
+		
+		}
+
 
 		/* L3 Routing type action value */
 		if (gswdev->gipver == LTQ_GSWIP_3_0) {
@@ -2107,35 +2213,6 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			}
 		}
 
-		/* Applicable for 3.0*/
-		if (gswdev->gipver == LTQ_GSWIP_3_0) {
-			if (ptbl.val[0] & 0x1) { //If port-map action set.
-				if (ptbl.val[1] == 0x0) { //If port-map IDs not set.
-					if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
-						//If port-map type is 'tflow'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_DISCARD;
-					} else if (((ptbl.val[4] >> 2) & 0x3) == 0x0) {
-						//If port-map type is 'default'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_REGULAR;
-					}
-				} else if (ptbl.val[1] != 0x0) { //If port-map IDs set.
-					parm->action.nForwardPortMap[0] = ptbl.val[1];
-
-					if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
-						//If port-map type is 'tflow'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_ALTERNATIVE;
-					} else if ((((ptbl.val[4] >> 2) & 0x3) == 0x1)) {
-						//If port-map type is 'MC router'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_CPU;
-					}
-				}
-			}
-		}
-
 		/* Applicable for 3.1*/
 		if (IS_VRSN_31(gswdev->gipver)) {
 			if (ptbl.val[0] & 0x1) { //If port-map action set.
@@ -2183,6 +2260,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				}
 			}
 		}
+		if (IS_VRSN_30_31(gswdev->gipver)) {
 
 		/* TS action control */
 		if ((ptbl.val[0] >> 7) & 0x1) {
@@ -2194,6 +2272,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 
 		} else
 			parm->action.eTimestampAction = GSW_PCE_ACTION_TIMESTAMP_DISABLE;
+
 
 		/* Cross state action control */
 		if ((ptbl.val[0] >> 5) & 0x1) {
@@ -2214,6 +2293,9 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				parm->action.eIrqAction = GSW_PCE_ACTION_IRQ_REGULAR;
 		} else
 			parm->action.eIrqAction = GSW_PCE_ACTION_IRQ_DISABLE;
+
+		}
+
 
 		/* MAC learning action control */
 		if ((ptbl.val[0] >> 9) & 0x1) {
@@ -2239,7 +2321,6 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				parm->action.eTrafficClassAction =
 					GSW_PCE_ACTION_TRAFFIC_CLASS_REGULAR;
 		}
-	}
 
 	/* Inner CoS & DEI field value for 3.0 */
 	if (IS_VRSN_NOT_31(gswdev->gipver)) {
@@ -2322,44 +2403,6 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		parm->pattern.nMAC_SrcMask = sa_mac_tbl.mac_mask;
 	}
 
-	/* Payload1 field table */
-	if (ptable->payload1_idx != 0xFF) { //Is table enabled?
-		payload_tbl_t payload_tbl;
-		memset(&payload_tbl, 0, sizeof(payload_tbl_t));
-
-		if (0 != pce_tm_payload_tbl_read(&pthandle->pce_sub_tbl,
-						 ptable->payload1_idx, &payload_tbl))
-			GSW_RETURN_PCE;
-
-		/* Destination Application used */
-		parm->pattern.bPayload1_SrcEnable = 1;
-		/* Destination Application field */
-		parm->pattern.nPayload1 = payload_tbl.payload_data;
-		/* Payload  mask/range used */
-		parm->pattern.bPayload1MaskRange_Select = payload_tbl.mask_range_type;
-		/* Payload  mask/range */
-		parm->pattern.nPayload1_Mask = payload_tbl.mask_range;
-	}
-
-	/* Payload2 field table */
-	if (ptable->payload2_idx != 0xFF) { //Is table enabled?
-		payload_tbl_t payload_tbl;
-		memset(&payload_tbl, 0, sizeof(payload_tbl_t));
-
-		if (0 != pce_tm_payload_tbl_read(&pthandle->pce_sub_tbl,
-						 ptable->payload2_idx, &payload_tbl))
-			GSW_RETURN_PCE;
-
-		/* Destination Application used */
-		parm->pattern.bPayload2_SrcEnable = 1;
-		/* Destination Application field */
-		parm->pattern.nPayload2 = payload_tbl.payload_data;
-		/* Payload  mask/range used */
-		parm->pattern.bPayload2MaskRange_Select = payload_tbl.mask_range_type;
-		/* Payload  mask/range */
-		parm->pattern.nPayload2_Mask = payload_tbl.mask_range;
-	}
-
 	/* Application field table */
 	if (ptable->dst_appl_fld_idx != 0xFF) { //Is table enabled?
 		app_tbl_t appl_tbl;
@@ -2399,7 +2442,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	}
 
 	/* Parser flags field table */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		if (ptable->parse_lsb_idx != 0xFF) { //Is table enabled?
 			flag_tbl_t flags_tbl;
 			memset(&flags_tbl, 0, sizeof(flag_tbl_t));
@@ -2424,6 +2467,44 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			parm->pattern.bParserFlagMSB_Enable = 1;
 			parm->pattern.nParserFlagMSB = flags_tbl.parser_flag_data;
 			parm->pattern.nParserFlagMSB_Mask = flags_tbl.mask_value;
+		}
+		
+		/* Payload1 field table */
+		if (ptable->payload1_idx != 0xFF) { //Is table enabled?
+			payload_tbl_t payload_tbl;
+			memset(&payload_tbl, 0, sizeof(payload_tbl_t));
+		
+			if (0 != pce_tm_payload_tbl_read(&pthandle->pce_sub_tbl,
+							 ptable->payload1_idx, &payload_tbl))
+				GSW_RETURN_PCE;
+		
+			/* Destination Application used */
+			parm->pattern.bPayload1_SrcEnable = 1;
+			/* Destination Application field */
+			parm->pattern.nPayload1 = payload_tbl.payload_data;
+			/* Payload	mask/range used */
+			parm->pattern.bPayload1MaskRange_Select = payload_tbl.mask_range_type;
+			/* Payload	mask/range */
+			parm->pattern.nPayload1_Mask = payload_tbl.mask_range;
+		}
+		
+		/* Payload2 field table */
+		if (ptable->payload2_idx != 0xFF) { //Is table enabled?
+			payload_tbl_t payload_tbl;
+			memset(&payload_tbl, 0, sizeof(payload_tbl_t));
+		
+			if (0 != pce_tm_payload_tbl_read(&pthandle->pce_sub_tbl,
+							 ptable->payload2_idx, &payload_tbl))
+				GSW_RETURN_PCE;
+		
+			/* Destination Application used */
+			parm->pattern.bPayload2_SrcEnable = 1;
+			/* Destination Application field */
+			parm->pattern.nPayload2 = payload_tbl.payload_data;
+			/* Payload	mask/range used */
+			parm->pattern.bPayload2MaskRange_Select = payload_tbl.mask_range_type;
+			/* Payload	mask/range */
+			parm->pattern.nPayload2_Mask = payload_tbl.mask_range;
 		}
 
 		/* Parser flags field table extend */
@@ -2454,11 +2535,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				parm->pattern.nParserFlag1MSB_Mask = flags_tbl.mask_value;
 			}
 		}
-	}
 
-	/* Inner DIP n SIP field table */
-	if ((gswdev->gipver == LTQ_GSWIP_3_0) ||
-	    (IS_VRSN_31(gswdev->gipver))) {
 		/* DIP field table */
 		if ((ptable->inr_dip_msb_idx != 0xFF)
 		    && (ptable->inr_dip_lsb_idx != 0xFF)) { //IPv6
@@ -2651,7 +2728,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 							(1 << ((i * 4) + j + 16));
 				}
 			}
-		} else if (gswdev->gipver == LTQ_GSWIP_2_2)
+		} else if ((gswdev->gipver == LTQ_GSWIP_2_2) || (gswdev->gipver == LTQ_GSWIP_2_2_ETC))
 			parm->pattern.nDstIP_Mask = dasa_tbl.mask[0] << 16;
 
 		/* DIP LS8B used */
@@ -2677,7 +2754,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 							(1 << ((i * 4) + j));
 				}
 			}
-		} else if (gswdev->gipver == LTQ_GSWIP_2_2)
+		} else if ((gswdev->gipver == LTQ_GSWIP_2_2) || (gswdev->gipver == LTQ_GSWIP_2_2_ETC))
 			parm->pattern.nDstIP_Mask |= dasa_tbl_lsb.mask[0];
 	} else if (ptable->dip_lsb_idx != 0xFF) {  //IPv4
 		pce_dasa_lsb_t dasa_tbl;
@@ -2707,7 +2784,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			}
 
 			parm->pattern.nDstIP_Mask |= 0xFF00;
-		} else if (gswdev->gipver == LTQ_GSWIP_2_2)
+		} else if ((gswdev->gipver == LTQ_GSWIP_2_2) || (gswdev->gipver == LTQ_GSWIP_2_2_ETC))
 			parm->pattern.nDstIP_Mask = dasa_tbl.mask[0];
 	}
 
@@ -2742,7 +2819,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 							(1 << ((i * 4) + j + 16));
 				}
 			}
-		} else if (gswdev->gipver == LTQ_GSWIP_2_2)
+		} else if ((gswdev->gipver == LTQ_GSWIP_2_2) || (gswdev->gipver == LTQ_GSWIP_2_2_ETC))
 			parm->pattern.nSrcIP_Mask = dasa_tbl.mask[0] << 16;
 
 		/* SIP LS8B used */
@@ -2768,7 +2845,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 							(1 << ((i * 4) + j));
 				}
 			}
-		} else if (gswdev->gipver == LTQ_GSWIP_2_2)
+		} else if ((gswdev->gipver == LTQ_GSWIP_2_2) || (gswdev->gipver == LTQ_GSWIP_2_2_ETC))
 			parm->pattern.nSrcIP_Mask |= dasa_tbl_lsb.mask[0];
 	} else if (ptable->sip_lsb_idx != 0xFF) { //IPv4
 		pce_dasa_lsb_t dasa_tbl;
@@ -2797,7 +2874,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			}
 
 			parm->pattern.nSrcIP_Mask |= 0xFF00;
-		} else if (gswdev->gipver == LTQ_GSWIP_2_2)
+		} else if ((gswdev->gipver == LTQ_GSWIP_2_2) || (gswdev->gipver == LTQ_GSWIP_2_2_ETC))
 			parm->pattern.nSrcIP_Mask = dasa_tbl.mask[0];
 	}
 
@@ -2819,7 +2896,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	}
 
 	/* Protocol field table */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		if (ptable->ppp_prot_idx != 0xFF) {
 			prtcol_tbl_t   pctl_tbl;
 			memset(&pctl_tbl, 0, sizeof(prtcol_tbl_t));
@@ -2947,6 +3024,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		}
 	}
 
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 	/* OAM and Extraction flags field table */
 	if (((ptbl.val[8] >> 3) & 0x1) || ((ptbl.val[7] >> 8) & 0x1)) {
 		/*OAM flag*/
@@ -2959,6 +3037,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		/*Extraction flag*/
 		if ((ptbl.val[7] >> 8) & 0x1) {
 			parm->action.bExtractEnable = 1;
+			}
 		}
 	}
 
@@ -2976,7 +3055,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	int	tindex, i, reg_val = 0;
 	signed int status;
 
-	PCE_ASSERT(idx >= PCE_TABLE_SIZE);
+	PCE_ASSERT(idx >= (gswdev->tftblsize));
 
 	if (parm->pattern.bEnable == 0) {
 		/* Entry to delete. */
@@ -3026,7 +3105,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		ptbl.key[6] |= (0x7F << 8); //Mark as don't care.
 
 	/* Pattern field - Inner DSCP value */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		if (parm->pattern.bInner_DSCP_Enable == 1)
 			ptbl.key[9] |= ((parm->pattern.nInnerDSCP & 0x3F) << 8);
 		else
@@ -3117,8 +3196,48 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 
 	ptbl.key[5] |= ptable->src_mac_addr_idx;
 
+	/* Pattern field - Destination Application used */
+	if (parm->pattern.bAppDataMSB_Enable == 1) {
+		app_tbl_t   appl_tbl;
+		appl_tbl.mask_range_type = parm->pattern.bAppMaskRangeMSB_Select;
+		/* Destination Application field */
+		appl_tbl.appl_data = parm->pattern.nAppDataMSB;
+		/* Destination Application mask/range */
+		appl_tbl.mask_range = parm->pattern.nAppMaskRangeMSB;
+		tindex = pce_appl_tbl_write(cdev, &pthandle->pce_sub_tbl, &appl_tbl);
+
+		if (tindex < 0)
+			return tindex;
+
+		ptable->dst_appl_fld_idx = tindex;
+	} else {
+		ptable->dst_appl_fld_idx = 0xFF; //Mark as don't care.
+	}
+
+	ptbl.key[4] |= ptable->dst_appl_fld_idx;
+
+	/* Pattern field - Source Application field used */
+	if (parm->pattern.bAppDataLSB_Enable == 1) {
+		app_tbl_t   appl_tbl;
+		appl_tbl.mask_range_type = parm->pattern.bAppMaskRangeLSB_Select;
+		/* Source Application field */
+		appl_tbl.appl_data = parm->pattern.nAppDataLSB;
+		/* Source Application mask/range */
+		appl_tbl.mask_range = parm->pattern.nAppMaskRangeLSB;
+		tindex = pce_appl_tbl_write(cdev, &pthandle->pce_sub_tbl, &appl_tbl);
+
+		if (tindex < 0)
+			return tindex;
+
+		ptable->src_appl_fld_idx = tindex;
+	} else {
+		ptable->src_appl_fld_idx = 0xFF; //Mark as don't care.
+	}
+
+	ptbl.key[4] |= (ptable->src_appl_fld_idx << 8);
+
 	/* Pattern field - Parser Flags field table */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		/* Parser flags 15:0 */
 		if (parm->pattern.bParserFlagLSB_Enable == 1) {
 			flag_tbl_t   flags_tbl;
@@ -3249,46 +3368,6 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		ptbl.key[13] |= (ptable->payload2_idx << 8);
 	}
 
-	/* Pattern field - Destination Application used */
-	if (parm->pattern.bAppDataMSB_Enable == 1) {
-		app_tbl_t   appl_tbl;
-		appl_tbl.mask_range_type = parm->pattern.bAppMaskRangeMSB_Select;
-		/* Destination Application field */
-		appl_tbl.appl_data = parm->pattern.nAppDataMSB;
-		/* Destination Application mask/range */
-		appl_tbl.mask_range = parm->pattern.nAppMaskRangeMSB;
-		tindex = pce_appl_tbl_write(cdev, &pthandle->pce_sub_tbl, &appl_tbl);
-
-		if (tindex < 0)
-			return tindex;
-
-		ptable->dst_appl_fld_idx = tindex;
-	} else {
-		ptable->dst_appl_fld_idx = 0xFF; //Mark as don't care.
-	}
-
-	ptbl.key[4] |= ptable->dst_appl_fld_idx;
-
-	/* Pattern field - Source Application field used */
-	if (parm->pattern.bAppDataLSB_Enable == 1) {
-		app_tbl_t   appl_tbl;
-		appl_tbl.mask_range_type = parm->pattern.bAppMaskRangeLSB_Select;
-		/* Source Application field */
-		appl_tbl.appl_data = parm->pattern.nAppDataLSB;
-		/* Source Application mask/range */
-		appl_tbl.mask_range = parm->pattern.nAppMaskRangeLSB;
-		tindex = pce_appl_tbl_write(cdev, &pthandle->pce_sub_tbl, &appl_tbl);
-
-		if (tindex < 0)
-			return tindex;
-
-		ptable->src_appl_fld_idx = tindex;
-	} else {
-		ptable->src_appl_fld_idx = 0xFF; //Mark as don't care.
-	}
-
-	ptbl.key[4] |= (ptable->src_appl_fld_idx << 8);
-
 	/* Pattern field - outer DIP field table */
 	ptable->dip_msb_idx = 0xFF; //Mark as don't care.
 	ptable->dip_lsb_idx = 0xFF; //Mark as don't care.
@@ -3308,7 +3387,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			mtbl.imsb[j] = ((parm->pattern.nDstIP.nIPv6[i] >> 8) & 0xFF);
 		}
 
-		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+		if (IS_VRSN_30_31(gswdev->gipver)) {
 			//mtbl.nmask = (u16)((parm->pattern.nDstIP_Mask >> 16) & 0xFFFF);
 			for (i = 0; i < 4; i++) {
 				maskNibble = ((parm->pattern.nDstIP_Mask >> ((i * 4) + 16)) & 0xF);
@@ -3340,7 +3419,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			ltbl.ilsb[j] = ((parm->pattern.nDstIP.nIPv6[i + 4] >> 8) & 0xFF);
 		}
 
-		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+		if (IS_VRSN_30_31(gswdev->gipver)) {
 			//ltbl.nmask = (u16)(parm->pattern.nDstIP_Mask & 0xFFFF);
 			for (i = 0; i < 4; i++) {
 				maskNibble = ((parm->pattern.nDstIP_Mask >> (i * 4)) & 0xF);
@@ -3373,7 +3452,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		for (i = 0; i < 4; i++)
 			ltbl.ilsb[i] = ((parm->pattern.nDstIP.nIPv4 >> (i * 8)) & 0xFF);
 
-		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+		if (IS_VRSN_30_31(gswdev->gipver)) {
 			int j;
 			u16 maskNibble;
 
@@ -3429,7 +3508,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			mtbl.imsb[j]	= ((parm->pattern.nSrcIP.nIPv6[i] >> 8) & 0xFF);
 		}
 
-		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+		if (IS_VRSN_30_31(gswdev->gipver)) {
 			//mtbl.nmask = (u16)((parm->pattern.nSrcIP_Mask >> 16) & 0xFFFF);
 			for (i = 0; i < 4; i++) {
 				maskNibble = ((parm->pattern.nSrcIP_Mask >> ((i * 4) + 16)) & 0xF);
@@ -3461,7 +3540,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			ltbl.ilsb[j] = ((parm->pattern.nSrcIP.nIPv6[i + 4] >> 8) & 0xFF);
 		}
 
-		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+		if (IS_VRSN_30_31(gswdev->gipver)) {
 			//ltbl.nmask = (u16)(parm->pattern.nSrcIP_Mask & 0xFFFF);
 			for (i = 0; i < 4; i++) {
 				maskNibble = ((parm->pattern.nSrcIP_Mask >> (i * 4)) & 0xF);
@@ -3495,7 +3574,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		for (i = 0; i < 4; i++)
 			ltbl.ilsb[i] = ((parm->pattern.nSrcIP.nIPv4 >> (i * 8)) & 0xFF);
 
-		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+		if (IS_VRSN_30_31(gswdev->gipver)) {
 			int j;
 			u16 maskNibble;
 
@@ -3532,7 +3611,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	ptbl.key[2] |= ptable->sip_lsb_idx;
 
 	/* Pattern field - inner DIP field table */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		ptable->inr_dip_msb_idx = 0xFF; //Mark as don't care.
 		ptable->inr_dip_lsb_idx = 0xFF; //Mark as don't care.
 
@@ -3774,7 +3853,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	ptbl.key[1] |= ptable->ethertype_idx;
 
 	/* Pattern field - PPP Protocol table */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		if (parm->pattern.bPPP_ProtocolEnable == 1) {
 			prtcol_tbl_t   pctl_tbl;
 			memset(&pctl_tbl, 0, sizeof(prtcol_tbl_t));
@@ -3807,6 +3886,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 
 		if (tindex < 0)
 			return tindex;
+
 
 		ptable->ip_prot_idx = tindex;
 	} else if (parm->pattern.bInnerProtocolEnable == 1) {
@@ -3903,11 +3983,11 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 					tindex = act_vlan_id_create(cdev,
 								    parm->pattern.nSLAN_Vid, 0, 0);
 			}
-
-			ptable->svlan_idx = tindex;
-			ptbl.key[8] &= ~(0xFF << 8);
-			ptbl.key[8] |= (ptable->svlan_idx << 8);
 		}
+		
+		ptable->svlan_idx = tindex;
+		ptbl.key[8] &= ~(0xFF << 8);
+		ptbl.key[8] |= (ptable->svlan_idx << 8);
 	}
 
 	/* Pattern field - VID value */
@@ -3978,7 +4058,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	}
 
 	/* Pattern field - Exclude bits */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		if (parm->pattern.bPortId_Exclude == 1)
 			ptbl.key[14] |= (1 << 7);
 
@@ -4056,9 +4136,11 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			ptbl.key[15] |= (1 << 15);
 	}
 
+
 	/* Populate 'action' parameter values */
 	paction = &(pthandle->pce_act[idx]);
 	memcpy(paction, &parm->action, sizeof(GSW_PCE_action_t));
+
 
 	/* Port forwarding action */
 	if (paction->ePortMapAction != GSW_PCE_ACTION_PORTMAP_DISABLE) {
@@ -4076,7 +4158,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 
 			case GSW_PCE_ACTION_PORTMAP_CPU:
 			case GSW_PCE_ACTION_PORTMAP_ALTERNATIVE:
-				if (gswdev->gipver == LTQ_GSWIP_3_0) {
+				if (gswdev->gipver <= LTQ_GSWIP_3_0) {
 					/* CPU port-map */ //Govind - Need to test for 3.0 with MC router.
 					ptbl.val[1] = (paction->nForwardPortMap[0] & 0xFFFF);
 				}
@@ -4123,7 +4205,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			ptbl.val[1] = 0xFFFF;
 		}
 
-		//Govind - But why do we need to do below?
+		//But why do we need to do below?
 		if (IS_VRSN_31(gswdev->gipver)) {
 			for (i = 0; i <= 7; i++)
 				ptbl.val[i + 10] = 0xFFFF;
@@ -4459,7 +4541,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	}
 
 	/* Remarking action. */
-	if (gswdev->gipver == LTQ_GSWIP_3_0) {
+	if (gswdev->gipver <= LTQ_GSWIP_3_0) {
 		ptbl.val[3] |= (0x7 << 12);
 
 		if (paction->bRemarkDSCP == 1)
@@ -4518,7 +4600,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		ptbl.val[5] |= (1 << 1);
 
 	/* IGMP snoop control */
-	if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 		if (paction->ePortFilterType_Action !=
 		    GSW_PCE_PORT_FILTER_ACTION_UNUSED) {
 			if (paction->ePortMapAction == GSW_PCE_ACTION_PORTMAP_DISABLE) {
@@ -4649,6 +4731,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			}
 		}
 	}
+
 
 	ptbl.pcindex = idx;
 	ptbl.table = PCE_TFLOW_INDEX;

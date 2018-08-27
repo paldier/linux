@@ -403,7 +403,9 @@ enum {
 	GOUT_APP1,
 	GOUT_IGMP0,
 	GOUT_IGMP1,
-	GOUT_IPOFF,	/*39*/
+//	GOUT_IPOFF,	/*39*/
+	GOUT_STAG0=61,
+	GOUT_STAG1=62,
 	GOUT_NONE	=	63,
 };
 
@@ -423,6 +425,7 @@ enum {
 	GFLAG_NN2,
 	GFLAG_END,
 	GFLAG_NO,	/*13*/
+	GFLAG_SVLAN,  /*14 */
 };
 
 typedef struct {
@@ -988,6 +991,7 @@ typedef struct {
 
 
 
+int gsw_pmicro_code_init_f24s(void *cdev);
 
 u8 find_active_vlan_index(void *cdev, u16 vid);
 int find_msb_tbl_entry(pcetbl_prog_t *ptbl,
