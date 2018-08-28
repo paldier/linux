@@ -415,13 +415,12 @@ void gsw_r32_raw(void *cdev, short offset, u32 *value)
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return;
 	}
-	
+
 	if (pethdev->gsw_base != 0) {
 		*value = gsw1_r32((volatile void *)pethdev->gsw_base + (offset * 4));
-	}
-	else {
+	} else {
 		/*external switch*/
-		gsw_ext_r32(cdev,offset,0,16,value);
+		gsw_ext_r32(cdev, offset, 0, 16, value);
 	}
 
 }
@@ -439,14 +438,14 @@ void gsw_w32_raw(void *cdev, short offset, u32 value)
 		gsw1_w32(value, (volatile void *)(pethdev->gsw_base + (offset * 4)));
 	} else {
 		/*external switch*/
-		gsw_ext_w32(cdev,offset,0,16,value);
+		gsw_ext_w32(cdev, offset, 0, 16, value);
 	}
 }
 
 
 int GSW_SMDIO_DataRead(void *cdev, GSW_MDIO_data_t *pPar)
 {
-	int ret=0;
+	int ret = 0;
 	ethsw_api_dev_t *pethdev = GSW_PDATA_GET(cdev);
 
 #ifdef CONFIG_X86_INTEL_CE2700
@@ -456,8 +455,8 @@ int GSW_SMDIO_DataRead(void *cdev, GSW_MDIO_data_t *pPar)
 	pPar->nData = data & 0xFFFF;
 #else
 	struct core_ops *gsw_ops;
-	gsw_ops=gsw_get_swcore_ops(pethdev->parent_devid);
-	gsw_ops->gsw_common_ops.MDIO_DataRead(gsw_ops,pPar);
+	gsw_ops = gsw_get_swcore_ops(pethdev->parent_devid);
+	gsw_ops->gsw_common_ops.MDIO_DataRead(gsw_ops, pPar);
 
 #endif
 	return ret;
@@ -465,16 +464,16 @@ int GSW_SMDIO_DataRead(void *cdev, GSW_MDIO_data_t *pPar)
 
 int GSW_SMDIO_DataWrite(void *cdev, GSW_MDIO_data_t *pPar)
 {
-	int ret=0;
+	int ret = 0;
 	ethsw_api_dev_t *pethdev = GSW_PDATA_GET(cdev);
 
 #ifdef CONFIG_X86_INTEL_CE2700
 	ret = DWC_ETH_QOS_mdio_write_direct(MDIO_BUS_NUMBER_0, C45_ENABLED,
-					     MDIO_ADDR_LANTIQ, MMD_DISABLED, pPar->nAddressReg & 0x1F, pPar->nData & 0xFFFF);
+					    MDIO_ADDR_LANTIQ, MMD_DISABLED, pPar->nAddressReg & 0x1F, pPar->nData & 0xFFFF);
 #else
 	struct core_ops *gsw_ops;
-	gsw_ops=gsw_get_swcore_ops(pethdev->parent_devid);
-	gsw_ops->gsw_common_ops.MDIO_DataWrite(gsw_ops,pPar);
+	gsw_ops = gsw_get_swcore_ops(pethdev->parent_devid);
+	gsw_ops->gsw_common_ops.MDIO_DataWrite(gsw_ops, pPar);
 #endif
 
 	return ret;
@@ -510,7 +509,7 @@ void gsw_ext_r32(void *cdev, short offset, short shift, short size, u32 *value)
 	mask = (1 << size) - 1;
 	rvalue = (rvalue >> shift);
 	*value = (rvalue & mask);
-	
+
 }
 
 /** read and update the GSWIP register */
@@ -614,15 +613,15 @@ void gsw_r32(void *cdev, short offset, short shift, short size, u32 *value)
 	} else {
 
 #ifdef __KERNEL__
-	/*external switch*/
-		if(pethdev->ext_devid) {
-			gsw_ext_r32(cdev,offset,shift,size,value);
-		}
-		else
+
+		/*external switch*/
+		if (pethdev->ext_devid) {
+			gsw_ext_r32(cdev, offset, shift, size, value);
+		} else
 #endif
 			pr_err("%s:%s:%d,(ERROR)\n", __FILE__, __func__, __LINE__);
 	}
-	
+
 }
 
 /** read and update the GSWIP register */
@@ -658,9 +657,10 @@ void gsw_w32(void *cdev, short offset, short shift, short size, u32 value)
 	} else {
 
 #ifdef __KERNEL__
+
 		/*external switch*/
-		if(pethdev->ext_devid)
-			gsw_ext_w32(cdev,offset,shift,size,value);
+		if (pethdev->ext_devid)
+			gsw_ext_w32(cdev, offset, shift, size, value);
 		else
 #endif
 			pr_err("%s:%s:%d,(ERROR)\n", __FILE__, __func__, __LINE__);
@@ -998,7 +998,7 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 	}
 
 	if (device_id == 1) {
-		ethsw_api_dev_t *PrvData,*ExtPrvData;
+		ethsw_api_dev_t *PrvData, *ExtPrvData;
 		struct core_ops *ops;
 
 		/* Init FLOW Switch Core Layer */
@@ -1024,9 +1024,9 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 		/** Get Switch Core Private Data */
 		PrvData = container_of(ops, ethsw_api_dev_t, ops);
 
-		if(PrvData->ext_devid == LTQ_FLOW_DEV_EXT_AX3000_F24S) {
+		if (PrvData->ext_devid == LTQ_FLOW_DEV_EXT_AX3000_F24S) {
 			ethsw_core_init_t ext_core_init;
-			
+
 			/** Clear core_init */
 			memset(&ext_core_init, 0, sizeof(ethsw_core_init_t));
 
@@ -1037,21 +1037,23 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 			gsw1_w32(0x800,	(volatile void *)0xb6080120);
 			gsw1_w32(0x7c,	(volatile void *)0xbc003c1c);
 			gsw1_w32(0x1806,	(volatile void *)0xba003d10);
-			gsw1_w32(0x100800,  (volatile void *)0xb6080120);
-			gsw1_w32(0x80000000,  (volatile void *)0xb6000010);
-			gsw1_w32(0x0,  (volatile void *)0xb6000010);
-			gsw1_w32(0xff,  (volatile void *)0xb6D00034);
-			gsw1_w32(0xff,  (volatile void *)0xb6D00044);
-			gsw1_w32(0x00008800,  (volatile void *)0xb6D002B8);
+			gsw1_w32(0x100800, (volatile void *)0xb6080120);
+			gsw1_w32(0x80000000, (volatile void *)0xb6000010);
+			gsw1_w32(0x0, (volatile void *)0xb6000010);
+			gsw1_w32(0xff, (volatile void *)0xb6D00034);
+			gsw1_w32(0xff, (volatile void *)0xb6D00044);
+			gsw1_w32(0x00008800, (volatile void *)0xb6D002B8);
 #endif
 			ExtPrvData = (void *)kmalloc(sizeof(ethsw_api_dev_t), GFP_KERNEL);
-			if (ExtPrvData== NULL) {
+
+			if (ExtPrvData == NULL) {
 				pr_err("%s:%s:%d (Exterenal switch:LTQ_FLOW_DEV_EXT_AX3000_F24S Init Failed)\n",
-			       __FILE__, __func__, __LINE__);
+				       __FILE__, __func__, __LINE__);
 				return -1;
 			}
+
 			memset(ExtPrvData, 0, sizeof(ethsw_api_dev_t));
-			
+
 			/*init external switch private data*/
 			ExtPrvData->cport = GSW_2X_SOC_CPU_PORT;
 			ExtPrvData->gsw_dev = LTQ_FLOW_DEV_EXT_AX3000_F24S;
@@ -1060,22 +1062,23 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 			ExtPrvData->ext_phyid = PrvData->ext_phyid;
 			ExtPrvData->gswex_base = PrvData->gswex_base;
 			ExtPrvData->gswex_sgmiibase = PrvData->gswex_sgmiibase;
-			
+
 			/* Init External Switch Core Layer */
 			ext_core_init.sdev = LTQ_FLOW_DEV_EXT_AX3000_F24S;
 			ext_core_init.gsw_base_addr = NULL;
 			ext_core_init.pdev = (void *)ExtPrvData;
 			pEDevExt = ethsw_api_core_init(&ext_core_init);
+
 			if (pEDevExt == NULL) {
 				pr_err("%s:%s:%d (Init Failed)\n",
 				       __FILE__, __func__, __LINE__);
 				return -1;
 			}
-			
+
 		}
 
 	}
-	
+
 
 	if (device_id == 0) {
 		ioct_cmd_start_node = gsw_create_ioctl_cmd_linklist(&pEDev0->ops);
@@ -1097,13 +1100,14 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 	/* add Internal switch */
 	if ((device_id == 1) && pioctlctl && pEDev1) {
 		ioctl_wrapper_dev_add(pioctlctl, &pEDev1->ops, LTQ_FLOW_DEV_INT_R);
-		
+
 		/* Init wrapper , if external switch attached to GSWIP-R*/
 		if ((pEDev1->ext_devid == LTQ_FLOW_DEV_EXT_AX3000_F24S) && pioctlctl && pEDevExt) {
 			ioctl_wrapper_dev_add(pioctlctl, &pEDevExt->ops, LTQ_FLOW_DEV_EXT_AX3000_F24S);
 		}
 
 	}
+
 	return 0;
 }
 #endif /* CONFIG_SOC_GRX500 */

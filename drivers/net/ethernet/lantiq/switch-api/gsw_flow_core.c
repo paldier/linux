@@ -353,6 +353,7 @@ static void reset_multicast_sw_table(void *cdev)
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return;
 	}
+
 	if (IS_VRSN_31(gswdev->gipver)) {
 		gsw_init_hash_table(cdev);
 	}
@@ -382,7 +383,7 @@ static int gsw2x_msw_table_wr(void *cdev, GSW_multicastTable_t *parm)
 	pce_dasa_msb_t	mtbl;
 	ltq_pce_table_t *hpctbl = NULL;
 	gsw_igmp_t *hitbl = NULL;
-	
+
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
@@ -951,7 +952,7 @@ static int gsw3x_msw_table_wr(void *cdev, GSW_multicastTable_t *parm)
 	pce_dasa_msb_t	mtbl;
 	ltq_pce_table_t *hpctbl = NULL;
 	gsw_igmp_t *hitbl = NULL;
-	
+
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
@@ -1678,7 +1679,7 @@ static int gsw2x_msw_table_rm(void *cdev, GSW_multicastTable_t *parm)
 	pce_dasa_lsb_t ltbl;
 	pce_dasa_msb_t mtbl;
 	int dlix = 0, dmix = 0, slix = 0, smix = 0;
-	
+
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
@@ -2614,6 +2615,7 @@ static void get_gsw_hw_cap(void *cdev)
 		printk("\n");
 		printk("Number of logical port           =  %d\n", gswdev->pnum);
 		printk("Number of ports including V port =  %d\n", gswdev->tpnum);
+
 		if (gswdev->gipver == LTQ_GSWIP_3_1) {
 			printk("Number of CTP Port               =  %d\n", gswdev->num_of_ctp);
 			printk("Number of Bridge                 =  %d\n", gswdev->num_of_bridge);
@@ -2621,6 +2623,7 @@ static void get_gsw_hw_cap(void *cdev)
 			printk("Number of P-Mapper               =  %d\n", gswdev->num_of_pmapper);
 
 		}
+
 		printk("Number of queues                 =  %d\n", gswdev->num_of_queues);
 		printk("Number of meter instance         =  %d\n", gswdev->num_of_meters);
 		printk("Number of shapers                =  %d\n", gswdev->num_of_shapers);
@@ -2645,6 +2648,7 @@ static void get_gsw_hw_cap(void *cdev)
 			printk("Extend VLAN Table Size table     =  %d\n", gswdev->num_of_extendvlan);
 			printk("VlanFilter table Size            =  %d\n\n", gswdev->num_of_vlanfilter);
 		}
+
 		printk("\n");
 	}
 
@@ -3124,6 +3128,7 @@ static GSW_return_t switch_core_init(void *cdev)
 			mac_init_fn_ptrs(mac_ops);
 			mac_ops->init(mac_ops);
 		}
+
 		struct adap_ops *ops = gsw_get_adap_ops(0);
 
 		if (ops == NULL) {
@@ -3168,29 +3173,31 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	ethsw_api_dev_t *PrvData;
 	struct core_ops *ops;
 	void *cdev;
-	u32 ret =0;
-	printk("\n########## Switch Core INIT for device = %d ##########\n",ethcinit->sdev);
+	u32 ret = 0;
+	printk("\n########## Switch Core INIT for device = %d ##########\n", ethcinit->sdev);
 
 #ifdef __KERNEL__
+
 	/* KERNEL_MODE */
 	/** Get Platform Driver Data */
-	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
-	ops = platform_get_drvdata(ethcinit->pdev);
+	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
+		ops = platform_get_drvdata(ethcinit->pdev);
 
-	/** Get Switch Core Private Data */
-	PrvData = container_of(ops, ethsw_api_dev_t, ops);
+		/** Get Switch Core Private Data */
+		PrvData = container_of(ops, ethsw_api_dev_t, ops);
 
-	if (PrvData == NULL) {
-		pr_err("%s:%s:%d (Plateform driver data not allocated)\n",
-		       __FILE__, __func__, __LINE__);
-		return PrvData;
-	}
+		if (PrvData == NULL) {
+			pr_err("%s:%s:%d (Plateform driver data not allocated)\n",
+			       __FILE__, __func__, __LINE__);
+			return PrvData;
+		}
 
-	/** Clear Switch Core Private Data */
+		/** Clear Switch Core Private Data */
 	} else {
 		/*External switch*/
 		PrvData = ethcinit->pdev;
 	}
+
 	/** Set Core OPS struct Adress to cdev*/
 	cdev = &PrvData->ops;
 
@@ -3248,7 +3255,8 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	}
 
 #if defined(CONFIG_LTQ_MULTICAST) && CONFIG_LTQ_MULTICAST
-	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
+
+	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
 		/*Reset Multicast software table*/
 		reset_multicast_sw_table(cdev);
 	}
@@ -3263,17 +3271,19 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
 		PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x1);
 #else
-	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
+
+	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
 		gsw_pmicro_code_init(cdev);
 		printk("Switch API: PCE MicroCode loaded !!\n");
 	}
+
 #endif
 
-	if((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
-	if (IS_VRSN_31(PrvData->gipver))
-		switch_core_init(cdev);
-	else
-		legacy_switch_core_init(cdev);
+	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
+		if (IS_VRSN_31(PrvData->gipver))
+			switch_core_init(cdev);
+		else
+			legacy_switch_core_init(cdev);
 	}
 
 #ifdef CONFIG_X86_INTEL_CE2700
@@ -7047,14 +7057,14 @@ GSW_return_t GSW_QoS_MeterCfgSet(void *cdev,
 		}
 
 
-		if(IS_VRSN_31(gswdev->gipver)) {
+		if (IS_VRSN_31(gswdev->gipver)) {
 			/*Check whether it is InUSE,if not InUse,return ERROR*/
 			if (!(gswdev->meter_idx[mid].IndexInUse)) {
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
 		}
-		
+
 		gsw_w32(cdev, GSW_INST_SEL_INST_OFFSET,
 			GSW_INST_SEL_INST_SHIFT,
 			GSW_INST_SEL_INST_SIZE, mid);
@@ -8632,6 +8642,7 @@ GSW_return_t GSW_QoS_QueuePortSet(void *cdev,
 	if (IS_VRSN_31(gswdev->gipver)) {
 		GSW_Freeze();
 	}
+
 #ifdef __KERNEL__
 	spin_lock_bh(&gswdev->lock_pce);
 #endif
@@ -8703,6 +8714,7 @@ GSW_return_t GSW_QoS_QueuePortSet(void *cdev,
 	bmtable.tableID = BUF_MGR_Q_MAP_TABLE;
 	bmtable.numValues = 1;
 	ret = gsw_bm_table_write(cdev, &bmtable);
+
 	if (IS_VRSN_31(gswdev->gipver)) {
 		GSW_UnFreeze();
 	}
@@ -11680,10 +11692,10 @@ GSW_return_t GSW_CapGet(void *cdev, GSW_cap_t *parm)
 
 	switch (parm->nCapType) {
 	case GSW_CAP_TYPE_PORT:
+
 		/*Temp work around for the below external switch model*/
-		if(gswdev->gsw_dev == LTQ_FLOW_DEV_EXT_AX3000_F24S)
-		{
-			get_gsw_hw_cap (cdev);
+		if (gswdev->gsw_dev == LTQ_FLOW_DEV_EXT_AX3000_F24S) {
+			get_gsw_hw_cap(cdev);
 		}
 
 		gsw_r32(cdev, ETHSW_CAP_1_PPORTS_OFFSET,
@@ -12109,8 +12121,8 @@ UNLOCK_AND_RETURN:
 GSW_return_t GSW_HW_Init(void *cdev, GSW_HW_Init_t *parm)
 {
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
-	u32 j=0;
-	u32 ret=0;
+	u32 j = 0;
+	u32 ret = 0;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -12121,108 +12133,109 @@ GSW_return_t GSW_HW_Init(void *cdev, GSW_HW_Init_t *parm)
 	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
-		if(gswdev->gsw_dev == LTQ_FLOW_DEV_EXT_AX3000_F24S)
-		{
-			/* Reset the Switch via Switch IP register*/
-			get_gsw_hw_cap (cdev);
-			/* Software Table Init */
-			ltq_ethsw_port_cfg_init(cdev);
-			//rst_multi_sw_table(cdev);
-			/* HW Init */
-			gsw_pmicro_code_init_f24s(cdev);
-			printk("Switch API: PCE MicroCode loaded for LTQ_FLOW_DEV_EXT_AX3000_F24S\n");
-			/*hardcoded setting for LTQ_FLOW_DEV_EXT_AX3000_F24S*/
-			ret = GSW_statusOk;
+	if (gswdev->gsw_dev == LTQ_FLOW_DEV_EXT_AX3000_F24S) {
+		/* Reset the Switch via Switch IP register*/
+		get_gsw_hw_cap(cdev);
+		/* Software Table Init */
+		ltq_ethsw_port_cfg_init(cdev);
+		//rst_multi_sw_table(cdev);
+		/* HW Init */
+		gsw_pmicro_code_init_f24s(cdev);
+		printk("Switch API: PCE MicroCode loaded for LTQ_FLOW_DEV_EXT_AX3000_F24S\n");
+		/*hardcoded setting for LTQ_FLOW_DEV_EXT_AX3000_F24S*/
+		ret = GSW_statusOk;
 
-		}else {
+	} else {
 
-			/* Reset the Switch via Switch IP register*/
-			j = 1;
-			gsw_w32(cdev, ETHSW_SWRES_R0_OFFSET,
-				ETHSW_SWRES_R0_SHIFT, ETHSW_SWRES_R0_SIZE, j);
+		/* Reset the Switch via Switch IP register*/
+		j = 1;
+		gsw_w32(cdev, ETHSW_SWRES_R0_OFFSET,
+			ETHSW_SWRES_R0_SHIFT, ETHSW_SWRES_R0_SIZE, j);
 
-	do {
+		do {
 //		udelay(100);
-		gsw_r32(cdev, ETHSW_SWRES_R0_OFFSET,
-			ETHSW_SWRES_R0_SHIFT, ETHSW_SWRES_R0_SIZE, &j);
-	} while (j);
+			gsw_r32(cdev, ETHSW_SWRES_R0_OFFSET,
+				ETHSW_SWRES_R0_SHIFT, ETHSW_SWRES_R0_SIZE, &j);
+		} while (j);
 
 #if defined(CONFIG_USE_EMULATOR) && CONFIG_USE_EMULATOR
 
-			if (gswdev->gipver == LTQ_GSWIP_3_0) {
-				/* Set Auto-Polling of connected PHYs - For all ports */
-				gsw_w32(cdev, (GSWT_MDCCFG_0_PEN_1_OFFSET
-					       + GSW30_TOP_OFFSET),
-					GSWT_MDCCFG_0_PEN_1_SHIFT, 6, 0x0);
-			} else {
-				/* Set Auto-Polling of connected PHYs - For all ports */
-				gsw_w32(cdev, (MDC_CFG_0_PEN_0_OFFSET
-					       + GSW_TREG_OFFSET),
-					MDC_CFG_0_PEN_0_SHIFT, 6, 0x0);
-			}
+		if (gswdev->gipver == LTQ_GSWIP_3_0) {
+			/* Set Auto-Polling of connected PHYs - For all ports */
+			gsw_w32(cdev, (GSWT_MDCCFG_0_PEN_1_OFFSET
+				       + GSW30_TOP_OFFSET),
+				GSWT_MDCCFG_0_PEN_1_SHIFT, 6, 0x0);
+		} else {
+			/* Set Auto-Polling of connected PHYs - For all ports */
+			gsw_w32(cdev, (MDC_CFG_0_PEN_0_OFFSET
+				       + GSW_TREG_OFFSET),
+				MDC_CFG_0_PEN_0_SHIFT, 6, 0x0);
+		}
 
 #else
-			if (gswdev->gipver == LTQ_GSWIP_3_0) {
-				if (gswdev->sdev == LTQ_FLOW_DEV_INT_R) {
+
+		if (gswdev->gipver == LTQ_GSWIP_3_0) {
+			if (gswdev->sdev == LTQ_FLOW_DEV_INT_R) {
 #ifdef __KERNEL__
-					gsw_r_init();
+				gsw_r_init();
 #endif
-					gsw_w32(cdev, (GSWT_MDCCFG_0_PEN_1_OFFSET + GSW30_TOP_OFFSET),
-						GSWT_MDCCFG_0_PEN_1_SHIFT, 6, 0x1);
-				} else {
-					gsw_w32(cdev, (GSWT_MDCCFG_0_PEN_1_OFFSET + GSW30_TOP_OFFSET),
-						GSWT_MDCCFG_0_PEN_1_SHIFT, 6, 0x1e);
-				}
+				gsw_w32(cdev, (GSWT_MDCCFG_0_PEN_1_OFFSET + GSW30_TOP_OFFSET),
+					GSWT_MDCCFG_0_PEN_1_SHIFT, 6, 0x1);
+			} else {
+				gsw_w32(cdev, (GSWT_MDCCFG_0_PEN_1_OFFSET + GSW30_TOP_OFFSET),
+					GSWT_MDCCFG_0_PEN_1_SHIFT, 6, 0x1e);
 			}
+		}
 
 #endif  /* CONFIG_USE_EMULATOR */
-			/*	platform_device_init(cdev); */
-			gswdev->hwinit = 1;
-			/*	get_gsw_hw_cap (cdev); */
-			/* Software Table Init */
+		/*	platform_device_init(cdev); */
+		gswdev->hwinit = 1;
+		/*	get_gsw_hw_cap (cdev); */
+		/* Software Table Init */
 #if defined(CONFIG_LTQ_VLAN) && CONFIG_LTQ_VLAN
-			reset_vlan_sw_table(cdev);
+		reset_vlan_sw_table(cdev);
 #endif /*CONFIG_LTQ_VLAN */
-			ltq_ethsw_port_cfg_init(cdev);
+		ltq_ethsw_port_cfg_init(cdev);
 #if defined(CONFIG_LTQ_MULTICAST) && CONFIG_LTQ_MULTICAST
-			reset_multicast_sw_table(cdev);
+		reset_multicast_sw_table(cdev);
 #endif /*CONFIG_LTQ_MULTICAST*/
-			pce_table_init(&gswdev->phandler);
-			/* HW Init */
-			gsw_pmicro_code_init(cdev);
+		pce_table_init(&gswdev->phandler);
+		/* HW Init */
+		gsw_pmicro_code_init(cdev);
 
-			if (gswdev->gipver == LTQ_GSWIP_3_0) {
-				if (gswdev->sdev == LTQ_FLOW_DEV_INT_R) {
-					/*suresh*/
-		//			rt_table_init();
-					gsw_w32(cdev, PCE_TFCR_NUM_NUM_OFFSET, PCE_TFCR_NUM_NUM_SHIFT,
-						PCE_TFCR_NUM_NUM_SIZE, 0x80);
-				}
-
-				/* EEE auto negotiation overides:*/
-				/*  clock disable (ANEG_EEE_0.CLK_STOP_CAPABLE)  */
-				for (j = 0; j < gswdev->pnum - 1; j++) {
-					gsw_w32(cdev,
-						((GSWT_ANEG_EEE_1_CLK_STOP_CAPABLE_OFFSET
-						  + (4 * j)) + GSW30_TOP_OFFSET),
-						GSWT_ANEG_EEE_1_CLK_STOP_CAPABLE_SHIFT,
-						GSWT_ANEG_EEE_1_CLK_STOP_CAPABLE_SIZE, 0x3);
-				}
-			} else {
-				/* Configure the MDIO Clock 97.6 Khz */
-				gsw_w32(cdev, (MDC_CFG_1_FREQ_OFFSET + GSW_TREG_OFFSET),
-					MDC_CFG_1_FREQ_SHIFT,
-					MDC_CFG_1_FREQ_SIZE, 0xFF);
-
-				for (j = 0; j < gswdev->pnum - 1; j++) {
-					gsw_w32(cdev, ((ANEG_EEE_0_CLK_STOP_CAPABLE_OFFSET + j)
-						       + GSW_TREG_OFFSET),
-						ANEG_EEE_0_CLK_STOP_CAPABLE_SHIFT,
-						ANEG_EEE_0_CLK_STOP_CAPABLE_SIZE, 0x3);
-				}
+		if (gswdev->gipver == LTQ_GSWIP_3_0) {
+			if (gswdev->sdev == LTQ_FLOW_DEV_INT_R) {
+				/*suresh*/
+				//			rt_table_init();
+				gsw_w32(cdev, PCE_TFCR_NUM_NUM_OFFSET, PCE_TFCR_NUM_NUM_SHIFT,
+					PCE_TFCR_NUM_NUM_SIZE, 0x80);
 			}
-			ret = GSW_statusOk;
+
+			/* EEE auto negotiation overides:*/
+			/*  clock disable (ANEG_EEE_0.CLK_STOP_CAPABLE)  */
+			for (j = 0; j < gswdev->pnum - 1; j++) {
+				gsw_w32(cdev,
+					((GSWT_ANEG_EEE_1_CLK_STOP_CAPABLE_OFFSET
+					  + (4 * j)) + GSW30_TOP_OFFSET),
+					GSWT_ANEG_EEE_1_CLK_STOP_CAPABLE_SHIFT,
+					GSWT_ANEG_EEE_1_CLK_STOP_CAPABLE_SIZE, 0x3);
+			}
+		} else {
+			/* Configure the MDIO Clock 97.6 Khz */
+			gsw_w32(cdev, (MDC_CFG_1_FREQ_OFFSET + GSW_TREG_OFFSET),
+				MDC_CFG_1_FREQ_SHIFT,
+				MDC_CFG_1_FREQ_SIZE, 0xFF);
+
+			for (j = 0; j < gswdev->pnum - 1; j++) {
+				gsw_w32(cdev, ((ANEG_EEE_0_CLK_STOP_CAPABLE_OFFSET + j)
+					       + GSW_TREG_OFFSET),
+					ANEG_EEE_0_CLK_STOP_CAPABLE_SHIFT,
+					ANEG_EEE_0_CLK_STOP_CAPABLE_SIZE, 0x3);
+			}
 		}
+
+		ret = GSW_statusOk;
+	}
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&gswdev->lock_pce);
@@ -17163,7 +17176,7 @@ GSW_return_t GSW_CPU_PortCfgGet(void *cdev, GSW_CPU_PortCfg_t *parm)
 					goto UNLOCK_AND_RETURN;
 				}
 
-				parm->bFcsTxOps = ops->get_fcsgen(ops);
+				parm->bFcsGenerate = ops->get_fcsgen(ops);
 #endif
 			}
 		}
@@ -17210,7 +17223,6 @@ GSW_return_t GSW_CPU_PortCfgSet(void *cdev, GSW_CPU_PortCfg_t *parm)
 	u8 pidx = parm->nPortId;
 	u32 RST, AS, AST, RXSH;
 	u32 ret;
-
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -17296,8 +17308,8 @@ GSW_return_t GSW_CPU_PortCfgSet(void *cdev, GSW_CPU_PortCfg_t *parm)
 					ret = GSW_statusErr;
 					goto UNLOCK_AND_RETURN;
 				}
-				
-				ops->set_fcsgen(ops, parm->bFcsTxOps);
+
+				ops->set_fcsgen(ops, 1);
 #endif
 			}
 		}
@@ -25635,7 +25647,7 @@ GSW_return_t GSW_QOS_MeterAlloc(void *cdev, GSW_QoS_meterCfg_t *param)
 		goto UNLOCK_AND_RETURN;
 	}
 
-	if (param->nMeterId >= gswdev->num_of_meters ) {
+	if (param->nMeterId >= gswdev->num_of_meters) {
 		ret = GSW_statusErr;
 		goto UNLOCK_AND_RETURN;
 	}
@@ -26401,6 +26413,7 @@ GSW_return_t GSW_Enable(void *cdev)
 
 	if (IS_VRSN_31(gswdev->gipver)) {
 		struct adap_ops *ops = get_adap_ops(gswdev);
+
 		if (ops == NULL) {
 			pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 			return GSW_statusErr;

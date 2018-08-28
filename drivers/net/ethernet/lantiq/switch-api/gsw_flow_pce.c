@@ -549,73 +549,73 @@ const PCE_MICROCODE pce_mc_max_ifx_tag_m = {
 	/*-----------------------------------------------------------------*/
 	/**   value    mask   ns  out_fields   L  type   flags   ipv4_len **/
 	/*-----------------------------------------------------------------*/
-	PCE_MC_M(0x88c3 , 0xFFFF , 1 , GOUT_ITAG0 , 4 , INSTR , GFLAG_ITAG ,	0),
-	PCE_MC_M(0x8100 , 0xFFFF , 4 , GOUT_STAG0 , 2 , INSTR , GFLAG_SVLAN ,  0),
-	PCE_MC_M(0x88A8 , 0xFFFF , 4 , GOUT_STAG0 , 2 , INSTR , GFLAG_SVLAN ,  0),
-	PCE_MC_M(0x9100 , 0xFFFF , 4 , GOUT_STAG0 , 2 , INSTR , GFLAG_SVLAN ,  0),
-	PCE_MC_M(0x8100 , 0xFFFF , 5 , GOUT_VTAG0 , 2 , INSTR , GFLAG_VLAN ,	0),
-	PCE_MC_M(0x88A8 , 0xFFFF , 6 , GOUT_VTAG0 , 2 , INSTR , GFLAG_VLAN ,	0),
-	PCE_MC_M(0x9100 , 0xFFFF , 4 , GOUT_VTAG0 , 2 , INSTR , GFLAG_VLAN ,	0),
-	PCE_MC_M(0x8864 , 0xFFFF , 20 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
-	PCE_MC_M(0x0800 , 0xFFFF , 24 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
-	PCE_MC_M(0x86DD , 0xFFFF , 25 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
-	PCE_MC_M(0x8863 , 0xFFFF , 19 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
-	PCE_MC_M(0x0000 , 0xF800 , 13 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
-	PCE_MC_M(0x0600 , 0x0600 , 44 , GOUT_ETHTYP , 1 , INSTR , GFLAG_NO ,	0),
-	PCE_MC_M(0x0000 , 0x0000 , 15 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0xAAAA , 0xFFFF , 17 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0300 , 0xFF00 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_SNAP ,	0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_DIP7 , 3 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 21 , GOUT_DIP7 , 3 , INSTR , GFLAG_PPPOE ,  0),
-	PCE_MC_M(0x0021 , 0xFFFF , 24 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0057 , 0xFFFF , 25 , GOUT_NONE , 1 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x4000 , 0xF000 , 27 , GOUT_IP0 , 4 , INSTR , GFLAG_IPV4 , 1),
-	PCE_MC_M(0x6000 , 0xF000 , 30 , GOUT_IP0 , 3 , INSTR , GFLAG_IPV6 ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 28 , GOUT_IP3 , 2 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 29 , GOUT_SIP0 , 4 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , LENACCU , GFLAG_NO ,	0),
-	PCE_MC_M(0x1100 , 0xFF00 , 43 , GOUT_PROT , 1 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0600 , 0xFF00 , 43 , GOUT_PROT , 1 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0xFF00 , 41 , GOUT_IP3 , 17 , INSTR , GFLAG_HOP ,  0),
-	PCE_MC_M(0x2B00 , 0xFF00 , 41 , GOUT_IP3 , 17 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x3C00 , 0xFF00 , 41 , GOUT_IP3 , 17 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 43 , GOUT_PROT , 1 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0xFF00 , 41 , GOUT_NONE , 0 , IPV6 , GFLAG_HOP ,  0),
-	PCE_MC_M(0x2B00 , 0xFF00 , 41 , GOUT_NONE , 0 , IPV6 , GFLAG_NO ,  0),
-	PCE_MC_M(0x3C00 , 0xFF00 , 41 , GOUT_NONE , 0 , IPV6 , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x00FC , 44 , GOUT_PROT , 0 , IPV6 , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , IPV6 , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x00F8 , 36 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_NONE , 0 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 44 , GOUT_SIP0 , 16 , INSTR , GFLAG_NO ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 45 , GOUT_APP0 , 3 , INSTR , GFLAG_IGMP , 0),
-	PCE_MC_M(0x1000 , 0x1000 , 46 , GOUT_NONE , 0 , INSTR , GFLAG_NN2 , 0),
-	PCE_MC_M(0x2000 , 0x2000 , 47 , GOUT_NONE , 0 , INSTR , GFLAG_NN1 , 0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_IGMP1 , 1 , INSTR , GFLAG_NO , 0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END ,  0),
-	PCE_MC_M(0x0000 , 0x0000 , 48 , GOUT_NONE , 0 , INSTR , GFLAG_END , 0),
+	PCE_MC_M(0x88c3, 0xFFFF, 1, GOUT_ITAG0, 4, INSTR, GFLAG_ITAG,	0),
+	PCE_MC_M(0x8100, 0xFFFF, 4, GOUT_STAG0, 2, INSTR, GFLAG_SVLAN,  0),
+	PCE_MC_M(0x88A8, 0xFFFF, 4, GOUT_STAG0, 2, INSTR, GFLAG_SVLAN,  0),
+	PCE_MC_M(0x9100, 0xFFFF, 4, GOUT_STAG0, 2, INSTR, GFLAG_SVLAN,  0),
+	PCE_MC_M(0x8100, 0xFFFF, 5, GOUT_VTAG0, 2, INSTR, GFLAG_VLAN,	0),
+	PCE_MC_M(0x88A8, 0xFFFF, 6, GOUT_VTAG0, 2, INSTR, GFLAG_VLAN,	0),
+	PCE_MC_M(0x9100, 0xFFFF, 4, GOUT_VTAG0, 2, INSTR, GFLAG_VLAN,	0),
+	PCE_MC_M(0x8864, 0xFFFF, 20, GOUT_ETHTYP, 1, INSTR, GFLAG_NO,	0),
+	PCE_MC_M(0x0800, 0xFFFF, 24, GOUT_ETHTYP, 1, INSTR, GFLAG_NO,	0),
+	PCE_MC_M(0x86DD, 0xFFFF, 25, GOUT_ETHTYP, 1, INSTR, GFLAG_NO,	0),
+	PCE_MC_M(0x8863, 0xFFFF, 19, GOUT_ETHTYP, 1, INSTR, GFLAG_NO,	0),
+	PCE_MC_M(0x0000, 0xF800, 13, GOUT_NONE, 0, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 44, GOUT_ETHTYP, 1, INSTR, GFLAG_NO,	0),
+	PCE_MC_M(0x0600, 0x0600, 44, GOUT_ETHTYP, 1, INSTR, GFLAG_NO,	0),
+	PCE_MC_M(0x0000, 0x0000, 15, GOUT_NONE, 1, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0xAAAA, 0xFFFF, 17, GOUT_NONE, 1, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0300, 0xFF00, 48, GOUT_NONE, 0, INSTR, GFLAG_SNAP,	0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_DIP7, 3, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 21, GOUT_DIP7, 3, INSTR, GFLAG_PPPOE,  0),
+	PCE_MC_M(0x0021, 0xFFFF, 24, GOUT_NONE, 1, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0057, 0xFFFF, 25, GOUT_NONE, 1, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 44, GOUT_NONE, 0, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x4000, 0xF000, 27, GOUT_IP0, 4, INSTR, GFLAG_IPV4, 1),
+	PCE_MC_M(0x6000, 0xF000, 30, GOUT_IP0, 3, INSTR, GFLAG_IPV6,  0),
+	PCE_MC_M(0x0000, 0x0000, 44, GOUT_NONE, 0, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 28, GOUT_IP3, 2, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 29, GOUT_SIP0, 4, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 44, GOUT_NONE, 0, LENACCU, GFLAG_NO,	0),
+	PCE_MC_M(0x1100, 0xFF00, 43, GOUT_PROT, 1, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0600, 0xFF00, 43, GOUT_PROT, 1, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0xFF00, 41, GOUT_IP3, 17, INSTR, GFLAG_HOP,  0),
+	PCE_MC_M(0x2B00, 0xFF00, 41, GOUT_IP3, 17, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x3C00, 0xFF00, 41, GOUT_IP3, 17, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 43, GOUT_PROT, 1, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0xFF00, 41, GOUT_NONE, 0, IPV6, GFLAG_HOP,  0),
+	PCE_MC_M(0x2B00, 0xFF00, 41, GOUT_NONE, 0, IPV6, GFLAG_NO,  0),
+	PCE_MC_M(0x3C00, 0xFF00, 41, GOUT_NONE, 0, IPV6, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x00FC, 44, GOUT_PROT, 0, IPV6, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 44, GOUT_NONE, 0, IPV6, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x00F8, 36, GOUT_NONE, 0, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 44, GOUT_NONE, 0, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 44, GOUT_SIP0, 16, INSTR, GFLAG_NO,  0),
+	PCE_MC_M(0x0000, 0x0000, 45, GOUT_APP0, 3, INSTR, GFLAG_IGMP, 0),
+	PCE_MC_M(0x1000, 0x1000, 46, GOUT_NONE, 0, INSTR, GFLAG_NN2, 0),
+	PCE_MC_M(0x2000, 0x2000, 47, GOUT_NONE, 0, INSTR, GFLAG_NN1, 0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_IGMP1, 1, INSTR, GFLAG_NO, 0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END,  0),
+	PCE_MC_M(0x0000, 0x0000, 48, GOUT_NONE, 0, INSTR, GFLAG_END, 0),
 };
 
 /* find a matched entry if already written or empty entry and fill */
@@ -1509,58 +1509,62 @@ int gsw_pmicro_code_init_f24s(void *cdev)
 	pctbl_prog_t tbl_entry;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
-		printk("PCE f24s micro-code init\n");
-		/* Disable all physical port  */
+	printk("PCE f24s micro-code init\n");
+	/* Disable all physical port  */
 
-		for (j = 0; j < gswdev->pnum; j++) {
-		printk("gswdev->pnum =%d j= %d\n",gswdev->pnum,j);			
-			gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (j * 0x6)),
-				SDMA_PCTRL_PEN_SHIFT, SDMA_PCTRL_PEN_SIZE, 0);
-		}	
-	
-		gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
+	for (j = 0; j < gswdev->pnum; j++) {
+		printk("gswdev->pnum =%d j= %d\n", gswdev->pnum, j);
+		gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (j * 0x6)),
+			SDMA_PCTRL_PEN_SHIFT, SDMA_PCTRL_PEN_SIZE, 0);
+	}
+
+	gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
 		PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x0);
-	
-		/* Download the microcode  */
-		for (i = 0; i < 64 /* PCE_MICRO_TABLE_SIZE */; i++) {
-				memset(&tbl_entry, 0, sizeof(tbl_entry));
-				tbl_entry.val[3] = pce_mc_max_ifx_tag_m[i].val_3;
-				tbl_entry.val[2] = pce_mc_max_ifx_tag_m[i].val_2;
-				tbl_entry.val[1] = pce_mc_max_ifx_tag_m[i].val_1;
-				tbl_entry.val[0] = pce_mc_max_ifx_tag_m[i].val_0;
-				tbl_entry.pcindex = i;
-				tbl_entry.table = PCE_PARS_INDEX;
-				gsw_pce_table_write(cdev, &tbl_entry);
-			}
 
-		gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
-			PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x1);
-	
-		for (j = 0; j < gswdev->pnum; j++) {
-			gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (j * 0x6)),
-				SDMA_PCTRL_PEN_SHIFT, SDMA_PCTRL_PEN_SIZE, 1);
-		}
-		/* Enable RMON Counter for all ports */
-		for (j = 0; j < gswdev->pnum; j++) {
-			gsw_w32(cdev, (BM_PCFG_CNTEN_OFFSET + (j * 0x2)),
-				BM_PCFG_CNTEN_SHIFT, BM_PCFG_CNTEN_SIZE, 1);
-		}
-		gsw_w32(cdev, BM_QUEUE_GCTRL_GL_MOD_OFFSET,
-			BM_QUEUE_GCTRL_GL_MOD_SHIFT,
-			BM_QUEUE_GCTRL_GL_MOD_SIZE, 0);
+	/* Download the microcode  */
+	for (i = 0; i < 64 /* PCE_MICRO_TABLE_SIZE */; i++) {
+		memset(&tbl_entry, 0, sizeof(tbl_entry));
+		tbl_entry.val[3] = pce_mc_max_ifx_tag_m[i].val_3;
+		tbl_entry.val[2] = pce_mc_max_ifx_tag_m[i].val_2;
+		tbl_entry.val[1] = pce_mc_max_ifx_tag_m[i].val_1;
+		tbl_entry.val[0] = pce_mc_max_ifx_tag_m[i].val_0;
+		tbl_entry.pcindex = i;
+		tbl_entry.table = PCE_PARS_INDEX;
+		gsw_pce_table_write(cdev, &tbl_entry);
+	}
+
+	gsw_w32(cdev, PCE_GCTRL_0_MC_VALID_OFFSET,
+		PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x1);
+
+	for (j = 0; j < gswdev->pnum; j++) {
+		gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (j * 0x6)),
+			SDMA_PCTRL_PEN_SHIFT, SDMA_PCTRL_PEN_SIZE, 1);
+	}
+
+	/* Enable RMON Counter for all ports */
+	for (j = 0; j < gswdev->pnum; j++) {
+		gsw_w32(cdev, (BM_PCFG_CNTEN_OFFSET + (j * 0x2)),
+			BM_PCFG_CNTEN_SHIFT, BM_PCFG_CNTEN_SIZE, 1);
+	}
+
+	gsw_w32(cdev, BM_QUEUE_GCTRL_GL_MOD_OFFSET,
+		BM_QUEUE_GCTRL_GL_MOD_SHIFT,
+		BM_QUEUE_GCTRL_GL_MOD_SIZE, 0);
 
 #if 0
-		printk("PARSER CODE DUMP\n\n");
-		for (i = 0; i < 64 /* PCE_MICRO_TABLE_SIZE */; i++) {
-			memset(&tbl_entry, 0, sizeof(tbl_entry));
-			tbl_entry.pcindex = i;
-			tbl_entry.table = PCE_PARS_INDEX;
-			tbl_entry.val[3] = pce_mc_max_ifx_tag_m[i].val_3;
-			tbl_entry.val[2] = pce_mc_max_ifx_tag_m[i].val_2;
-			gsw_pce_table_read(cdev, &tbl_entry);
-			printk("0x%04x , 0x%04x , 0x%04x , 0x%04x\n",tbl_entry.val[0],tbl_entry.val[1],tbl_entry.val[2],tbl_entry.val[3]);
-		}
-		printk("\n\nPARSER CODE DUMP Complete\n\n");
+	printk("PARSER CODE DUMP\n\n");
+
+	for (i = 0; i < 64 /* PCE_MICRO_TABLE_SIZE */; i++) {
+		memset(&tbl_entry, 0, sizeof(tbl_entry));
+		tbl_entry.pcindex = i;
+		tbl_entry.table = PCE_PARS_INDEX;
+		tbl_entry.val[3] = pce_mc_max_ifx_tag_m[i].val_3;
+		tbl_entry.val[2] = pce_mc_max_ifx_tag_m[i].val_2;
+		gsw_pce_table_read(cdev, &tbl_entry);
+		printk("0x%04x , 0x%04x , 0x%04x , 0x%04x\n", tbl_entry.val[0], tbl_entry.val[1], tbl_entry.val[2], tbl_entry.val[3]);
+	}
+
+	printk("\n\nPARSER CODE DUMP Complete\n\n");
 #endif
 
 	return 0;
@@ -1680,7 +1684,7 @@ int gsw_pmicro_code_init(void *cdev)
 	}
 
 	if ((gswdev->gipver == LTQ_GSWIP_2_2) ||
-		(gswdev->gipver == LTQ_GSWIP_2_2_ETC) ||
+	    (gswdev->gipver == LTQ_GSWIP_2_2_ETC) ||
 	    (gswdev->gipver == LTQ_GSWIP_3_0) ||
 	    (IS_VRSN_31(gswdev->gipver)))
 		Gl_Mod_Size = BM_QUEUE_GCTRL_GL_MOD_SIZE2;
@@ -1783,13 +1787,14 @@ int pce_pattern_delete(void *cdev, ltq_pce_table_t *pthandle, u32 index)
 	/* Parer flags field */
 	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->parse1_msb_idx,
 			      pce_tm_flags_tbl_delete)
+
 	if (IS_VRSN_30_31(gswdev->gipver)) {
 		/* Payload1 field */
 		IFX_PCE_TM_IDX_DELETE(0xFF, ptable->payload1_idx,
-			      		pce_tm_payload_tbl_delete)
+				      pce_tm_payload_tbl_delete)
 		/* payload2 field */
 		IFX_PCE_TM_IDX_DELETE(0xFF, ptable->payload2_idx,
-			      		pce_tm_payload_tbl_delete)
+				      pce_tm_payload_tbl_delete)
 	}
 
 	/* DIP MSB */
@@ -2002,7 +2007,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		parm->pattern.nDSCP = (ptbl.key[6] >> 8) & 0x3F;
 		parm->pattern.bDSCP_Enable = 1;
 	}
-	
+
 	/* Applicable for 3.0 or less*/
 	if (gswdev->gipver <= LTQ_GSWIP_3_0) {
 		if (ptbl.val[0] & 0x1) { //If port-map action set.
@@ -2018,7 +2023,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				}
 			} else if (ptbl.val[1] != 0x0) { //If port-map IDs set.
 				parm->action.nForwardPortMap[0] = ptbl.val[1];
-	
+
 				if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
 					//If port-map type is 'tflow'.
 					parm->action.ePortMapAction =
@@ -2060,208 +2065,209 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		/* Processing path type action value */
 		if (ptbl.val[8] & 0x1)
 			parm->action.eProcessPath_Action = (ptbl.val[8] >> 1) & 0x3;
-		
-		}
+
+	}
 
 
-		/* L3 Routing type action value */
-		if (gswdev->gipver == LTQ_GSWIP_3_0) {
-			if (gswdev->sdev == LTQ_FLOW_DEV_INT_R) {
-				parm->action.bRtCtrlEna_Action = ptbl.val[9] & 0x1;
-				parm->action.bRtAccelEna_Action = (ptbl.val[9] >> 1) & 0x1;
-				parm->action.bRtInnerIPasKey_Action = (ptbl.val[9] >> 2) & 0x1;
+	/* L3 Routing type action value */
+	if (gswdev->gipver == LTQ_GSWIP_3_0) {
+		if (gswdev->sdev == LTQ_FLOW_DEV_INT_R) {
+			parm->action.bRtCtrlEna_Action = ptbl.val[9] & 0x1;
+			parm->action.bRtAccelEna_Action = (ptbl.val[9] >> 1) & 0x1;
+			parm->action.bRtInnerIPasKey_Action = (ptbl.val[9] >> 2) & 0x1;
 
-				if ((ptbl.val[9] >> 3) & 0x1)
-					parm->action.bRtSrcIpMaskCmp_Action = 0;
-				else
-					parm->action.bRtSrcIpMaskCmp_Action = 1;
-
-				if ((ptbl.val[9] >> 4) & 0x1)
-					parm->action.bRtDstIpMaskCmp_Action = 0;
-				else
-					parm->action.bRtDstIpMaskCmp_Action = 1;
-
-				if ((ptbl.val[9] >> 5) & 0x1)
-					parm->action.bRtSrcPortMaskCmp_Action = 0;
-				else
-					parm->action.bRtSrcPortMaskCmp_Action = 1;
-
-				if ((ptbl.val[9] >> 6) & 0x1)
-					parm->action.bRtDstPortMaskCmp_Action = 0;
-				else
-					parm->action.bRtDstPortMaskCmp_Action = 1;
-
-				if (((ptbl.val[9] >> 8) & 0xFF) != 0xFF) {
-					parm->action.bRoutExtId_Action = 1;
-					parm->action.nRoutExtId = (ptbl.val[9] >> 8) & 0xFF;
-				}
-			}
-
-			/* Flow ID action value */
-			if ((ptbl.val[4] >> 4) & 0x1) {
-				parm->action.bFlowID_Action = 1;
-				parm->action.nFlowID = ptbl.val[1];
-			}
-		}
-
-		/* Trunk port, port link selection action value */
-		parm->action.bPortLinkSelection = (ptbl.val[5] >> 1) & 0x1;
-		parm->action.bPortTrunkAction = (ptbl.val[5] >> 0) & 0x1;
-
-		/* Cross VLAN action value */
-		if ((ptbl.val[0] >> 4) & 0x1) {
-			if ((ptbl.val[3] >> 15) & 0x1)
-				parm->action.eVLAN_CrossAction =
-					GSW_PCE_ACTION_CROSS_VLAN_CROSS;
+			if ((ptbl.val[9] >> 3) & 0x1)
+				parm->action.bRtSrcIpMaskCmp_Action = 0;
 			else
-				parm->action.eVLAN_CrossAction =
-					GSW_PCE_ACTION_CROSS_VLAN_REGULAR;
-		}
+				parm->action.bRtSrcIpMaskCmp_Action = 1;
 
-		/* Applicable for 3.0*/
-		if (gswdev->gipver == LTQ_GSWIP_3_0) {
-			parm->action.bPortBitMapMuxControl = (ptbl.val[6] >> 0) & 0x1;
+			if ((ptbl.val[9] >> 4) & 0x1)
+				parm->action.bRtDstIpMaskCmp_Action = 0;
+			else
+				parm->action.bRtDstIpMaskCmp_Action = 1;
 
-			if (parm->action.bPortBitMapMuxControl)
-				parm->action.nForwardPortMap[0] = ptbl.val[1];
+			if ((ptbl.val[9] >> 5) & 0x1)
+				parm->action.bRtSrcPortMaskCmp_Action = 0;
+			else
+				parm->action.bRtSrcPortMaskCmp_Action = 1;
 
-			if (((ptbl.val[5] >> 2) & 0x1) 	&& ((ptbl.val[0] >> 1) & 0x1))
-				parm->action.bCVLAN_Ignore_Control = 1;
+			if ((ptbl.val[9] >> 6) & 0x1)
+				parm->action.bRtDstPortMaskCmp_Action = 0;
+			else
+				parm->action.bRtDstPortMaskCmp_Action = 1;
 
-			if ((ptbl.val[0] >> 1) & 0x1) {
-				parm->action.eSVLAN_Action = 1;
-				parm->action.nSVLAN_Id = (ptbl.val[6] >> 4) & 0xFFF;
-				//parm->action.nFId = ((ptbl.val[2] >> 8) & 0xFF);
-			}
-
-			if ((ptbl.val[0] >> 1) & 0x1) { //Govind - 3.0 same flag for both eVLAN_Action n eSVLAN_Action?
-				parm->action.eVLAN_Action = 1;
-				parm->action.nVLAN_Id = (ptbl.val[5] >> 4) & 0xFFF;
-				parm->action.nFId = ((ptbl.val[2] >> 8) & 0xFF);
+			if (((ptbl.val[9] >> 8) & 0xFF) != 0xFF) {
+				parm->action.bRoutExtId_Action = 1;
+				parm->action.nRoutExtId = (ptbl.val[9] >> 8) & 0xFF;
 			}
 		}
 
-		//Extended VLAN tagging action.
-		if (IS_VRSN_31(gswdev->gipver)) {
-			if ((ptbl.val[6] >> 3) & 0x1) {
-				parm->action.bExtendedVlanEnable = 1; //Enable extended VLAN tagging.
-				parm->action.nExtendedVlanBlockId = (ptbl.val[6] >> 4) & 0x3FF;
+		/* Flow ID action value */
+		if ((ptbl.val[4] >> 4) & 0x1) {
+			parm->action.bFlowID_Action = 1;
+			parm->action.nFlowID = ptbl.val[1];
+		}
+	}
+
+	/* Trunk port, port link selection action value */
+	parm->action.bPortLinkSelection = (ptbl.val[5] >> 1) & 0x1;
+	parm->action.bPortTrunkAction = (ptbl.val[5] >> 0) & 0x1;
+
+	/* Cross VLAN action value */
+	if ((ptbl.val[0] >> 4) & 0x1) {
+		if ((ptbl.val[3] >> 15) & 0x1)
+			parm->action.eVLAN_CrossAction =
+				GSW_PCE_ACTION_CROSS_VLAN_CROSS;
+		else
+			parm->action.eVLAN_CrossAction =
+				GSW_PCE_ACTION_CROSS_VLAN_REGULAR;
+	}
+
+	/* Applicable for 3.0*/
+	if (gswdev->gipver == LTQ_GSWIP_3_0) {
+		parm->action.bPortBitMapMuxControl = (ptbl.val[6] >> 0) & 0x1;
+
+		if (parm->action.bPortBitMapMuxControl)
+			parm->action.nForwardPortMap[0] = ptbl.val[1];
+
+		if (((ptbl.val[5] >> 2) & 0x1) 	&& ((ptbl.val[0] >> 1) & 0x1))
+			parm->action.bCVLAN_Ignore_Control = 1;
+
+		if ((ptbl.val[0] >> 1) & 0x1) {
+			parm->action.eSVLAN_Action = 1;
+			parm->action.nSVLAN_Id = (ptbl.val[6] >> 4) & 0xFFF;
+			//parm->action.nFId = ((ptbl.val[2] >> 8) & 0xFF);
+		}
+
+		if ((ptbl.val[0] >> 1) & 0x1) { //Govind - 3.0 same flag for both eVLAN_Action n eSVLAN_Action?
+			parm->action.eVLAN_Action = 1;
+			parm->action.nVLAN_Id = (ptbl.val[5] >> 4) & 0xFFF;
+			parm->action.nFId = ((ptbl.val[2] >> 8) & 0xFF);
+		}
+	}
+
+	//Extended VLAN tagging action.
+	if (IS_VRSN_31(gswdev->gipver)) {
+		if ((ptbl.val[6] >> 3) & 0x1) {
+			parm->action.bExtendedVlanEnable = 1; //Enable extended VLAN tagging.
+			parm->action.nExtendedVlanBlockId = (ptbl.val[6] >> 4) & 0x3FF;
+		}
+	}
+
+	/* Applicable for 3.0*/
+	if (IS_VRSN_NOT_31(gswdev->gipver)) {
+		if ((ptbl.val[0] >> 12) & 0x1) {
+			parm->action.bRMON_Action = 1;
+			parm->action.nRMON_Id = (((ptbl.val[4] >> 8) & 0x1F) - 1);
+		}
+
+		if ((ptbl.val[0] >> 11) & 0x1) {
+			parm->action.eMeterAction = (ptbl.val[3] >> 6) & 0x3;
+			parm->action.nMeterId = ptbl.val[3] & 0x1F;
+		}
+
+		if (!((ptbl.val[3] >> 13) & 0x1))
+			parm->action.bRemarkClass = 1;
+
+		if (!((ptbl.val[3] >> 12) & 0x1))
+			parm->action.bRemarkDSCP = 1;
+
+		if (!((ptbl.val[6] >> 2) & 0x1))
+			parm->action.bRemarkSTAG_DEI = 1;
+
+		if (!((ptbl.val[6] >> 1) & 0x1))
+			parm->action.bRemarkSTAG_PCP = 1;
+
+		if (!((ptbl.val[3] >> 14) & 0x1))
+			parm->action.bRemarkPCP = 1;
+
+		if ((ptbl.val[0] >> 3) & 0x1)
+			parm->action.bRemarkAction = 1;
+
+		if ((ptbl.val[0] >> 6) & 0x1) {
+			if ((ptbl.val[4] >> 14) & 0x1)
+				parm->action.eCritFrameAction =
+					GSW_PCE_ACTION_CRITICAL_FRAME_CRITICAL;
+			else
+				parm->action.eCritFrameAction =
+					GSW_PCE_ACTION_CRITICAL_FRAME_REGULAR;
+		}
+	}
+
+	/* RMON counter action value */
+	if (IS_VRSN_31(gswdev->gipver)) {
+		if ((ptbl.val[4] >> 4) & 0x1) {
+			parm->action.bRMON_Action = parm->action.bFlowID_Action = 1;
+			parm->action.nRMON_Id = parm->action.nFlowID =
+							ptbl.val[1] & 0xFF;
+		}
+
+		/* Metering and counter action value */
+		if ((ptbl.val[0] >> 11) & 0x1) {
+			if ((ptbl.val[3] >> 7) & 0x1) {
+				parm->action.eMeterAction = GSW_PCE_ACTION_METER_1;
+				parm->action.nMeterId = ptbl.val[3] & 0x7F;
+			} else {
+				parm->action.eMeterAction = GSW_PCE_ACTION_METER_REGULAR;
 			}
 		}
 
-		/* Applicable for 3.0*/
-		if (IS_VRSN_NOT_31(gswdev->gipver)) {
-			if ((ptbl.val[0] >> 12) & 0x1) {
-				parm->action.bRMON_Action = 1;
-				parm->action.nRMON_Id = (((ptbl.val[4] >> 8) & 0x1F) - 1);
-			}
-
-			if ((ptbl.val[0] >> 11) & 0x1) {
-				parm->action.eMeterAction = (ptbl.val[3] >> 6) & 0x3;
-				parm->action.nMeterId = ptbl.val[3] & 0x1F;
-			}
-
-			if (!((ptbl.val[3] >> 13) & 0x1))
-				parm->action.bRemarkClass = 1;
-
-			if (!((ptbl.val[3] >> 12) & 0x1))
-				parm->action.bRemarkDSCP = 1;
-
-			if (!((ptbl.val[6] >> 2) & 0x1))
-				parm->action.bRemarkSTAG_DEI = 1;
-
-			if (!((ptbl.val[6] >> 1) & 0x1))
-				parm->action.bRemarkSTAG_PCP = 1;
-
-			if (!((ptbl.val[3] >> 14) & 0x1))
-				parm->action.bRemarkPCP = 1;
-
-			if ((ptbl.val[0] >> 3) & 0x1)
-				parm->action.bRemarkAction = 1;
-
-			if ((ptbl.val[0] >> 6) & 0x1) {
-				if ((ptbl.val[4] >> 14) & 0x1)
-					parm->action.eCritFrameAction =
-						GSW_PCE_ACTION_CRITICAL_FRAME_CRITICAL;
-				else
-					parm->action.eCritFrameAction =
-						GSW_PCE_ACTION_CRITICAL_FRAME_REGULAR;
-			}
+		/* FID action control */
+		if ((ptbl.val[5] >> 3) & 0x1) {
+			parm->action.bFidEnable = 1;
+			parm->action.nFId = (ptbl.val[2] >> 8) & 0x3F;
 		}
+	}
 
-		/* RMON counter action value */
-		if (IS_VRSN_31(gswdev->gipver)) {
-			if ((ptbl.val[4] >> 4) & 0x1) {
-				parm->action.bRMON_Action = parm->action.bFlowID_Action = 1;
-				parm->action.nRMON_Id = parm->action.nFlowID =
-								ptbl.val[1] & 0xFF;
-			}
+	/* Applicable for 3.1*/
+	if (IS_VRSN_31(gswdev->gipver)) {
+		if (ptbl.val[0] & 0x1) { //If port-map action set.
+			if (!(ptbl.val[10]) && !(ptbl.val[11]) && !(ptbl.val[12]) &&
+			    !(ptbl.val[13]) && !(ptbl.val[14]) && !(ptbl.val[15]) &&
+			    !(ptbl.val[16]) && !(ptbl.val[17])) {
+				//If port-map IDs not set.
+				if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
+					//If port-map type is 'tflow'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_DISCARD;
+				} else if (((ptbl.val[4] >> 2) & 0x3) == 0x0) {
+					//If port-map type is 'default'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_REGULAR;
+				}
+			} else if (((ptbl.val[10]) || (ptbl.val[11]) || (ptbl.val[12])) ||
+				   ((ptbl.val[13]) || (ptbl.val[14]) || (ptbl.val[15])) ||
+				   ((ptbl.val[16]) || (ptbl.val[17]))) {
+				/* It is 'traffic-flow' portmap type */
+				for (i = 0; i <= 7; i++)
+					parm->action.nForwardPortMap[i] = ptbl.val[i + 10];
 
-			/* Metering and counter action value */
-			if ((ptbl.val[0] >> 11) & 0x1) {
-				if ((ptbl.val[3] >> 7) & 0x1) {
-					parm->action.eMeterAction = GSW_PCE_ACTION_METER_1;
-					parm->action.nMeterId = ptbl.val[3] & 0x7F;
-				} else {
-					parm->action.eMeterAction = GSW_PCE_ACTION_METER_REGULAR;
+				if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
+					//If port-map type is 'tflow'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_ALTERNATIVE;
+				} else if (((ptbl.val[4] >> 2) & 0x3) == 0x1) {
+					//If port-map type is 'MC router'.
+					parm->action.ePortMapAction =
+						GSW_PCE_ACTION_PORTMAP_CPU;
 				}
 			}
+		}
+	}
 
-			/* FID action control */
-			if ((ptbl.val[5] >> 3) & 0x1) {
-				parm->action.bFidEnable = 1;
-				parm->action.nFId = (ptbl.val[2] >> 8) & 0x3F;
+	/* Color action */
+	if (IS_VRSN_31(gswdev->gipver)) {
+		if ((ptbl.val[0] >> 6) & 0x1) {
+			if ((ptbl.val[2] & 0x7) < 4) {
+				parm->action.eColorFrameAction =
+					GSW_PCE_ACTION_COLOR_FRAME_NO_CHANGE;
+			} else {
+				parm->action.eColorFrameAction = (ptbl.val[2] & 0x7) - 2;
 			}
 		}
+	}
 
-		/* Applicable for 3.1*/
-		if (IS_VRSN_31(gswdev->gipver)) {
-			if (ptbl.val[0] & 0x1) { //If port-map action set.
-				if (!(ptbl.val[10]) && !(ptbl.val[11]) && !(ptbl.val[12]) &&
-				    !(ptbl.val[13]) && !(ptbl.val[14]) && !(ptbl.val[15]) &&
-				    !(ptbl.val[16]) && !(ptbl.val[17])) {
-					//If port-map IDs not set.
-					if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
-						//If port-map type is 'tflow'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_DISCARD;
-					} else if (((ptbl.val[4] >> 2) & 0x3) == 0x0) {
-						//If port-map type is 'default'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_REGULAR;
-					}
-				} else if (((ptbl.val[10]) || (ptbl.val[11]) || (ptbl.val[12])) ||
-					   ((ptbl.val[13]) || (ptbl.val[14]) || (ptbl.val[15])) ||
-					   ((ptbl.val[16]) || (ptbl.val[17]))) {
-					/* It is 'traffic-flow' portmap type */
-					for (i = 0; i <= 7; i++)
-						parm->action.nForwardPortMap[i] = ptbl.val[i + 10];
-
-					if (((ptbl.val[4] >> 2) & 0x3) == 0x3) {
-						//If port-map type is 'tflow'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_ALTERNATIVE;
-					} else if (((ptbl.val[4] >> 2) & 0x3) == 0x1) {
-						//If port-map type is 'MC router'.
-						parm->action.ePortMapAction =
-							GSW_PCE_ACTION_PORTMAP_CPU;
-					}
-				}
-			}
-		}
-
-		/* Color action */
-		if (IS_VRSN_31(gswdev->gipver)) {
-			if ((ptbl.val[0] >> 6) & 0x1) {
-				if ((ptbl.val[2] & 0x7) < 4) {
-					parm->action.eColorFrameAction =
-						GSW_PCE_ACTION_COLOR_FRAME_NO_CHANGE;
-				} else {
-					parm->action.eColorFrameAction = (ptbl.val[2] & 0x7) - 2;
-				}
-			}
-		}
-		if (IS_VRSN_30_31(gswdev->gipver)) {
+	if (IS_VRSN_30_31(gswdev->gipver)) {
 
 		/* TS action control */
 		if ((ptbl.val[0] >> 7) & 0x1) {
@@ -2295,33 +2301,33 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		} else
 			parm->action.eIrqAction = GSW_PCE_ACTION_IRQ_DISABLE;
 
-		}
+	}
 
 
-		/* MAC learning action control */
-		if ((ptbl.val[0] >> 9) & 0x1) {
-			if (((ptbl.val[4]) & 0x3) == 0)
-				parm->action.eLearningAction = GSW_PCE_ACTION_LEARNING_REGULAR;
-			else if (((ptbl.val[4]) & 0x3) == 1)
-				parm->action.eLearningAction = GSW_PCE_ACTION_LEARNING_DISABLE;
-			else
-				parm->action.eLearningAction = (ptbl.val[4]) & 0x3;
-		}
+	/* MAC learning action control */
+	if ((ptbl.val[0] >> 9) & 0x1) {
+		if (((ptbl.val[4]) & 0x3) == 0)
+			parm->action.eLearningAction = GSW_PCE_ACTION_LEARNING_REGULAR;
+		else if (((ptbl.val[4]) & 0x3) == 1)
+			parm->action.eLearningAction = GSW_PCE_ACTION_LEARNING_DISABLE;
+		else
+			parm->action.eLearningAction = (ptbl.val[4]) & 0x3;
+	}
 
-		/* IGMP snooping action control */
-		if ((ptbl.val[0] >> 10) & 0x1)
-			parm->action.eSnoopingTypeAction = ((ptbl.val[4] >> 5) & 0x7) + 1;
+	/* IGMP snooping action control */
+	if ((ptbl.val[0] >> 10) & 0x1)
+		parm->action.eSnoopingTypeAction = ((ptbl.val[4] >> 5) & 0x7) + 1;
 
-		/* Traffic class action control */
-		if ((ptbl.val[0] >> 2) & 1) {
-			if ((ptbl.val[0] >> 14) & 1) {
-				parm->action.eTrafficClassAction =
-					GSW_PCE_ACTION_TRAFFIC_CLASS_ALTERNATIVE;
-				parm->action.nTrafficClassAlternate = (ptbl.val[3] >> 8) & 0xF;
-			} else
-				parm->action.eTrafficClassAction =
-					GSW_PCE_ACTION_TRAFFIC_CLASS_REGULAR;
-		}
+	/* Traffic class action control */
+	if ((ptbl.val[0] >> 2) & 1) {
+		if ((ptbl.val[0] >> 14) & 1) {
+			parm->action.eTrafficClassAction =
+				GSW_PCE_ACTION_TRAFFIC_CLASS_ALTERNATIVE;
+			parm->action.nTrafficClassAlternate = (ptbl.val[3] >> 8) & 0xF;
+		} else
+			parm->action.eTrafficClassAction =
+				GSW_PCE_ACTION_TRAFFIC_CLASS_REGULAR;
+	}
 
 	/* Inner CoS & DEI field value for 3.0 */
 	if (IS_VRSN_NOT_31(gswdev->gipver)) {
@@ -2469,16 +2475,16 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			parm->pattern.nParserFlagMSB = flags_tbl.parser_flag_data;
 			parm->pattern.nParserFlagMSB_Mask = flags_tbl.mask_value;
 		}
-		
+
 		/* Payload1 field table */
 		if (ptable->payload1_idx != 0xFF) { //Is table enabled?
 			payload_tbl_t payload_tbl;
 			memset(&payload_tbl, 0, sizeof(payload_tbl_t));
-		
+
 			if (0 != pce_tm_payload_tbl_read(&pthandle->pce_sub_tbl,
 							 ptable->payload1_idx, &payload_tbl))
 				GSW_RETURN_PCE;
-		
+
 			/* Destination Application used */
 			parm->pattern.bPayload1_SrcEnable = 1;
 			/* Destination Application field */
@@ -2488,16 +2494,16 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 			/* Payload	mask/range */
 			parm->pattern.nPayload1_Mask = payload_tbl.mask_range;
 		}
-		
+
 		/* Payload2 field table */
 		if (ptable->payload2_idx != 0xFF) { //Is table enabled?
 			payload_tbl_t payload_tbl;
 			memset(&payload_tbl, 0, sizeof(payload_tbl_t));
-		
+
 			if (0 != pce_tm_payload_tbl_read(&pthandle->pce_sub_tbl,
 							 ptable->payload2_idx, &payload_tbl))
 				GSW_RETURN_PCE;
-		
+
 			/* Destination Application used */
 			parm->pattern.bPayload2_SrcEnable = 1;
 			/* Destination Application field */
@@ -3026,18 +3032,18 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	}
 
 	if (IS_VRSN_30_31(gswdev->gipver)) {
-	/* OAM and Extraction flags field table */
-	if (((ptbl.val[8] >> 3) & 0x1) || ((ptbl.val[7] >> 8) & 0x1)) {
-		/*OAM flag*/
-		if ((ptbl.val[8] >> 3) & 0x1) {
-			parm->action.bOamEnable = 1;
-			/*OAM and extraction packet control*/
-			parm->action.nRecordId = ((ptbl.val[8] >> 4) & 0xFFF);
-		}
+		/* OAM and Extraction flags field table */
+		if (((ptbl.val[8] >> 3) & 0x1) || ((ptbl.val[7] >> 8) & 0x1)) {
+			/*OAM flag*/
+			if ((ptbl.val[8] >> 3) & 0x1) {
+				parm->action.bOamEnable = 1;
+				/*OAM and extraction packet control*/
+				parm->action.nRecordId = ((ptbl.val[8] >> 4) & 0xFFF);
+			}
 
-		/*Extraction flag*/
-		if ((ptbl.val[7] >> 8) & 0x1) {
-			parm->action.bExtractEnable = 1;
+			/*Extraction flag*/
+			if ((ptbl.val[7] >> 8) & 0x1) {
+				parm->action.bExtractEnable = 1;
 			}
 		}
 	}
@@ -3985,7 +3991,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 								    parm->pattern.nSLAN_Vid, 0, 0);
 			}
 		}
-		
+
 		ptable->svlan_idx = tindex;
 		ptbl.key[8] &= ~(0xFF << 8);
 		ptbl.key[8] |= (ptable->svlan_idx << 8);

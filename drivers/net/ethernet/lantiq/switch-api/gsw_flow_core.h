@@ -404,8 +404,8 @@ enum {
 	GOUT_IGMP0,
 	GOUT_IGMP1,
 //	GOUT_IPOFF,	/*39*/
-	GOUT_STAG0=61,
-	GOUT_STAG1=62,
+	GOUT_STAG0 = 61,
+	GOUT_STAG1 = 62,
 	GOUT_NONE	=	63,
 };
 
@@ -519,7 +519,7 @@ typedef enum {
 typedef enum {
 	LTQ_FLOW_DEV_INT	= 0,
 	LTQ_FLOW_DEV_INT_R	= 1,
-	LTQ_FLOW_DEV_EXT_AX3000_F24S = 2,	
+	LTQ_FLOW_DEV_EXT_AX3000_F24S = 2,
 	LTQ_FLOW_DEV_MAX
 } gsw_devtype_t;
 
