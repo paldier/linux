@@ -16,6 +16,57 @@
 #include <linux/netdevice.h>
 #endif
 
+typedef enum  {
+	/* Adaption layer does not insert FCS */
+	TX_FCS_NO_INSERT = 0,
+	/* Adaption layer insert FCS */
+	TX_FCS_INSERT,
+	/* Reserved 1 */
+	TX_FCS_RES1,
+	/* Reserved 2 */
+	TX_FCS_RES2,
+	/* FDMA does not remove FCS */
+	TX_FCS_NO_REMOVE,
+	/* FDMA remove FCS */
+	TX_FCS_REMOVE,
+	/* Reserved 3 */
+	TX_FCS_RES3,
+	/* Reserved 4 */
+	TX_FCS_RES4,
+	/* Packet does not have special tag and special tag is not removed */
+	TX_SPTAG_NOTAG,
+	/* Packet has special tag and special tag is replaced */
+	TX_SPTAG_REPLACE,
+	/* Packet has special tag and special tag is not removed */
+	TX_SPTAG_KEEP,
+	/* Packet has special tag ans special tag is removed */
+	TX_SPTAG_REMOVE,
+	/* Packet does not have FCS and FCS is not removed */
+	RX_FCS_NOFCS,
+	/* Reserved */
+	RX_FCS_RES,
+	/* Packet has FCS and FCS is not removed */
+	RX_FCS_NO_REMOVE,
+	/* Packet has FCS and FCS is removed */
+	RX_FCS_REMOVE,
+	/* Packet does not have time stamp and time stamp is not inserted */
+	RX_TIME_NOTS,
+	/* Packet does not have time stamp and time stamp is inserted */
+	RX_TIME_INSERT,
+	/* Packet has time stamp and time stamp is not inserted */
+	RX_TIME_NO_INSERT,
+	/* Reserved */
+	RX_TIME_RES,
+	/* Packet does not have special tag and special tag is not inserted. */
+	RX_SPTAG_NOTAG,
+	/* Packet does not have special tag and special tag is inserted. */
+	RX_SPTAG_INSERT,
+	/* Packet has special tag and special tag is not inserted. */
+	RX_SPTAG_NO_INSERT,
+	/* Reserved */
+	RX_SPTAG_RES,
+} MAC_OPER_CFG;
+
 struct mac_ops {
 	/* This function Sets the Flow Ctrl operation in Both XGMAC and LMAC.
 	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
@@ -432,6 +483,12 @@ struct mac_ops {
 	 * return	OUT	int -	Success/Fail
 	 */
 	int (*mac_int_dis)(void *);
+	/* This sequence is used for Configuring Mac operation
+	 * param[in/out]IN:	ops -	MAC ops Struct registered for MAC 0/1/2.
+	 * param[in/out]IN:	MAC_OP_CFG - operation to perform
+	 * return	OUT	int -	Success/Fail
+	 */
+	int (*mac_op_cfg)(void *, MAC_OPER_CFG);
 };
 
 #endif

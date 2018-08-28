@@ -1846,6 +1846,8 @@ static void rx_dbg_zero_port(struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 			 "Recv Data");
 }
 
+#define DP_TS_HDRLEN	10
+
 static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 {
 	int res = DP_SUCCESS;
@@ -1930,6 +1932,19 @@ static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 			ops->do_rx_hwts(ops, skb);
 	}
 #endif
+
+	/* PON traffic always have timestamp attached to it,
+	 * if PTP enabled for PON,  Format: MAC_HDR, Data, TS_PON 
+	 * use PON Timestamp for Rx Timestamp, Stripping of 10 bytes will be 
+	 * done by Xgmac ptp
+	 * if PTP disabled for PON, Format: MAC_HDR, Data, TS_PON, 
+	 * remove PON Timestamp in datapath
+         */
+	if(dp_port->alloc_flags & (DP_F_GPON | DP_F_EPON) && !dp_port->f_ptp) {
+		/* Stripping of last 10 bytes timestamp */
+		__pskb_trim(skb, skb->len - DP_TS_HDRLEN);		
+	}
+	
 	rx_fn = dp_port->cb.rx_fn;
 	if (likely(rx_fn && dp_port->status)) {
 		/*Clear some fields as SWAS V3.7 required */

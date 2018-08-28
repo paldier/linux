@@ -613,6 +613,64 @@ int mac_get_mtu(void *pdev)
 	return mtu;
 }
 
+int mac_oper_cfg(void *pdev, MAC_OPER_CFG oper)
+{
+
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	u32 mode;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->mac_lock);
+#endif
+	mode = oper % 4;
+
+	switch (oper) {
+	case TX_FCS_NO_INSERT:
+	case TX_FCS_INSERT:
+		gswss_set_mac_txfcs_ins_op(pdev, mode);
+		break;
+
+	case TX_FCS_NO_REMOVE:
+	case TX_FCS_REMOVE:
+		gswss_set_mac_txfcs_rm_op(pdev, mode);
+		break;
+
+	case TX_SPTAG_KEEP:
+	case TX_SPTAG_NOTAG:
+	case TX_SPTAG_REMOVE:
+	case TX_SPTAG_REPLACE:
+		gswss_set_mac_txsptag_op(pdev, mode);
+		break;
+
+	case RX_FCS_NOFCS:
+	case RX_FCS_NO_REMOVE:
+	case RX_FCS_REMOVE:
+		gswss_set_mac_rxfcs_op(pdev, mode);
+		break;
+
+	case RX_TIME_INSERT:
+	case RX_TIME_NOTS:
+	case RX_TIME_NO_INSERT:
+		gswss_set_mac_rxtime_op(pdev, mode);
+		break;
+
+	case RX_SPTAG_INSERT:
+	case RX_SPTAG_NOTAG:
+	case RX_SPTAG_NO_INSERT:
+		gswss_set_mac_rxsptag_op(pdev, mode);
+		break;
+
+	default:
+		break;
+	}
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->mac_lock);
+#endif
+
+	return 0;
+}
+
 static int mac_set_rxcrccheck(void *pdev, u8 disable)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
@@ -1341,4 +1399,6 @@ void mac_init_fn_ptrs(struct mac_ops *mac_op)
 	mac_op->IRQ_Enable = mac_irq_event_enable;
 	mac_op->IRQ_Register = mac_irq_register;
 	mac_op->IRQ_UnRegister = mac_irq_unregister;
+
+	mac_op->mac_op_cfg = mac_oper_cfg;
 }

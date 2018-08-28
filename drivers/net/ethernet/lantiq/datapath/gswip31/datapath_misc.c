@@ -768,7 +768,6 @@ static int dp_platform_set(int inst, u32 flag)
 }
 
 #define DP_GSWIP_CRC_DISABLE 1
-#define DP_GSWIP_FCS_DISABLE 0
 #define DP_GSWIP_FLOW_CTL_DISABLE 4
 static int pon_config(int inst, int ep, struct dp_port_data *data, u32 flags)
 {
@@ -806,7 +805,14 @@ static int pon_config(int inst, int ep, struct dp_port_data *data, u32 flags)
 
 	/* Disables RX/TX Flow control */
 	mac_ops->set_flow_ctl(mac_ops, DP_GSWIP_FLOW_CTL_DISABLE);
-	mac_ops->set_sptag(mac_ops, SPTAG_MODE_REPLACE);
+
+	/* Replace Tx Special Tag Byte 2 & Byte 3 with packet length */
+	mac_ops->mac_op_cfg(mac_ops, TX_SPTAG_REPLACE);
+
+	/* Indicate GSWIP that packet coming from PON have timestamp
+	 * In acceleration path, GSWIP can remove the timestamp
+	 */
+	mac_ops->mac_op_cfg(mac_ops, RX_TIME_NO_INSERT);
 
 	return 0;
 }

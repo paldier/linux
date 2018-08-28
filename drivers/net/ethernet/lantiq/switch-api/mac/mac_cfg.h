@@ -61,5 +61,6 @@ int mac_irq_unregister(void *pdev, GSW_Irq_Op_t *irq);
 int mac_int_enable(void *pdev);
 int mac_int_disable(void *pdev);
 
+int mac_oper_cfg(void *pdev, MAC_OPER_CFG oper);
 #endif
 
