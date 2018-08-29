@@ -17,14 +17,7 @@
 
 #define XRX200_GPHY_FW_ALIGN	(16 * 1024)
 /* GPHY related */
-struct reset_control *phy_rst;
 static int g_xway_gphy_fw_loaded;
-
-#define RCU_RD_GPHY2_XRX500 BIT(29)
-#define RCU_RD_GPHY3_XRX500 BIT(28)
-#define RCU_RD_GPHY4_XRX500 BIT(26)
-#define RCU_RD_GPHY5_XRX500 BIT(25)
-#define RCU_RD_GPHYF_XRX500 BIT(31)
 
 /* xRX500 gphy (GSW-L) registers */
 #define GPHY2_LBADR_XRX500     0x0228
@@ -39,25 +32,23 @@ static int g_xway_gphy_fw_loaded;
 #define GPHYF_MBADR_XRX500     0x026C
 
 /* reset / boot a gphy */
-static struct ltq_xrx500_gphy_reset {
-	       u32 rd;
-	       u32 addr;
-	} xrx500_gphy[] = {
-		       {RCU_RD_GPHY2_XRX500, GPHY2_LBADR_XRX500},
-		       {RCU_RD_GPHY3_XRX500, GPHY3_LBADR_XRX500},
-		       {RCU_RD_GPHY4_XRX500, GPHY4_LBADR_XRX500},
-		       {RCU_RD_GPHY5_XRX500, GPHY5_LBADR_XRX500},
-		       {RCU_RD_GPHYF_XRX500, GPHYF_LBADR_XRX500},
-		};
+static u32 xrx500_gphy[] = {
+	GPHY2_LBADR_XRX500,
+	GPHY3_LBADR_XRX500,
+	GPHY4_LBADR_XRX500,
+	GPHY5_LBADR_XRX500,
+	GPHYF_LBADR_XRX500,
+};
 
 #define GSW_L_TOP_BASE 0xBC003C00
-static void gsw_reg_w32(u32 val, u32 reg_off)
+static void gsw_reg_w32(u32 base, u32 val, u32 reg_off)
 {
-	ltq_w32(val, (void __iomem *)(GSW_L_TOP_BASE + reg_off));
+	ltq_w32(val, (void __iomem *)(base + reg_off));
 }
 
 /* reset and boot a gphy. these phys only exist on xrx200 SoC */
-int xrx500_gphy_boot(struct device *dev, unsigned int id, dma_addr_t dev_addr)
+int xrx500_gphy_boot(struct device *dev, struct reset_control *phy_rst,
+		     unsigned int id, dma_addr_t dev_addr)
 {
 	if (of_machine_is_compatible("lantiq,grx500")) {
 		if (id > 4) {
@@ -65,9 +56,10 @@ int xrx500_gphy_boot(struct device *dev, unsigned int id, dma_addr_t dev_addr)
 			return -EINVAL;
 		}
 		reset_control_assert(phy_rst);
-		gsw_reg_w32((dev_addr & 0xFFFF), xrx500_gphy[id].addr);
-		gsw_reg_w32(((dev_addr >> 16) & 0xFFFF),
-			    (xrx500_gphy[id].addr + 4));
+		gsw_reg_w32(GSW_L_TOP_BASE, (dev_addr & 0xFFFF),
+			    xrx500_gphy[id]);
+		gsw_reg_w32(GSW_L_TOP_BASE, ((dev_addr >> 16) & 0xFFFF),
+			    (xrx500_gphy[id] + 4));
 		reset_control_deassert(phy_rst);
 		dev_info(dev, "booting GPHY%u firmware at %X for GRX500\n",
 			 id, dev_addr);
@@ -120,6 +112,7 @@ static int xway_phy_fw_probe(struct platform_device *pdev)
 	unsigned char *phyids;
 	int i, ret = 0;
 	char phy_str[7];
+	struct reset_control *phy_rst;
 
 	fw_addr = xway_gphy_load(pdev);
 	if (!fw_addr)
@@ -135,7 +128,7 @@ static int xway_phy_fw_probe(struct platform_device *pdev)
 		phy_rst = devm_reset_control_get(&pdev->dev, phy_str);
 		if (IS_ERR(phy_rst))
 			return PTR_ERR(phy_rst);
-		ret = xrx500_gphy_boot(&pdev->dev, phyids[i], fw_addr);
+		ret = xrx500_gphy_boot(&pdev->dev, phy_rst, phyids[i], fw_addr);
 	}
 	if (!ret)
 		mdelay(100);
