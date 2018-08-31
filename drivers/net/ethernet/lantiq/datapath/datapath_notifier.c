@@ -40,6 +40,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
 	struct net_device *dev;
 	u8 *addr;
+	int i;
 	struct net_device *br_dev;
 	struct dp_dev *dp_dev;
 	struct br_info *br_info;
@@ -68,15 +69,9 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		return 0;
 	}
 	inst = dp_dev->inst;
-	vap = GET_VAP(dp_dev->ctp,
-		      dp_port_info[inst][dp_dev->ep].vap_offset,
-		      dp_port_info[inst][dp_dev->ep].vap_mask);
-	/* CPU Path MAC address handling via LINUX dev notifier
-	 * incase of re-direct bit set
-	 */
+	port = &dp_port_info[inst][dp_dev->ep];
 	switch (event) {
 	case NETDEV_GOING_DOWN:
-		port = &dp_port_info[inst][dp_dev->ep];
 		DP_DEBUG(DP_DBG_FLAG_NOTIFY,
 			 "%s%d %s%d %s%s %s%02x%02x%02x%02x%02x%02x\n",
 			 "Rem MAC with BP:",
@@ -85,13 +80,19 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 			 "MAC:", addr[0], addr[1], addr[2],
 			 addr[3], addr[4], addr[5]);
 		prop = &dp_port_prop[inst];
+		for (i = 0; i < MAX_SUBIFS; i++) {
+			if (port->subif_info[i].netif == dev) {
+				vap = i;
+				DP_DEBUG(DP_DBG_FLAG_NOTIFY, "vap:%d\n", vap);
+				port->subif_info[vap].fid = 0;
+			}
+		}
 		prop->info.dp_mac_reset(0,
 					dp_dev->fid,
 					dp_dev->inst,
 					addr);
 	break;
 	case NETDEV_CHANGEUPPER:
-		port = &dp_port_info[inst][dp_dev->ep];
 		dp_port_prop[inst].info.dp_mac_reset(0,
 						     dp_dev->fid,
 						     dp_dev->inst,
@@ -125,15 +126,20 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		br_info = dp_swdev_bridge_entry_lookup(br_dev->name, 0);
 		if (br_info) {
 			dp_dev->fid = br_info->fid;
-			port->subif_info[vap].fid = dp_dev->fid;
 		} else {
 			fid = dp_notif_br_alloc(br_dev);
 			if (fid > 0) {
 				dp_dev->fid = fid;
-				port->subif_info[vap].fid = dp_dev->fid;
 			} else {
 				PR_ERR("FID alloc failed in %s\r\n", __func__);
 				return 0;
+			}
+		}
+		for (i = 0; i < MAX_SUBIFS; i++) {
+			if (port->subif_info[i].netif == dev) {
+				vap = i;
+				DP_DEBUG(DP_DBG_FLAG_NOTIFY, "vap:%d\n", vap);
+				port->subif_info[vap].fid = dp_dev->fid;
 			}
 		}
  dev_status:
@@ -162,7 +168,6 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		}
 		break;
 	case NETDEV_UP:
-		port = &dp_port_info[inst][dp_dev->ep];
 		DP_DEBUG(DP_DBG_FLAG_NOTIFY,
 			 "%s%d %s%d %s%s %s%02x%02x%02x%02x%02x%02x\n",
 			 "ADD MAC with BP:",
