@@ -643,10 +643,14 @@ static int atm_init_atmarp(struct atm_vcc *vcc)
 	atmarpd = vcc;
 	set_bit(ATM_VF_META, &vcc->flags);
 	set_bit(ATM_VF_READY, &vcc->flags);
-	    /* allow replies and avoid getting closed if signaling dies */
+	/* allow replies and avoid getting closed if signaling dies */
 	vcc->dev = &atmarpd_dev;
 	vcc_insert_socket(sk_atm(vcc));
+#ifdef CONFIG_ATM_OAM
+	vcc->push_oam = push_oam;
+#else
 	vcc->push = NULL;
+#endif
 	vcc->pop = NULL; /* crash */
 	vcc->push_oam = NULL; /* crash */
 	rtnl_unlock();

@@ -146,6 +146,20 @@ void (*atm_hook_mpoa_setup)(struct atm_vcc *, int, int, struct net_device *) = N
 EXPORT_SYMBOL(atm_hook_mpoa_setup);
 #endif
 
+#ifdef CONFIG_ATM_OAM
+int (*push_oam_pfn)(struct atm_vcc *atmvcc, void *cell) = NULL;
+EXPORT_SYMBOL(push_oam_pfn);
+
+int push_oam(struct atm_vcc *atmvcc, void *cell)
+{
+	if (push_oam_pfn != NULL)
+		return push_oam_pfn(atmvcc, cell);
+	return -1;
+}
+EXPORT_SYMBOL(push_oam);
+#endif
+
+
 int vcc_create(struct net *net, struct socket *sock, int protocol, int family, int kern)
 {
 	struct sock *sk;
@@ -170,8 +184,11 @@ int vcc_create(struct net *net, struct socket *sock, int protocol, int family, i
 	atomic_set(&sk->sk_rmem_alloc, 0);
 	vcc->push = NULL;
 	vcc->pop = NULL;
-	vcc->owner = NULL;
+#ifdef CONFIG_ATM_OAM
+	vcc->push_oam = push_oam;
+#else
 	vcc->push_oam = NULL;
+#endif
 	vcc->release_cb = NULL;
 	vcc->vpi = vcc->vci = 0; /* no VCI/VPI yet */
 	vcc->atm_options = vcc->aal_options = 0;
