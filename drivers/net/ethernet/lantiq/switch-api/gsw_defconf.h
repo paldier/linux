@@ -54,6 +54,7 @@ int gsw_get_def_pce_qmap(struct core_ops *ops);
 int gsw_set_def_bypass_qmap(struct core_ops *ops, GSW_QoS_qMapMode_t q_map_mode);
 int gsw_get_def_bypass_qmap(struct core_ops *ops);
 int gsw_qos_def_config(struct core_ops *ops);
+int gsw_misc_config(struct core_ops *ops);
 
 int gsw_pmac_init_nondpu(void);
 int gsw_pmac_init_dpu(void);

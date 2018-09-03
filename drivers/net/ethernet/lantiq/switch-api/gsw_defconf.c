@@ -207,6 +207,26 @@ int gsw_get_def_bypass_qmap(struct core_ops *ops)
 	return 0;
 }
 
+int gsw_misc_config(struct core_ops *ops)
+{
+	GSW_register_t reg;
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
+	int i = 0;
+	
+	/* Ignore Undersized frames and forward to CPU for the MAC ports 
+	 * MAC logical ports start from 2
+	 */
+	for (i = 0; i < gswdev->pnum; i++) {
+		reg.nRegAddr = ((SDMA_PRIO_USIGN_OFFSET + (2*6)) + (i * 6));
+		ops->gsw_common_ops.RegisterGet(ops, &reg);
+
+		reg.nData |= (1 << SDMA_PRIO_USIGN_SHIFT);
+		ops->gsw_common_ops.RegisterSet(ops, &reg);
+	}
+
+	return 0;
+}
+
 /* Default Qos WRED Config in switch */
 int gsw_qos_def_config(struct core_ops *ops)
 {

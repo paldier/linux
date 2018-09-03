@@ -3104,6 +3104,7 @@ static GSW_return_t switch_core_init(void *cdev)
 		gsw_set_def_pce_qmap(cdev);
 		gsw_pmac_init_nondpu();
 		gsw_qos_def_config(cdev);
+		gsw_misc_config(cdev);
 #else
 
 		/*Emulation/PC tool*/
@@ -17176,7 +17177,7 @@ GSW_return_t GSW_CPU_PortCfgGet(void *cdev, GSW_CPU_PortCfg_t *parm)
 					goto UNLOCK_AND_RETURN;
 				}
 
-				parm->bFcsGenerate = ops->get_fcsgen(ops);
+				parm->bFcsTxOps = ops->get_fcsgen(ops);
 #endif
 			}
 		}
@@ -17309,7 +17310,7 @@ GSW_return_t GSW_CPU_PortCfgSet(void *cdev, GSW_CPU_PortCfg_t *parm)
 					goto UNLOCK_AND_RETURN;
 				}
 
-				ops->set_fcsgen(ops, 1);
+				ops->set_fcsgen(ops, parm->bFcsTxOps);
 #endif
 			}
 		}
