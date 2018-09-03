@@ -114,7 +114,8 @@ struct inst_info {
 				  struct dp_pmapper *mapper, u32 flag);
 	int (*dp_get_gsw_pmapper)(int inst, int bport, int lport,
 				  struct dp_pmapper *mapper, u32 flag);
-	int (*dp_ctp_tc_map_set)(struct dp_tc_cfg *tc, int flag);
+	int (*dp_ctp_tc_map_set)(struct dp_tc_cfg *tc, int flag,
+				 struct dp_meter_subif *mtr_subif);
 	int (*dp_meter_alloc)(int inst, int *meterid, int flag);
 	int (*dp_meter_add)(struct net_device *dev,
 			    struct dp_meter_cfg *meter, int flag,
@@ -157,7 +158,7 @@ struct inst_property {
 	struct inst_info info;
 	/*driver should know which HW to configure, esp for PCIe case */
 	struct core_ops *ops[DP_MAX_GSW_HANDLE];
-	struct mac_ops *mac_ops[DP_MAX_MAC_HANDLE];	
+	struct mac_ops *mac_ops[DP_MAX_MAC_HANDLE];
 	int cbm_inst;
 	int qos_inst;
 	void *priv_hal; /*private data per HAL */

@@ -2302,6 +2302,7 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 	int inst = 0;
 	int flag1 = 0;
 	struct dp_tc_cfg *tc;
+	struct dp_meter_subif mtr_subif = {0};
 
 	memset(&pmac_cfg, 0, sizeof(dp_pmac_cfg_t));
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
@@ -2357,12 +2358,24 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 		}
 		tc->dev = dev_get_by_name(&init_net, param_list[1]);
 		tc->tc = dp_atoi(param_list[2]);
+		flag1 = dp_atoi(param_list[3]);
 		if (tc->tc > 15) {
 			PR_ERR("traffic class value range 0-15 only\n");
-			goto exit;
+			kfree(tc);
+			return count;
 		}
 		tc->force = 0;
-		if (dp_port_prop[inst].info.dp_ctp_tc_map_set(tc, flag1))
+		if (dp_get_netif_subifid(tc->dev, NULL, NULL, NULL,
+					 &mtr_subif.subif, 0)) {
+			DP_DEBUG(DP_DBG_FLAG_DBG, "get subifid fail(%s)\n",
+				 tc->dev ? tc->dev->name : "NULL");
+			kfree(tc);
+			return count;
+		}
+		mtr_subif.inst =  mtr_subif.subif.inst;
+		if (dp_port_prop[mtr_subif.inst].info.
+				dp_ctp_tc_map_set(tc, flag1,
+						  &mtr_subif))
 			PR_ERR("ctp_tc_set fail\n");
 		else
 			PR_ERR("ctp_tc_set success\n");
@@ -2372,9 +2385,6 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 		goto help;
 	}
 
-	return count;
- exit:
-	kfree(tc);
 	return count;
  help:
 	PR_INFO("echo %s > /proc/dp/ep\n",
@@ -2390,7 +2400,7 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 		"egress [ep_port]",
 		"['rx_dmachan/fcs/pmac/res_dw1/res1_dw0/res2_dw0] [value]");
 	PR_INFO("echo egress [ep_port] ['rm_l2hdr'] [value] > /proc/dp/ep\n");
-	PR_INFO("echo ctp_tc [dev] [val] > /proc/dp/ep\n");
+	PR_INFO("echo ctp_tc [dev] [val] [flag] > /proc/dp/ep\n");
 	return count;
 }
 

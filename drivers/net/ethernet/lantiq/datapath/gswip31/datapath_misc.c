@@ -1325,31 +1325,32 @@ static int subif_platform_set_unexplicit(int inst, int port_id,
 	return 0;
 }
 
-static int ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
+static int dp_ctp_tc_map_set_31(struct dp_tc_cfg *tc, int flag,
+				struct dp_meter_subif *mtr_subif)
 {
-	struct dp_dev *dp_dev;
 	struct core_ops *gsw_handle;
 	GSW_CTP_portConfig_t ctp_tc_cfg;
-	dp_subif_t subif = {0};
 
 	memset(&ctp_tc_cfg, 0, sizeof(ctp_tc_cfg));
 
-	if (dp_get_netif_subifid(tc->dev, NULL, NULL, NULL, &subif, 0)) {
-		DP_DEBUG(DP_DBG_FLAG_DBG, "get subifid fail(%s)\n",
-			 tc->dev ? tc->dev->name : "NULL");
-	} else {
-	if (subif.flag_pmapper) {
+	if (!mtr_subif) {
+		PR_ERR("mtr_subif struct NULL\n");
+		return -1;
+	}
+	if (mtr_subif->subif.flag_pmapper) {
 		PR_ERR("Cannot support ctp tc set for pmmapper dev(%s)\n",
 		       tc->dev ? tc->dev->name : "NULL");
 		return -1;
 	}
-	gsw_handle = dp_port_prop[subif.inst].ops[GSWIP_L];
-	ctp_tc_cfg.nLogicalPortId = subif.port_id;
-	ctp_tc_cfg.nSubIfIdGroup = subif.subif;
+	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
+	ctp_tc_cfg.nLogicalPortId = mtr_subif->subif.port_id;
+	ctp_tc_cfg.nSubIfIdGroup = mtr_subif->subif.subif;
+		PR_ERR("Failed to get CTP info for ep=%d subif=%d\n",
+		       mtr_subif->subif.port_id, mtr_subif->subif.subif);
 	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigGet,
 			 gsw_handle, &ctp_tc_cfg) != 0) {
 		PR_ERR("Failed to get CTP info for ep=%d subif=%d\n",
-		       dp_dev->ep, dp_dev->ctp);
+		       mtr_subif->subif.port_id, mtr_subif->subif.subif);
 		return -1;
 	}
 	ctp_tc_cfg.eMask = GSW_CTP_PORT_CONFIG_MASK_FORCE_TRAFFIC_CLASS;
@@ -1362,9 +1363,9 @@ static int ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
 	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigSet,
 			 gsw_handle, &ctp_tc_cfg) != 0) {
 		PR_ERR("CTP tc set fail for ep=%d subif=%d tc=%d force=%d\n",
-		       dp_dev->ep, dp_dev->ctp, tc->tc, tc->force);
+		       mtr_subif->subif.port_id, mtr_subif->subif.subif,
+		       tc->tc, tc->force);
 		return -1;
-	}
 	}
 	return 0;
 }
@@ -1466,7 +1467,7 @@ int register_dp_cap_gswip31(int flag)
 	cap.info.dp_qos_platform_set = qos_platform_set;
 	cap.info.dp_set_gsw_pmapper = dp_set_gsw_pmapper_31;
 	cap.info.dp_get_gsw_pmapper = dp_get_gsw_pmapper_31;
-	cap.info.dp_ctp_tc_map_set = ctp_tc_map_set;
+	cap.info.dp_ctp_tc_map_set = dp_ctp_tc_map_set_31;
 	cap.info.dp_meter_alloc = dp_meter_alloc_31;
 	cap.info.dp_meter_add = dp_meter_add_31;
 	cap.info.dp_meter_del = dp_meter_del_31;
