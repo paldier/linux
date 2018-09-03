@@ -1933,9 +1933,14 @@ static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 	}
 #endif
 	/*PON traffic always have timestamp attached,removing Timestamp */
-	if (dp_port->alloc_flags & (DP_F_GPON | DP_F_EPON) && !dp_port->f_ptp) {
+	if (dp_port->alloc_flags & (DP_F_GPON | DP_F_EPON)) {
 		/* Stripping of last 10 bytes timestamp */
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+		if (!dp_port->f_ptp)
+			__pskb_trim(skb, skb->len - DP_TS_HDRLEN);
+#else
 		__pskb_trim(skb, skb->len - DP_TS_HDRLEN);
+#endif
 	}
 
 	rx_fn = dp_port->cb.rx_fn;
