@@ -7,6 +7,7 @@ to poll the sensor periodically.
 Required properties:
 - compatible:
   - "lantiq,ts-xrx500" for Lantiq GRX500 SoC
+  - "intel,ts-falconmx" for falcon mountain SoC
 
 - intel,syscon: phandle to syscon node
 
