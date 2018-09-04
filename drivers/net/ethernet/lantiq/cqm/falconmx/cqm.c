@@ -2063,7 +2063,11 @@ static s32 handle_dma_chnl_init(int port, u32 flags)
 	struct cqm_dqm_port_info *p_info;
 	int chan;
 
-	p_info = &dqm_port_info[port];
+	if (find_dqm_port_type(port) == DQM_PON_TYPE)
+		p_info = &dqm_port_info[DQM_PON_START_ID];
+	else
+		p_info = &dqm_port_info[port];
+
 	chan = p_info->dma_ch;
 	if (flags & CBM_PORT_F_DISABLE) {
 		if (chan)
