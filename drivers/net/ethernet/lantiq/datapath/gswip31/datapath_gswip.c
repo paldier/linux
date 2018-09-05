@@ -32,7 +32,6 @@
 	(br_cfg)->bSubMeteringEnable[(index)] = bflag; \
 	(br_cfg)->nTrafficSubMeterId[(index)] = id; })
 
-#define METER_INVALID 0xFFFF
 #define METER_CIR(cir)  ((cir) / 1000)
 #define METER_PIR(pir)  ((pir) / 1000)
 
@@ -1028,7 +1027,6 @@ int dp_meter_alloc_31(int inst, int *meterid, int flag)
 		return 0;
 	}
 	memset(&meter_cfg, 0, sizeof(meter_cfg));
-	meter_cfg.nMeterId = METER_INVALID;
 	ret = GSW_CORE_API(gsw_handle, gsw_qos_ops.QOS_MeterAlloc,
 			   &meter_cfg);
 	if ((ret != GSW_statusOk) || (meter_cfg.nMeterId < 0)) {
