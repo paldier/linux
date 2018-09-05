@@ -163,19 +163,24 @@ static int sso_gpio_gc_init(struct sso_gpio_priv *priv,
 static int sso_gpio_hw_init(struct sso_gpio_priv *priv)
 {
 	int i;
+	int err;
+	u32 activate;
 
 	/* Clear all duty cycles */
 	for (i = 0; i < priv->pins; i++) {
-		if (sso_gpio_writel(priv->mmap, DUTY_CYCLE(i), 0))
-			return -ENOTSUPP;
+		err = sso_gpio_writel(priv->mmap, DUTY_CYCLE(i), 0);
+		if (err)
+			return err;
 	}
 
 	/* 4 groups for total 32 pins */
 	for (i = 1; i <= MAX_GROUP_NUM; i++) {
-		if (i * PINS_PER_GROUP <= priv->pins ||
-		    priv->pins > (i - 1) * PINS_PER_GROUP)
-			if (sso_gpio_update_bit(priv->mmap, SSO_CON1, i - 1, 1))
-				return -ENOTSUPP;
+		activate = !!(i * PINS_PER_GROUP <= priv->pins ||
+			      priv->pins > (i - 1) * PINS_PER_GROUP);
+		err = sso_gpio_update_bit(priv->mmap, SSO_CON1, i - 1,
+					  activate);
+		if (err)
+			return err;
 	}
 
 	/* NO HW directly controlled pin by default */
