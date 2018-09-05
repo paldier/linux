@@ -121,6 +121,15 @@ sso_gpio_dir_out(struct gpio_chip *chip, unsigned int offset, int value)
 	return sso_gpio_update_bit(priv->mmap, SSO_CPU, offset, value);
 }
 
+static int sso_gpio_get(struct gpio_chip *chip, unsigned int offset)
+{
+	struct sso_gpio_priv *priv = gpiochip_get_data(chip);
+	u32 reg_val;
+
+	regmap_read(priv->mmap, SSO_CPU, &reg_val);
+	return !!(reg_val & BIT(offset));
+}
+
 static void sso_gpio_set(struct gpio_chip *chip, unsigned int offset, int value)
 {
 	struct sso_gpio_priv *priv = gpiochip_get_data(chip);
@@ -138,6 +147,7 @@ static int sso_gpio_gc_init(struct sso_gpio_priv *priv,
 	gc->free		= sso_gpio_free;
 	gc->get_direction	= sso_gpio_get_dir;
 	gc->direction_output	= sso_gpio_dir_out;
+	gc->get			= sso_gpio_get;
 	gc->set			= sso_gpio_set;
 
 	gc->label		= name;
