@@ -2378,7 +2378,7 @@ static ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 						  &mtr_subif))
 			PR_ERR("ctp_tc_set fail\n");
 		else
-			PR_ERR("ctp_tc_set success\n");
+			PR_INFO("ctp_tc_set success\n");
 		kfree(tc);
 	} else {
 		PR_INFO("wrong command\n");
