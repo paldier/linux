@@ -913,7 +913,7 @@ static const struct file_operations br2684_proc_ops = {
 extern struct proc_dir_entry *atm_proc_root;	/* from proc.c */
 #endif /* CONFIG_PROC_FS */
 
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 extern int32_t (*ppa_if_is_ipoa_fn)
 	(struct net_device *netdev, char *ifname);
 extern int32_t (*ppa_if_is_br2684_fn)
@@ -999,7 +999,7 @@ static int __init br2684_init(void)
 	register_atm_ioctl(&br2684_ioctl_ops);
 	register_atmdevice_notifier(&atm_dev_notifier);
 
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_if_is_br2684_fn = if_is_br2684;
 	ppa_if_is_ipoa_fn = if_is_ipoa;
 	ppa_br2684_get_vcc_fn = br2684_get_vcc;
@@ -1013,7 +1013,7 @@ static void __exit br2684_exit(void)
 	struct br2684_dev *brdev;
 	struct br2684_vcc *brvcc;
 
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_if_is_br2684_fn = NULL;
 	ppa_if_is_ipoa_fn = NULL;
 	ppa_br2684_get_vcc_fn = NULL;

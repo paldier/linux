@@ -1569,7 +1569,7 @@ static struct rtnl_link_ops ip6gre_tap_ops __read_mostly = {
 	.get_link_net	= ip6_tnl_get_link_net,
 };
 
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 extern uint32_t (*ppa_is_ipv6_gretap_fn)(struct net_device *dev);
 
 static u32 ppa_is_ipv6_gretap(struct net_device *dev)
@@ -1606,7 +1606,7 @@ static int __init ip6gre_init(void)
 	if (err < 0)
 		goto tap_ops_failed;
 
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_is_ipv6_gretap_fn = ppa_is_ipv6_gretap;
 #endif
 
@@ -1624,7 +1624,7 @@ add_proto_failed:
 
 static void __exit ip6gre_fini(void)
 {
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_is_ipv6_gretap_fn = NULL;
 #endif
 	rtnl_link_unregister(&ip6gre_tap_ops);

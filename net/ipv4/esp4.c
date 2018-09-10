@@ -128,7 +128,7 @@ static void esp_output_done_esn(struct crypto_async_request *base, int err)
 	esp_output_restore_header(skb);
 	esp_output_done(base, err);
 }
-#if defined(CONFIG_PPA_MPE_IP97)
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 int (*ltq_ipsec_enc_hook)(u32 spi, u16 ip_prot, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_complete *done),
 			unsigned int buflen, void *ip_data) = NULL;
 EXPORT_SYMBOL(ltq_ipsec_enc_hook);
@@ -472,7 +472,7 @@ static void esp_input_done_esn(struct crypto_async_request *base, int err)
 	esp_input_restore_header(skb);
 	esp_input_done(base, err);
 }
-#if defined(CONFIG_PPA_MPE_IP97)
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 int (*ltq_ipsec_dec_hook)(u32 spi, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_complete *done),
 		unsigned int buflen, void *ip_data) = NULL;
 

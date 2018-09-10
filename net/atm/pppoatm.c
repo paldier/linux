@@ -89,7 +89,7 @@ struct pppoatm_vcc {
 static const unsigned char pppllc[6] = { 0xFE, 0xFE, 0x03, 0xCF, 0xC0, 0x21 };
 #define LLC_LEN		(4)
 
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 enum {
 	PPA_PPPOA_GET_VCC = 1,
 	PPA_PPPOA_CHECK_IFACE,
@@ -523,7 +523,7 @@ static struct atm_ioctl pppoatm_ioctl_ops = {
 static int __init pppoatm_init(void)
 {
 	register_atm_ioctl(&pppoatm_ioctl_ops);
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_get_pppoa_info_fn = get_pppoa_info;
 #endif
 	return 0;
@@ -531,7 +531,7 @@ static int __init pppoatm_init(void)
 
 static void __exit pppoatm_exit(void)
 {
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_get_pppoa_info_fn = NULL;
 #endif
 	deregister_atm_ioctl(&pppoatm_ioctl_ops);

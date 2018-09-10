@@ -2587,7 +2587,7 @@ int __xfrm_policy_check(struct sock *sk, int dir, struct sk_buff *skb,
 		 * some barriers, but at the moment barriers
 		 * are implied between each two transformations.
 		 */
-#if defined(CONFIG_PPA_MPE_IP97)
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 		/*skip policy checks if MPE has already decrypted 
 		the packet, skb->DW1 is set to 0x30000 by DP*/
 		if( (skb->DW1 & 0x30000) ==  0x0) {
@@ -2607,7 +2607,7 @@ int __xfrm_policy_check(struct sock *sk, int dir, struct sk_buff *skb,
 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINTMPLMISMATCH);
 			goto reject;
 		}
-#if defined(CONFIG_PPA_MPE_IP97)
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 	}
 #endif
 		xfrm_pols_put(pols, npols);

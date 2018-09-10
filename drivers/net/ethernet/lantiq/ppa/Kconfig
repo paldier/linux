@@ -10,13 +10,6 @@ config PPA
 
 if PPA 
 
-config PPA_HAL_SELECTOR
-       bool "PPA HAL selector"
-       depends on PPA && SOC_GRX500 
-       default n
-       ---help---	
-       PPA hal selection logic enable
-
 config PPA_QOS
        bool "PPA Quality of Service"
        depends on PPA 
@@ -59,9 +52,23 @@ config PPA_TMU_MIB_SUPPORT
         help
             TMU HAL MIB APIs support
 
+config PPA_BR_MAC_LEARNING
+        bool "Bridge MAC learning"
+        depends on PPA
+        default n
+        help
+            Bridge MAC learning support for PPA
+
+config PPA_RT_SESS_LEARNING
+        bool "PPA routed session learning"
+        depends on PPA
+        default y
+        help
+            Routed session learning support for PPA
+
 config PPA_BR_SESS_LEARNING
         bool "Bridge session learning"
-        depends on PPA
+        depends on PPA_RT_SESS_LEARNING
         default n
         help
             Bridge session learning support for PPA
@@ -72,6 +79,13 @@ config PPA_MPE_IP97
          default n
          help
             INTEL PPA MPE IP97 Support
+
+config PPA_EXT_PKT_LEARNING
+        bool "External packet learning driver"
+        depends on LTQ_PON_ETH && !PPA_RT_SESS_LEARNING
+        default n
+        help
+            External packet learning driver support for PPA
 
 endif # PPA
 endmenu

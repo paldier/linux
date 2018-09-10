@@ -18,7 +18,7 @@
 #include <linux/spinlock.h>
 #include <net/dst.h>
 #include <net/xfrm.h>
-#if defined(CONFIG_PPA_MPE_IP97)
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 #include <net/ppa/ppa_api.h>
 #endif
 static int xfrm_output2(struct net *net, struct sock *sk, struct sk_buff *skb);
@@ -139,7 +139,7 @@ int xfrm_output_resume(struct sk_buff *skb, int err)
 	struct net *net = xs_net(skb_dst(skb)->xfrm);
 
 	while (likely((err = xfrm_output_one(skb, err)) == 0)) {
-#if defined(CONFIG_PPA_MPE_IP97)
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 		 if (ppa_hook_session_add_fn){
 #if IS_ENABLED(CONFIG_INTEL_IPQOS_ACCEL_DISABLE)
 		/* check for 13th bit in NFMARK set by IPQOS classifier */

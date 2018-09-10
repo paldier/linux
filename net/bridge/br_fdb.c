@@ -26,7 +26,7 @@
 #include <linux/if_vlan.h>
 #include <net/switchdev.h>
 #include "br_private.h"
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA_BR_MAC_LEARNING)
 #include <net/ppa/ppa_api.h>
 #endif
 
@@ -151,7 +151,7 @@ static void fdb_del_external_learn(struct net_bridge_fdb_entry *f)
 
 static void fdb_delete(struct net_bridge *br, struct net_bridge_fdb_entry *f)
 {
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA_BR_MAC_LEARNING)
 	if (ppa_hook_bridge_entry_delete_fn)
 		ppa_hook_bridge_entry_delete_fn(f->addr.addr, br->dev, 0);
 #endif
@@ -311,7 +311,7 @@ void br_fdb_cleanup(unsigned long _data)
 
 		hlist_for_each_entry_safe(f, n, &br->hash[i], hlist) {
 			unsigned long this_timer;
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA_BR_MAC_LEARNING)
 			if (ppa_hook_bridge_entry_hit_time_fn &&
 					!f->is_local) {
 				unsigned int last_hit_time;
@@ -611,7 +611,7 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
 				fdb_modified = true;
 			}
 			fdb->updated = jiffies;
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA_BR_MAC_LEARNING)
 			if (ppa_hook_bridge_entry_add_fn &&
 				source->dev)
 				ppa_hook_bridge_entry_add_fn(
@@ -637,7 +637,7 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
 		/* else  we lose race and someone else inserts
 		 * it first, don't bother updating
 		 */
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA_BR_MAC_LEARNING)
 		if (ppa_hook_bridge_entry_add_fn && source->dev)
 			ppa_hook_bridge_entry_add_fn(
 				(unsigned char *)addr, br->dev,
@@ -1213,32 +1213,3 @@ int br_fdb_external_learn_del(struct net_bridge *br, struct net_bridge_port *p,
 
 	return err;
 }
-
-
-#if ((defined(CONFIG_PPA_API) && CONFIG_PPA_API) || \
-		(defined(CONFIG_PPA_API_MODULE) && CONFIG_PPA_API_MODULE))
-int ppa_br_fdb_delete(struct net_device *dev, const unsigned char *addr)
-{
-	struct net_bridge_port *p;
-	int err = 0;
-
-	if (!dev) {
-		return -EINVAL;
-	}
-
-	p = br_port_get_rcu(dev);
-	if (!p) {
-		pr_info("bridge: %s not a bridge port\n",
-				dev->name);
-		return -EINVAL;
-	}
-
-	if (addr)
-		err = __br_fdb_delete(p, addr, 0);
-	else
-		br_fdb_delete_by_port(p->br, p, 1);
-
-	return err;
-}
-EXPORT_SYMBOL(ppa_br_fdb_delete);
-#endif

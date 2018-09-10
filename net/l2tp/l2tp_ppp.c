@@ -160,7 +160,7 @@ out:
 	return session;
 }
 
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 enum {
 	PPPOL2TP_GET_SESSION_ID = 1,
 	PPPOL2TP_GET_TUNNEL_ID,
@@ -2014,7 +2014,7 @@ static int __init pppol2tp_init(void)
 	if (err)
 		goto out_unregister_pppox;
 #endif
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_get_pppol2tp_info_fn = get_pppol2tp_info;
 #endif
 	pr_info("PPPoL2TP kernel driver, %s\n", PPPOL2TP_DRV_VERSION);
@@ -2035,7 +2035,7 @@ out_unregister_pppol2tp_pernet:
 
 static void __exit pppol2tp_exit(void)
 {
-#ifdef CONFIG_PPA
+#if IS_ENABLED(CONFIG_PPA)
 	ppa_get_pppol2tp_info_fn = NULL;
 #endif
 #ifdef CONFIG_L2TP_V3

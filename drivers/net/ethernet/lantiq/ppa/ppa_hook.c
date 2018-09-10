@@ -1,17 +1,20 @@
 /******************************************************************************
- *
- * Copyright (C) 2017-2018 Intel Corporation
- * Copyright (C) 2010-2016 Lantiq Beteiligungs-GmbH & Co. KG
- * Author  : Xu Liang
- * 
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * SPDX-License-Identifier: GPL-2.0
- *
+ **
+ ** FILE NAME 	: ppa_hook.c
+ ** PROJECT 	: PPA
+ ** MODULES 	: PPA Protocol Stack Hooks
+ **
+ ** DATE 	: 3 NOV 2008
+ ** AUTHOR 	: Xu Liang
+ ** DESCRIPTION : PPA Protocol Stack Hook Pointers
+ ** COPYRIGHT	: Copyright (c) 2017 - 2018 Intel Corporation
+ ** Copyright (c) 2010 - 2016 Lantiq Beteiligungs-GmbH & Co. KG
+ **
+ ** HISTORY
+ ** $Date $Author $Comment
+ ** 03 NOV 2008 Xu Liang Initiate Version
+ ** 20 SEP 2017 Eradath Kamal PPA leraning based on nf_hook is added
  *******************************************************************************/
-
 /*
  * ####################################
  * Version No.
@@ -93,6 +96,7 @@
  * ####################################
  */
 
+#if IS_ENABLED(CONFIG_PPA_RT_SESS_LEARNING)
 /**********************************************************************************************
  * PPA unicast routing hook function:ppa_hook_session_add_fn
  * It it used to check unicast routing session and if necessary, add it to PPE FW to acceleration this session.
@@ -106,12 +110,9 @@
  * ...
  **********************************************************************************************/
 int32_t (*ppa_hook_session_add_fn)(PPA_BUF *, PPA_SESSION *, uint32_t) = NULL;
+#if IS_ENABLED(CONFIG_PPA_BR_SESS_LEARNING)
 int32_t (*ppa_hook_session_bradd_fn)(PPA_BUF *, PPA_SESSION *, uint32_t) = NULL;
-
-#if defined(CONFIG_PPA_MPE_IP97)
-int32_t (*ppa_hook_session_ipsec_add_fn)(PPA_XFRM_STATE *, sa_direction) = NULL;
-int32_t (*ppa_hook_session_ipsec_del_fn)(PPA_XFRM_STATE *) = NULL;
-#endif
+#endif /*CONFIG_PPA_BR_SESS_LEARNING*/
 
 /**********************************************************************************************
  * PPA unicast routing hook function:ppa_hook_session_add_fn
@@ -122,6 +123,12 @@ int32_t (*ppa_hook_session_ipsec_del_fn)(PPA_XFRM_STATE *) = NULL;
  * ...
  **********************************************************************************************/
 int32_t (*ppa_hook_session_del_fn)(PPA_SESSION *, uint32_t) = NULL;
+#endif /*CONFIG_PPA_RT_SESS_LEARNING*/
+
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
+int32_t (*ppa_hook_session_ipsec_add_fn)(PPA_XFRM_STATE *, sa_direction) = NULL;
+int32_t (*ppa_hook_session_ipsec_del_fn)(PPA_XFRM_STATE *) = NULL;
+#endif
 
 /**********************************************************************************************
  * PPA session priority hook function:ppa_hook_session_prio_fn
@@ -164,6 +171,7 @@ int32_t (*ppa_hook_inactivity_status_fn)(PPA_U_SESSION *) = NULL;
  **********************************************************************************************/
 int32_t (*ppa_hook_set_inactivity_fn)(PPA_U_SESSION*, int32_t) = NULL;
 
+#if IS_ENABLED(CONFIG_PPA_BR_MAC_LEARNING)
 /**********************************************************************************************
  * PPA briding learning hook function:ppa_hook_bridge_entry_add_fn
  * It it used to add a bridging mac addresss into PPE FW.
@@ -203,6 +211,8 @@ int32_t (*ppa_hook_bridge_entry_delete_fn)(uint8_t *, PPA_NETIF *, uint32_t) = N
  **********************************************************************************************/
 int32_t (*ppa_hook_bridge_entry_hit_time_fn)(uint8_t *, PPA_NETIF *, uint32_t *) = NULL;
 
+#endif /*CONFIG_PPA_BR_MAC_LEARNING*/
+
 #if defined(PPA_IF_MIB) && PPA_IF_MIB
 /**********************************************************************************************
  * PPA mibs hook function:ppa_hook_get_accel_stats_fn
@@ -216,7 +226,7 @@ int32_t (*ppa_hook_bridge_entry_hit_time_fn)(uint8_t *, PPA_NETIF *, uint32_t *)
 int32_t (*ppa_hook_get_netif_accel_stats_fn)(PPA_IFNAME *, PPA_NETIF_ACCEL_STATS *, uint32_t) = NULL;
 #endif
 
-#if defined(CONFIG_PPA_API_DIRECTCONNECT) && CONFIG_PPA_API_DIRECTCONNECT
+#if IS_ENABLED(CONFIG_PPA_API_DIRECTCONNECT) && CONFIG_PPA_API_DIRECTCONNECT
 /**********************************************************************************************
  * PPA interface hook function:ppa_check_if_netif_fastpath_fn
  * It it used to check if network interface like, WAVE500, ACA is a fastpath interface
@@ -268,18 +278,6 @@ int32_t (*ppa_hook_directpath_register_dev_fn)(uint32_t *, PPA_NETIF *, PPA_DIRE
  * others: fail to register
  **********************************************************************************************/
 int32_t (*ppa_hook_directpath_ex_register_dev_fn)(PPA_SUBIF *, PPA_NETIF *, PPA_DIRECTPATH_CB *, uint32_t) = NULL;
-
-/**********************************************************************************************
- * PPA Extra ethernet interface hook function :ppa_hook_directlink_register_dev_fn, a wrap function of directpath registration for directlink
- * it is used to register/de-register a device for directlink support
- * output parameter int32_t *: return the virtual port id
- * input parameter PPA_DTLK_T *: directlink information
- * input parameter PPA_DIRECTPATH_CB *: mainly provide callback function, like start_tx_fn, stop_tx_fn, rx_fn
- * input parameter uint32_t: PPA_F_DIRECTPATH_REGISTER for register, otherwise for de-register
- * return: IFX_SUCCESS: register sucessfully
- * others: fail to register
- **********************************************************************************************/
-int32_t (*ppa_hook_directlink_register_dev_fn)(int32_t *, PPA_DTLK_T *, PPA_DIRECTPATH_CB *, uint32_t) = NULL;
 
 /**********************************************************************************************
  * PPA Extra interface hook function :ppa_hook_directpath_send_fn
@@ -360,65 +358,37 @@ PPA_SKBUF* (*ppa_hook_directpath_alloc_skb_fn)(PPA_SUBIF*, int32_t, uint32_t) = 
  **********************************************************************************************/
 int32_t (*ppa_hook_get_ifid_for_netif_fn)(PPA_NETIF *) = NULL;
 
-/*#ifdef CONFIG_PPA_GRE*/
 uint32_t (*ppa_is_ipv4_gretap_fn)(struct net_device *dev) = NULL;
 uint32_t (*ppa_is_ipv6_gretap_fn)(struct net_device *dev) = NULL;
-EXPORT_SYMBOL(ppa_is_ipv4_gretap_fn);
-EXPORT_SYMBOL(ppa_is_ipv6_gretap_fn);
-/*#endif*/
 
 /*PPP related functions */
 /* ppp_generic.c will register function for getting ppp info once the ppp.ko is insmoded */
 int32_t (*ppa_ppp_get_chan_info_fn)(struct net_device *ppp_dev, struct ppp_channel **chan) = NULL;
-EXPORT_SYMBOL(ppa_ppp_get_chan_info_fn);
-
 int32_t (*ppa_check_pppoe_addr_valid_fn)(struct net_device *dev, struct pppoe_addr *pa) = NULL;
-EXPORT_SYMBOL(ppa_check_pppoe_addr_valid_fn);
-
 int32_t (*ppa_get_pppoa_info_fn)(struct net_device *dev, void *pvcc, uint32_t pppoa_id, void *value) = NULL;
-EXPORT_SYMBOL(ppa_get_pppoa_info_fn);
-
 int32_t (*ppa_get_pppol2tp_info_fn)(struct net_device *dev, void *po, uint32_t pppol2tp_id, void *value) = NULL;
-EXPORT_SYMBOL(ppa_get_pppol2tp_info_fn);
-
 int32_t (*ppa_if_is_ipoa_fn)(struct net_device *netdev, char *ifname) = NULL;
-EXPORT_SYMBOL(ppa_if_is_ipoa_fn);
-
 int32_t (*ppa_if_is_br2684_fn)(struct net_device *netdev, char *ifname) = NULL;
-EXPORT_SYMBOL(ppa_if_is_br2684_fn);
-
 int32_t (*ppa_br2684_get_vcc_fn)(struct net_device *netdev, struct atm_vcc **pvcc) = NULL;
-EXPORT_SYMBOL(ppa_br2684_get_vcc_fn);
-
 int32_t (*ppa_if_ops_veth_xmit_fn)(struct net_device *dev) = NULL;
-EXPORT_SYMBOL(ppa_if_ops_veth_xmit_fn);
 
-#ifdef CONFIG_PPA_QOS
+
+#if IS_ENABLED(CONFIG_PPA_QOS)
 int32_t (*ppa_hook_get_qos_qnum)(uint32_t portid, uint32_t flag) = NULL;
 int32_t (*ppa_hook_get_qos_mib)(uint32_t portid, uint32_t queueid, PPA_QOS_MIB *mib, uint32_t flag) = NULL;
-/*#ifdef CONFIG_PPA_QOS_RATE_SHAPING*/
 int32_t (*ppa_hook_set_ctrl_qos_rate)(uint32_t portid, uint32_t enable, uint32_t flag) = NULL;
 int32_t (*ppa_hook_get_ctrl_qos_rate)(uint32_t portid, uint32_t *enable, uint32_t flag) = NULL;
 int32_t (*ppa_hook_set_qos_rate)(uint32_t portid, uint32_t queueid, uint32_t rate, uint32_t burst, uint32_t flag) = NULL;
 int32_t (*ppa_hook_get_qos_rate)(uint32_t portid, uint32_t queueid, uint32_t *rate, uint32_t *burst, uint32_t flag) = NULL;
 int32_t (*ppa_hook_reset_qos_rate)(uint32_t portid, uint32_t queueid, uint32_t flag) = NULL;
-/*#endif end of CONFIG_PPA_QOS_RATE_SHAPING*/
-
-/*#ifdef CONFIG_PPA_QOS_WFQ*/
 int32_t (*ppa_hook_set_ctrl_qos_wfq)(uint32_t portid, uint32_t enable, uint32_t flag) = NULL;
 int32_t (*ppa_hook_get_ctrl_qos_wfq)(uint32_t portid, uint32_t *enable, uint32_t flag) = NULL;
 int32_t (*ppa_hook_set_qos_wfq)(uint32_t portid, uint32_t queueid, uint32_t weight_level, uint32_t flag) = NULL;
 int32_t (*ppa_hook_get_qos_wfq)(uint32_t portid, uint32_t queueid, uint32_t *weight_level, uint32_t flag) = NULL;
 int32_t (*ppa_hook_reset_qos_wfq)(uint32_t portid, uint32_t queueid, uint32_t flag) = NULL;
-/*#endif end of CONFIG_PPA_QOS_WFQ*/
-
 #endif /*end of CONFIG_PPA_QOS*/
 
 int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle, __be16 protocol, struct tc_to_netdev *tc) = NULL;
-EXPORT_SYMBOL(qos_mgr_hook_setup_tc);
-
-int32_t (*qos_mgr_hook_setup_tc_ext)(struct net_device *dev, u32 handle, __be16 protocol, struct tc_to_netdev *tc, int32_t deq_idx, int32_t port_id) = NULL;
-EXPORT_SYMBOL(qos_mgr_hook_setup_tc_ext);
 
 #ifdef CONFIG_INTEL_IPQOS_MARK_SKBPRIO
 /*
@@ -432,7 +402,7 @@ int skb_mark_priority(struct sk_buff *skb)
 	 * IPQoS in UGW: added copy of nfmark set in classifier to skb->priority to be used in hardware queues.
 	 * nfmark range = 1-8 if QoS is enabled; priority range = 0-7; else preserve original priority
 	 */
-#ifdef CONFIG_NETWORK_EXTMARK
+#if IS_ENABLED(CONFIG_NETWORK_EXTMARK)
 	if (skb->extmark) {
 		unsigned value;
 		GET_DATA_FROM_MARK_OPT(skb->extmark, QUEPRIO_MASK, QUEPRIO_START_BIT_POS, value);
@@ -446,7 +416,7 @@ int skb_mark_priority(struct sk_buff *skb)
 
 #endif /* CONFIG_INTEL_IPQOS_MARK_SKBPRIO*/
 
-#if defined(CONFIG_PPA_API_SW_FASTPATH)
+#if IS_ENABLED(CONFIG_PPA_API_SW_FASTPATH)
 /**************************************************************************************************
  * PPA based software acceleration function hook
  * gets called from netif_rx in dev.c
@@ -460,12 +430,7 @@ int32_t (*ppa_hook_set_sw_fastpath_enable_fn)(uint32_t flags) = NULL;
 int32_t (*ppa_hook_get_sw_fastpath_status_fn)(uint32_t flags) = NULL;
 #endif
 
-int32_t (*ppa_hook_set_lan_seperate_flag_fn)(uint32_t flag) = NULL;
-uint32_t (*ppa_hook_get_lan_seperate_flag_fn)(uint32_t flag) = NULL;
-int32_t (*ppa_hook_set_wan_seperate_flag_fn)(uint32_t flag) = NULL;
-uint32_t (*ppa_hook_get_wan_seperate_flag_fn)(uint32_t flag) = NULL;
-
-#if defined(CONFIG_L2NAT_MODULE) || defined(CONFIG_L2NAT)
+#if IS_ENABLED(CONFIG_L2NAT_MODULE) || defined(CONFIG_L2NAT)
 /**********************************************************************************************
  * PPA interface hook function:ppa_check_if_netif_l2nat_fn
  * It it used to check if network interface is an l2nat interface
@@ -478,102 +443,33 @@ uint32_t (*ppa_hook_get_wan_seperate_flag_fn)(uint32_t flag) = NULL;
 int32_t (*ppa_check_if_netif_l2nat_fn)(PPA_NETIF *, char *, uint32_t) = NULL;
 #endif
 
-#if PPA_DP_DBG_PARAM_ENABLE
-/*Below varabiles are used for debugging only: force PPE driver to use kernel's boot parameter:
-  if ppa_drv_datapath_dbg_param_enable is enabled, then PPE driver will take parameter from kernel's boot paramter whether
-  PPE driver is static build in kernel or dynamic modules.
-
-  Note, only if ppa_drv_dp_dbg_param_enable is enabled and PPE driver is in loadable module, then this feature may be activated.
-  Otherwise, it will never be activated at all.
-
-  For other non-linux OS, just disabled this feature, ie, not enable macro PPA_DP_DBG_PARAM_ENABLE
- */
-int ppa_drv_dp_dbg_param_enable;
-int ppa_drv_dp_dbg_param_ethwan;
-int ppa_drv_dp_dbg_param_wanitf = ~0;
-int ppa_drv_dp_dbg_param_ipv6_acc_en = 1;
-int ppa_drv_dp_dbg_param_wanqos_en = 8;
-
-static int __init ppa_drv_dp_dbg_param_enable_setup(char *line)
-{
-	if (strcmp(line, "1") == 0)
-		ppa_drv_dp_dbg_param_enable = 1;
-
-	return 0;
-}
-
-static int __init ppa_drv_dp_dbg_param_wan_mode_setup(char *line)
-{
-	if (strcmp(line, "1") == 0)
-		ppa_drv_dp_dbg_param_ethwan = 1;
-	else if (strcmp(line, "2") == 0)
-		ppa_drv_dp_dbg_param_ethwan = 2;
-
-	return 0;
-}
-
-static int __init ppa_drv_dp_dbg_param_wanitf_setup(char *line)
-{
-	ppa_drv_dp_dbg_param_wanitf = simple_strtoul(line, NULL, 0);
-
-	if (ppa_drv_dp_dbg_param_wanitf > 0xFF)
-		ppa_drv_dp_dbg_param_wanitf = ~0;
-
-	return 0;
-}
-
-static int __init ppa_drv_dp_dbg_param_ipv6_acc_en_setup(char *line)
-{
-	if (strcmp(line, "0") == 0)
-		ppa_drv_dp_dbg_param_ipv6_acc_en = 0;
-	else
-		ppa_drv_dp_dbg_param_ipv6_acc_en = 1;
-
-	return 0;
-}
-
-static int __init ppa_drv_dp_dbg_param_wanqos_en_setup(char *line)
-{
-	ppa_drv_dp_dbg_param_wanqos_en = simple_strtoul(line, NULL, 0);
-
-	if (ppa_drv_dp_dbg_param_wanqos_en > 8)
-		ppa_drv_dp_dbg_param_wanqos_en = 0;
-
-	return 0;
-}
-
-__setup("param_en=", ppa_drv_dp_dbg_param_enable_setup);
-__setup("ethwan=", ppa_drv_dp_dbg_param_wan_mode_setup);
-__setup("wanitf=", ppa_drv_dp_dbg_param_wanitf_setup);
-__setup("ipv6_acc_en=", ppa_drv_dp_dbg_param_ipv6_acc_en_setup);
-__setup("wanqos_en=", ppa_drv_dp_dbg_param_wanqos_en_setup);
-#endif /*end of PPA_DP_DBG_PARAM_ENABLE*/
-
-EXPORT_SYMBOL(ppa_drv_dp_dbg_param_enable);
-EXPORT_SYMBOL(ppa_drv_dp_dbg_param_ethwan);
-EXPORT_SYMBOL(ppa_drv_dp_dbg_param_wanitf);
-EXPORT_SYMBOL(ppa_drv_dp_dbg_param_ipv6_acc_en);
-EXPORT_SYMBOL(ppa_drv_dp_dbg_param_wanqos_en);
-/* End of debugging code */
-
+#if IS_ENABLED(CONFIG_PPA_RT_SESS_LEARNING)
 EXPORT_SYMBOL(ppa_hook_session_add_fn);
-EXPORT_SYMBOL(ppa_hook_get_ct_stats_fn);
+#if IS_ENABLED(CONFIG_PPA_BR_SESS_LEARNING)
 EXPORT_SYMBOL(ppa_hook_session_bradd_fn);
+#endif /*CONFIG_PPA_BR_SESS_LEARNING*/
 EXPORT_SYMBOL(ppa_hook_session_del_fn);
-#if defined(CONFIG_PPA_MPE_IP97)
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 EXPORT_SYMBOL(ppa_hook_session_ipsec_add_fn);
 EXPORT_SYMBOL(ppa_hook_session_ipsec_del_fn);
 #endif
+#endif /*CONFIG_PPA_RT_SESS_LEARNING*/
+EXPORT_SYMBOL(ppa_hook_get_ct_stats_fn);
 EXPORT_SYMBOL(ppa_hook_session_prio_fn);
 EXPORT_SYMBOL(ppa_hook_inactivity_status_fn);
 EXPORT_SYMBOL(ppa_hook_set_inactivity_fn);
+
+#if IS_ENABLED(CONFIG_PPA_BR_MAC_LEARNING)
 EXPORT_SYMBOL(ppa_hook_bridge_entry_add_fn);
 EXPORT_SYMBOL(ppa_hook_bridge_entry_delete_fn);
 EXPORT_SYMBOL(ppa_hook_bridge_entry_hit_time_fn);
+#endif /*CONFIG_PPA_BR_MAC_LEARNING*/
+
 #if defined(PPA_IF_MIB) && PPA_IF_MIB
 EXPORT_SYMBOL(ppa_hook_get_netif_accel_stats_fn);
 #endif
-#if defined(CONFIG_PPA_API_DIRECTCONNECT) && CONFIG_PPA_API_DIRECTCONNECT
+
+#if IS_ENABLED(CONFIG_PPA_API_DIRECTCONNECT)
 EXPORT_SYMBOL(ppa_check_if_netif_fastpath_fn);
 EXPORT_SYMBOL(ppa_hook_disconn_if_fn);
 #if defined(WMM_QOS_CONFIG) && WMM_QOS_CONFIG
@@ -582,7 +478,6 @@ EXPORT_SYMBOL(ppa_register_qos_class2prio_hook_fn);
 #endif
 EXPORT_SYMBOL(ppa_hook_directpath_register_dev_fn);
 EXPORT_SYMBOL(ppa_hook_directpath_ex_register_dev_fn);
-EXPORT_SYMBOL(ppa_hook_directlink_register_dev_fn);
 EXPORT_SYMBOL(ppa_hook_directpath_send_fn);
 EXPORT_SYMBOL(ppa_hook_directpath_ex_send_fn);
 EXPORT_SYMBOL(ppa_hook_directpath_rx_stop_fn);
@@ -592,43 +487,48 @@ EXPORT_SYMBOL(ppa_hook_directpath_ex_rx_restart_fn);
 EXPORT_SYMBOL(ppa_hook_directpath_alloc_skb_fn);
 EXPORT_SYMBOL(ppa_hook_directpath_recycle_skb_fn);
 EXPORT_SYMBOL(ppa_hook_get_ifid_for_netif_fn);
-#ifdef CONFIG_PPA_QOS
+EXPORT_SYMBOL(ppa_hook_directpath_enqueue_to_imq_fn);
+EXPORT_SYMBOL(ppa_hook_directpath_reinject_from_imq_fn);
+EXPORT_SYMBOL(ppa_directpath_imq_en_flag);
+
+EXPORT_SYMBOL(ppa_get_pppoa_info_fn);
+EXPORT_SYMBOL(ppa_check_pppoe_addr_valid_fn);
+EXPORT_SYMBOL(ppa_ppp_get_chan_info_fn);
+EXPORT_SYMBOL(ppa_is_ipv4_gretap_fn);
+EXPORT_SYMBOL(ppa_is_ipv6_gretap_fn);
+EXPORT_SYMBOL(ppa_get_pppol2tp_info_fn);
+EXPORT_SYMBOL(ppa_if_is_ipoa_fn);
+EXPORT_SYMBOL(ppa_if_is_br2684_fn);
+EXPORT_SYMBOL(ppa_br2684_get_vcc_fn);
+EXPORT_SYMBOL(ppa_if_ops_veth_xmit_fn);
+
+#if IS_ENABLED(CONFIG_PPA_QOS)
 EXPORT_SYMBOL(ppa_hook_get_qos_qnum);
 EXPORT_SYMBOL(ppa_hook_get_qos_mib);
-
-/*#ifdef CONFIG_PPA_QOS_RATE_SHAPING*/
 EXPORT_SYMBOL(ppa_hook_set_ctrl_qos_rate);
 EXPORT_SYMBOL(ppa_hook_get_ctrl_qos_rate);
 EXPORT_SYMBOL(ppa_hook_set_qos_rate);
 EXPORT_SYMBOL(ppa_hook_get_qos_rate);
 EXPORT_SYMBOL(ppa_hook_reset_qos_rate);
-/*#endif CONFIG_PPA_QOS_RATE_SHAPING*/
-
-/*#ifdef CONFIG_PPA_QOS_WFQ*/
 EXPORT_SYMBOL(ppa_hook_set_ctrl_qos_wfq);
 EXPORT_SYMBOL(ppa_hook_get_ctrl_qos_wfq);
 EXPORT_SYMBOL(ppa_hook_set_qos_wfq);
 EXPORT_SYMBOL(ppa_hook_get_qos_wfq);
 EXPORT_SYMBOL(ppa_hook_reset_qos_wfq);
-/*#endif end of CONFIG_PPA_QOS_WFQ*/
 #endif /*end of CONFIG_PPA_QOS*/
-EXPORT_SYMBOL(ppa_hook_directpath_enqueue_to_imq_fn);
-EXPORT_SYMBOL(ppa_directpath_imq_en_flag);
-EXPORT_SYMBOL(ppa_hook_directpath_reinject_from_imq_fn);
-EXPORT_SYMBOL(ppa_hook_set_lan_seperate_flag_fn);
-EXPORT_SYMBOL(ppa_hook_get_lan_seperate_flag_fn);
-EXPORT_SYMBOL(ppa_hook_set_wan_seperate_flag_fn);
-EXPORT_SYMBOL(ppa_hook_get_wan_seperate_flag_fn);
-#if defined(CONFIG_PPA_API_SW_FASTPATH)
+EXPORT_SYMBOL(qos_mgr_hook_setup_tc);
+
+#if IS_ENABLED(CONFIG_PPA_API_SW_FASTPATH)
 EXPORT_SYMBOL(ppa_hook_set_sw_fastpath_enable_fn);
 EXPORT_SYMBOL(ppa_hook_get_sw_fastpath_status_fn);
 EXPORT_SYMBOL(ppa_hook_sw_fastpath_send_fn);
 #endif
-#if defined(CONFIG_L2NAT_MODULE) || defined(CONFIG_L2NAT)
+#if IS_ENABLED(CONFIG_L2NAT)
 EXPORT_SYMBOL(ppa_check_if_netif_l2nat_fn);
 #endif
 
-/*/ Stack adaptation layer APIs that directly hooks with un exported kernel APIs needs to be in builtin /*/
+/* Stack adaptation layer APIs that directly hooks 
+with un exported kernel APIs needs to be in builtin */
 int sysctl_ip_default_ttl __read_mostly = IPDEFTTL;
 EXPORT_SYMBOL(sysctl_ip_default_ttl);
 
@@ -696,10 +596,10 @@ struct dst_entry *ppa_ip6_route_output(struct net *net,
 }
 EXPORT_SYMBOL(ppa_ip6_route_output);
 #endif
+
 /* calculate teh hash for the conntrack 			 */
 /* copied from the nf_conntrack_core.c function hash_conntrack_raw*/
 /* needs to be updated if the original function is updated */
-
 static unsigned int ppa_nf_conntrack_hash_rnd;
 
 u32 ppa_hash_conntrack_raw(const struct nf_conntrack_tuple *tuple,
@@ -722,7 +622,7 @@ u32 ppa_hash_conntrack_raw(const struct nf_conntrack_tuple *tuple,
 }
 EXPORT_SYMBOL_GPL(ppa_hash_conntrack_raw);
 
-#if defined(CONFIG_PPA_TCP_LITEPATH)
+#if IS_ENABLED(CONFIG_PPA_TCP_LITEPATH)
 int32_t ppa_sw_litepath_local_deliver(struct sk_buff *skb)
 {
 	int ret = 0;
@@ -760,6 +660,7 @@ out:
 EXPORT_SYMBOL_GPL(ppa_sw_litepath_local_deliver);
 #endif
 
+#if IS_ENABLED(CONFIG_PPA_RT_SESS_LEARNING)
 /* session learning hooks */
 static unsigned int ppa_prert_hook_fn (void *priv,
 		struct sk_buff *skb,
@@ -786,45 +687,48 @@ static unsigned int ppa_prert_hook_fn (void *priv,
 
 	return NF_ACCEPT;
 }
+
 static unsigned int ppa_postrt_hook_fn(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
+		struct nf_conn *ct = NULL;
+		enum ip_conntrack_info ctinfo;
+		uint32_t flags;
+
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 	struct iphdr *hdr = ip_hdr(skb);
 	/* exclude the encrypted ipsec tunnel packets */
-	if (hdr->protocol == IPPROTO_ESP || skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn) 
-		return NF_ACCEPT;
-#else /* CONFIG_PPA_MPE_IP97*/
-	if (skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn)
-		return NF_ACCEPT;
-#endif
+	if (hdr->protocol != IPPROTO_ESP) {
+#endif /* CONFIG_PPA_MPE_IP97*/
+		if (!ppa_hook_session_add_fn)
+			return NF_ACCEPT;
 
 #if IS_ENABLED(CONFIG_INTEL_IPQOS_ACCEL_DISABLE)
 		/* check for 13th bit in NFMARK set by IPQOS classifier */
 		/* If this bit is set, dont call PPA session add fn*/
-	bool accel_st = 0;
+		bool accel_st = 0;
 #if IS_ENABLED(CONFIG_NETWORK_EXTMARK)
-	GET_DATA_FROM_MARK_OPT(skb->extmark, ACCELSEL_MASK,
-				       ACCELSEL_START_BIT_POS, accel_st);
+		GET_DATA_FROM_MARK_OPT(skb->extmark, ACCELSEL_MASK,
+						 ACCELSEL_START_BIT_POS, accel_st);
 #endif /* CONFIG_NETWORK_EXTMARK*/
-	if (accel_st != 0)
-		return NF_ACCEPT;
+		if (accel_st != 0)
+			return NF_ACCEPT;
 #endif /* CONFIG_INTEL_IPQOS_ACCEL_DISABLE*/
 
-	struct nf_conn *ct;
-	enum ip_conntrack_info ctinfo;
-	uint32_t flags;
+		ct = nf_ct_get(skb, &ctinfo);
 
-	ct = nf_ct_get(skb, &ctinfo);
-	flags = 0; /* post routing */
-	flags |= CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL ?
-		 PPA_F_SESSION_ORG_DIR : PPA_F_SESSION_REPLY_DIR;
+		flags = 0; /* post routing */
+		flags |= CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL ?
+			 PPA_F_SESSION_ORG_DIR : PPA_F_SESSION_REPLY_DIR;
 
-	ppa_hook_session_add_fn(skb, ct, flags);
-
+		ppa_hook_session_add_fn(skb, ct, flags);
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
+	}
+#endif /* CONFIG_PPA_MPE_IP97*/
 	return NF_ACCEPT;
 }
+
 static unsigned int ppa_localin_hook_fn(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
@@ -832,16 +736,16 @@ static unsigned int ppa_localin_hook_fn(void *priv,
 	struct nf_conn *ct = NULL;
 	enum ip_conntrack_info ctinfo;
 	uint32_t flags;
-
+	
 	if (ppa_hook_session_add_fn != NULL) {
 
 		ct = nf_ct_get(skb, &ctinfo);
 		flags = PPA_F_SESSION_LOCAL_IN;
 		flags |= CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL ? PPA_F_SESSION_ORG_DIR : PPA_F_SESSION_REPLY_DIR;
 
-		ppa_hook_session_add_fn(skb, ct, flags);
+		 	ppa_hook_session_add_fn(skb, ct, flags);
 	}
-
+ 
 	return NF_ACCEPT;
 }
 static struct nf_hook_ops ipt_hook_ops[] __read_mostly = {
@@ -902,13 +806,14 @@ static struct nf_hook_ops ipt_hook_ops[] __read_mostly = {
 		.priority	= NF_IP6_PRI_LAST,
 	}
 };
+#endif /*CONFIG_PPA_RT_SESS_LEARNING*/
 
-#if defined(CONFIG_INTEL_IPQOS)
+#if IS_ENABLED(CONFIG_INTEL_IPQOS)
 static unsigned int ppa_qos_postrt_hook_fn(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
-#if defined(CONFIG_INTEL_IPQOS_MARK_SKBPRIO)
+#if IS_ENABLED(CONFIG_INTEL_IPQOS_MARK_SKBPRIO)
 	skb_mark_priority(skb);
 #endif
 	return NF_ACCEPT;
@@ -932,7 +837,7 @@ static struct nf_hook_ops qos_hook_ops[] __read_mostly = {
 };
 #endif /* CONFIG_INTEL_IPQOS*/
 
-#if defined(CONFIG_PPA_BR_SESS_LEARNING)
+#if IS_ENABLED(CONFIG_PPA_BR_SESS_LEARNING)
 static unsigned int ppa_br_prert_hook_fn (void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
@@ -974,11 +879,10 @@ static struct nf_hook_ops ebt_hook_ops[] __read_mostly = {
 		.priority	= NF_BR_PRI_NAT_SRC,
 	}
 };
-
 #endif /* CONFIG_PPA_BR_SESS_LEARNING*/
 
-#if defined(CONFIG_INTEL_IPQOS)
-#if defined(CONFIG_VLAN_8021Q_COPY_TO_EXTMARK)
+#if IS_ENABLED(CONFIG_INTEL_IPQOS)
+#if defined(CONFIG_VLAN_8021Q_COPY_TO_EXTMARK)        
 static unsigned int ppa_qos_br_prert_hook_fn(void *priv,
 					     struct sk_buff *skb,
 					     const struct nf_hook_state *state)
@@ -986,11 +890,11 @@ static unsigned int ppa_qos_br_prert_hook_fn(void *priv,
 	u16 vlan_id = skb_vlan_tag_get_id(skb);
 	u16 vlan_tci = skb->vlan_tci;
 	u32 vprio = (vlan_tci >> VLAN_PRIO_SHIFT);
-
 	SET_DATA_FROM_MARK_OPT(skb->extmark, VLANID_MASK,
 				VLANID_START_BIT_POS, vlan_id);
 	SET_DATA_FROM_MARK_OPT(skb->extmark, VPRIO_MASK,
 				VPRIO_START_BIT_POS, vprio);
+	
 	return NF_ACCEPT;
 }
 #endif
@@ -999,14 +903,14 @@ static unsigned int ppa_qos_br_postrt_hook_fn(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
-#if defined(CONFIG_INTEL_IPQOS_MARK_SKBPRIO)
+#if IS_ENABLED(CONFIG_INTEL_IPQOS_MARK_SKBPRIO)
 	skb_mark_priority(skb);
 #endif
 	return NF_ACCEPT;
 }
 
 static struct nf_hook_ops qos_ebt_hook_ops[] __read_mostly = {
-#if defined(CONFIG_VLAN_8021Q_COPY_TO_EXTMARK)
+#if defined(CONFIG_VLAN_8021Q_COPY_TO_EXTMARK) 
 	/* hook for bridge pre-routing packets */
 	{
 		.hook           = ppa_qos_br_prert_hook_fn,
@@ -1069,10 +973,12 @@ void (*orig_nfct_destroy)(struct nf_conntrack *) = NULL;
 void ppa_destroy_conntrack (struct nf_conntrack *nfct)
 {
 
+#if IS_ENABLED(CONFIG_PPA_RT_SESS_LEARNING)
 	struct nf_conn *ct = (struct nf_conn *)nfct;
 	if (ppa_hook_session_del_fn != NULL) {
 		ppa_hook_session_del_fn(ct, PPA_F_SESSION_ORG_DIR | PPA_F_SESSION_REPLY_DIR);
 	}
+#endif /*CONFIG_PPA_RT_SESS_LEARNING*/
 
 	orig_nfct_destroy(nfct);
 }
@@ -1092,44 +998,52 @@ void ppa_unregister_delhook(void)
 int ppa_api_register_hooks(void)
 {
 	int ret = 0;
-#if defined(CONFIG_INTEL_IPQOS)
+#if IS_ENABLED(CONFIG_INTEL_IPQOS)
 	/*qos ipt hooks*/
 	nf_register_hooks(qos_hook_ops, ARRAY_SIZE(qos_hook_ops));
-#endif /* CONFIG_INTEL_IPQOS*/
-
-	/*ipt hooks*/
-	nf_register_hooks(ipt_hook_ops, ARRAY_SIZE(ipt_hook_ops));
-
-#if defined(CONFIG_INTEL_IPQOS)
 	/*qos ebt hooks*/
 	nf_register_hooks(qos_ebt_hook_ops, ARRAY_SIZE(qos_ebt_hook_ops));
 #endif /* CONFIG_INTEL_IPQOS*/
 
-#if defined(CONFIG_PPA_BR_SESS_LEARNING)
+#if IS_ENABLED(CONFIG_PPA_RT_SESS_LEARNING)
+	/*ipt hooks*/
+	nf_register_hooks(ipt_hook_ops, ARRAY_SIZE(ipt_hook_ops));
+#if IS_ENABLED(CONFIG_PPA_BR_SESS_LEARNING)
 	/*ebt hooks*/
 	nf_register_hooks(ebt_hook_ops, ARRAY_SIZE(ebt_hook_ops));
-#endif
+#endif /*CONFIG_PPA_BR_SESS_LEARNING*/
+#endif /*CONFIG_PPA_RT_SESS_LEARNING*/
+
 	/*delete conntrack hook*/
 	ppa_register_delhook();
 
-	printk(KERN_INFO"Installed the ppa learning netfilter hooks\n");
+	printk(KERN_INFO"Installed the ppa netfilter hooks\n");
 	return ret;
 }
 EXPORT_SYMBOL(ppa_api_register_hooks);
 
 void ppa_api_unregister_hooks(void)
 {
+#if IS_ENABLED(CONFIG_PPA_RT_SESS_LEARNING)
 	/*ipt hooks*/
 	nf_unregister_hooks(ipt_hook_ops, ARRAY_SIZE(ipt_hook_ops));
-
-#if defined(CONFIG_PPA_BR_SESS_LEARNING)
+#if IS_ENABLED(CONFIG_PPA_BR_SESS_LEARNING)
 	/*ebt hooks*/
 	nf_unregister_hooks(ebt_hook_ops, ARRAY_SIZE(ebt_hook_ops));
-#endif
+#endif /*CONFIG_PPA_BR_SESS_LEARNING*/
+#endif /*CONFIG_PPA_RT_SESS_LEARNING*/
+
+#if IS_ENABLED(CONFIG_INTEL_IPQOS)
+	/*qos ipt hooks*/
+	nf_unregister_hooks(qos_hook_ops, ARRAY_SIZE(qos_hook_ops));
+	/*qos ebt hooks*/
+	nf_unregister_hooks(qos_ebt_hook_ops, ARRAY_SIZE(qos_ebt_hook_ops));
+#endif /* CONFIG_INTEL_IPQOS*/
+
 	/*delete conntrack hook*/
 	ppa_unregister_delhook();
 
-	printk(KERN_INFO"Uninstalled the ppa learning netfilter hooks\n");
+	printk(KERN_INFO"Uninstalled the ppa netfilter hooks\n");
 }
 EXPORT_SYMBOL(ppa_api_unregister_hooks);
 

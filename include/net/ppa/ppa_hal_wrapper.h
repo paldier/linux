@@ -1,28 +1,26 @@
 /******************************************************************************
  **
- ** FILE NAME    : ppe_hal_wrapper.h
- ** PROJECT      : PPA
- ** MODULES      : PPA Wrapper for various HAL drivers
+ ** FILE NAME	: ppa_hal_wrapper.h
+ ** PROJECT	: PPA
+ ** MODULES	: PPA Wrapper for various HAL drivers
  **
- ** DATE         : 27 Feb 2014
- ** AUTHOR       : Kamal Eradath
- ** DESCRIPTION  : PPA Wrapper for HAL Driver API
- ** COPYRIGHT    : Copyright (c) 2017 Intel Corporation
+ ** DATE	: 27 Feb 2014
+ ** AUTHOR	: Kamal Eradath
+ ** DESCRIPTION	: PPA Wrapper for HAL Driver API
+ ** COPYRIGHT	: Copyright (c) 2017 Intel Corporation
  ** Copyright (c) 2014 - 2016 Lantiq Beteiligungs-GmbH & Co. KG
  ** HISTORY
- ** $Date        $Author         $Comment
- ** 27 Feb 2014  Kamal Eradath   Initiate Version
+ ** $Date		$Author		 $Comment
+ ** 27 Feb 2014		Kamal Eradath	 Initiate Version
  *******************************************************************************/
 #ifndef PPA_HAL_WRAPPER_2014_02_27
 #define PPA_HAL_WRAPPER_2014_02_27
-#if defined(CONFIG_PPA_HAL_SELECTOR) && CONFIG_PPA_HAL_SELECTOR
+
+#include <net/ppa/ppa_hal_api.h>
 /* HAL selector table node;*/
 #ifndef MAX_TUNNEL_ENTRIES
 #define MAX_TUNNEL_ENTRIES			16
 #endif
-#define MAX_RT_SESS_CAPS 3
-#define MAX_MC_SESS_CAPS 2
-#define MAX_QOS_CAPS 2
 extern uint8_t ppa_drv_get_num_tunnel_entries(void);
 extern uint8_t ppa_drv_get_num_registred_hals(void);
 extern uint32_t ppa_drv_generic_hal_register(uint32_t hal_id, ppa_generic_hook_t generic_hook);
@@ -40,33 +38,36 @@ extern uint32_t ppa_drv_get_hal_id(PPA_VERSION *v, uint32_t flag);
 extern uint32_t ppa_drv_add_br_port(PPA_BR_PORT_INFO *entry, uint32_t flag);
 extern uint32_t ppa_drv_del_br_port(PPA_BR_PORT_INFO *entry, uint32_t flag);
 extern uint32_t ppa_drv_set_hal_dbg(PPA_CMD_GENERAL_ENABLE_INFO *cfg, uint32_t flag);
+extern uint32_t ppa_hsel_get_generic_itf_mib( PPA_ITF_MIB_INFO *mib, uint32_t flag, uint32_t hal_id);
 /******************************************************************************************************/
 /* functions to be used in ppa_api_hal_selector.c*/
 /******************************************************************************************************/
-extern uint32_t ppa_hsel_add_complement(PPE_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_del_complement(PPE_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_add_routing_entry(PPE_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_del_routing_entry(PPE_ROUTING_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_update_routing_entry(PPE_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_add_wan_mc_entry(PPE_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_del_wan_mc_entry(PPE_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_update_wan_mc_entry(PPE_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_add_tunnel_entry(PPE_TUNNEL_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_del_tunnel_entry(PPE_TUNNEL_INFO *entry, uint32_t flag, uint32_t hal_id);
-#if defined(CONFIG_LTQ_TOE_DRIVER) && CONFIG_LTQ_TOE_DRIVER
+extern uint32_t ppa_hsel_add_complement(PPA_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_del_complement(PPA_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_add_routing_entry(PPA_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_del_routing_entry(PPA_ROUTING_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_add_sess_meta(PPA_ROUTING_INFO *entry, PPA_BUF *skb, void *txifinfo, uint32_t hal_id);
+extern uint32_t ppa_hsel_del_sess_meta(PPA_ROUTING_INFO *entry, uint32_t hal_id);
+extern uint32_t ppa_hsel_update_routing_entry(PPA_ROUTING_INFO *entry , uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_add_wan_mc_entry(PPA_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_del_wan_mc_entry(PPA_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_update_wan_mc_entry(PPA_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_add_tunnel_entry(PPA_TUNNEL_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_del_tunnel_entry(PPA_TUNNEL_INFO *entry, uint32_t flag, uint32_t hal_id);
+#if IS_ENABLED(CONFIG_LTQ_TOE_DRIVER)
 extern uint32_t ppa_hsel_add_lro_entry(PPA_LRO_INFO *entry, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_del_lro_entry(PPA_LRO_INFO *entry, uint32_t flag, uint32_t hal_id);
-#endif /* defined(CONFIG_LTQ_TOE_DRIVER) && CONFIG_LTQ_TOE_DRIVER*/
-#if defined(CONFIG_PPA_MPE_IP97)
+#endif /* IS_ENABLED(CONFIG_LTQ_TOE_DRIVER) && CONFIG_LTQ_TOE_DRIVER*/
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 extern uint32_t ppa_hsel_get_ipsec_tunnel_mib(IPSEC_TUNNEL_MIB_INFO *entry, uint32_t flag, uint32_t hal_id);
 #endif
-extern uint32_t ppa_hsel_get_routing_entry_bytes(PPE_ROUTING_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_get_mc_entry_bytes(PPE_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_test_and_clear_hit_stat(PPE_ROUTING_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_test_and_clear_mc_hit_stat(PPE_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_add_outer_vlan_entry(PPE_OUT_VLAN_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_del_outer_vlan_entry(PPE_OUT_VLAN_INFO *entry, uint32_t flag, uint32_t hal_id);
-extern uint32_t ppa_hsel_get_outer_vlan_entry(PPE_OUT_VLAN_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_get_routing_entry_bytes(PPA_ROUTING_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_get_mc_entry_bytes(PPA_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_test_and_clear_hit_stat(PPA_ROUTING_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_test_and_clear_mc_hit_stat(PPA_MC_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_add_outer_vlan_entry(PPA_OUT_VLAN_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_del_outer_vlan_entry(PPA_OUT_VLAN_INFO *entry, uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_get_outer_vlan_entry(PPA_OUT_VLAN_INFO *entry, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_init_qos_cfg(uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_uninit_qos_cfg(uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_add_qos_queue_entry(QOS_Q_ADD_CFG *entry, uint32_t flag, uint32_t hal_id);
@@ -76,16 +77,15 @@ extern uint32_t ppa_hsel_set_qos_rate_entry(QOS_RATE_SHAPING_CFG *entry, uint32_
 extern uint32_t ppa_hsel_reset_qos_rate_entry(QOS_RATE_SHAPING_CFG *entry, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_set_qos_shaper_entry(QOS_RATE_SHAPING_CFG *entry, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_mod_subif_port_cfg(QOS_MOD_SUBIF_PORT_CFG *entry, uint32_t flag, uint32_t hal_id);
-#if defined(CONFIG_SOC_GRX500) && CONFIG_SOC_GRX500
+#if IS_ENABLED(CONFIG_SOC_GRX500)
 extern uint32_t ppa_hsel_add_class_rule(PPA_CLASS_RULE *rule, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_mod_class_rule(PPA_CLASS_RULE *rule, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_del_class_rule(PPA_CLASS_RULE *rule, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_get_class_rule(PPA_CLASS_RULE *rule, uint32_t flag, uint32_t hal_id);
 #endif
 #if defined(RTP_SAMPLING_ENABLE) && RTP_SAMPLING_ENABLE
-extern uint32_t ppa_hsel_set_wan_mc_rtp(PPE_MC_INFO *entry, uint32_t hal_id);
-extern uint32_t ppa_hsel_get_mc_rtp_sampling_cnt(PPE_MC_INFO *entry, uint32_t hal_id);
+extern uint32_t ppa_hsel_set_wan_mc_rtp(PPA_MC_INFO *entry, uint32_t hal_id);
+extern uint32_t ppa_hsel_get_mc_rtp_sampling_cnt(PPA_MC_INFO *entry, uint32_t hal_id);
 #endif
 /******************************************************************************************************/
-#endif /*defined(CONFIG_PPA_HAL_SELECTOR) && CONFIG_PPA_HAL_SELECTOR*/
 #endif /*end of PPA_HAL_WRAPPER_2014_02_27*/

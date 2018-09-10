@@ -142,7 +142,7 @@
 #include <linux/sctp.h>
 #include <linux/crash_dump.h>
 
-#ifdef CONFIG_PPA_API_SW_FASTPATH
+#if IS_ENABLED(CONFIG_PPA_API_SW_FASTPATH)
 #include <net/ppa/ppa_api.h>
 #endif
 #include "net-sysfs.h"
@@ -3879,7 +3879,7 @@ static int netif_rx_internal(struct sk_buff *skb)
 	net_timestamp_check(netdev_tstamp_prequeue, skb);
 
 	trace_netif_rx(skb);
-#ifdef CONFIG_PPA_API_SW_FASTPATH
+#if IS_ENABLED(CONFIG_PPA_API_SW_FASTPATH)
 	if (ppa_hook_sw_fastpath_send_fn) {
 		if (ppa_hook_sw_fastpath_send_fn(skb) == 0)
 			return NET_RX_SUCCESS;

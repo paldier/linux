@@ -1,20 +1,21 @@
-#ifndef __PPA_PPE_HAL_H__20081104_1318__
-#define __PPA_PPE_HAL_H__20081104_1318__
+#ifndef __PPA_HAL_API_H__20180209_0922__
+#define __PPA_HAL_API_H__20180209_0922__
 /*******************************************************************************
  **
- ** FILE NAME    : ppa_ppe_hal.h
+ ** FILE NAME    : ppa_hal_api.h
  ** PROJECT      : PPA
  ** MODULES      : PPA API (Routing/Bridging Acceleration APIs)
  **
- ** DATE         : 4 NOV 2008
+ ** DATE         : 04 NOV 2008
  ** AUTHOR       : Xu Liang
- ** DESCRIPTION  : PPA PPE Firmware Hardware/Firmware Adaption Layer Header File
+ ** DESCRIPTION  : PPA Firmware Hardware/Firmware Adaption Layer Header File
  ** COPYRIGHT   : Copyright (c) 2017 Intel Corporation
  ** Copyright (c) 2010 - 2016 Lantiq Beteiligungs-GmbH & Co. KG
  **
  ** HISTORY
  ** $Date        $Author         $Comment
  ** 04 NOV 2008  Xu Liang        Initiate Version
+ ** 09 FEB 2018  Kamal Eradath 	 Modified for generic HAL
  *******************************************************************************/
 /*
  * ####################################
@@ -45,25 +46,7 @@
 #define PPA_ROUTE_TYPE_IPV4                         1
 #define PPA_ROUTE_TYPE_NAT                          2
 #define PPA_ROUTE_TYPE_NAPT                         3
-/*#define PPA_DEST_LIST_ETH0                          0x01*/
-/*#define PPA_DEST_LIST_ETH1                          0x02*/
-/*#define PPA_DEST_LIST_CPU0                          0x04*/
-/*#define PPA_DEST_LIST_EXT_INT1                      0x08*/
-/*#define PPA_DEST_LIST_EXT_INT2                      0x10*/
-/*#define PPA_DEST_LIST_EXT_INT3                      0x20*/
-/*#define PPA_DEST_LIST_EXT_INT4                      0x40*/
-/*#define PPA_DEST_LIST_EXT_INT5                      0x80*/
-/*#define PPA_DEST_LIST_ATM                           PPA_DEST_LIST_EXT_INT5    EoA*/
-/*#define PPA_DEST_LIST_ETH0                          0x0001*/
-/*#define PPA_DEST_LIST_ETH1                          0x0002*/
-/*#define PPA_DEST_LIST_CPU0                          0x0004*/
-/*#define PPA_DEST_LIST_EXT_INT1                      0x0008*/
-/*#define PPA_DEST_LIST_EXT_INT2                      0x0010*/
-/*#define PPA_DEST_LIST_EXT_INT3                      0x0020*/
-/*#define PPA_DEST_LIST_EXT_INT4                      0x0040*/
-/*#define PPA_DEST_LIST_EXT_INT5                      0x0080*/
-/*#define PPA_DEST_LIST_ATM                           0x0100*/
-/*#define PPA_DEST_LIST_NO_REMAP                      (1 << 31)*/
+
 #define PPA_PHYS_PORT_FLAGS_VALID                   0x0001
 #define PPA_PHYS_PORT_FLAGS_TYPE_CPU                0x0000
 #define PPA_PHYS_PORT_FLAGS_TYPE_ATM                0x0010
@@ -133,25 +116,12 @@
 #define PPA_SET_FAST_MODE_ETH1_INDIRECT             0
 #define PPA_SET_FAST_MODE_ATM_DIRECT                PPA_SET_FAST_MODE_ETH1_DIRECT
 #define PPA_SET_FAST_MODE_ATM_INDIRECT              PPA_SET_FAST_MODE_ETH1_INDIRECT
-/*#define PPA_PORT_ETH0                               0x00*/
-/*#define PPA_PORT_ETH1                               0x01*/
-/*#define PPA_PORT_CPU0                               0x02*/
-/*#define PPA_PORT_CPU1_EXT_IF0                       0x05*/
-/*#define PPA_PORT_ATM                                0x07*/
-/*#define PPA_PORT_ANY                                PPA_PORT_CPU0*/
-/*#define PPA_PORT_NUM                                0x08*/
-/*  Obsolete, for bridging only*/
-/*#define PPA_PORT_ETH0                               0x00*/
-/*#define PPA_PORT_ETH1                               0x01*/
-/*#define PPA_PORT_CPU0                               0x02*/
-/*#define PPA_PORT_CPU1_EXT_IF0                       0x05*/
-/*#define PPA_PORT_ATM                                0x08*/
-/*#define PPA_PORT_ANY                                PPA_PORT_CPU0*/
-/*#define PPA_PORT_NUM                                0x09*/
+
 #define PPA_BRG_VLAN_IG_COND_TYPE_DEF               0
 #define PPA_BRG_VLAN_IG_COND_TYPE_SRC_IP            1
 #define PPA_BRG_VLAN_IG_COND_TYPE_ETH_TYPE          2
 #define PPA_BRG_VLAN_IG_COND_TYPE_VLAN              3
+
 typedef enum {
 	PPA_GENERIC_HAL_GET_DSL_MIB = 0,   /*Get dsl mib*/
 	PPA_GENERIC_HAL_CLEAR_DSL_MIB,   /*clear dsl mib*/
@@ -181,6 +151,8 @@ typedef enum {
 	PPA_GENERIC_HAL_DEL_BRDG_VLAN_ALL_FITLER_MAP, /*delete all vlan briding filter's mapping*/
 	PPA_GENERIC_HAL_GET_MAX_VFILTER_ENTRY_NUM, /*get the maxumum entry for vlan filter*/
 	PPA_GENERIC_HAL_GET_IPV6_FLAG,  /*get ipv6 status : enabled or disabled*/
+	PPA_GENERIC_HAL_UPDATE_SESS_META,  /*extract the session metadata from skb to db*/
+	PPA_GENERIC_HAL_CLEAR_SESS_META,  /*clear the session metadata from the db*/
 	PPA_GENERIC_HAL_ADD_COMPLEMENT_ENTRY, /*add an ipv4 routing entry - complimentary processing*/
 	PPA_GENERIC_HAL_DEL_COMPLEMENT_ENTRY, /*del an ipv4 routing entry - complimentary processing*/
 	PPA_GENERIC_HAL_ADD_ROUTE_ENTRY, /*add an ipv4 routing entry*/
@@ -262,8 +234,6 @@ typedef enum {
 	PPA_GENERIC_HAL_GET_QOS_STATUS, /* get QOS tatus*/
 	PPA_GENERIC_HAL_SET_VALUE, /* set value*/
 	PPA_GENERIC_HAL_GET_VALUE, /* get value*/
-	/*Below macro is used for PPE datapath*/
-	PPA_GENERIC_DATAPATH_GET_PPE_VERION,  /*for VR9 E5 only so far for there is two PP32 core*/
 	/*make sure it is the last one */
 	PPA_GENERIC_DATAPATH_TSET,   /*test only*/
 	PPA_GENERIC_DATAPATH_ADDR_TO_FPI_ADDR,  /*change to FPI address*/
@@ -276,11 +246,6 @@ typedef enum {
 	PPA_GENERIC_HAL_ADD_L2TP_TUNNEL_ENTRY,  /*add a L2TP tunnel entry*/
 	PPA_GENERIC_HAL_DEL_L2TP_TUNNEL_ENTRY,  /*del a L2TP tunnel entry*/
 	PPA_GENERIC_HAL_GET_L2TP_TUNNEL_ENTRY,  /*get a L2TP tunnel entry*/
-#endif
-#if defined(CAP_WAP_CONFIG) && CAP_WAP_CONFIG
-	PPA_GENERIC_HAL_ADD_CAPWAP_ENTRY,   /*add a CAPWAP entry*/
-	PPA_GENERIC_HAL_DEL_CAPWAP_ENTRY,   /*delete a CAPWAP entry*/
-	PPA_GENERIC_HAL_GET_CAPWAP_MIB,     /*CAWAP mib*/
 #endif
 	PPA_GENERIC_HAL_QOS_MODQUE_CFG,
 	PPA_GENERIC_HAL_QOS_ADDQUE_CFG,
@@ -299,6 +264,7 @@ typedef enum {
 	/*make sure it is the last one */
 	PPA_GENERIC_HAL_MAX_FLAG
 } PPA_GENERIC_HOOK_CMD;
+
 #define PPA_PWM_LEVEL_D0                            0
 #define PPA_PWM_LEVEL_D1                            1
 #define PPA_PWM_LEVEL_D2                            2
@@ -308,60 +274,6 @@ typedef enum {
  *              Data Type
  * ####################################
  */
-typedef int32_t (*ppe_generic_hook_t)(PPA_GENERIC_HOOK_CMD cmd, void *buffer, uint32_t flag);
-#if defined(CONFIG_PPA_HAL_SELECTOR) && CONFIG_PPA_HAL_SELECTOR
 typedef int32_t (*ppa_generic_hook_t)(PPA_GENERIC_HOOK_CMD cmd, void *buffer, uint32_t flag);
-#endif
-/*
- * ####################################
- *             Declaration
- * ####################################
- */
-#ifdef __KERNEL__
-/*
- *    implemented in datapath driver
- */
-extern int32_t (*ppa_drv_hal_generic_hook)(PPA_GENERIC_HOOK_CMD cmd, void *buffer, uint32_t flag);
-extern int32_t (*ppa_drv_hal_get_mpoa_type_hook)(uint32_t dslwan_qid, uint32_t *mpoa_type);
-#endif  /*  __KERNEL__*/
-#if defined(CONFIG_ACCL_11AC) || defined(CONFIG_ACCL_11AC_MODULE)
-#define PPA_F_INIT          1
-#define PPA_F_UNINIT        2
-#define DTLK_TX_RSV_MEM_SIZE 0x800000
-#define DTLK_RX_RSV_MEM_SIZE 0x400000
 
-typedef struct {
-	int64_t txpdu;
-	int64_t txbytes;
-	unsigned int txdrop;
-	unsigned int rx_fwd_pdu;
-	unsigned int rx_fwd_bytes;
-	unsigned int rx_inspect_pdu;
-	unsigned int rx_inspect_bytes;
-	unsigned int rx_discard_pdu;
-	unsigned int rx_discard_bytes;
-	unsigned int rx_pn_pdu;
-	unsigned int rx_pn_bytes;
-	unsigned int rx_drop_pdu;
-	unsigned int rx_drop_bytes;
-	int64_t rx_rcv_pdu;
-	int64_t rx_rcv_bytes;
-	unsigned int _dw_res0;
-} PPA_WLAN_VAP_Stats_t;
-extern void ppa_directlink_enable (uint32_t flags);
-extern int32_t ppa_directlink_get_status (uint32_t flag);
-extern uint32_t ppa_dl_qca_h2t_ring_init (uint32_t h2tRingSize, uint32_t entrySize, uint32_t src_ring_base, uint32_t pcie_base, uint32_t flags);
-extern uint32_t ppa_dl_qca_cpu_h2t_ring_init (uint32_t h2tCpuMsgRingSize, uint32_t entrySize, uint32_t flags
-#if defined(CONFIG_ACCL_11AC_CS2)
-		,
-		uint32_t irq_base
-#endif
-		);
-extern int32_t ppa_dl_qca_cpu_h2t_ring_get_write_idx (uint32_t flags);
-extern int32_t ppa_dl_qca_cpu_h2t_ring_write_msg (uint32_t writeIndex, uint32_t *msgPtr, uint32_t msgLen, uint32_t next_writeIndex, uint32_t flags);
-extern int32_t ppa_dl_dre_txpkt_buf_release (uint32_t num_msdus, uint32_t *msg, uint32_t flags);
-extern uint32_t ppa_dl_qca_get_vap_stats (uint32_t vapId, PPA_WLAN_VAP_Stats_t *vapStats, uint32_t flags);
-extern void dtlk_mem_base_get(uint32_t *dltx_base, uint32_t *dlrx_base);
-extern void (*set_vap_itf_tbl_fn)(uint32_t, uint32_t);
-#endif
-#endif  /*  __PPA_PPE_HAL_H__20081104_1318__*/
+#endif  /*  __PPA_HAL_API_H__20180209_0922__*/
