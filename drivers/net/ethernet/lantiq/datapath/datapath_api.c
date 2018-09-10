@@ -2529,7 +2529,19 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 	info.bp = subif.bport;
 	info.dp_port = subif.port_id;
 	info.inst = subif.inst;
-	info.dev_type = subif.flag_bp;
+	
+	if ((vlan->def_apply == DP_VLAN_APPLY_CTP) && 
+				(subif.flag_pmapper == 1)) {
+		PR_ERR("cannot apply VLAN rule for pmapper device\n");
+		return DP_FAILURE;
+	} else if (vlan->def_apply == DP_VLAN_APPLY_CTP) {
+		info.dev_type = 0;
+	} else {
+		info.dev_type |= subif.flag_bp;
+	}
+	if (vlan->mcast_flag == DP_MULTICAST_SESSION) 
+		info.dev_type |= 0x02;
+	PR_INFO("dev_type:0x%x\n", info.dev_type);
 	if (DP_CB(subif.inst, dp_tc_vlan_set))
 		return DP_CB(subif.inst, dp_tc_vlan_set)
 			    (dp_port_prop[subif.inst].ops[0],

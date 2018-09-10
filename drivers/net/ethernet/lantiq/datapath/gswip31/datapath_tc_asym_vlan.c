@@ -115,6 +115,7 @@ static int update_ctp(struct core_ops *ops,
 		      u32 lpid,
 		      u32 subifidg,
 		      int ingress,
+		      int multicast,
 		      GSW_EXTENDEDVLAN_alloc_t *pextvlan)
 {
 	int ret;
@@ -125,24 +126,48 @@ static int update_ctp(struct core_ops *ops,
 	ctpcfg1.nSubIfIdGroup = subifidg;
 	ctpcfg2.nSubIfIdGroup = subifidg;
 	if (ingress) {
-		ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN;
-		if (!pextvlan) {
-			ctpcfg2.bIngressExtendedVlanEnable = LTQ_FALSE;
+		if (multicast) {
+			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN_IGMP;
+			if (!pextvlan) {
+				ctpcfg2.bIngressExtendedVlanIgmpEnable = LTQ_FALSE;
+			} else {
+				ctpcfg2.bIngressExtendedVlanIgmpEnable = LTQ_TRUE;
+				ctpcfg2.nIngressExtendedVlanBlockIdIgmp =
+					pextvlan->nExtendedVlanBlockId;
+				ctpcfg2.nIngressExtendedVlanBlockSizeIgmp = 0;
+			}
 		} else {
-			ctpcfg2.bIngressExtendedVlanEnable = LTQ_TRUE;
-			ctpcfg2.nIngressExtendedVlanBlockId =
-				pextvlan->nExtendedVlanBlockId;
-			ctpcfg2.nIngressExtendedVlanBlockSize = 0;
+			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN;
+			if (!pextvlan) {
+				ctpcfg2.bIngressExtendedVlanEnable = LTQ_FALSE;
+			} else {
+				ctpcfg2.bIngressExtendedVlanEnable = LTQ_TRUE;
+				ctpcfg2.nIngressExtendedVlanBlockId =
+					pextvlan->nExtendedVlanBlockId;
+				ctpcfg2.nIngressExtendedVlanBlockSize = 0;
+			}
 		}
 	} else {
-		ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN;
-		if (!pextvlan) {
-			ctpcfg2.bEgressExtendedVlanEnable = LTQ_FALSE;
+		if (multicast) {
+			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN_IGMP;
+			if (!pextvlan) {
+				ctpcfg2.bEgressExtendedVlanIgmpEnable = LTQ_FALSE;
+			} else {
+				ctpcfg2.bEgressExtendedVlanIgmpEnable = LTQ_TRUE;
+				ctpcfg2.nEgressExtendedVlanBlockIdIgmp =
+					pextvlan->nExtendedVlanBlockId;
+				ctpcfg2.nEgressExtendedVlanBlockSizeIgmp = 0;
+			}
 		} else {
-			ctpcfg2.bEgressExtendedVlanEnable = LTQ_TRUE;
-			ctpcfg2.nEgressExtendedVlanBlockId =
-				pextvlan->nExtendedVlanBlockId;
-			ctpcfg2.nEgressExtendedVlanBlockSize = 0;
+			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN;
+			if (!pextvlan) {
+				ctpcfg2.bEgressExtendedVlanEnable = LTQ_FALSE;
+			} else {
+				ctpcfg2.bEgressExtendedVlanEnable = LTQ_TRUE;
+				ctpcfg2.nEgressExtendedVlanBlockId =
+					pextvlan->nExtendedVlanBlockId;
+				ctpcfg2.nEgressExtendedVlanBlockSize = 0;
+			}
 		}
 	}
 	ctpcfg2.eMask = ctpcfg1.eMask;
@@ -156,20 +181,40 @@ static int update_ctp(struct core_ops *ops,
 		return -EIO;
 
 	if (ingress) {
-		if (ctpcfg1.bIngressExtendedVlanEnable != LTQ_FALSE) {
-			GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+		if (multicast) {
+			if (ctpcfg1.bIngressExtendedVlanIgmpEnable != LTQ_FALSE) {
+				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
 
-			alloc.nExtendedVlanBlockId =
-				ctpcfg1.nIngressExtendedVlanBlockId;
-			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+				alloc.nExtendedVlanBlockId =
+					ctpcfg1.nIngressExtendedVlanBlockIdIgmp;
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+			}
+		} else {
+			if (ctpcfg1.bIngressExtendedVlanEnable != LTQ_FALSE) {
+				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+
+				alloc.nExtendedVlanBlockId =
+					ctpcfg1.nIngressExtendedVlanBlockId;
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+			}
 		}
 	} else {
-		if (ctpcfg1.bEgressExtendedVlanEnable != LTQ_FALSE) {
-			GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+		if (multicast) {
+			if (ctpcfg1.bEgressExtendedVlanIgmpEnable != LTQ_FALSE) {
+				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
 
-			alloc.nExtendedVlanBlockId =
-				ctpcfg1.nEgressExtendedVlanBlockId;
-			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+				alloc.nExtendedVlanBlockId =
+					ctpcfg1.nEgressExtendedVlanBlockIdIgmp;
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+			}
+		} else {
+			if (ctpcfg1.bEgressExtendedVlanEnable != LTQ_FALSE) {
+				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+
+				alloc.nExtendedVlanBlockId =
+					ctpcfg1.nEgressExtendedVlanBlockId;
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+			}
 		}
 	}
 
@@ -746,12 +791,13 @@ static int tc_ext_vlan(struct core_ops *ops,
 			goto ERROR;
 	}
 
-	if (info->dev_type == 0) {
+	if ((info->dev_type & 0x01) == 0) {
 		/* Configure CTP */
 		ret = update_ctp(ops,
 				 (u32)info->dp_port,
 				 (u32)info->subix,
 				 vlan->dir == DP_DIR_INGRESS,
+				 (info->dev_type & 0x02) != 0,
 				 &alloc);
 	} else {
 		/* Configure bridge port */
@@ -787,8 +833,12 @@ int tc_vlan_set_31(struct core_ops *ops,
 		   int flag)
 {
 	/* If it's bridge port, try to configure VLAN filter. */
-	if (info->dev_type != 0) {
+	if ((info->dev_type & 0x01) != 0) {
 		int ret;
+
+		/* Multicast (IGMP Controlled) VLAN is not supported on Bridge Port */
+		if ((info->dev_type & 0x02) != 0)
+			return -EINVAL;
 
 		ret = tc_vlan_filter(ops, vlan, info);
 		/* Either managed to configure VLAN filter

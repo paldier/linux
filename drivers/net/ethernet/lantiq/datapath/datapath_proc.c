@@ -804,10 +804,12 @@ proc_help:
 }
 
 static void set_dev(struct dp_tc_vlan *vlan, struct net_device *dev, int
-		    def_apply, int dir, int n_vlan0, int n_vlan1, int n_vlan2)
+		    def_apply, int dir, int n_vlan0, int n_vlan1, int n_vlan2,
+		    int mcast)
 {
 	vlan->dev = dev;
 	vlan->def_apply = def_apply;
+	vlan->mcast_flag = mcast;
 	vlan->dir = dir;
 	vlan->n_vlan0 = n_vlan0;
 	vlan->n_vlan1 = n_vlan1;
@@ -858,6 +860,9 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 	int  k, len;
 	char dev_name[16];
 	int test_num = 0;
+	int ctp = 0;
+	int mcast = 0;
+	int dir = 0;
 	struct dp_tc_vlan vlan = {0};
 	struct dp_vlan0 vlan0_list = {0};
 	struct dp_vlan1 vlan1_list = {0};
@@ -883,6 +888,15 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		} else if (dp_strncmpi(param_list[k], "-tnum", strlen("-tnum")) == 0) {
 			test_num = dp_atoi(param_list[k + 1]);
 			k += 2;
+		} else if (dp_strncmpi(param_list[k], "CTP", strlen("CTP")) == 0) {
+			ctp = dp_atoi(param_list[k + 1]);
+			k += 2;
+		} else if (dp_strncmpi(param_list[k], "mcast", strlen("mcast")) == 0) {
+			mcast = dp_atoi(param_list[k + 1]);
+			k += 2;
+		} else if (dp_strncmpi(param_list[k], "dir", strlen("dir")) == 0) {
+			dir = dp_atoi(param_list[k + 1]);
+			k += 2;
 		} else {
 			PR_INFO("unknown command option: %s\n",
 				param_list[k]);
@@ -900,7 +914,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet with VID 10\n");
 		PR_INFO("Desc:pattern match = FALSE\n");
 		PR_INFO("Output:Enqueued packet is received without change\n");
-		set_dev(&vlan, dev, 0, 0, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		/*random proto for failing the pattern match*/
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
@@ -914,7 +928,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet without VLAN tag\n");
 		PR_INFO("Desc:pattern match = FALSE\n");
 		PR_INFO("Output:Enqueued packet is received without change\n");
-		set_dev(&vlan, dev, 0, 0, 1, 0, 0);
+		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
 		vlan.vlan0_list = &vlan0_list;
 		/*random proto for failing the pattern match*/
 		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
@@ -928,7 +942,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet without VLAN tag\n");
 		PR_INFO("Desc:pattern match = TRUE\n");
 		PR_INFO("Output:Enqueued packet is not received\n");
-		set_dev(&vlan, dev, 0, 0, 1, 0, 0);
+		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
 		vlan.vlan0_list = &vlan0_list;
 		/*random proto for failing the pattern match*/
 		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
@@ -945,7 +959,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet with VID 10\n");
 		PR_INFO("Desc:pattern match = TRUE and POP action\n");
 		PR_INFO("Output:Enqueued packet is received without vlantag\n");
-		set_dev(&vlan, dev, 0, 0, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    TEST_VID, DP_VLAN_PATTERN_NOT_CARE,
@@ -959,7 +973,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet with double tag VID 10 and vid	100\n");
 		PR_INFO("Desc:pattern match = TRUE and POP action\n");
 		PR_INFO("Output:Enqueued packet is received without vlantag\n");
-		set_dev(&vlan, dev, 0, 0, 0, 0, 1);
+		set_dev(&vlan, dev, ctp, dir, 0, 0, 1, mcast);
 		vlan.vlan2_list = &vlan2_list;
 		set_pattern(&vlan2_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    TEST_VID, DP_VLAN_PATTERN_NOT_CARE,
@@ -977,7 +991,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with vlan tag");
 		PR_INFO("that is pushed\n");
-		set_dev(&vlan, dev, 0, 0, 1, 0, 0);
+		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
 		vlan.vlan0_list = &vlan0_list;
 		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -992,7 +1006,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags");
 		PR_INFO("that are pushed\n");
-		set_dev(&vlan, dev, 0, 0, 1, 0, 0);
+		set_dev(&vlan, dev, ctp, 0, 1, 0, 0, mcast);
 		vlan.vlan0_list = &vlan0_list;
 		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -1008,7 +1022,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with vlan tag");
 		PR_INFO("that is pushed\n");
-		set_dev(&vlan, dev, 0, 1, 1, 0, 0);
+		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
 		vlan.vlan0_list = &vlan0_list;
 		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -1023,7 +1037,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags");
 		PR_INFO("that are pushed\n");
-		set_dev(&vlan, dev, 0, 1, 1, 0, 0);
+		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
 		vlan.vlan0_list = &vlan0_list;
 		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -1038,7 +1052,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags,");
 		PR_INFO("the original and the pushed one\n");
-		set_dev(&vlan, dev, 0, 0, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -1053,7 +1067,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with 3 vlan tags,");
 		PR_INFO("the original and 2 pushed ones\n");
-		set_dev(&vlan, dev, 0, 0, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -1069,7 +1083,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags,");
 		PR_INFO("the original and the pushed one\n");
-		set_dev(&vlan, dev, 0, 1, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -1084,7 +1098,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and PUSH action\n");
 		PR_INFO("Output:Enqueued packet is received with 3 vlan tags");
 		PR_INFO("the original and 2 pushed ones\n");
-		set_dev(&vlan, dev, 0, 1, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
@@ -1098,7 +1112,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet single vlan tag and vid 10\n");
 		PR_INFO("Desc:pattern match = FALSE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is received unaltered\n");
-		set_dev(&vlan, dev, 0, 0, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    100, DP_VLAN_PATTERN_NOT_CARE,
@@ -1111,7 +1125,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet single vlan tag and vid 10\n");
 		PR_INFO("Desc:pattern match = TRUE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is dropped\n");
-		set_dev(&vlan, dev, 0, 0, 0, 1, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
 		vlan.vlan1_list = &vlan1_list;
 		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    10, DP_VLAN_PATTERN_NOT_CARE,
@@ -1124,7 +1138,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet double vlan tag, vid 10 and vid 20\n");
 		PR_INFO("Desc:pattern match = FALSE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is received unaltered\n");
-		set_dev(&vlan, dev, 0, 0, 0, 0, 1);
+		set_dev(&vlan, dev, ctp, dir, 0, 0, 1, mcast);
 		vlan.vlan2_list = &vlan2_list;
 		set_pattern(&vlan2_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    100, DP_VLAN_PATTERN_NOT_CARE,
@@ -1140,7 +1154,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Input:IP packet double vlan tag, vid 10 and vid 20\n");
 		PR_INFO("Desc:pattern match = TRUE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is not received\n");
-		set_dev(&vlan, dev, 0, 0, 0, 0, 1);
+		set_dev(&vlan, dev, ctp, dir, 0, 0, 1, mcast);
 		vlan.vlan2_list = &vlan2_list;
 		set_pattern(&vlan2_list.outer, DP_VLAN_PATTERN_NOT_CARE,
 			    10, DP_VLAN_PATTERN_NOT_CARE,
@@ -1162,7 +1176,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE (vid match) , with action");
 		PR_INFO("PUSH for vid 5,6 POP for vid 7 and forward vid 8\n");
 		PR_INFO("Output:Enqueued packet received\n");
-		set_dev(&vlan, dev, 0, 0, 0, 4, 0);
+		set_dev(&vlan, dev, ctp, dir, 0, 4, 0, mcast);
 		vlan1_list[0].def = DP_VLAN_DEF_ACCEPT;
 		vlan1_list[1].def = DP_VLAN_DEF_ACCEPT;
 		vlan1_list[2].def = DP_VLAN_DEF_ACCEPT;
@@ -1203,8 +1217,8 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 	return count;
 
 proc_help:
-	PR_INFO("echo <dev> %s [-tnum %s]", "<device name>",
-		"test_number");
+	PR_INFO("echo <dev> %s [-tnum %s] %s\n", "<device name>", "test_number",
+		"CTP <0/1> mcast <0/1> dir <0/1>");
 	return count;
 }
 

@@ -130,6 +130,8 @@ struct dp_tc_vlan {
 #define DP_DIR_INGRESS 0
 #define DP_DIR_EGRESS  1
 	int dir; /* DP_DIR_INGRESS(0) and DP_DIR_EGRESS(1) */
+#define DP_MULTICAST_SESSION 1  /*IGMP Multicast session */
+	int mcast_flag; /*normal or multicast session */
 
 	int n_vlan0, n_vlan1, n_vlan2; /*size of vlan0/vlan1/2_list*/
 	struct dp_vlan0 *vlan0_list; /* non-vlan matching rules,
