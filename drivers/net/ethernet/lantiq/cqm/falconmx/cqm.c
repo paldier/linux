@@ -10,6 +10,10 @@
 			   (FMX_CQM_DROP_Q << 16) | \
 			   (FMX_CQM_DROP_Q << 8) | \
 			   FMX_CQM_DROP_Q)
+#define IS_CPU_PORT_TYPE(TYPE)((TYPE == DP_F_DEQ_CPU) ||\
+			   (TYPE == DP_F_DEQ_CPU1) ||\
+			   (TYPE == DP_F_DEQ_MPE) ||\
+			   (TYPE == DP_F_DEQ_DL))
 static const char cqm_name[] = "cqm";
 static void __iomem *bufreq[CQM_FMX_NUM_POOLS];
 static void __iomem *eqmdesc[4];
@@ -1748,7 +1752,6 @@ ERR_CASE_2:
 s32 cqm_cpu_port_get(struct cbm_cpu_port_data *data, u32 flags)
 {
 	int i;
-	int valid_type = 0;
 	u32 type;
 	struct cbm_tx_push *ptr;
 
@@ -1778,8 +1781,7 @@ s32 cqm_cpu_port_get(struct cbm_cpu_port_data *data, u32 flags)
 
 	for (i = 0; i < CQM_MAX_CPU; i++) {
 		type = dqm_port_info[i].cpu_port_type;
-		valid_type = (type == DP_F_DEQ_CPU) ||  (type == DP_F_DEQ_CPU1);
-		if (!((dqm_port_info[i].valid) && valid_type)) {
+		if (!((dqm_port_info[i].valid) && IS_CPU_PORT_TYPE(type))) {
 			data->dq_tx_push_info[i].deq_port = -1;
 			continue;
 		}
@@ -3598,6 +3600,7 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	unsigned long sys_flag;
 	struct cqm_data *pdata = NULL;
 	const struct of_device_id *match;
+	u32 port_no, port_type;
 	int result;
 
 	memset(&cqm_dbg_cntrs, 0, sizeof(cqm_dbg_cntrs));
@@ -3687,6 +3690,26 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	if (cbm_hw_init(pdev))
 		return -1;
 	configure_ports(cqm_ctrl->cqm_cfg);
+
+	/* Fill port info only if entry is in dtsi file */
+	if (pdata->num_dq_port) {
+		for (i = 0; i < pdata->num_dq_port; i += MAX_CPU_DQ_PORT_ARGS) {
+			port_no   = pdata->dq_port[i];
+			port_type = pdata->dq_port[i + 1];
+
+			if (!((port_no >= 0) && (port_no < CQM_MAX_CPU))) {
+				pr_err("Invalid cpu deq port-no %d\n", port_no);
+				continue;
+			}
+
+			if (!IS_CPU_PORT_TYPE(port_type)) {
+				pr_err("Inv cpu dq port-type %d\n", port_type);
+				continue;
+			}
+			dqm_port_info[port_no].cpu_port_type = port_type;
+		}
+	}
+
 	cbm_w32(cqm_ctrl->enq + IP_OCC_EN, 0);
 	cbm_w32((cqm_ctrl->cqm + CBM_BSL_CTRL), CBM_BSL_CTRL_BSL1_EN_MASK |
 		CBM_BSL_CTRL_BSL2_EN_MASK);

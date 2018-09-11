@@ -46,8 +46,29 @@ struct cqm_bm_pool_config bm_pool_conf[CQM_FMX_NUM_POOLS] = {
 const struct cqm_config falcon_cqm_config[] = {
 	{
 	.type = DQM_CPU_TYPE,
+	.data.dqm_cpu.port = 0,
+	.data.dqm_cpu.cpu_port_type = 0,
+	.data.dqm_cpu.num_desc = 2,
+	.data.dqm_cpu.txpush_desc = 2,
+	},
+	{
+	.type = DQM_CPU_TYPE,
+	.data.dqm_cpu.port = 1,
+	.data.dqm_cpu.cpu_port_type = 0,
+	.data.dqm_cpu.num_desc = 2,
+	.data.dqm_cpu.txpush_desc = 2,
+	},
+	{
+	.type = DQM_CPU_TYPE,
 	.data.dqm_cpu.port = 2,
-	.data.dqm_cpu.cpu_port_type = DP_F_DEQ_CPU,
+	.data.dqm_cpu.cpu_port_type = 0,
+	.data.dqm_cpu.num_desc = 2,
+	.data.dqm_cpu.txpush_desc = 2,
+	},
+	{
+	.type = DQM_CPU_TYPE,
+	.data.dqm_cpu.port = 3,
+	.data.dqm_cpu.cpu_port_type = 0,
 	.data.dqm_cpu.num_desc = 2,
 	.data.dqm_cpu.txpush_desc = 2,
 	},

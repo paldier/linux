@@ -16,7 +16,7 @@ static int cqm_platdev_parse_dts(void);
 struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 			      int *num_res)
 {
-	struct device_node *node = NULL;
+	struct device_node *node = NULL, *cpu_deq_port = NULL;
 	struct device_node *ret_node = NULL;
 	int idx = 0;
 	struct cqm_data *cqm_pdata = NULL;
@@ -26,6 +26,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	const __be32 *p;
 	unsigned int buf_num;
 	unsigned int *pool_size;
+	u8 count = 0;
 
 	pr_info("[%s] .. [%d]\n", __func__, __LINE__);
 
@@ -94,6 +95,24 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 		*pool_size = buf_num;
 		pool_size++;
 	}
+
+	for_each_available_child_of_node(node, cpu_deq_port) {
+		if (of_property_count_u32_elems(cpu_deq_port, "intel,deq-port")
+						!= MAX_CPU_DQ_PORT_ARGS) {
+			pr_err("Invalid args in %s\n", cpu_deq_port->name);
+			continue;
+		}
+
+		of_property_for_each_u32(cpu_deq_port, "intel,deq-port", prop,
+					 p, cqm_pdata->dq_port[count]) {
+			count++;
+		}
+
+		if (count >= MAX_CPU_DQ_PORT_N_TYPE)
+			break;
+	}
+	cqm_pdata->num_dq_port = count;
+
 	ret_node = node;
 	return ret_node;
 

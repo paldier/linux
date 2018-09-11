@@ -23,6 +23,8 @@
 #define FALCON_DEV_NAME "falcon-cqm"
 #define GRX500_DEV_NAME "grx500-cbm"
 #define MAX_NUM_POOLS 16
+#define MAX_CPU_DQ_PORT_ARGS		2
+#define MAX_CPU_DQ_PORT_N_TYPE	8
 
 struct dt_node_inst {
 	char *dev_name;
@@ -41,5 +43,7 @@ struct cqm_data {
 	int num_pools;
 	unsigned int pool_ptrs[MAX_NUM_POOLS];
 	unsigned int pool_size[MAX_NUM_POOLS];
+	u32  dq_port[MAX_CPU_DQ_PORT_N_TYPE];
+	u32 num_dq_port;
 };
 #endif
