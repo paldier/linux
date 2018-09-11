@@ -1269,9 +1269,7 @@ int dp_dma_chan_irq_rx_enable(int inst, struct dp_dma_ch *ch, int flag);
  *@param[out] inst: DP instance ID
  *@return Returns GSWIP bridge id i.e. FID
  */
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
 int dp_get_fid_by_brname(struct net_device *dev, int *inst);
-#endif
 
 #endif /*DATAPATH_API_H */
 

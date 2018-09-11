@@ -1216,3 +1216,11 @@ int dp_meter_del(struct net_device *dev, struct dp_meter_cfg *meter,
 						    flag, &mtr_subif);
 }
 EXPORT_SYMBOL(dp_meter_del);
+
+#if (!IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV))
+int dp_get_fid_by_brname(struct net_device *dev, int *inst)
+{
+	PR_ERR("API not support when SWDEV disabled\n");
+	return -1;
+}
+#endif
