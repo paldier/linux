@@ -491,6 +491,7 @@
 /* Container Session Flags */
 #define SESSION_FLAG2_VETH 0x00001000
 #define SESSION_FLAG2_CONTAINER 0x00002000
+#define SESSION_FLAG2_NON_ETHWAN_SESSION 0x00004000
 /* Other flags */
 #define FLG_PPA_PROCESSED			0x100	/* this used to mark ecah packets which are processed by ppa datapath driver*/
 #define SESSION_FLAG_TC_REMARK		 0x40000000 /*Flag to sepcify bit 30 in extmark which specifies packet classified by iptables when set to 1*/
