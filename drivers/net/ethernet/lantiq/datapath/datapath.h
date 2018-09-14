@@ -455,6 +455,7 @@ struct pmac_port_info {
 	u32 tx_ring_offset;  /*PP: next tx_ring_addr=
 			      *   current tx_ring_addr + tx_ring_offset
 			      */
+	u32 lct_idx; /* LCT port register flag */
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 	u32 f_ptp:1; /* PTP1588 support enablement */
 #endif

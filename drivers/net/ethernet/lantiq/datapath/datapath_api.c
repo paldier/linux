@@ -563,6 +563,9 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		port_info->status = PORT_SUBIF_REGISTERED;
 		subif_id->port_id = port_id;
 		subif_id->subif = port_info->subif_info[i].subif;
+		/* set port as LCT port */
+		if (data->flag_ops & DP_F_DATA_LCT_SUBIF)
+			port_info->lct_idx = i;
 		port_info->num_subif++;
 		if ((port_info->num_subif == 1) ||
 		    (platfrm_data.act & TRIGGER_CQE_DP_ENABLE)) {
@@ -663,6 +666,9 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 				    dev, flags);
 		return res;
 	}
+	/* reset LCT port */
+	if (data->flag_ops & DP_F_DATA_LCT_SUBIF)
+		port_info->lct_idx = 0;
 	if (!list_empty(&port_info->subif_info[i].logic_dev)) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
 			 "Unregister fail: logic_dev of %s not empty yet!\n",
@@ -1850,6 +1856,54 @@ static void rx_dbg_zero_port(struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 			 "Recv Data");
 }
 
+/*This macro is for testing packet reception to LCT dev*/
+#define TEST_LCT 1
+/*clone skb to send one copy to lct dev for multicast/broadcast
+ * otherwise for unicast send only to lct device
+ */
+static int dp_handle_lct(struct pmac_port_info *dp_port,
+			 struct sk_buff *skb, dp_rx_fn_t rx_fn)
+{
+	struct sk_buff *lct_skb;
+	int subif, ret;
+
+	subif = dp_port->lct_idx;
+	skb->dev = dp_port->subif_info[subif].netif;
+	if (skb->data[PMAC_SIZE] & 0x1) {
+		/*multicast/broadcast*/
+		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT mcast or broadcast\n");
+		lct_skb = skb_clone(skb, GFP_ATOMIC);
+		if (!lct_skb) {
+			PR_ERR("LCT mcast/bcast skb clone fail\n");
+			return -1;
+		}
+		lct_skb->dev = dp_port->subif_info[subif].netif;
+		UP_STATS(dp_port->subif_info[subif].mib.rx_fn_rxif_pkt);
+#if TEST_LCT
+		skb_pull(lct_skb, sizeof(struct pmac_rx_hdr));
+		ret = netif_rx(lct_skb);
+		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s) ret(%d)\n",
+			 lct_skb->dev->name ? lct_skb->dev->name : "NULL",
+			 ret);
+#else
+		rx_fn(lct_skb->dev, NULL, lct_skb, lct_skb->len);
+#endif
+		return 1;
+	} else if (memcmp(skb->data + PMAC_SIZE, skb->dev->dev_addr, 6) == 0) {
+		/*unicast*/
+		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
+#if TEST_LCT
+		skb_pull(skb, sizeof(struct pmac_rx_hdr));
+		ret = netif_rx(skb);
+#else
+		rx_fn(skb->dev, NULL, skb, skb->len);
+#endif
+		UP_STATS(dp_port->subif_info[subif].mib.rx_fn_rxif_pkt);
+		return 0;
+	}
+	return 1;
+}
+
 #define DP_TS_HDRLEN	10
 
 static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
@@ -1872,6 +1926,7 @@ static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 	u8 inst = 0;
 	struct pmac_port_info *dp_port;
 	struct mac_ops *ops;
+	int ret_lct = 1;
 
 	dp_port = &dp_port_info[inst][0];
 	if (!skb) {
@@ -2002,8 +2057,13 @@ static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 				skb->offload_fwd_mark = 1;
 		#endif
 		if (rx_tx_flag == 0) {
-			rx_fn(dev, NULL, skb, skb->len);
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
+			if (dp_port->lct_idx > 0)
+				ret_lct = dp_handle_lct(dp_port, skb, rx_fn);
+			if (ret_lct) {
+				rx_fn(dev, NULL, skb, skb->len);
+				UP_STATS(dp_port->subif_info[vap].mib.
+								rx_fn_rxif_pkt);
+			}
 		} else {
 			rx_fn(NULL, dev, skb, skb->len);
 			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_txif_pkt);

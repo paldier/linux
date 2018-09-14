@@ -155,6 +155,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	}
 	seq_puts(s, "\n");
 	seq_printf(s, "    mode:              %d\n", port->cqe_lu_mode);
+	seq_printf(s, "    LCT:               %d\n", port->lct_idx);
 	seq_printf(s, "    cb->rx_fn:         0x%0x\n", (u32)port->cb.rx_fn);
 	seq_printf(s, "    cb->restart_fn:    0x%0x\n",
 		   (u32)port->cb.restart_fn);
@@ -1399,7 +1400,7 @@ int del_vap(char *param_list[], int num)
 	int inst = 0;
 	struct dp_subif_data data = {0};
 
-	if (num < 3) {
+	if (num < 4) {
 		PR_ERR("Not enough parameters\n");
 		return -1;
 	}
@@ -1444,6 +1445,9 @@ int del_vap(char *param_list[], int num)
 	/*de-register */
 	subif.inst = inst;
 	subif.port_id = dp_port;
+	if (dp_strncmpi(param_list[3], "lct", 3) == 0) {/*lct */
+		data.flag_ops |= DP_F_DATA_LCT_SUBIF;
+	}
 	if (dp_register_subif_ext(inst, port_info->owner, dev,
 				  dev->name, &subif, &data,
 				  DP_F_DEREGISTER)) {
@@ -1646,7 +1650,7 @@ int add_vap(char *param_list[], int num)
 	struct net_device *dev = NULL;
 	int inst = 0;
 
-	if (num < 5) {
+	if (num < 6) {
 		PR_ERR("Not enough parameters\n");
 		return -1;
 	}
@@ -1711,11 +1715,14 @@ int add_vap(char *param_list[], int num)
 			return -1;
 		}
 	}
+	if (dp_strncmpi(param_list[5], "lct", 3) == 0) {/*lct */
+		data.flag_ops |= DP_F_DATA_LCT_SUBIF;
+	}
 	/*ctp-dev*/
-	if (param_list[5]) {
+	if (param_list[6]) {
 		char ctp_name[IFNAMSIZ] = {0};
 		/* create ctp dev */
-		strncpy(name, param_list[5], sizeof(name) - 1);
+		strncpy(name, param_list[6], sizeof(name) - 1);
 		snprintf(ctp_name, sizeof(ctp_name), "ctp%d_%d", dp_port, vap);
 		data.ctp_dev = create_new_vap_dev(ctp_name);
 		if (!data.ctp_dev) {
@@ -1949,14 +1956,15 @@ HELP:
 	PR_INFO("Get dp_subif info:echo get dev_name > /proc/dp/%s\n",
 		PROC_LOGICAL_DEV);
 	PR_INFO("Add vap:echo add_v <dp_port> <vap> <tcont> <qid> %s\n",
-		"<ctp_parent_dev> > " DP_PROC_BASE PROC_LOGICAL_DEV);
+		"lct <ctp_parent_dev> > " DP_PROC_BASE PROC_LOGICAL_DEV);
 	PR_INFO("   Note of qid:\n");
 	PR_INFO("     default  : auto share queue(default handling)\n");
 	PR_INFO("     new_queue: auto alloc new queue\n");
 	PR_INFO("     value(>0): specified queue id by caller.\n");
 	PR_INFO("   Note of vap: 0, 1, 2, 3,....\n");
 	PR_INFO("   Note of ctp_dev: for PON pmapper case\n");
-	PR_INFO("Del vap:echo del_v <dp_port> <vap> %s/%s\n",
+	PR_INFO("   Note of lct: for LCT device registration\n");
+	PR_INFO("Del vap:echo del_v <dp_port> <vap> lct %s/%s\n",
 		DP_PROC_BASE, PROC_LOGICAL_DEV);
 	PR_INFO("echo alloc %s %s > /sys/kernel/debug/dp/%s\n",
 		PROC_ALLOC_PARAM, PROC_ALLOC_PARAM_FLAGS,

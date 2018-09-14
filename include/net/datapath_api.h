@@ -640,6 +640,7 @@ enum DP_SUBIF_DATA_FLAG {
 				       *  be created by caller itself, or
 				       *  by last call of dp_register_subif_ext
 				       */
+	DP_F_DATA_LCT_SUBIF = BIT(2), /*!< Register as LCT port */
 };
 
 /*! @brief struct dp_subif_data */
