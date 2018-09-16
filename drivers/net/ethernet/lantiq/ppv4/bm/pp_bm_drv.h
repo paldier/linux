@@ -50,7 +50,7 @@
 #define PP_BMGR_MAX_GROUPS		(16)
 
 /*! \def PP_BMGR_MAX_POLICIES
- *       Max supoorted policies. Real max defined in the DTS
+ *       Max supported policies. Real max defined in the DTS
  */
 #define PP_BMGR_MAX_POLICIES		(256)
 

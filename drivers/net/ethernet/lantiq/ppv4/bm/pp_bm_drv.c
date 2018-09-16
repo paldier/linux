@@ -195,7 +195,7 @@ static void print_resource(struct device *dev,
 			   struct resource *r)
 {
 
-	dev_info(dev, "%s memory resource: start(0x%08zX), size(%zu)\n",
+	dev_dbg(dev, "%s memory resource: start(0x%08zX), size(%zu)\n",
 		 name,
 		 (size_t)(uintptr_t)r->start,
 		 (size_t)(uintptr_t)resource_size(r));
@@ -235,7 +235,7 @@ static int buffer_manager_probe(struct platform_device *pdev)
 	struct device_node		*node;
 	int				err;
 
-	dev_info(&pdev->dev, "BM probe...\n");
+	dev_dbg(&pdev->dev, "BM probe...\n");
 
 	node = pdev->dev.of_node;
 
@@ -342,7 +342,7 @@ static int buffer_manager_remove(struct platform_device *pdev)
 
 	bm_dbg_dev_clean(pdev);
 
-	dev_info(&pdev->dev, "buffer_manager_remove(): remove done\n");
+	dev_dbg(&pdev->dev, "buffer_manager_remove(): remove done\n");
 
 	return 0;
 }
@@ -388,7 +388,7 @@ static void __exit buffer_manager_driver_exit(void)
 
 	bm_dbg_module_clean();
 
-	pr_info("buffer manager driver exit done\n");
+	pr_debug("buffer manager driver exit done\n");
 }
 
 /*************************************************/
@@ -456,7 +456,7 @@ static s32 bmgr_wait_for_init_completion(void)
 	struct timespec start_ts;
 	struct timespec end_ts;
 
-	pr_info("Waiting for operation complete....");
+	pr_debug("Waiting for operation complete....");
 
 	getnstimeofday(&start_ts);
 
@@ -469,7 +469,7 @@ static s32 bmgr_wait_for_init_completion(void)
 		st = (RD_REG_32(BMGR_STATUS_REG_ADDR(BM_BASE)) & (1));
 	} while (st);
 
-	pr_info("Done\n");
+	pr_debug("Done\n");
 
 	return RC_SUCCESS;
 }
@@ -1912,7 +1912,7 @@ s32 bmgr_pool_configure(const struct bmgr_pool_params * const pool_params,
 		u32 temp = user_array_ptr >> 6;
 		// for debugging ...
 		if (index == 0 || index == pool_params->num_buffers - 1)
-			pr_info("bmgr_pool_configure: index %d) writing 0x%x to 0x%x\n",
+			pr_debug("bmgr_pool_configure: index %d) writing 0x%x to 0x%x\n",
 				index, temp, (u32)temp_pointers_table_ptr);
 
 		*temp_pointers_table_ptr = user_array_ptr >> 6;

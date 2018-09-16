@@ -139,8 +139,7 @@ static void print_resource(
 		const char *name,
 		struct resource *r)
 {
-
-	dev_info(dev, "%s memory resource: start(0x%08zX), size(%zu)\n",
+	dev_dbg(dev, "%s memory resource: start(0x%08zX), size(%zu)\n",
 			name,
 			(size_t)(uintptr_t)r->start,
 			(size_t)(uintptr_t)resource_size(r));
@@ -177,7 +176,7 @@ static void *map_mem_resource(
 			err);
 		return NULL;
 	}
-	dev_info(dev, "%s memory mapped to %p\n", name, addr);
+	dev_dbg(dev, "%s memory mapped to %p\n", name, addr);
 
 	return addr;
 }
@@ -206,7 +205,7 @@ static void __iomem *map_reg_resource(
 	if (!addr)
 		dev_err(&pdev->dev, "Map of resource %s failed\n", name);
 	else
-		dev_info(&pdev->dev, "%s register mapped to %p\n", name, addr);
+		dev_dbg(&pdev->dev, "%s register mapped to %p\n", name, addr);
 
 	return addr;
 }
@@ -262,7 +261,7 @@ static int pp_qos_get_resources(
 		return err;
 	}
 	info->fwcom.irqline = err;
-	dev_info(dev, "irq is %d\n", err);
+	dev_dbg(dev, "irq is %d\n", err);
 
 	return 0;
 }
@@ -329,7 +328,7 @@ static int pp_qos_config_from_of_node(
 
 	dev = &pdev->dev;
 	node = pdev->dev.of_node;
-	dev_info(&pdev->dev, "Using device tree info to init platform data\n");
+	dev_dbg(&pdev->dev, "Using device tree info to init platform data\n");
 	err = of_alias_get_id(node, "qos");
 	if (err < 0) {
 		dev_err(dev, "failed to get alias id, errno %d\n", err);
@@ -382,7 +381,7 @@ static int pp_qos_config_from_of_node(
 		dev_err(dev, "devm_memremap failed mapping ddr with %d\n", err);
 		return err;
 	}
-	dev_info(dev, "DDR memory mapped to %p\n", pdrvdata->ddr);
+	dev_dbg(dev, "DDR memory mapped to %p\n", pdrvdata->ddr);
 
 	addr = dmam_alloc_coherent(
 			dev,
@@ -399,7 +398,7 @@ static int pp_qos_config_from_of_node(
 	pdata->fw_stat = pdata->fw_logger_start + PPV4_QOS_LOGGER_BUF_SIZE;
 	pdrvdata->dbg.fw_logger_addr = addr;
 
-	dev_info(dev, "Dma allocated %u bytes for fw logger, bus address is 0x%08X, virtual addr is %p\n",
+	dev_dbg(dev, "Dma allocated %u bytes for fw logger, bus address is 0x%08X, virtual addr is %p\n",
 		 PPV4_QOS_LOGGER_BUF_SIZE,
 		 pdata->fw_logger_start,
 		 pdrvdata->dbg.fw_logger_addr);
@@ -416,7 +415,7 @@ static int pp_qos_config_from_platform_data(
 	struct ppv4_qos_platform_data *psrc;
 	void *memaddr;
 
-	dev_info(&pdev->dev, "Using platform info to init platform data\n");
+	dev_dbg(&pdev->dev, "Using platform info to init platform data\n");
 	psrc = (struct ppv4_qos_platform_data *)dev_get_platdata(&pdev->dev);
 	if (!psrc) {
 		dev_err(&pdev->dev, "Device contain no platform data\n");
@@ -452,7 +451,7 @@ static int pp_qos_probe(struct platform_device *pdev)
 	struct device *dev;
 
 	dev = &pdev->dev;
-	dev_info(dev, "Probing...\n");
+	dev_dbg(dev, "Probing...\n");
 
 	/* there is no devm_vmalloc so using dev_kzalloc */
 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
@@ -481,7 +480,7 @@ static int pp_qos_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	dev_info(dev, "id(%d), max_port(%u), pop_prioritize(%u)\n",
+	dev_dbg(dev, "id(%d), max_port(%u), pop_prioritize(%u)\n",
 			init_info.pl_data.id,
 			init_info.pl_data.max_port,
 			init_info.pl_data.wred_prioritize_pop
@@ -503,7 +502,7 @@ static int pp_qos_probe(struct platform_device *pdev)
 	if (err)
 		goto fail;
 
-	dev_info(dev, "Probe completed\n");
+	dev_dbg(dev, "Probe completed\n");
 	cur_dev = dev;
 	return 0;
 
