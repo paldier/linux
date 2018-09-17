@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************************
  *
  *                          (C) Copyright 2016~2017 Intel Corporation
@@ -402,12 +403,12 @@ static int grx500wdt_probe(struct platform_device *pdev)
 		/* Use enable_percpu_irq() for each Online CPU. */
 
 		preempt_disable();
-        if (cpu != smp_processor_id())
+		if (cpu != smp_processor_id())
 			smp_call_function_single(cpu,
 				(smp_call_func_t)Enable_WDT_intr,
 				(void *)&irq, 1);
-        else
-            Enable_WDT_intr((void *)&irq);
+		else
+			Enable_WDT_intr((void *)&irq);
 
 		preempt_enable();
 
