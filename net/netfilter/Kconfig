@@ -969,6 +969,13 @@ config NETFILTER_XT_TARGET_SECMARK
 
 	  To compile it as a module, choose M here.  If unsure, say N.
 
+config PPA_IPTABLE_EVENT_HANDLING
+	tristate 'PPA iptable event handling'
+	default y
+	help
+	  SDL Firewall Rule update for iptable with respect to PPA
+	  sessions programmed into the hardware
+
 config NETFILTER_XT_TARGET_TCPMSS
 	tristate '"TCPMSS" target support'
 	depends on IPV6 || IPV6=n

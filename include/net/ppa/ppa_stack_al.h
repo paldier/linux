@@ -607,8 +607,18 @@ typedef struct list_head		PPA_LIST_NODE;
 /*!
 	\brief netdevice event registeration/unregisteration functions
  */
+extern int register_iptable_notifier(struct notifier_block *nb);
+extern int unregister_iptable_notifier(struct notifier_block *nb);
+
+#define ppa_register_iptable_notifier register_iptable_notifier
+#define ppa_unregister_iptable_notifier unregister_iptable_notifier
+
+/*
+	This is for iptable notifier, not for netdev notification
+*/
 #define ppa_register_netdevice_notifier register_netdevice_notifier
 #define ppa_unregister_netdevice_notifier unregister_netdevice_notifier
+
 /*
  * ####################################
  * Inline Functions

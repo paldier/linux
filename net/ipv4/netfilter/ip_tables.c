@@ -1123,6 +1123,58 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
 	return ret;
 }
 
+#if IS_ENABLED(CONFIG_PPA_IPTABLE_EVENT_HANDLING)
+static RAW_NOTIFIER_HEAD(iptable_chain);
+
+static int call_iptable_notifier(struct notifier_block *nb, unsigned long val)
+{
+	return nb->notifier_call(nb, val, NULL);
+}
+
+int register_iptable_notifier(struct notifier_block *nb)
+{
+	int err;
+
+	rtnl_lock();
+	err = raw_notifier_chain_register(&iptable_chain, nb);
+	if (err)
+		goto unlock;
+
+	err = call_iptable_notifier(nb, IPTABLE_CHANGE);
+	err = notifier_to_errno(err);
+	if (err)
+		raw_notifier_chain_unregister(&iptable_chain, nb);
+
+unlock:
+	rtnl_unlock();
+	return err;
+}
+EXPORT_SYMBOL(register_iptable_notifier);
+
+int unregister_iptable_notifier(struct notifier_block *nb)
+{
+	int err;
+
+	rtnl_lock();
+	err = raw_notifier_chain_unregister(&iptable_chain, nb);
+	rtnl_unlock();
+
+	return err;
+}
+EXPORT_SYMBOL(unregister_iptable_notifier);
+
+static int call_iptable_notifiers_info(unsigned long val)
+{
+	return raw_notifier_call_chain(&iptable_chain, val, NULL);
+}
+
+int call_iptable_notifiers(void)
+{
+	return call_iptable_notifiers_info(1);
+}
+EXPORT_SYMBOL(call_iptable_notifiers);
+#endif
+
 static int
 do_replace(struct net *net, const void __user *user, unsigned int len)
 {
@@ -1691,6 +1743,12 @@ do_ipt_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
 	switch (cmd) {
 	case IPT_SO_SET_REPLACE:
 		ret = do_replace(sock_net(sk), user, len);
+#if IS_ENABLED(CONFIG_PPA_IPTABLE_EVENT_HANDLING)
+		call_iptable_notifiers();
+		/* invokes the ppa handler for flushing the sessions
+		programmed currently in the HW on any modifications
+		made on iptable rules. */
+#endif
 		break;
 
 	case IPT_SO_SET_ADD_COUNTERS:

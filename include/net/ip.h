@@ -98,6 +98,8 @@ extern struct ip_ra_chain __rcu *ip_ra_chain;
 
 #define IP_FRAG_TIME	(30 * HZ)		/* fragment lifetime	*/
 
+#define IPTABLE_CHANGE 0x0005		/* PPA iptable change for SDL	*/
+
 struct msghdr;
 struct net_device;
 struct packet_type;
