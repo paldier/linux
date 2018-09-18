@@ -10,13 +10,8 @@
 #include <gsw_init.h>
 #include <gsw_swmcast.h>
 
-#define DEBUG_TEST 0
-#define FOR_LOOP_TEST 0
-#define DEBUG_PRINT 0
-
 static MCAST_HASHTBL phtable[MCAST_TABLE_SIZE];
 
-//static MCAST_HASHTBL *gsw_create_hash_table(u32 table_size);
 static int get_hashtable_empty_slot(void *cdev, MCAST_HASHTBL *phtable);
 static u16 cal_hash(u32 src_ip_mode, MCAST_HASHTBL_PTN *pattern, u32 type);
 static u16 crcmsb(const u8 *data, u32 len);
@@ -44,7 +39,6 @@ static u16 crcmsb(const u8 *data, u32 len)
 
 	return crc;
 }
-
 
 static u16 cal_hash(u32 src_ip_mode, MCAST_HASHTBL_PTN *pattern, u32 type)
 {
@@ -116,7 +110,7 @@ static u16 cal_hash(u32 src_ip_mode, MCAST_HASHTBL_PTN *pattern, u32 type)
 
 	crc = crcmsb(b, len);
 
-	crc &= 0x01FF;	// To make sure it is withing 512
+	crc &= 0x01FF;	/* To make sure it is withing 512 */
 
 	return (crc);
 }
@@ -167,29 +161,6 @@ int gsw_check_hashtable_entry(void *cdev)
 	return 0;
 }
 
-// Returns position of the only set bit in 'n'
-static int findPosition(u16 n)
-{
-	u16 i = 1;
-	int pos = 0;
-
-	if (n == 0)
-		return -1;
-
-	// Iterate through bits of n till we find a set bit
-	// i&n will be non-zero only when 'i' and 'n' have a set bit
-	// at same position
-	while (!(i & n)) {
-		// Unset current bit and set the next bit in 'i'
-		i = i << 1;
-
-		// increment position
-		++pos;
-	}
-
-	return pos;
-}
-
 static void update_bridge_pmap(u32 portId, MCAST_HASHTBL *table_ptr, u32 val)
 {
 
@@ -218,7 +189,6 @@ int gsw_init_hash_table(void *cdev)
 		return GSW_statusErr;
 	}
 
-	//printk("Enter %s:%s:%d\n", __FILE__, __func__, __LINE__);
 	memset(phtable, 0, (MCAST_HASHTBL_SIZE * gswdev->mctblsize));
 
 	if (IS_VRSN_31(gswdev->gipver)) {
@@ -232,12 +202,8 @@ int gsw_init_hash_table(void *cdev)
 
 			pcetable.pcindex = pcindex;
 			pcetable.table = PCE_MULTICAST_SW_INDEX;
-
-			// TODO: Write the initial entries to HW Table
-			//gsw_pce_table_write(cdev, &pcetable);
 		}
 
-		//printk("Exit %s:%s:%d\n", __FILE__, __func__, __LINE__);
 		return GSW_statusOk;
 	}
 
@@ -251,144 +217,64 @@ int gsw_get_swmcast_entry(void *cdev, GSW_multicastTableRead_t *parm, u32 loc)
 	int i = 0;
 	int pos;
 
-	printk("Enter %s:%s:%d\n", __FILE__, __func__, __LINE__);
-
-	printk("Getting Index %d\n", loc);
-
 	if (gswdev == NULL)
 		return 0;
 
-#if DEBUG_TEST
+	memset(&pcetable, 0, sizeof(pctbl_prog_t));
+	pcetable.pcindex = loc;
+	pcetable.table = PCE_MULTICAST_SW_INDEX;
+	gsw_pce_table_read(cdev, &pcetable);
 
-	if (loc == 0) {
-#if FOR_LOOP_TEST
+	if (pcetable.valid == 1) {
+		parm->bExclSrcIP = ((pcetable.key[2] >> 14) & 0x3);
 
-		for (j = 0; j < 512; j++) {
-			loc = j;
-#endif
-#endif
-			memset(&pcetable, 0, sizeof(pctbl_prog_t));
-			pcetable.pcindex = loc;
-			pcetable.table = PCE_MULTICAST_SW_INDEX;
-			gsw_pce_table_read(cdev, &pcetable);
+		/* Pattern */
+		parm->nFID = pcetable.key[2] & 0x3F;
 
-			printk("Getting Index %d\n", loc);
-#if DEBUG_PRINT
+		for (i = 0; i < 8; i++)
+			parm->uIP_Gda.nIPv6[i] = pcetable.key[3 + i];
 
-			printk("pcetable.valid = %d\n", pcetable.valid);
+		for (i = 0; i < 8; i++)
+			parm->uIP_Gsa.nIPv6[i] = pcetable.key[11 + i];
 
-			for (i = 0; i < 18; i++)
-				printk("pcetable.key[%d] %d\n", i, pcetable.key[i]);
+                if(parm->eIPVersion == GSW_IP_SELECT_IPV4) {
+                    parm->uIP_Gda.nIPv4 = le32_to_cpu(parm->uIP_Gda.nIPv4);
+                    parm->uIP_Gsa.nIPv4 = le32_to_cpu(parm->uIP_Gsa.nIPv4);
+                }
 
-			for (i = 1; i < 18; i++)
-				printk("pcetable.val[%d] %d\n", i, pcetable.val[i]);
+		/* Action */
+		parm->nSubIfId = ((pcetable.val[1] >> 3) & 0x1FFF);
 
-			printk("\n\n");
-#else
+		for (i = 0; i < 16; i++) {
+			parm->nPortMap[i] = pcetable.val[2 + i];
 
-#if FOR_LOOP_TEST
-
-			int issue = 0;
-
-			if (pcetable.valid != 1) {
-				issue = 1;
-			}
-
-			if ((pcetable.key[0] != 0x3FF) && (pcetable.key[1] != 0x1FF) && (pcetable.key[2] != 0xC03F))
-				issue = 1;
-
-			for (i = 3; i < 18; i++) {
-				if (pcetable.key[i] != 0xFFFF)
-					issue = 1;
-			}
-
-			if (pcetable.val[1] != 0xFFF8)
-				issue = 1;
-
-			for (i = 2; i < 10; i++) {
-				if (pcetable.val[i] != 0xFFFF)
-					issue = 1;
-			}
-
-			for (i = 10; i < 18; i++) {
-				if (pcetable.val[i] != 0)
-					issue = 1;
-			}
-
-			if (issue) {
-				printk("Error in READING INDEX %d\n", loc);
-				return 1;
-			}
-
-#endif
-#endif
-
-			if (pcetable.valid == 1) {
-				parm->bExclSrcIP = ((pcetable.key[2] >> 14) & 0x3);
-
-				// Pattern
-				parm->nFID = pcetable.key[2] & 0x3F;
-
-				for (i = 0; i < 8; i++)
-					parm->uIP_Gda.nIPv6[i] = pcetable.key[3 + i];
-
-				for (i = 0; i < 8; i++)
-					parm->uIP_Gsa.nIPv6[i] = pcetable.key[11 + i];
-
-				// Action
-				parm->nSubIfId = ((pcetable.val[1] >> 3) & 0x1FFF);
-
-				for (i = 0; i < 16; i++) {
-					parm->nPortMap[i] = pcetable.val[2 + i];
-
-					pos = findPosition(pcetable.val[2 + i]);
-
-					if (pos != -1) {
-						parm->nPortId += (pos + (i * 16));
-					}
-				}
-
-				printk("ENTRY_FOUND %s:%s:%d\n", __FILE__, __func__, __LINE__);
-			}
-
-
-			printk("Got Loc        %d\n", loc);
-			printk("Valid          %d\n", pcetable.valid);
-			printk("ExclSrcIP      %d\n", parm->bExclSrcIP);
-			printk("nFID           %d\n", parm->nFID);
-			printk("First Idx      %d\n", pcetable.key[0]);
-			printk("Next Idx       %d\n", pcetable.key[1]);
-
-			for (i = 0; i < 8; i++)
-				printk("uIP_Gda.nIPv6[%d] %04x\n", i, parm->uIP_Gda.nIPv6[i]);
-
-			for (i = 0; i < 8; i++)
-				printk("uIP_Gsa.nIPv6[%d] %04x\n", i, parm->uIP_Gsa.nIPv6[i]);
-
-			printk("nSubIfId       %d\n", parm->nSubIfId);
-
-			for (i = 0; i < 16; i++)
-				printk("nPortMap[%d] %04x\n", i, parm->nPortMap[i]);
-
-			printk("nPortId        %d\n", parm->nPortId);
-
-			printk("Exit %s:%s:%d\n", __FILE__, __func__, __LINE__);
-
-#if DEBUG_TEST
-#if FOR_LOOP_TEST
-
+			parm->nPortId += parm->nPortMap[i];
 		}
 
-#endif
+		pr_debug("Got Loc        %d\n", loc);
+		pr_debug("Valid	       %d\n", pcetable.valid);
+		pr_debug("ExclSrcIP      %d\n", parm->bExclSrcIP);
+		pr_debug("nFID	       %d\n", parm->nFID);
+		pr_debug("First Idx      %d\n", pcetable.key[0]);
+		pr_debug("Next Idx       %d\n", pcetable.key[1]);
+
+		for (i = 0; i < 8; i++)
+			pr_debug("uIP_Gda.nIPv6[%d] %04x\n", i, parm->uIP_Gda.nIPv6[i]);
+
+		for (i = 0; i < 8; i++)
+			pr_debug("uIP_Gsa.nIPv6[%d] %04x\n", i, parm->uIP_Gsa.nIPv6[i]);
+
+		pr_debug("nSubIfId       %d\n", parm->nSubIfId);
+
+		for (i = 0; i < 16; i++)
+			pr_debug("nPortMap[%d] %04x\n", i, parm->nPortMap[i]);
+
+		pr_debug("nPortId        %d\n", parm->nPortId);
+
+		pr_debug("ENTRY_FOUND %s:%s:%d\n", __FILE__, __func__, __LINE__);
 	}
 
-#endif
-
-#if DEBUG_TEST
-	return 1;
-#else
-	return (pcetable.valid);
-#endif
+	return 0;
 }
 
 static int set_pce_hash_table(void *cdev, MCAST_HASHTBL *phtable, u32 loc)
@@ -400,9 +286,6 @@ static int set_pce_hash_table(void *cdev, MCAST_HASHTBL *phtable, u32 loc)
 	if (gswdev == NULL)
 		return 0;
 
-	printk("Enter %s:%s:%d\n", __FILE__, __func__, __LINE__);
-
-	printk("Setting Index %d\n", loc);
 	memset(&pcetable, 0, sizeof(pctbl_prog_t));
 	pcetable.pcindex = loc;
 	pcetable.table = PCE_MULTICAST_SW_INDEX;
@@ -416,7 +299,7 @@ static int set_pce_hash_table(void *cdev, MCAST_HASHTBL *phtable, u32 loc)
 	pcetable.valid = phtable->valid;
 	pcetable.key[2] = ((phtable->excl_src_ip & 0x3) << 14);
 
-	// Pattern
+	/* Pattern */
 	pcetable.key[2] |= phtable->key.fid & 0x3F;
 
 	for (i = 0; i < 8; i++) {
@@ -427,74 +310,14 @@ static int set_pce_hash_table(void *cdev, MCAST_HASHTBL *phtable, u32 loc)
 		pcetable.key[11 + i] = phtable->key.srcip.nIPv6[i];
 	}
 
-	// Action
+	/* Action */
 	pcetable.val[1] = ((phtable->action.subifid & 0x1FFF) << 3);
 
 	/*Set Bridge Port Map*/
 	for (i = 0; i < 16; i++)
 		pcetable.val[2 + i] = phtable->action.br_portmap[i];
 
-#if DEBUG_TEST
-
-	if (loc == 0) {
-#if FOR_LOOP_TEST
-
-		for (j = 0; j < 512; j++) {
-			loc = j;
-#endif
-			printk("Setting Index %d\n", loc);
-			pcetable.pcindex = loc;
-			pcetable.table = PCE_MULTICAST_SW_INDEX;
-			pcetable.valid = 1;
-
-			for (i = 1; i < 18; i++)
-				pcetable.val[i] = 0xFFFF;
-
-			for (i = 0; i < 18; i++)
-				pcetable.key[i] = 0xFFFF;
-
-#if DEBUG_PRINT
-			printk("pcetable.valid = %d\n", pcetable.valid);
-
-			for (i = 0; i < 18; i++)
-				printk("pcetable.key[%d] %04x\n", i, pcetable.key[i]);
-
-			for (i = 1; i < 18; i++)
-				printk("pcetable.val[%d] %04x\n", i, pcetable.val[i]);
-
-			printk("\n\n");
-
-			printk("valid = %d\n", phtable->valid);
-
-			printk("eModeMember %d\n", phtable->src_ip_mode);
-			printk("nFID %d\n", phtable->key.fid);
-
-			for (i = 0; i < 8; i++)
-				printk("uIP_Gda.nIPv6[%d] %04x\n", i, phtable->key.dstip.nIPv6[i]);
-
-			for (i = 0; i < 8; i++)
-				printk("uIP_Gsa.nIPv6[%d] %04x\n", i, phtable->key.srcip.nIPv6[i]);
-
-			printk("nSubIfId %d\n", phtable->action.subifid);
-
-			for (i = 0; i < 16; i++)
-				printk("nPortMap[%d] %04x\n", i, phtable->action.br_portmap[i]);
-
-			printk("Exit %s:%s:%d\n", __FILE__, __func__, __LINE__);
-#endif
-			gsw_pce_table_write(cdev, &pcetable);
-#if FOR_LOOP_TEST
-		}
-
-#endif
-	}
-
-#else
 	gsw_pce_table_write(cdev, &pcetable);
-
-	//gsw_get_swmcast_entry(cdev, &parm, loc);
-
-#endif
 
 	return GSW_statusOk;
 }
@@ -516,8 +339,6 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 		return GSW_statusErr;
 	}
 
-	printk("Enter %s:%s:%d\n", __FILE__, __func__, __LINE__);
-
 	if (parm->nPortId > gswdev->num_of_bridge_port) {
 		pr_err("PortId only upto %d is supported\n", gswdev->num_of_bridge_port);
 		return FAIL;
@@ -526,8 +347,8 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 	portId = parm->nPortId;
 
 	if (parm->eIPVersion == GSW_IP_SELECT_IPV4) {
-		pattern.srcip.nIPv4 = parm->uIP_Gsa.nIPv4;
-		pattern.dstip.nIPv4 = parm->uIP_Gda.nIPv4;
+		pattern.srcip.nIPv4 = cpu_to_le32(parm->uIP_Gsa.nIPv4);
+		pattern.dstip.nIPv4 = cpu_to_le32(parm->uIP_Gda.nIPv4);
 		printk("portId = %d\n parm->eIPVersion = %d\n nSubIfId = %d\n uIP_Gsa.nIPv4 = %08x\n uIP_Gda.nIPv4 = %08x\n fid = %d\n bExclSrcIP = %d\n eModeMember = %d\n", parm->nPortId, parm->eIPVersion, parm->nSubIfId, parm->uIP_Gsa.nIPv4, parm->uIP_Gda.nIPv4,
 		       parm->nFID,  parm->bExclSrcIP, parm->eModeMember);
 	} else if (parm->eIPVersion == GSW_IP_SELECT_IPV6) {
@@ -552,7 +373,7 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 		return ret;
 	} else if (ret ==  MATCH_FOUND) {
 
-		// Existing Entry Found, update the bridge portmap with the new portid and exit
+		/* Existing Entry Found, update the bridge portmap with the new portid and exit */
 
 		printk("Existing Entry Found, update the bridge portmap with the new portid and exit\n");
 		table_ptr = &phtable[found_loc];
@@ -576,17 +397,17 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 		return FAIL;
 	}
 
-	printk("Got new location %d\n", loc);
+	pr_debug("Got new location %d\n", loc);
 
 	new_table_ptr = &phtable[loc];
 
-	// No session yet in this hashidx, add the first entry
+	/* No session yet in this hashidx, add the first entry */
 	if (ret == NO_VALID_HASHENTRY) {
 		printk("ADDING new hash idx = %x first loc %d\n", hashidx, loc);
 		phtable[hashidx].first_idx = loc;
 		set_pce_hash_table(cdev, &phtable[hashidx], hashidx);
 	}
-	// There is already some entry in the hash index, add new one
+	/* There is already some entry in the hash index, add new one */
 	else if (ret == MATCH_NOT_FOUND) {
 
 		printk("MATCH NOT FOUND in hash idx = %x new entry loc %d\n", hashidx, loc);
@@ -594,11 +415,11 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 		table_ptr = &phtable[hashidx];
 		table_ptr = &phtable[table_ptr->first_idx];
 
-		// Find the last entry of the current hash index
+		/* Find the last entry of the current hash index */
 		while (table_ptr->idx != table_ptr->nxt_idx)
 			table_ptr = &phtable[table_ptr->nxt_idx];
 
-		// Update the existing hash last entry's nxt pointer to the new loc.
+		/* Update the existing hash last entry's nxt pointer to the new loc. */
 		table_ptr->nxt_idx = loc;
 
 		set_pce_hash_table(cdev, table_ptr, table_ptr->idx);
@@ -607,7 +428,7 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 	memset(&new_table_ptr->key, 0, sizeof(MCAST_HASHTBL_PTN));
 	memset(&new_table_ptr->action, 0, sizeof(MCAST_HASHTBL_ACT));
 
-	// New entry will be the last entry in this hashidx so update the loc to the nxt ptr
+	/* New entry will be the last entry in this hashidx so update the loc to the nxt ptr */
 	new_table_ptr->nxt_idx = loc;
 
 	new_table_ptr->valid        = 1;
@@ -628,14 +449,12 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 	new_table_ptr->excl_src_ip = parm->bExclSrcIP;
 
 	if (ret == NO_VALID_HASHENTRY) {
-		// Need to update sub if id only for the first entry
+		/* Need to update sub if id only for the first entry */
 		new_table_ptr->action.subifid = parm->nSubIfId;
 	}
 
 	update_bridge_pmap(portId, new_table_ptr, SET);
 	set_pce_hash_table(cdev, new_table_ptr, loc);
-
-	printk("Insert Exit %s:%s:%d\n", __FILE__, __func__, __LINE__);
 
 	return loc;
 }
@@ -662,8 +481,6 @@ int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multi
 		return FAIL;
 	}
 
-	printk("Enter %s:%s:%d\n", __FILE__, __func__, __LINE__);
-
 	portId = parm->nPortId;
 
 	if (parm->eIPVersion == GSW_IP_SELECT_IPV4) {
@@ -689,7 +506,7 @@ int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multi
 		gsw_get_swmcast_entry(cdev, read_parm, found_loc);
 	} else if (ret == NO_VALID_HASHENTRY)
 		printk("No Valid Entry to the HASHIDX %x\n", hashidx);
-	// There is already some entry in the hash index, add new one
+	/* There is already some entry in the hash index, add new one */
 	else if (ret == MATCH_NOT_FOUND)
 		printk("MATCH_NOT_FOUND to the HASHIDX %x\n", hashidx);
 
@@ -702,20 +519,18 @@ static int search_hashtable_entry(u32 hashidx, MCAST_HASHTBL_PTN *pattern, u32 *
 
 	MCAST_HASHTBL  *table_ptr;
 
-	printk("Enter %s:%s:%d\n", __FILE__, __func__, __LINE__);
-
-	printk("SEARCHING session hash idx = %x \n", hashidx);
+	pr_debug("SEARCHING session hash idx = %x \n", hashidx);
 
 	table_ptr = &phtable[hashidx];
 
 	if (table_ptr->first_idx == 0xFFFF)
 		return NO_VALID_HASHENTRY;
 
-	// Go Inside the First Ptr
+	/* Go Inside the First Ptr */
 	table_ptr = &phtable[table_ptr->first_idx];
 
 	for (i = 0; i < MAX_STEP_CNTR; i++) {
-		printk("Searching Idx %d\n", table_ptr->idx);
+		pr_debug("Searching Idx %d\n", table_ptr->idx);
 
 		if (table_ptr->valid) {
 
@@ -726,7 +541,7 @@ static int search_hashtable_entry(u32 hashidx, MCAST_HASHTBL_PTN *pattern, u32 *
 				    (pattern->fid == table_ptr->key.fid)) {
 
 					*loc = table_ptr->idx;
-					printk("MATCH_FOUND %s:%s:%d\n", __FILE__, __func__, __LINE__);
+					pr_debug("MATCH_FOUND %s:%s:%d\n", __FILE__, __func__, __LINE__);
 					return MATCH_FOUND;
 				}
 			} else {
@@ -736,14 +551,14 @@ static int search_hashtable_entry(u32 hashidx, MCAST_HASHTBL_PTN *pattern, u32 *
 				    (pattern->fid == table_ptr->key.fid)) {
 
 					*loc = table_ptr->idx;
-					printk("MATCH_FOUND %s:%s:%d\n", __FILE__, __func__, __LINE__);
+					pr_debug("MATCH_FOUND %s:%s:%d\n", __FILE__, __func__, __LINE__);
 					return MATCH_FOUND;
 				}
 
 			}
 		}
 
-		printk("Current Idx %d Nxt Ptr %d\n", table_ptr->idx, table_ptr->nxt_idx);
+		pr_debug("Current Idx %d Nxt Ptr %d\n", table_ptr->idx, table_ptr->nxt_idx);
 
 		if (table_ptr->idx == table_ptr->nxt_idx) {
 			printk("No match is found\n");
@@ -770,42 +585,42 @@ static int remove_hashentry(void *cdev, u32 hashidx, u32 rm_idx, u32 portId)
 			return  UPDATED_BR_PMAP;
 	}
 
-	// Going to remove the entry
+	/* Going to remove the entry */
 
-	// Go Inside the table
+	/* Go Inside the table */
 	table_ptr = &phtable[table_ptr->first_idx];
 
-	if (phtable[rm_idx].nxt_idx == rm_idx) { // we are going to remove the last entry
-		// first entry to the hash is the last entry
+	if (phtable[rm_idx].nxt_idx == rm_idx) { /* we are going to remove the last entry */
+		/* first entry to the hash is the last entry */
 		if (phtable[hashidx].first_idx == rm_idx) {
-			// Indicate there is no valid session to the particular hashidx
+			/* Indicate there is no valid session to the particular hashidx */
 			phtable[hashidx].first_idx = 0xFFFF;
 			set_pce_hash_table(cdev, &phtable[hashidx], hashidx);
-		} else {	// we have atleast 2 entries to the hash
+		} else {	/* we have atleast 2 entries to the hash */
 
-			// Find the previous entry to the current remove entry
+			/* Find the previous entry to the current remove entry */
 			while (rm_idx != table_ptr->nxt_idx)
 				table_ptr = &phtable[table_ptr->nxt_idx];
 
-			// Update the previous entry as the last entry
+			/* Update the previous entry as the last entry */
 			table_ptr->nxt_idx = table_ptr->idx;
 			set_pce_hash_table(cdev, table_ptr, table_ptr->idx);
 		}
 	}
-	// we are going to remove something in middle
+	/* we are going to remove something in middle */
 	else {
 
-		// firt entry to the hash we are going to remove
+		/* firt entry to the hash we are going to remove */
 		if (phtable[hashidx].first_idx == rm_idx) {
-			// Update the hashidx first ptr entry as the next entry
+			/* Update the hashidx first ptr entry as the next entry */
 			phtable[hashidx].first_idx = table_ptr->nxt_idx;
 			set_pce_hash_table(cdev, &phtable[hashidx], hashidx);
 		} else {
-			// Find the previous entry to the current remove entry
+			/* Find the previous entry to the current remove entry */
 			while (rm_idx != table_ptr->nxt_idx)
 				table_ptr = &phtable[table_ptr->nxt_idx];
 
-			// Update the previous entry nxt ptr to the next entry after remove entry
+			/* Update the previous entry nxt ptr to the next entry after remove entry */
 			table_ptr->nxt_idx = phtable[rm_idx].nxt_idx;
 			set_pce_hash_table(cdev, table_ptr, table_ptr->idx);
 		}
@@ -838,11 +653,9 @@ int gsw_remove_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 		return FAIL;
 	}
 
-	printk("Enter %s:%s:%d\n", __FILE__, __func__, __LINE__);
-
 	if (parm->eIPVersion == GSW_IP_SELECT_IPV4) {
-		pattern.srcip.nIPv4 = parm->uIP_Gsa.nIPv4;
-		pattern.dstip.nIPv4 = parm->uIP_Gda.nIPv4;
+		pattern.srcip.nIPv4 = cpu_to_le32(parm->uIP_Gsa.nIPv4);
+		pattern.dstip.nIPv4 = cpu_to_le32(parm->uIP_Gda.nIPv4);
 	} else if (parm->eIPVersion == GSW_IP_SELECT_IPV6) {
 		for (i = 0; i < 8; i++) {
 			pattern.srcip.nIPv6[i] = parm->uIP_Gsa.nIPv6[7 - i];
@@ -859,19 +672,17 @@ int gsw_remove_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 
 	table_ptr = &phtable[loc];
 
-	printk("REMOVING hash idx %x Found loc %d table idx %d\n", hashidx, loc, table_ptr->idx);
+	pr_debug("REMOVING hash idx %x Found loc %d table idx %d\n", hashidx, loc, table_ptr->idx);
 
 	ret = remove_hashentry(cdev, hashidx, loc, parm->nPortId);
 	set_pce_hash_table(cdev, table_ptr, loc);
 
 	if (ret == REMOVED_ENTRY)
-		printk("REMOVED_ENTRY %s:%s:%d\n", __FILE__, __func__, __LINE__);
+		pr_debug("REMOVED_ENTRY %s:%s:%d\n", __FILE__, __func__, __LINE__);
 	else if (ret == UPDATED_BR_PMAP)
-		printk("UPDATED BR PMAP ENTRY %s:%s:%d\n", __FILE__, __func__, __LINE__);
+		pr_debug("UPDATED BR PMAP ENTRY %s:%s:%d\n", __FILE__, __func__, __LINE__);
 	else
-		printk("ENTRY_CANNOT_REMOVE %s:%s:%d\n", __FILE__, __func__, __LINE__);
+		pr_debug("ENTRY_CANNOT_REMOVE %s:%s:%d\n", __FILE__, __func__, __LINE__);
 
 	return ret;
-
 }
-

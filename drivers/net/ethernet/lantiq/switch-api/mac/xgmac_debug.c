@@ -1483,28 +1483,28 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("\nTYPE                        ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%9s %d", "XGMAC", i);
+		mac_printf("%18s %d", "XGMAC", i);
 
 	mac_printf("\n");
 
 	mac_printf("Rx_Packets                = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.rxframecount_gb);
+		mac_printf("%20llu", prv_data[i].mmc_stats.rxframecount_gb);
 
 	mac_printf("\n");
 
 	mac_printf("Rx_Bytes                  = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.rxoctetcount_gb);
+		mac_printf("%20llu", prv_data[i].mmc_stats.rxoctetcount_gb);
 
 	mac_printf("\n");
 
 	mac_printf("Rx_Byte_errors            = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu",
+		mac_printf("%20llu",
 			   (prv_data[i].mmc_stats.rxoctetcount_gb -
 			    prv_data[i].mmc_stats.rxoctetcount_g));
 
@@ -1513,21 +1513,21 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Rx_Pauseframe             = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.rxpauseframes);
+		mac_printf("%20llu", prv_data[i].mmc_stats.rxpauseframes);
 
 	mac_printf("\n");
 
 	mac_printf("Rx_Crc_Errors             = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.rxcrcerror);
+		mac_printf("%20llu", prv_data[i].mmc_stats.rxcrcerror);
 
 	mac_printf("\n");
 
 	mac_printf("Rx_Fifo_Errors            = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.rxfifooverflow);
+		mac_printf("%20llu", prv_data[i].mmc_stats.rxfifooverflow);
 
 	mac_printf("\n");
 	mac_printf("\n");
@@ -1535,21 +1535,21 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Packets                = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.txframecount_gb);
+		mac_printf("%20llu", prv_data[i].mmc_stats.txframecount_gb);
 
 	mac_printf("\n");
 
 	mac_printf("Tx_Bytes                  = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.txoctetcount_gb);
+		mac_printf("%20llu", prv_data[i].mmc_stats.txoctetcount_gb);
 
 	mac_printf("\n");
 
 	mac_printf("Tx_Packet_Errors          = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu",
+		mac_printf("%20llu",
 			   (prv_data[i].mmc_stats.txframecount_gb -
 			    prv_data[i].mmc_stats.txframecount_g));
 
@@ -1558,7 +1558,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Byte_Errors            = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu",
+		mac_printf("%20llu",
 			   (prv_data[i].mmc_stats.txoctetcount_gb -
 			    prv_data[i].mmc_stats.txoctetcount_g));
 
@@ -1567,14 +1567,14 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Pauseframe             = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.txpauseframes);
+		mac_printf("%20llu", prv_data[i].mmc_stats.txpauseframes);
 
 	mac_printf("\n");
 
 	mac_printf("Tx_underflow_error        = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		mac_printf("%11llu", prv_data[i].mmc_stats.txunderflowerror);
+		mac_printf("%20llu", prv_data[i].mmc_stats.txunderflowerror);
 
 	return 0;
 }
@@ -1592,70 +1592,70 @@ int xgmac_get_stats(void *pdev)
 		   pdata->mac_idx);
 	mac_printf("Rx_Packets                = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxframecount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxframecount_gb);
 	mac_printf("\n");
 
 	mac_printf("Rx_Bytes                  = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxoctetcount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxoctetcount_gb);
 	mac_printf("\n");
 
 	mac_printf("Rx_Byte_errors            = ");
 
-	mac_printf("%11llu\n",
+	mac_printf("%20llu\n",
 		   (pdata->mmc_stats.rxoctetcount_gb -
 		    pdata->mmc_stats.rxoctetcount_g));
 	mac_printf("\n");
 
 	mac_printf("Rx_Pauseframe             = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxpauseframes);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxpauseframes);
 	mac_printf("\n");
 
 	mac_printf("Rx_Crc_Errors             = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxcrcerror);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxcrcerror);
 	mac_printf("\n");
 
 	mac_printf("Rx_Fifo_Errors            = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxfifooverflow);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxfifooverflow);
 	mac_printf("\n");
 
 	mac_printf("\n");
 
 	mac_printf("Tx_Packets                = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txframecount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.txframecount_gb);
 	mac_printf("\n");
 
 	mac_printf("Tx_Bytes                  = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txoctetcount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.txoctetcount_gb);
 	mac_printf("\n");
 
 	mac_printf("Tx_Packet_Errors          = ");
 
-	mac_printf("%11llu\n",
+	mac_printf("%20llu\n",
 		   (pdata->mmc_stats.txframecount_gb -
 		    pdata->mmc_stats.txframecount_g));
 	mac_printf("\n");
 
 	mac_printf("Tx_Byte_Errors            = ");
 
-	mac_printf("%11llu\n",
+	mac_printf("%20llu\n",
 		   (pdata->mmc_stats.txoctetcount_gb -
 		    pdata->mmc_stats.txoctetcount_g));
 	mac_printf("\n");
 
 	mac_printf("Tx_Pauseframe             = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txpauseframes);
+	mac_printf("%20llu\n", pdata->mmc_stats.txpauseframes);
 	mac_printf("\n");
 
 	mac_printf("Tx_underflow_error        = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txunderflowerror);
+	mac_printf("%20llu\n", pdata->mmc_stats.txunderflowerror);
 	mac_printf("\n");
 
 	return 0;
@@ -1681,7 +1681,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("\nTYPE                        ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%9s %d\t", "XGMAC", i);
+		sprintf(buf + strlen(buf), "%18s %d\t", "XGMAC", i);
 
 	mac_printf(buf);
 
@@ -1690,7 +1690,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Rx_Packets                = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxframecount_gb);
 
 	mac_printf(buf);
@@ -1700,7 +1700,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Rx_Bytes                  = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxoctetcount_gb);
 
 	mac_printf(buf);
@@ -1710,7 +1710,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Rx_Byte_errors            = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			(prv_data[i].mmc_stats.rxoctetcount_gb -
 			 prv_data[i].mmc_stats.rxoctetcount_g));
 
@@ -1721,7 +1721,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Rx_Pauseframe             = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxpauseframes);
 
 	mac_printf(buf);
@@ -1731,7 +1731,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Rx_Crc_Errors             = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxcrcerror);
 
 	mac_printf(buf);
@@ -1741,7 +1741,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Rx_Fifo_Errors            = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxfifooverflow);
 
 	mac_printf(buf);
@@ -1753,7 +1753,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Packets                = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txframecount_gb);
 
 	mac_printf(buf);
@@ -1763,7 +1763,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Bytes                  = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txoctetcount_gb);
 
 	mac_printf(buf);
@@ -1773,7 +1773,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Packet_Errors          = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			(prv_data[i].mmc_stats.txframecount_gb -
 			 prv_data[i].mmc_stats.txframecount_g));
 
@@ -1784,7 +1784,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Byte_Errors            = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			(prv_data[i].mmc_stats.txoctetcount_gb -
 			 prv_data[i].mmc_stats.txoctetcount_g));
 
@@ -1795,7 +1795,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_Pauseframe             = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txpauseframes);
 
 	mac_printf(buf);
@@ -1805,7 +1805,7 @@ int xgmac_get_stats_all(void *pdev)
 	mac_printf("Tx_underflow_error        = ");
 
 	for (i = 0; i < pdata->max_mac; i++)
-		sprintf(buf + strlen(buf), "%11llu\t",
+		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txunderflowerror);
 
 	mac_printf(buf);
@@ -1822,63 +1822,63 @@ int xgmac_get_stats(void *pdev)
 
 	xgmac_read_mmc_stats(pdev, pstats);
 
-	mac_printf("\nTYPE                            XGMAC %d\n\n",
-		   pdata->mac_idx);
+	mac_printf("\nTYPE                        %18s %d\n", "XGMAC", pdata->mac_idx);
+
 	mac_printf("Rx_Packets                = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxframecount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxframecount_gb);
 
 	mac_printf("Rx_Bytes                  = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxoctetcount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxoctetcount_gb);
 
 	mac_printf("Rx_Byte_errors            = ");
 
-	mac_printf("%11llu\n",
+	mac_printf("%20llu\n",
 		   (pdata->mmc_stats.rxoctetcount_gb -
 		    pdata->mmc_stats.rxoctetcount_g));
 
 	mac_printf("Rx_Pauseframe             = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxpauseframes);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxpauseframes);
 
 	mac_printf("Rx_Crc_Errors             = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxcrcerror);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxcrcerror);
 
 	mac_printf("Rx_Fifo_Errors            = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.rxfifooverflow);
+	mac_printf("%20llu\n", pdata->mmc_stats.rxfifooverflow);
 
 	mac_printf("\n");
 
 	mac_printf("Tx_Packets                = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txframecount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.txframecount_gb);
 
 	mac_printf("Tx_Bytes                  = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txoctetcount_gb);
+	mac_printf("%20llu\n", pdata->mmc_stats.txoctetcount_gb);
 
 	mac_printf("Tx_Packet_Errors          = ");
 
-	mac_printf("%11llu\n",
+	mac_printf("%20llu\n",
 		   (pdata->mmc_stats.txframecount_gb -
 		    pdata->mmc_stats.txframecount_g));
 
 	mac_printf("Tx_Byte_Errors            = ");
 
-	mac_printf("%11llu\n",
+	mac_printf("%20llu\n",
 		   (pdata->mmc_stats.txoctetcount_gb -
 		    pdata->mmc_stats.txoctetcount_g));
 
 	mac_printf("Tx_Pauseframe             = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txpauseframes);
+	mac_printf("%20llu\n", pdata->mmc_stats.txpauseframes);
 
 	mac_printf("Tx_underflow_error        = ");
 
-	mac_printf("%11llu\n", pdata->mmc_stats.txunderflowerror);
+	mac_printf("%20llu\n", pdata->mmc_stats.txunderflowerror);
 
 	return 0;
 }

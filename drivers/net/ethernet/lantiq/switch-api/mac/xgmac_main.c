@@ -242,7 +242,7 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 		"mac_addr        ",
 		cli_set_mac_address,
 		xgmac_get_mac_addr,
-		0, (u32 *)&pdata.mac_addr, 0, 0, 0,
+		0, (u32 *) &pdata.mac_addr, 0, 0, 0,
 		"<args 1: mac_addr>"
 	},
 	{
@@ -467,7 +467,7 @@ struct _xgmac_cfg xgmac_cfg_table[] = {
 		cli_set_fcsgen,
 		0,
 		0, &pdata.fcsgen, 0, 0, 0,
-		"<args 1: 1/0 fcs gen ENABLE/DISABLE>"
+		"<args 1: 0/1/2 CRC_PAD_ENA/CRC_EN_PAD_DIS/CRC_PAD_DIS>"
 	},
 	{
 		"gint             ",
@@ -742,6 +742,11 @@ int xgmac_main(u32 argc, u8 *argv[])
 	start_arg++;
 	start_arg++;
 
+	if(!argv[start_arg]) {
+		xgmac_menu();
+		goto end;
+	}
+	
 	if (!strcmp(argv[start_arg], "-help")) {
 		found = 1;
 		xgmac_menu();
@@ -827,7 +832,7 @@ int xgmac_main(u32 argc, u8 *argv[])
 
 		if ((strstr(argv[start_arg], "0x")) ||
 		    (strstr(argv[start_arg], "0X")))
-			mac_printf("matches with 0x\n");
+			mac_dbg("matches with 0x\n");
 		else
 			mac_printf("Please give the address with "
 				   "0x firmat\n");
@@ -852,7 +857,7 @@ int xgmac_main(u32 argc, u8 *argv[])
 
 		if ((strstr(argv[start_arg], "0x")) ||
 		    (strstr(argv[start_arg], "0X")))
-			mac_printf("matches with 0x\n");
+			mac_dbg("matches with 0x\n");
 		else
 			mac_printf("Please give the address with "
 				   "0x format\n");
@@ -877,6 +882,10 @@ int xgmac_main(u32 argc, u8 *argv[])
 	if (!strcmp(argv[start_arg], "get")) {
 		start_arg++;
 
+		if(!argv[start_arg]) {
+			xgmac_menu();
+			goto end;
+		}
 		for (i = 0; i < num_of_elem; i++) {
 			removeSpace(xgmac_cfg_table[i].name);
 
@@ -921,8 +930,8 @@ int xgmac_main(u32 argc, u8 *argv[])
 end:
 
 	if (found == 0)
-		mac_printf("command entered is invalid, use help to "
-			   "display the supported cmds\n");
+		mac_printf("command entered is invalid, use -help to display"
+		"cmds\n");
 
 	return 0;
 }

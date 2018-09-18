@@ -11315,25 +11315,16 @@ GSW_return_t GSW_MulticastTableEntryRead(void *cdev,
 		}
 
 		if (IS_VRSN_31(gswdev->gipver)) {
-			do {
-				ret = gsw_get_swmcast_entry(cdev, parm, gswdev->msw_rinx);
-				gswdev->msw_rinx++;
+			ret = gsw_get_swmcast_entry(cdev, parm, gswdev->msw_rinx_31);
+			gswdev->msw_rinx_31++;
 
-				if (ret != 0)
-					break;
-
-			} while (gswdev->msw_rinx < gswdev->mctblsize);
-
-			if (ret) {
-				parm->bInitial = 0;
-				parm->bLast = 0;
-				ret = GSW_statusOk;
-				goto UNLOCK_AND_RETURN;
-			} else {
+			if (gswdev->msw_rinx_31 >= gswdev->mctblsize) {
 				memset(parm, 0, sizeof(GSW_multicastTableRead_t));
 				parm->bLast = 1;
-				gswdev->msw_rinx = 0;
-			}
+				gswdev->msw_rinx_31 = 0;
+			}			
+			ret = GSW_statusOk;
+			goto UNLOCK_AND_RETURN;
 		}
 
 		do {
