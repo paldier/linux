@@ -213,7 +213,6 @@ int gsw_get_swmcast_entry(void *cdev, GSW_multicastTableRead_t *parm, u32 loc)
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	pctbl_prog_t pcetable;
 	int i = 0;
-	int pos;
 
 	if (gswdev == NULL)
 		return 0;

@@ -274,10 +274,6 @@ const PCE_MICROCODE pce_mc_max_ifx_tag_m_31 = {/* V31_01 */
 	PCE_MC_M3(0x0000, 0x0000, 87, OUT_NONE, 0, INSTR, FLAG_END, 0),
 	PCE_MC_M3(0x0000, 0x0000, 87, OUT_NONE, 0, INSTR, FLAG_END, 0),
 	PCE_MC_M3(0x0000, 0x0000, 87, OUT_NONE, 0, INSTR, FLAG_END, 0),
-	PCE_MC_M3(0x0000, 0x0000, 87, OUT_NONE, 0, INSTR, FLAG_END, 0),
-	PCE_MC_M3(0x0000, 0x0000, 87, OUT_NONE, 0, INSTR, FLAG_END, 0),
-	PCE_MC_M3(0x0000, 0x0000, 87, OUT_NONE, 0, INSTR, FLAG_END, 0),
-	PCE_MC_M3(0x0000, 0x0000, 87, OUT_NONE, 0, INSTR, FLAG_END, 0),
 };
 
 const PCE_MICROCODE pce_mc_max_ifx_tag_m_30 = {/* V30_13 */
@@ -1505,7 +1501,7 @@ int pce_table_init(ltq_pce_table_t *ptable)
 
 int gsw_pmicro_code_init_f24s(void *cdev)
 {
-	u16 i, j, cnt = 0;
+	u16 i, j;
 	pctbl_prog_t tbl_entry;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
