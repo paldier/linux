@@ -528,7 +528,10 @@ static void __init bootmem_init(void)
 			continue;
 #endif
 
-		memblock_add_node(PFN_PHYS(start), PFN_PHYS(end - start), 0);
+		if (boot_mem_map.map[i].type != BOOT_MEM_RESERVED)
+			memblock_add_node(PFN_PHYS(start), PFN_PHYS(end - start), 0);
+		else
+			memblock_reserve(PFN_PHYS(start), PFN_PHYS(end - start));
 	}
 
 	/*
