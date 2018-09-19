@@ -163,7 +163,6 @@ int gsw_check_hashtable_entry(void *cdev)
 
 static void update_bridge_pmap(u32 portId, MCAST_HASHTBL *table_ptr, u32 val)
 {
-
 	int i = 0, bit = 0;
 
 	i = (portId / 16);
@@ -182,7 +181,6 @@ int gsw_init_hash_table(void *cdev)
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	pctbl_prog_t pcetable;
 	u16 pcindex;
-
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -247,14 +245,13 @@ int gsw_get_swmcast_entry(void *cdev, GSW_multicastTableRead_t *parm, u32 loc)
 
 		for (i = 0; i < 16; i++) {
 			parm->nPortMap[i] = pcetable.val[2 + i];
-
-			parm->nPortId += parm->nPortMap[i];
 		}
 
+                parm->nPortId |= 0x80000000;
 		pr_debug("Got Loc        %d\n", loc);
-		pr_debug("Valid	       %d\n", pcetable.valid);
+		pr_debug("Valid	         %d\n", pcetable.valid);
 		pr_debug("ExclSrcIP      %d\n", parm->bExclSrcIP);
-		pr_debug("nFID	       %d\n", parm->nFID);
+		pr_debug("nFID	         %d\n", parm->nFID);
 		pr_debug("First Idx      %d\n", pcetable.key[0]);
 		pr_debug("Next Idx       %d\n", pcetable.key[1]);
 
@@ -328,10 +325,8 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 	u32 hashidx;
 	int i = 0, ret = 0;
 	u32 portId;
-
 	MCAST_HASHTBL  *table_ptr = NULL, *new_table_ptr = NULL;
 	MCAST_HASHTBL_PTN pattern;
-
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -462,11 +457,9 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 /* If external modules need to search */
 int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multicastTableRead_t *read_parm, u32 *loc)
 {
-
 	u32 found_loc = 0, hashidx;
 	int i = 0, ret = 0;
 	u32 portId;
-
 	MCAST_HASHTBL_PTN pattern;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
@@ -474,7 +467,6 @@ int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multi
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
 	}
-
 
 	if (parm->nPortId > gswdev->num_of_bridge_port) {
 		pr_err("PortId only upto %d is supported\n", gswdev->num_of_bridge_port);
@@ -499,16 +491,17 @@ int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multi
 
 	ret = search_hashtable_entry(hashidx, &pattern, &found_loc);
 
-	if (ret == TABLE_ERROR)
+	if (ret == TABLE_ERROR) {
 		printk(":::::: IMPOSSIBLE ::::: TABLE ERROR\n");
-	else if (ret ==  MATCH_FOUND) {
+	} else if (ret ==  MATCH_FOUND) {
 		*loc = found_loc;
 		gsw_get_swmcast_entry(cdev, read_parm, found_loc);
-	} else if (ret == NO_VALID_HASHENTRY)
+	} else if (ret == NO_VALID_HASHENTRY) {
 		printk("No Valid Entry to the HASHIDX %x\n", hashidx);
 	/* There is already some entry in the hash index, add new one */
-	else if (ret == MATCH_NOT_FOUND)
+	} else if (ret == MATCH_NOT_FOUND) {
 		printk("MATCH_NOT_FOUND to the HASHIDX %x\n", hashidx);
+        }
 
 	return ret;
 }
@@ -516,7 +509,6 @@ int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multi
 static int search_hashtable_entry(u32 hashidx, MCAST_HASHTBL_PTN *pattern, u32 *loc)
 {
 	int  i = 0;
-
 	MCAST_HASHTBL  *table_ptr;
 
 	pr_debug("SEARCHING session hash idx = %x \n", hashidx);
@@ -545,7 +537,6 @@ static int search_hashtable_entry(u32 hashidx, MCAST_HASHTBL_PTN *pattern, u32 *
 					return MATCH_FOUND;
 				}
 			} else {
-
 				if ((pattern->srcip.nIPv4 == table_ptr->key.srcip.nIPv4) &&
 				    (pattern->dstip.nIPv4 == table_ptr->key.dstip.nIPv4) &&
 				    (pattern->fid == table_ptr->key.fid)) {
@@ -636,9 +627,7 @@ int gsw_remove_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 {
 	u32 hashidx;
 	u32 loc = 0, ret = 0;
-
 	int  i = 0;
-
 	MCAST_HASHTBL  *table_ptr = NULL;
 	MCAST_HASHTBL_PTN pattern;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
