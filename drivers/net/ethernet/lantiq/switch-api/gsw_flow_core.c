@@ -11303,6 +11303,7 @@ GSW_return_t GSW_MulticastTableEntryRead(void *cdev,
 
 		if (parm->bInitial == 1) {
 			gswdev->msw_rinx = 0; /*Start from the index 0 */
+			gswdev->msw_rinx_31 = 0;
 			parm->bInitial = 0;
 		}
 

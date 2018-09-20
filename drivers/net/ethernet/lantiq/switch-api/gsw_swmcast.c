@@ -365,7 +365,7 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 	ret = search_hashtable_entry(hashidx, &pattern, &found_loc);
 
 	if (ret == TABLE_ERROR) {
-		printk(":::::: IMPOSSIBLE ::::: TABLE ERROR\n");
+		pr_err(":::::: IMPOSSIBLE ::::: TABLE ERROR\n");
 		return ret;
 	} else if (ret ==  MATCH_FOUND) {
 
@@ -384,12 +384,12 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 	   2. Existing hashidx with a new entry
 	 */
 	if ((loc = get_hashtable_empty_slot(cdev, phtable)) == TBL_FULL) {
-		printk("Hash Table FULL\n");
+		pr_err("Hash Table FULL\n");
 		return TBL_FULL;
 	}
 
 	if (loc > MCAST_TABLE_SIZE) {
-		printk("Location got is wrong\n");
+		pr_err("Location got is wrong\n");
 		return FAIL;
 	}
 
@@ -493,15 +493,15 @@ int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multi
 	ret = search_hashtable_entry(hashidx, &pattern, &found_loc);
 
 	if (ret == TABLE_ERROR) {
-		printk(":::::: IMPOSSIBLE ::::: TABLE ERROR\n");
+		pr_err(":::::: IMPOSSIBLE ::::: TABLE ERROR\n");
 	} else if (ret ==  MATCH_FOUND) {
 		*loc = found_loc;
 		gsw_get_swmcast_entry(cdev, read_parm, found_loc);
 	} else if (ret == NO_VALID_HASHENTRY) {
-		printk("No Valid Entry to the HASHIDX %x\n", hashidx);
+		pr_err("No Valid Entry to the HASHIDX %x\n", hashidx);
 		/* There is already some entry in the hash index, add new one */
 	} else if (ret == MATCH_NOT_FOUND) {
-		printk("MATCH_NOT_FOUND to the HASHIDX %x\n", hashidx);
+		pr_err("MATCH_NOT_FOUND to the HASHIDX %x\n", hashidx);
 	}
 
 	return ret;
@@ -553,7 +553,7 @@ static int search_hashtable_entry(u32 hashidx, MCAST_HASHTBL_PTN *pattern, u32 *
 		pr_debug("Current Idx %d Nxt Ptr %d\n", table_ptr->idx, table_ptr->nxt_idx);
 
 		if (table_ptr->idx == table_ptr->nxt_idx) {
-			printk("No match is found\n");
+			pr_err("No match is found\n");
 			return MATCH_NOT_FOUND;
 		}
 
