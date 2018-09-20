@@ -176,6 +176,8 @@ struct sso_led_priv {
 	struct dentry *debugfs;
 };
 
+static void sso_led_shutdown(struct sso_led *led);
+
 static int sso_led_writel(struct regmap *map, u32 reg, u32 val)
 {
 	return regmap_write(map, reg, val);
@@ -467,6 +469,7 @@ static int sso_led_dt_parse(struct sso_led_priv *priv)
 	struct sso_led *led;
 	struct fwnode_handle *child;
 	struct device *dev = priv->dev;
+	struct list_head *p;
 	int count;
 	u32 prop;
 
@@ -563,6 +566,11 @@ static int sso_led_dt_parse(struct sso_led_priv *priv)
 
 __dt_err:
 	fwnode_handle_put(child);
+	/* unregister leds */
+	list_for_each(p, &priv->led_list) {
+		led = list_entry(p, struct sso_led, list);
+		sso_led_shutdown(led);
+	}
 	return -EINVAL;
 }
 
@@ -639,10 +647,6 @@ static void sso_led_shutdown(struct sso_led *led)
 
 	/* unregister led */
 	devm_led_classdev_unregister(priv->dev, &led->cdev);
-
-	/* turn off led */
-	if (!led->desc.retain_state_shutdown)
-		sso_led_brightness_set(&led->cdev, LED_OFF);
 
 	/* clear HW control bit */
 	if (led->desc.hw_trig)
