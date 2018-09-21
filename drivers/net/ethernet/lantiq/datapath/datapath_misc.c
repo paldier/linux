@@ -1121,7 +1121,7 @@ int print_symbol_name(unsigned long addr)
 	return 0;
 }
 
-int dp_ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
+int dp_ingress_ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
 
 {
 	struct dp_meter_subif mtr_subif = {0};
@@ -1138,7 +1138,7 @@ int dp_ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
 	return dp_port_prop[mtr_subif.inst].info.
 		dp_ctp_tc_map_set(tc, flag, &mtr_subif);
 }
-EXPORT_SYMBOL(dp_ctp_tc_map_set);
+EXPORT_SYMBOL(dp_ingress_ctp_tc_map_set);
 
 int dp_meter_alloc(int inst, int *meterid, int flag)
 {
