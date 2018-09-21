@@ -3262,6 +3262,8 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		ptbl.key[12] |= ptable->parse_lsb_idx;
 
 		/* Parser flags 47:32 */
+		ptable->parse1_lsb_idx = 0xFF; //Mark as don't care.
+
 		if (IS_VRSN_31(gswdev->gipver)) {
 			if (parm->pattern.bParserFlag1LSB_Enable == 1) {
 				flag_tbl_t   flags_tbl;
@@ -3276,8 +3278,6 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 					return tindex;
 
 				ptable->parse1_lsb_idx = tindex;
-			} else {
-				ptable->parse1_lsb_idx = 0xFF; //Mark as don't care.
 			}
 
 			ptbl.key[16] |= ptable->parse1_lsb_idx;
@@ -3304,6 +3304,8 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		ptbl.key[12] |= (ptable->parse_msb_idx << 8);
 
 		/* Parser flags 63:48 */
+		ptable->parse1_msb_idx = 0xFF; //Mark as don't care.
+
 		if (IS_VRSN_31(gswdev->gipver)) {
 			if (parm->pattern.bParserFlag1MSB_Enable == 1) {
 				flag_tbl_t   flags_tbl;
@@ -3318,8 +3320,6 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 					return tindex;
 
 				ptable->parse1_msb_idx = tindex;
-			} else {
-				ptable->parse1_msb_idx = 0xFF; //Mark as don't care.
 			}
 
 			ptbl.key[16] |= (ptable->parse1_msb_idx << 8);
