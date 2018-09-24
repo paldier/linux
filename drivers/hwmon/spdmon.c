@@ -21,6 +21,7 @@
 #include <linux/pm_opp.h>
 #include <linux/cpu.h>
 #include <lantiq.h>
+#include <linux/capability.h>
 
 /** driver version, major number */
 #define SPD_MON_VER_MAJOR	1
@@ -305,11 +306,14 @@ static int show_value(struct device *dev,
 static int set_value(struct device *dev,
 	struct device_attribute *devattr, const char *buf, size_t count)
 {
-	int ch;
+	int ch, ret;
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-	int ret = kstrtoint(buf, 10, &ch);
 
-	if (ret < 0)
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
+	ret = kstrtoint(buf, 10, &ch);
+	if (ret)
 		return ret;
 
 	if (attr->index == SHOW_CHANNEL)
@@ -347,43 +351,43 @@ static int set_value(struct device *dev,
 }
 
 static struct sensor_device_attribute spdmon_attributes[] = {
-	SENSOR_ATTR(version, S_IRUGO, show_version, NULL, 0),
-	SENSOR_ATTR(name, S_IRUGO, show_value, NULL, SHOW_NAME),
-	SENSOR_ATTR(spd_data, S_IRUGO, show_value, NULL, SHOW_SPD_DATA),
-	SENSOR_ATTR(speed_class, S_IRUGO, show_value, NULL, SHOW_CLASS),
-	SENSOR_ATTR(speed_class_boot, S_IRUGO, show_value, NULL, SHOW_CLASS_B),
-	SENSOR_ATTR(channel, S_IWUSR | S_IRUGO, show_value,
+	SENSOR_ATTR(version, S_IRUSR, show_version, NULL, 0),
+	SENSOR_ATTR(name, S_IRUSR, show_value, NULL, SHOW_NAME),
+	SENSOR_ATTR(spd_data, S_IRUSR, show_value, NULL, SHOW_SPD_DATA),
+	SENSOR_ATTR(speed_class, S_IRUSR, show_value, NULL, SHOW_CLASS),
+	SENSOR_ATTR(speed_class_boot, S_IRUSR, show_value, NULL, SHOW_CLASS_B),
+	SENSOR_ATTR(channel, S_IWUSR | S_IRUSR, show_value,
 		set_value, SHOW_CHANNEL),
-	SENSOR_ATTR(rate_svt, S_IWUSR | S_IRUGO, show_value,
+	SENSOR_ATTR(rate_svt, S_IWUSR | S_IRUSR, show_value,
 		set_value, SHOW_RATE_SVT),
-	SENSOR_ATTR(rate_lvt, S_IWUSR | S_IRUGO, show_value,
+	SENSOR_ATTR(rate_lvt, S_IWUSR | S_IRUSR, show_value,
 		set_value, SHOW_RATE_LVT),
 };
 
-static SENSOR_DEVICE_ATTR(svt_slow_low, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(svt_slow_low, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_SVT_SLOW_LOW);
-static SENSOR_DEVICE_ATTR(svt_medium_low, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(svt_medium_low, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_SVT_MEDIUM_LOW);
-static SENSOR_DEVICE_ATTR(svt_fast_low, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(svt_fast_low, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_SVT_FAST_LOW);
-static SENSOR_DEVICE_ATTR(svt_slow_high, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(svt_slow_high, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_SVT_SLOW_HIGH);
-static SENSOR_DEVICE_ATTR(svt_medium_high, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(svt_medium_high, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_SVT_MEDIUM_HIGH);
-static SENSOR_DEVICE_ATTR(svt_fast_high, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(svt_fast_high, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_SVT_FAST_HIGH);
 
-static SENSOR_DEVICE_ATTR(lvt_slow_low, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(lvt_slow_low, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_LVT_SLOW_LOW);
-static SENSOR_DEVICE_ATTR(lvt_medium_low, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(lvt_medium_low, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_LVT_MEDIUM_LOW);
-static SENSOR_DEVICE_ATTR(lvt_fast_low, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(lvt_fast_low, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_LVT_FAST_LOW);
-static SENSOR_DEVICE_ATTR(lvt_slow_high, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(lvt_slow_high, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_LVT_SLOW_HIGH);
-static SENSOR_DEVICE_ATTR(lvt_medium_high, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(lvt_medium_high, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_LVT_MEDIUM_HIGH);
-static SENSOR_DEVICE_ATTR(lvt_fast_high, S_IWUSR | S_IRUGO,
+static SENSOR_DEVICE_ATTR(lvt_fast_high, S_IWUSR | S_IRUSR,
 	show_value, set_value, SHOW_THRESHOLD_LVT_FAST_HIGH);
 
 static struct attribute *threshold_svt_attrs[] = {
