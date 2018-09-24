@@ -826,13 +826,17 @@ static int spd_mon_probe(struct platform_device *pdev)
 	memset(pctrl, 0, sizeof(ltq_spd_mon_ctrl));
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res)
-		panic("Failed to get spd_mon resources\n");
+	if (!res) {
+		dev_err(&pdev->dev, "Failed to get spd_mon resources\n");
+		return -EINVAL;
+	};
 
 	pctrl->phybase = res->start;
 	pctrl->membase = devm_ioremap_resource(&pdev->dev, res);
-	if (!pctrl->membase)
-		panic("Failed to remap spd_mon resources\n");
+	if (IS_ERR(pctrl->membase)) {
+		dev_err(&pdev->dev, "Failed to remap spd_mon resources\n");
+		return PTR_ERR(pctrl->membase);
+	}
 
 	dev_info(&pdev->dev, "base address: 0x%x\t", (u32)pctrl->membase);
 	dev_info(&pdev->dev, "PHY base address: 0x%x\n", pctrl->phybase);
