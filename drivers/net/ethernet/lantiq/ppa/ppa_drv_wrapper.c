@@ -135,6 +135,30 @@ void (*ppa_session_mc_destroy_tmplbuf_hook)(void* sessionAction) = NULL;
 EXPORT_SYMBOL(ppa_session_mc_destroy_tmplbuf_hook);
 #endif
 
+int32_t (*qos_hal_get_csum_ol_mib_hook_fn)(
+		struct qos_hal_qos_stats *csum_mib,
+		uint32_t flag) = NULL;
+EXPORT_SYMBOL(qos_hal_get_csum_ol_mib_hook_fn);
+
+int32_t (*qos_hal_clear_csum_ol_mib_hook_fn)(
+		uint32_t flag) = NULL;
+EXPORT_SYMBOL(qos_hal_clear_csum_ol_mib_hook_fn);
+
+int32_t(*qos_hal_get_qos_mib_hook_fn)(
+		struct net_device *netdev,
+		dp_subif_t *subif_id,
+		int32_t queueid,
+		struct qos_hal_qos_stats *qos_mib,
+		uint32_t flag) = NULL;
+EXPORT_SYMBOL(qos_hal_get_qos_mib_hook_fn);
+
+int32_t (*qos_hal_clear_qos_mib_hook_fn)(
+		struct net_device *netdev,
+		dp_subif_t *subif_id,
+		int32_t queueid,
+		uint32_t flag) = NULL;
+EXPORT_SYMBOL(qos_hal_clear_qos_mib_hook_fn);
+
 /*	others:: these hook will be set in PPE datapath driver	*/
 int (*ppa_drv_get_dslwan_qid_with_vcc_hook)(struct atm_vcc *vcc) = NULL;
 int (*ppa_drv_get_netif_qid_with_pkt_hook)(PPA_SKBUF *skb, void *arg, int is_atm_vcc) = NULL;
