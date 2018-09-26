@@ -203,6 +203,17 @@ static struct phy_driver lantiq_phy[] = {
 		.ack_interrupt	= vr9_gphy_ack_interrupt,
 		.did_interrupt	= vr9_gphy_did_interrupt,
 		.config_intr	= vr9_gphy_config_intr,
+	}, {
+		.phy_id		= 0x67c9dc00,
+		.phy_id_mask	= 0xfffffff0,
+		.name		= "Intel GPHY 31G",
+		.features	= (PHY_GBIT_FEATURES | SUPPORTED_Pause),
+		.flags		= PHY_HAS_INTERRUPT,
+		.config_init	= vr9_gphy_config_init,
+		.config_aneg	= vr9_gphy_config_aneg,
+		.read_status	= genphy_read_status,
+		.ack_interrupt	= vr9_gphy_ack_interrupt,
+		.config_intr	= vr9_gphy_config_intr,
 	},
 };
 
