@@ -122,5 +122,6 @@ struct ltq_net_soc_data {
 	bool need_defer;
 	bool hw_checksum;
 	unsigned int queue_num;
+	int (*phy_connect_func)(struct net_device *, struct xrx500_port *);
 };
 #endif /* _LANTIQ_ETH_DRV_H_ */
