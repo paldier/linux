@@ -43,8 +43,7 @@
 #include <xgmac_mdio.h>
 #include <xgmac.h>
 #ifdef __KERNEL__
-#include <linux/phy.h>
-#include <linux/mdio.h>
+#include <linux/of_mdio.h>
 #endif
 
 static void dump_phy_registers(void *pdev);
@@ -443,13 +442,13 @@ static int xgmac_mdio_read(struct mii_bus *bus, int phyadr, int phyreg)
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	int phydata;
 
-	mac_printf("XGMAC %d: MDIO Read phyadr = %d, phyreg = %d\n",
-		   pdata->mac_idx, phyadr, phyreg);
+	mac_dbg("XGMAC %d: MDIO Read phyadr = %d, phyreg = %d\n",
+		pdata->mac_idx, phyadr, phyreg);
 
 	xgmac_mdio_single_rd(pdev, 0, phyadr, phyreg, &phydata);
 
-	mac_printf("XGMAC %d: MDIO Read phydata = %#x\n",
-		   pdata->mac_idx, phydata);
+	mac_dbg("XGMAC %d: MDIO Read phydata = %#x\n",
+		pdata->mac_idx, phydata);
 
 	return phydata;
 }
@@ -475,9 +474,9 @@ static int xgmac_mdio_write(struct mii_bus *bus, int phyadr, int phyreg,
 
 	xgmac_mdio_single_wr(pdev, 0, phyadr, phyreg, phydata);
 
-	mac_printf("XGMAC %d: MDIO Write"
-		   "phyadr %x phyreg %x phydata %x Completed\n",
-		   pdata->mac_idx, phyadr, phyreg, phydata);
+	mac_dbg("XGMAC %d: MDIO Write"
+		"phyadr %x phyreg %x phydata %x Completed\n",
+		pdata->mac_idx, phyadr, phyreg, phydata);
 
 	return ret;
 }
@@ -521,45 +520,19 @@ int xgmac_mdio_register(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	struct mii_bus *new_bus = NULL;
-	int phyadr = 0;
-	unsigned short phy_detected = 0;
 	int ret = 0;
-	int phy_reg_read_status, mii_status;
+	struct device_node *mdio_np;
 
 	mac_printf("XGMAC %d: mdio register\n", pdata->mac_idx);
 
-	/* find the phy ID or phy address which is connected to our MAC */
-	for (phyadr = 0; phyadr < 32; phyadr++) {
-		phy_reg_read_status =
-			xgmac_mdio_single_rd(&pdata->ops, 0, phyadr, MII_BMSR,
-					     &mii_status);
-
-		if (phy_reg_read_status == 0) {
-			if (mii_status != 0x0000 && mii_status != 0xffff) {
-				pr_err("Phy detected at"
-				       " ID/ADDR %d\n", phyadr);
-				phy_detected = 1;
-				break;
-			}
-		} else if (phy_reg_read_status < 0) {
-			pr_err("Error reading the phy register"
-			       " MII_BMSR for phy ID/ADDR %d\n", phyadr);
-		}
-	}
-
-	if (!phy_detected) {
-		mac_printf("XGMAC %d: No phy could be detected\n",
-			   pdata->mac_idx);
+	mdio_np = of_get_child_by_name(pdata->dev->of_node, "mdio");
+	if (!mdio_np) {
+		dev_dbg(pdata->dev, "XGMAC %d: mdio node not found\n",
+			pdata->mac_idx);
 		return -ENOLINK;
 	}
 
-	pdata->phyadr = phyadr;
-	pdata->bus_id = 0x1;
-
-	dump_phy_registers(pdev);
-
 	new_bus = mdiobus_alloc();
-
 	if (!new_bus) {
 		mac_printf("XGMAC %d: Unable to allocate mdio bus\n",
 			   pdata->mac_idx);
@@ -571,12 +544,16 @@ int xgmac_mdio_register(void *pdev)
 	new_bus->write = xgmac_mdio_write;
 	new_bus->reset = xgmac_mdio_reset;
 	snprintf(new_bus->id, MII_BUS_ID_SIZE, "%s-%x", new_bus->name,
-		 pdata->bus_id);
+		 pdata->mac_idx);
 	new_bus->priv = pdev;
-	new_bus->phy_mask = 0;
 	new_bus->parent = pdata->dev;
-	ret = mdiobus_register(new_bus);
 
+	/* At this moment gphy is not yet up (firmware not yet loaded), so we
+	 * avoid auto mdio scan and rely on DT instead.
+	 */
+	new_bus->phy_mask = 0xFFFFFFFF;
+
+	ret = of_mdiobus_register(new_bus, mdio_np);
 	if (ret != 0) {
 		pr_err("%s: Cannot register as MDIO bus\n",
 		       new_bus->name);

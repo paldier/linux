@@ -684,7 +684,6 @@ struct mac_prv_data {
 	u32 mdio_int;
 
 	u32 phyadr;
-	u32 bus_id;
 
 	u32 ptp_clk;
 

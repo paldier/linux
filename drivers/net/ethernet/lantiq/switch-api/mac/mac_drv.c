@@ -175,6 +175,7 @@ static int mac_probe(struct platform_device *pdev)
 	}
 
 	pdata->ptp_clk = (u32)clk_get_rate(pdata->ker_ptp_clk);
+	pdata->dev = dev;
 
 	/* Init function fointers */
 	mac_init_fn_ptrs(&pdata->ops);
