@@ -1000,7 +1000,9 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 		dp_register_subif_private(inst, owner, dev,
 					  subif_name,
 					  subif_id, data, flags);
+	dp_sync_subifid(dev, subif_name, subif_id, data, flags);
 	DP_LIB_UNLOCK(&dp_lock);
+
 	return res;
 }
 EXPORT_SYMBOL(dp_register_subif_ext);
@@ -1038,6 +1040,36 @@ int32_t dp_register_subif(struct module *owner, struct net_device *dev,
 				     subif_id, &data, flags);
 }
 EXPORT_SYMBOL(dp_register_subif);
+
+int32_t dp_get_netif_subifid_new(struct net_device *netif, struct sk_buff *skb,
+				 void *subif_data,
+				 u8 dst_mac[DP_MAX_ETH_ALEN],
+				 dp_subif_t *subif, uint32_t flags)
+{
+	struct dp_subif_id *dp_subif;
+	u32 idx;
+	int ret = DP_FAILURE;
+
+	idx = dp_subif_hash(netif);
+	if (!netif) {
+		ret = dp_get_netif_subifid(netif, NULL, NULL, NULL, subif, 0);
+	} else {
+		DP_LIB_LOCK(&dp_lock);
+		dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif,
+					   subif_data);
+		if (!dp_subif) {
+			PR_ERR("Failed dp_subif_lookup: %s\n",
+			       netif ? netif->name : "NULL");
+			DP_LIB_UNLOCK(&dp_lock);
+			return -1;
+		}
+		subif = dp_subif->subif;
+		DP_LIB_UNLOCK(&dp_lock);
+		return DP_SUCCESS;
+	}
+	return ret;
+}
+EXPORT_SYMBOL(dp_get_netif_subifid_new);
 
 /*Note:
  * try to get subif according to netif, skb,vcc,dst_mac.
@@ -2202,7 +2234,6 @@ static void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 	pmac->tcp_h_offset = tcp_h_offset >> 2;
 }
 
-
 int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 		struct sk_buff *skb, int32_t len, uint32_t flags)
 {
@@ -2334,18 +2365,18 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 		}
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588_SW_WORKAROUND)
-		if(dp_info->f_ptp)
+		if (dp_info->f_ptp)
 #else
-		if(dp_info->f_ptp && 
-			(skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
+		if (dp_info->f_ptp &&
+		    (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
 #endif
 		{	ops = dp_port_prop[inst].mac_ops[dp_info->port_id];
-			if(!ops) {
+			if (!ops) {
 				err_ret = DP_XMIT_PTP_ERR;
 				goto lbl_err_ret;
 			}
 			rec_id = ops->do_tx_hwts(ops, skb);
-			if(rec_id < 0) {
+			if (rec_id < 0) {
 				err_ret = DP_XMIT_PTP_ERR;
 				goto lbl_err_ret;
 			}
@@ -2720,6 +2751,7 @@ int dp_basic_proc(void)
 	dp_proc_install();
 #endif
 	dp_inst_init(0);
+	dp_subif_list_init();
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
 	dp_switchdev_init();
 #endif

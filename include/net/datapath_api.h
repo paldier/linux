@@ -333,7 +333,6 @@ struct dp_aca_stop {
 	int inst; /*!< [in] DP instance ID */
 };
 
-
 typedef int32_t(*dp_rx_fn_t)(struct net_device *rxif, struct net_device *txif,
 	struct sk_buff *skb, int32_t len);/*!< @brief   Device Receive
 					   *   Function callback for packets
@@ -641,6 +640,18 @@ enum DP_SUBIF_DATA_FLAG {
 				       *  by last call of dp_register_subif_ext
 				       */
 	DP_F_DATA_LCT_SUBIF = BIT(2), /*!< Register as LCT port */
+};
+
+/*! @brief dp_subif_id struct for get_netif_subif */
+struct dp_subif_id {
+	struct hlist_node hlist;
+	dp_subif_t *subif;
+	struct net_device *dev;
+	char *name;
+	dp_get_netif_subifid_fn_t subif_fn;  /*!< Get Sub Interface Id
+					      * of netif/netdevice
+					      */
+	void *data;
 };
 
 /*! @brief struct dp_subif_data */

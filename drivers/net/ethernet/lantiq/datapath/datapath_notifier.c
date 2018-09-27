@@ -44,7 +44,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 	struct net_device *br_dev;
 	struct dp_dev *dp_dev;
 	struct br_info *br_info;
-	int fid, inst, vap;
+	int fid, inst, vap = 0;
 	u32 idx;
 	struct pmac_port_info *port;
 	struct inst_property *prop;

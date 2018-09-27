@@ -413,6 +413,7 @@ struct vlan_info {
 	u16 in_vid;
 	int cnt;
 };
+
 enum DP_TEMP_DMA_PMAC {
 	TEMPL_NORMAL = 0,
 	TEMPL_CHECKSUM,
@@ -422,6 +423,7 @@ enum DP_TEMP_DMA_PMAC {
 	TEMPL_OTHERS,
 	MAX_TEMPLATE
 };
+
 enum DP_PRIV_F {
 	DP_PRIV_PER_CTP_QUEUE = BIT(0), /*Manage Queue per CTP/subif */
 };
@@ -754,5 +756,23 @@ int bp_pmapper_dev_get(int inst, struct net_device *dev);
 extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle,
 					__be16 protocol,
 					struct tc_to_netdev *tc);
+
+#define DP_SUBIF_LIST_HASH_SHIFT 8
+#define DP_SUBIF_LIST_HASH_BIT_LENGTH 10
+#define DP_SUBIF_LIST_HASH_SIZE ((1 << DP_SUBIF_LIST_HASH_BIT_LENGTH) - 1)
+
+extern struct hlist_head dp_subif_list[DP_SUBIF_LIST_HASH_SIZE];
+int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
+			dp_subif_t *subif_id, struct dp_subif_data *data,
+			u32 flags);
+int32_t	dp_update_subif(struct net_device *netif, struct dp_subif_data *data,
+			dp_subif_t *subif, char *subif_name);
+int32_t	dp_del_subif(struct net_device *netif, struct dp_subif_data *data,
+		     dp_subif_t *subif, char *subif_name);
+struct dp_subif_id *dp_subif_lookup(struct hlist_head *head,
+				    struct net_device *dev,
+				    struct dp_subif_data *data);
+int dp_subif_list_init(void);
+u32 dp_subif_hash(struct net_device *dev);
 #endif /*DATAPATH_H */
 
