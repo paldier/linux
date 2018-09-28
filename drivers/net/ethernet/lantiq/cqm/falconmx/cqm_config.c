@@ -8,28 +8,32 @@ struct cqm_bm_pool_config bm_pool_conf[CQM_FMX_NUM_POOLS] = {
 	.segment_mask = 0xFFFFF800,
 	.offset_mask = 0x7ff,
 	.pool = 0,
-	.policy = 0
+	.policy = 0,
+	.buf_frm_size_reg = 7
 	},
 	{
 	.buf_type = REQ_SIZE1_BUF,
 	.segment_mask = 0xFFFFF800,
 	.offset_mask = 0x7ff,
 	.pool = 1,
-	.policy = 1
+	.policy = 1,
+	.buf_frm_size_reg = 7
 	},
 	{
 	.buf_type = REQ_SIZE2_BUF,
 	.segment_mask = 0xFFFFF800,
 	.offset_mask = 0x7ff,
 	.pool = 2,
-	.policy = 2
+	.policy = 2,
+	.buf_frm_size_reg = 7
 	},
 	{
 	.buf_type = REQ_SIZE3_BUF,
 	.segment_mask = 0xFFFFF800,
 	.offset_mask = 0x7ff,
 	.pool = 3,
-	.policy = 3
+	.policy = 3,
+	.buf_frm_size_reg = 7
 	},
 	{
 	.buf_frm_size = CQM_SRAM_FRM_SIZE,

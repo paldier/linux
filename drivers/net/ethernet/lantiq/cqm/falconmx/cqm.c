@@ -14,6 +14,7 @@
 			   (TYPE == DP_F_DEQ_CPU1) ||\
 			   (TYPE == DP_F_DEQ_MPE) ||\
 			   (TYPE == DP_F_DEQ_DL))
+#define ASSIGN_BSL(val) ((val > 0) ? val : 0x2800)
 static const char cqm_name[] = "cqm";
 static void __iomem *bufreq[CQM_FMX_NUM_POOLS];
 static void __iomem *eqmdesc[4];
@@ -31,7 +32,7 @@ static struct cbm_q_info  cbm_qtable[MAX_QOS_QUEUES] = { {0} };
 static spinlock_t cqm_qidt_lock;
 static spinlock_t cqm_port_map;
 static spinlock_t cpu_pool_enq;
-static struct bmgr_policy_params p_param[CQM_FMX_NUM_BM_POLICY];
+static struct bmgr_policy_params p_param[CQM_FMX_MAX_BM_POLICY];
 
 LIST_HEAD(pmac_mapping_list);
 static struct cqm_ctrl *cqm_ctrl;
@@ -64,10 +65,10 @@ static int get_buff_resv_bytes(int cbm_inst, int size)
 
 	dev_info(cqm_ctrl->dev, "BSL thres %d size %d\n", BSL_THRES, size);
 
-	if (size < CQM_FMX_NUM_BM_POOLS)
+	if (size < cqm_ctrl->num_pools)
 		bsl_thr_val = cqm_ctrl->fmx_pool_size[size] - BSL_THRES;
 	else
-		dev_err(cqm_ctrl->dev, "%s: unsupported size %d\n", __func__,
+		dev_dbg(cqm_ctrl->dev, "%s: unsupported size %d\n", __func__,
 			size);
 	return bsl_thr_val;
 }
@@ -1483,11 +1484,11 @@ static void *cqm_buffer_alloc(u32 pid, u32 flag, u32 size, u32 *buf_size)
 		dev_err(cqm_ctrl->dev, "illegal pid: %d\n", pid);
 		return NULL;
 	}
-	if (size > bm_pool_conf[CQM_FMX_NUM_BM_POOLS - 1].buf_frm_size) {
+	if (size > bm_pool_conf[cqm_ctrl->num_pools - 1].buf_frm_size) {
 		dev_err(cqm_ctrl->dev, "Invalid size requested: %d\n", size);
 		return NULL;
 	}
-	while (j < CQM_FMX_NUM_BM_POOLS) {
+	while (j < cqm_ctrl->num_pools) {
 		if (size <= bm_pool_conf[j].buf_frm_size) {
 			*buf_size = bm_pool_conf[j].buf_frm_size;
 			segment_mask = bm_pool_conf[j].segment_mask;
@@ -1495,7 +1496,7 @@ static void *cqm_buffer_alloc(u32 pid, u32 flag, u32 size, u32 *buf_size)
 		}
 		j++;
 	}
-	if (j >= CQM_FMX_NUM_BM_POOLS) {
+	if (j >= cqm_ctrl->num_pools) {
 		dev_err(cqm_ctrl->dev,
 			"Req Buff size exceeds the max available\n");
 		return NULL;
@@ -2143,10 +2144,15 @@ static s32 dp_enable(struct module *owner, u32 port_id,
 			if (ops)
 				ops->gsw_pmac_ops.Pmac_Gbl_CfgGet(ops,
 						&glbl_cfg);
-			glbl_cfg.nMaxJumboLen = get_buff_resv_bytes(0, 3);
-			glbl_cfg.nBslThreshold[0] = get_buff_resv_bytes(0, 0);
-			glbl_cfg.nBslThreshold[1] = get_buff_resv_bytes(0, 1);
-			glbl_cfg.nBslThreshold[2] = get_buff_resv_bytes(0, 2);
+			val = get_buff_resv_bytes(0, 3);
+			glbl_cfg.nMaxJumboLen = ASSIGN_BSL(val);
+			val = get_buff_resv_bytes(0, 0);
+                        glbl_cfg.nBslThreshold[0] = ASSIGN_BSL(val);
+			val = get_buff_resv_bytes(0, 1);
+                        glbl_cfg.nBslThreshold[1] = ASSIGN_BSL(val);
+			val = get_buff_resv_bytes(0, 2);
+                        glbl_cfg.nBslThreshold[2] = ASSIGN_BSL(val);
+				
 			if (ops)
 				ops->gsw_pmac_ops.Pmac_Gbl_CfgSet(ops,
 						&glbl_cfg);
@@ -2914,7 +2920,7 @@ static int bm_init(struct platform_device *pdev)
 	u32 buf_size;
 	u32 start_low;
 
-	for (i = 0; i < CQM_FMX_NUM_BM_POOLS; i++) {
+	for (i = 0; i < cqm_ctrl->num_pools; i++) {
 		result = pool_config(pdev, i, cqm_ctrl->fmx_pool_size[i],
 				     cqm_ctrl->fmx_pool_ptrs[i]);
 		if (result)
@@ -2923,7 +2929,7 @@ static int bm_init(struct platform_device *pdev)
 
 	bmgr_driver_init();
 
-	for (i = 0; i < CQM_FMX_NUM_BM_POOLS; i++) {
+	for (i = 0; i < cqm_ctrl->num_pools; i++) {
 		p_params.group_id = 0;
 		p_params.num_buffers = bm_pool_conf[i].buf_frm_num;
 		p_params.size_of_buffer = bm_pool_conf[i].buf_frm_size;
@@ -3387,6 +3393,8 @@ static int conf_enq_dma_port(const struct eqm_dma_port *dma_ptr)
 	void *dmadesc = cqm_ctrl->dmadesc;
 
 	j = 0;
+	if ((cqm_ctrl->num_pools + 1) < range)
+		range = cqm_ctrl->num_pools + 1; 
 	while (j < range) {
 		index = port + j;
 		p_info = &eqm_port_info[index];
@@ -3543,7 +3551,7 @@ static int conf_bm(struct cqm_data *pdata)
 		, sizeof(cqm_ctrl->fmx_pool_ptrs));
 	memcpy(cqm_ctrl->fmx_pool_size, pdata->pool_size
 		, sizeof(cqm_ctrl->fmx_pool_size));
-
+	cqm_ctrl->num_pools = pdata->num_pools;
 	/* Pool Index loop*/
 	for (i = 0; i < pdata->num_pools; i++) {
 		/* Validate pool and policy */
@@ -3585,6 +3593,7 @@ static int conf_bm(struct cqm_data *pdata)
 
 		 /* Pool size loop*/
 		for (j = 0; j < p_param[i].num_pools_in_policy; j++) {
+			pr_info("am here\n");
 			p_param[i].pools_in_policy[j].pool_id = (i + j);
 			p_param[i].pools_in_policy[j].max_allowed =
 			cqm_ctrl->fmx_pool_ptrs[i + j];
@@ -3666,7 +3675,7 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	cqm_ctrl->force_xpcs = pdata->force_xpcs;
 
 	/* check fmx pool and policy */
-	if (pdata->num_pools != CQM_FMX_NUM_BM_POOLS) {
+	if (pdata->num_pools > CQM_FMX_NUM_BM_POOLS) {
 		pr_err("fmx pools %u\n", pdata->num_pools);
 		return CBM_FAILURE;
 	}
