@@ -402,6 +402,11 @@ struct mac_ops {
 	 * return	OUT	-1: 	Initialize MAC Error
 	 */
 	int(*mac_get_ts_info)(void *, struct ethtool_ts_info *);
+	/* This sequence is to do soft restart of Xgmac
+	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
+	 * return	OUT	-1:	Initialize MAC Error
+	 */
+	void(*soft_restart)(void *);
 #endif
 	/* This sequence is used Initialize MAC
 	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.

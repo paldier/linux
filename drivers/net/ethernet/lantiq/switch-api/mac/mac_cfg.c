@@ -1325,6 +1325,13 @@ int mac_irq_clr(void *pdev, u32 event)
 	return 0;
 }
 
+static void mac_soft_restart(void *pdev)
+{
+	/* Bring Down and up Xgmac Tx and Rx, Not all register reset */
+	xgmac_powerdown(pdev);
+	xgmac_powerup(pdev);
+}
+
 void mac_init_fn_ptrs(struct mac_ops *mac_op)
 {
 	mac_op->set_flow_ctl = mac_set_flowctrl;
@@ -1387,6 +1394,7 @@ void mac_init_fn_ptrs(struct mac_ops *mac_op)
 	mac_op->do_tx_hwts = xgmac_tx_hwts;
 	mac_op->mac_get_ts_info = xgmac_get_ts_info;
 #endif
+	mac_op->soft_restart = mac_soft_restart;
 
 	mac_op->set_macaddr = mac_set_macaddr;
 	mac_op->set_rx_crccheck = mac_set_rxcrccheck;
