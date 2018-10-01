@@ -1429,6 +1429,8 @@ static void *cqm_buff_alloc_by_policy_fmx(u32 pid, u32 flag, u32 policy)
 	u8 *v_buf;
 	u32 pool_t;
 	u32 policy_t;
+	u32 buff_base, buff_size, index;
+
 
 	if (pid >= CPU_EQM_PORT_NUM) {
 		dev_err(cqm_ctrl->dev, "illegal pid: %d\n", pid);
@@ -1463,11 +1465,13 @@ static void *cqm_buff_alloc_by_policy_fmx(u32 pid, u32 flag, u32 policy)
 	}
 	local_irq_restore(sys_flag);
 	v_buf = __va(buf_addr);
+	get_buffer_base_index(v_buf, &buff_base, &buff_size, &index);
 	pool_t = bm_pool_conf[j].pool;
 	policy_t = bm_pool_conf[j].policy;
-	add_metadata(v_buf, pool_t, policy_t);
+	add_metadata(buff_base, pool_t, policy_t);
+	pr_info("buff_base 0x%p\n", buff_base);
 	UP_STATS(cqm_dbg_cntrs[policy_t][pool_t].alloc_cnt);
-	return (void *)v_buf + CQM_POOL_METADATA;
+	return (void *)buff_base + CQM_POOL_METADATA;
 }
 
 static void *cqm_buffer_alloc(u32 pid, u32 flag, u32 size, u32 *buf_size)
@@ -1479,6 +1483,7 @@ static void *cqm_buffer_alloc(u32 pid, u32 flag, u32 size, u32 *buf_size)
 	u32 segment_mask = 0;
 	u32 pool_t;
 	u32 policy_t;
+	u32 buff_base, buff_size, index;
 
 	if (pid >= CPU_EQM_PORT_NUM) {
 		dev_err(cqm_ctrl->dev, "illegal pid: %d\n", pid);
@@ -1523,8 +1528,10 @@ static void *cqm_buffer_alloc(u32 pid, u32 flag, u32 size, u32 *buf_size)
 	UP_STATS(cqm_dbg_cntrs[policy_t][pool_t].alloc_cnt);
 	local_irq_restore(sys_flag);
 	v_buf_addr = (uint8_t *)__va(buf_addr);
-	add_metadata(v_buf_addr, pool_t, policy_t);
-	return (void *)v_buf_addr + CQM_POOL_METADATA;
+	get_buffer_base_index(v_buf_addr, &buff_base, &buff_size, &index);
+	pr_info("buff_base 0x%p\n", buff_base);
+	add_metadata(buff_base, pool_t, policy_t);
+	return (void *)buff_base + CQM_POOL_METADATA;
 }
 
 static void *cqm_buffer_alloc_by_size(u32 pid, u32 flag, u32 size)
