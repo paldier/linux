@@ -1041,35 +1041,40 @@ int32_t dp_register_subif(struct module *owner, struct net_device *dev,
 }
 EXPORT_SYMBOL(dp_register_subif);
 
-int32_t dp_get_netif_subifid_new(struct net_device *netif, struct sk_buff *skb,
-				 void *subif_data,
-				 u8 dst_mac[DP_MAX_ETH_ALEN],
-				 dp_subif_t *subif, uint32_t flags)
+int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
+			     void *subif_data, u8 dst_mac[DP_MAX_ETH_ALEN],
+			     dp_subif_t *subif, uint32_t flags)
 {
-	struct dp_subif_id *dp_subif;
+	struct dp_subif_cache *dp_subif;
 	u32 idx;
-	int ret = DP_FAILURE;
+	dp_get_netif_subifid_fn_t subifid_fn_t;
+	int res = -1;
 
 	idx = dp_subif_hash(netif);
-	if (!netif) {
-		ret = dp_get_netif_subifid(netif, NULL, NULL, NULL, subif, 0);
-	} else {
-		DP_LIB_LOCK(&dp_lock);
-		dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif,
-					   subif_data);
-		if (!dp_subif) {
-			PR_ERR("Failed dp_subif_lookup: %s\n",
-			       netif ? netif->name : "NULL");
-			DP_LIB_UNLOCK(&dp_lock);
-			return -1;
-		}
-		subif = dp_subif->subif;
-		DP_LIB_UNLOCK(&dp_lock);
-		return DP_SUCCESS;
+	//TODO handle DSL case in future
+	rcu_read_lock_bh();
+	dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif, subif_data);
+	if (!dp_subif) {
+		PR_ERR("Failed dp_subif_lookup: %s\n",
+		       netif ? netif->name : "NULL");
+		rcu_read_unlock_bh();
+		return res;
 	}
-	return ret;
+	memcpy(subif, &dp_subif->subif, sizeof(dp_subif->subif));
+	subifid_fn_t = dp_subif->subif_fn;
+	if (subifid_fn_t) {
+		/*subif->subif will be set by callback api itself */
+		res =
+		    subifid_fn_t(netif, skb, subif_data, dst_mac, subif,
+				 flags);
+		if (res != 0)
+			DP_DEBUG(DP_DBG_FLAG_DBG,
+				 "get_netif_subifid callback failed\n");
+	}
+	rcu_read_unlock_bh();
+	return DP_SUCCESS;
 }
-EXPORT_SYMBOL(dp_get_netif_subifid_new);
+EXPORT_SYMBOL(dp_get_netif_subifid);
 
 /*Note:
  * try to get subif according to netif, skb,vcc,dst_mac.
@@ -1077,15 +1082,16 @@ EXPORT_SYMBOL(dp_get_netif_subifid_new);
  * Note: subif_data is mainly used for DSL WAN mode, esp ATM.
  * If subif->port_id valid, take it, otherwise search all to get the port_id
  */
-int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
-			     void *subif_data, uint8_t dst_mac[DP_MAX_ETH_ALEN],
-			     dp_subif_t *subif, uint32_t flags)
+int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
+				  void *subif_data,
+				  u8 dst_mac[DP_MAX_ETH_ALEN],
+				  dp_subif_t *subif, uint32_t flags)
 {
 	int res = -1;
 	int i, k;
 	int port_id = -1;
 	u16 bport = 0;
-	dp_get_netif_subifid_fn_t subifid_fn_t;
+	//dp_get_netif_subifid_fn_t subifid_fn_t;
 	int inst, start, end;
 	u8 match = 0;
 	u8 num = 0;
@@ -1132,7 +1138,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	}
 #endif
 	subif->flag_pmapper = 0;
-	DP_LIB_LOCK(&dp_lock);
+	//DP_LIB_LOCK(&dp_lock);
 	for (k = start; k < end; k++) {
 		if (dp_port_info[inst][k].status != PORT_SUBIF_REGISTERED)
 			continue;
@@ -1154,7 +1160,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 				match = 1;
 				port_id = k;
 				if (num > 0) {
-					DP_LIB_UNLOCK(&dp_lock);
+					//DP_LIB_UNLOCK(&dp_lock);
 					PR_ERR("Multiple same ctp_dev exist\n");
 					goto EXIT;
 				}
@@ -1179,7 +1185,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 					subif->flag_bp = 1;
 					port_id = k;
 					if (num >= DP_MAX_CTP_PER_DEV) {
-						DP_LIB_UNLOCK(&dp_lock);
+						//DP_LIB_UNLOCK(&dp_lock);
 						PR_ERR("%s: Why CTP over %d\n",
 						       netif ? netif->name : "",
 						       DP_MAX_CTP_PER_DEV);
@@ -1204,7 +1210,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 						       dp_port_info[inst][k].
 							  subif_info[i].bp,
 						       bport);
-						DP_LIB_UNLOCK(&dp_lock);
+						//DP_LIB_UNLOCK(&dp_lock);
 						goto EXIT;
 					}
 					num++;
@@ -1221,7 +1227,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 					subif->inst = inst;
 					subif->port_id = k;
 					subif->bport = tmp->bp;
-					DP_LIB_UNLOCK(&dp_lock);
+					//DP_LIB_UNLOCK(&dp_lock);
 					res = 0;
 					/*note: logical device no callback */
 					goto EXIT;
@@ -1231,7 +1237,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 		if (match)
 			break;
 	}
-	DP_LIB_UNLOCK(&dp_lock);
+	//DP_LIB_UNLOCK(&dp_lock);
 
 	if (port_id < 0) {
 		if (subif_data)
@@ -1249,6 +1255,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	subif->port_id = port_id;
 	subif->bport = bport;
 	subif->alloc_flag = dp_port_info[inst][port_id].alloc_flags;
+	#if 0
 	subifid_fn_t = dp_port_info[inst][port_id].cb.get_subifid_fn;
 
 	if (subifid_fn_t && !(flags & DP_F_SUBIF_LOGICAL)) {
@@ -1263,6 +1270,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 			subif->subif_num = 1;
 		goto EXIT;
 	}
+	#endif
 	subif->subif_num = num;
 	for (i = 0; i < num; i++) {
 		subif->subif_list[i] = subifs[i];
@@ -1274,7 +1282,6 @@ EXIT:
 	kfree(subif_flag);
 	return res;
 }
-EXPORT_SYMBOL(dp_get_netif_subifid);
 
 #ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
 int update_coc_up_sub_module(enum ltq_cpufreq_state new_state,

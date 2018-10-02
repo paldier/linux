@@ -903,8 +903,8 @@ int ppv4_port_free_31(int inst, int base, int deq_port_num)
 int ppv4_alloc_ring_31(int size, void **phy, void **virt)
 {
 	*virt = kmalloc(DP_TXIN_RING_SIZE_DEF * size, GFP_KERNEL);
-	if (!virt)
-		return -DP_FAILURE;
+	if (!*virt)
+		return DP_FAILURE;
 
 	*phy = virt_to_phys(virt);
 

@@ -1676,6 +1676,8 @@ int alloc_port(char *param_list[], int num)
 			PR_INFO("inst=%d\n", inst);
 			break;
 		case 'o':
+			if (!optarg)
+				return -1;
 			strncpy(owner[inst][port_id].name, optarg,
 				sizeof(owner[inst][port_id].name) - 1);
 			PR_INFO("owner name=%s\n", optarg);
@@ -2579,7 +2581,7 @@ ssize_t proc_meter_write(struct file *file, const char *buf, size_t count,
 		}
 		ret = dp_get_netif_subifid(dev, NULL, NULL, NULL,
 					   &mtr_subif.subif, 0);
-		if ( ret < 0) {
+		if (ret < 0) {
 			PR_ERR("subif fails\n");
 			return count;
 		}

@@ -41,11 +41,6 @@
 #define dp_memcpy(x, y, z)   memcpy(x, y, z)
 #endif
 
-#ifdef DP_SPIN_LOCK
-static DEFINE_SPINLOCK(dp_subif_lock); /*datapath spinlock*/
-#else
-static DEFINE_MUTEX(dp_subif_lock);
-#endif
 struct hlist_head dp_subif_list[DP_SUBIF_LIST_HASH_SIZE];
 char *parser_flags_str[] = {
 	"PARSER_FLAGS_NO",
@@ -1235,7 +1230,6 @@ u32 dp_subif_hash(struct net_device *dev)
 {
 	unsigned long index;
 
-	/* calculate hash even if dev is NULL */
 	index = (unsigned long)dev;
 	/*Note: it is 4K alignment. Need tune later */
 	return (u32)((index >>
@@ -1252,38 +1246,32 @@ int dp_subif_list_init(void)
 	return 0;
 }
 
-struct dp_subif_id *dp_subif_lookup(struct hlist_head *head,
-				    struct net_device *dev,
-				    struct dp_subif_data *data)
+struct dp_subif_cache *dp_subif_lookup(struct hlist_head *head,
+				       struct net_device *dev,
+				       struct dp_subif_data *data)
 {
-	struct dp_subif_id *item;
+	struct dp_subif_cache *item;
 
-	rcu_read_lock_bh();
 	hlist_for_each_entry(item, head, hlist) {
 		if (dev) {
-			if (item->dev == dev) {
-				rcu_read_unlock_bh();
+			if (item->dev == dev)
 				return item;
-			}
 		} /*else if ((data == item->subif->alloc_flag) &&
 				((int)data & DP_F_FAST_DSL)) {
-			rcu_read_unlock_bh();
 			return item;
 		}
 		*/
 	}
-	rcu_read_unlock_bh();
 	return NULL;
 }
 
 int32_t	dp_del_subif(struct net_device *netif, struct dp_subif_data *data,
 		     dp_subif_t *subif, char *subif_name)
 {
-	struct dp_subif_id *dp_subif;
+	struct dp_subif_cache *dp_subif;
 	u32 idx;
 
 	idx = dp_subif_hash(netif);
-	DP_LIB_LOCK(&dp_subif_lock);
 	dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) {
 		PR_ERR("Failed dp_subif_lookup: %s\n",
@@ -1291,7 +1279,6 @@ int32_t	dp_del_subif(struct net_device *netif, struct dp_subif_data *data,
 		return -1;
 	}
 	hlist_del_rcu(&dp_subif->hlist);
-	DP_LIB_UNLOCK(&dp_subif_lock);
 	synchronize_rcu_bh();
 	kfree(dp_subif);
 	return 1;
@@ -1300,30 +1287,34 @@ int32_t	dp_del_subif(struct net_device *netif, struct dp_subif_data *data,
 int32_t	dp_update_subif(struct net_device *netif, struct dp_subif_data *data,
 			dp_subif_t *subif, char *subif_name)
 {
-	struct dp_subif_id *dp_subif_new, *dp_subif;
+	struct dp_subif_cache *dp_subif_new, *dp_subif;
 	u32 idx;
-	int inst, portid;
+	int inst, portid, vap;
 	dp_get_netif_subifid_fn_t subifid_fn_t;
+	struct pmac_port_info *port_info;
 
 	idx = dp_subif_hash(netif);
 	inst = subif->inst;
 	portid = subif->port_id;
-	subifid_fn_t = dp_port_info[inst][portid].cb.get_subifid_fn;
+	port_info = &dp_port_info[inst][portid];
+	subifid_fn_t = port_info->cb.get_subifid_fn;
+	vap = GET_VAP(subif->subif, port_info->vap_offset,
+		      port_info->vap_mask);
 
-	DP_LIB_LOCK(&dp_subif_lock);
 	dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) { /*alloc new */
 		dp_subif = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
 		if (dp_subif) {
-			dp_subif->subif = subif;
-			dp_subif->data = data;//TODO need check data
+			memcpy(&dp_subif->subif, subif, sizeof(subif));
+			memcpy((struct dp_subif_data *)dp_subif->data, data,
+			       sizeof(data));
 			dp_subif->dev = netif;
-			dp_subif->name = subif_name;
+			strncpy(dp_subif->name, subif_name,
+				sizeof(dp_subif->name) - 1);
 			if (subifid_fn_t)
 				dp_subif->subif_fn = subifid_fn_t;
 			hlist_add_head_rcu(&dp_subif->hlist,
 					   &dp_subif_list[idx]);
-			DP_LIB_UNLOCK(&dp_subif_lock);
 			return 0;
 		}
 	} else {
@@ -1331,13 +1322,11 @@ int32_t	dp_update_subif(struct net_device *netif, struct dp_subif_data *data,
 		if (dp_subif_new) {
 			hlist_replace_rcu(&dp_subif->hlist,
 					  &dp_subif_new->hlist);
-			DP_LIB_UNLOCK(&dp_subif_lock);
 			synchronize_rcu_bh();
 			kfree(dp_subif);
 			return 0;
 		}
 	}
-	DP_LIB_UNLOCK(&dp_subif_lock);
 	return -1;
 }
 
@@ -1345,15 +1334,37 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			dp_subif_t *subif_id, struct dp_subif_data *data,
 			u32 flags)
 {
-	dp_subif_t subif = {0};
+/*Note: passing subif_name as subif_data to dp_get_netif_subifid_priv api */
+	char *subif_data;
 
-	if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0))
-		return DP_FAILURE;
+	subif_data = subif_name;
 	/*check flag for register / deregister to update/del */
-	if (flags & DP_F_DEREGISTER)
-		dp_del_subif(dev, data, &subif, subif_name);
-	else
-		dp_update_subif(dev, data, &subif, subif_name);
+	if (flags & DP_F_DEREGISTER) {
+		if (data->ctp_dev)
+			dp_del_subif(data->ctp_dev, data, subif_id, subif_name);
 
+		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
+					      subif_id, 0)) {
+			dp_del_subif(dev, data, subif_id, subif_name);
+		} else {
+			subif_id->subif_num--;
+			dp_update_subif(dev, data, subif_id, subif_name);
+		}
+	} else {
+		if (dp_get_netif_subifid_priv(dev, NULL, subif_data,
+					      NULL, subif_id, 0))
+			return DP_FAILURE;
+		if (!subif_id->subif_num)
+			subif_id->subif_num = 1;
+		dp_update_subif(dev, data, subif_id, subif_name);
+		if (data->ctp_dev) {
+			if (dp_get_netif_subifid_priv(data->ctp_dev, NULL,
+						      subif_data, NULL,
+						      subif_id,	0))
+				return DP_FAILURE;
+			dp_update_subif(data->ctp_dev, data, subif_id,
+					subif_name);
+		}
+	}
 	return 0;
 }

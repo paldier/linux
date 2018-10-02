@@ -769,10 +769,14 @@ int32_t	dp_update_subif(struct net_device *netif, struct dp_subif_data *data,
 			dp_subif_t *subif, char *subif_name);
 int32_t	dp_del_subif(struct net_device *netif, struct dp_subif_data *data,
 		     dp_subif_t *subif, char *subif_name);
-struct dp_subif_id *dp_subif_lookup(struct hlist_head *head,
-				    struct net_device *dev,
-				    struct dp_subif_data *data);
+struct dp_subif_cache *dp_subif_lookup(struct hlist_head *head,
+				       struct net_device *dev,
+				       struct dp_subif_data *data);
 int dp_subif_list_init(void);
 u32 dp_subif_hash(struct net_device *dev);
+int32_t dp_get_netif_subifid_priv(struct net_device *netif,
+				  struct sk_buff *skb, void *subif_data,
+				  u8 dst_mac[DP_MAX_ETH_ALEN],
+				  dp_subif_t *subif, uint32_t flags);
 #endif /*DATAPATH_H */
 

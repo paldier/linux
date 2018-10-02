@@ -129,6 +129,10 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 	int masked_subif;
 	struct pmac_port_info *port_info;
 
+	if (!dev) {
+		DP_DEBUG(DP_DBG_FLAG_LOGIC, "dev NULL\n");
+		return -1;
+	}
 	base_dev = get_base_dev(dev, -1);
 	if (!base_dev) {
 		DP_DEBUG(DP_DBG_FLAG_LOGIC,

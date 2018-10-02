@@ -643,11 +643,11 @@ enum DP_SUBIF_DATA_FLAG {
 };
 
 /*! @brief dp_subif_id struct for get_netif_subif */
-struct dp_subif_id {
+struct dp_subif_cache {
 	struct hlist_node hlist;
-	dp_subif_t *subif;
+	dp_subif_t subif;
 	struct net_device *dev;
-	char *name;
+	char name[16];
 	dp_get_netif_subifid_fn_t subif_fn;  /*!< Get Sub Interface Id
 					      * of netif/netdevice
 					      */

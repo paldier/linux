@@ -41,16 +41,24 @@ static int dp_swdev_del_bport_from_list(struct br_info *br_item,
 
 struct hlist_head
 	g_bridge_id_entry_hash_table[DP_MAX_INST][BR_ID_ENTRY_HASH_TABLE_SIZE];
-static spinlock_t dp_swdev_lock;
+//static spinlock_t dp_swdev_lock;
+
+#ifdef DP_SPIN_LOCK
+static DEFINE_SPINLOCK(dp_swdev_lock); /*datapath spinlock*/
+#else
+static DEFINE_MUTEX(dp_swdev_lock);
+#endif
 
 static inline void swdev_lock(void)
 {
-	spin_lock_bh(&dp_swdev_lock);
+	//spin_lock_bh(&dp_swdev_lock);
+	DP_LIB_LOCK(&dp_swdev_lock);
 }
 
 static inline void swdev_unlock(void)
 {
-	spin_unlock_bh(&dp_swdev_lock);
+	//spin_unlock_bh(&dp_swdev_lock);
+	DP_LIB_UNLOCK(&dp_swdev_lock);
 }
 
 u16 dp_swdev_cal_hash(unsigned char *name)
@@ -175,7 +183,7 @@ int dp_swdev_bridge_id_entry_init(void)
 {
 	int i, j;
 
-	spin_lock_init(&dp_swdev_lock);
+	//spin_lock_init(&dp_swdev_lock);
 	for (i = 0; i < DP_MAX_INST; i++)
 		for (j = 0; j < BR_ID_ENTRY_HASH_TABLE_SIZE; j++)
 			INIT_HLIST_HEAD(&g_bridge_id_entry_hash_table[i][j]);
