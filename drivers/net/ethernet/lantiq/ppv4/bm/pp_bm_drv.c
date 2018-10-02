@@ -717,12 +717,12 @@ static s32 bmgr_pool_reset_fifo(u8 pool_id)
 static s32 bmgr_configure_ocp_master(void)
 {
 	// OCP Master burst size
-	// 64B burst for all pools
-	WR_REG_32(BMGR_OCPM_BURST_SIZE_REG_ADDR(BM_BASE), 0);
+	// 256B burst for all pools
+	WR_REG_32(BMGR_OCPM_BURST_SIZE_REG_ADDR(BM_BASE), 0xAA);
 
 	// OCP Master number of bursts
-	// 1 burst for all pools
-	WR_REG_32(BMGR_OCPM_NUM_OF_BURSTS_REG_ADDR(BM_BASE), 0);
+	// 2 bursts for all pools
+	WR_REG_32(BMGR_OCPM_NUM_OF_BURSTS_REG_ADDR(BM_BASE), 0x55);
 
 	return RC_SUCCESS;
 }
@@ -755,41 +755,6 @@ static u32 bmgr_get_ocp_burst_size(void)
  **************************************************************************/
 static s32 bmgr_set_pool_size(u8 pool_id, u32 num_buffers)
 {
-	u32	burst_size = 0;
-	u32	reg = 0;
-	u32	mask = 3 << (2 * pool_id);
-
-	if (num_buffers > 128) {
-		burst_size = 3; // 512B
-	} else if (num_buffers > 64) {
-		burst_size = 2; // 256B
-	} else if (num_buffers > 32) {
-		burst_size = 1; // 128B
-	} else if (num_buffers > 16)	{
-		burst_size = 0; // 64B
-	} else {
-		pr_err("bmgr_set_pool_size(): minimum valid num_buffers (%d) is 16\n",
-		       num_buffers);
-		return -EINVAL;
-	}
-
-	// num buffer X pointer size must be
-	// multiplier of the burst size in bytes
-	if ((num_buffers % (1 << (4 + burst_size))) != 0) {
-		pr_err("bmgr_set_pool_size(): num_buffers %d must be multiplier of %d\n",
-		       num_buffers, 1 << (4 + burst_size));
-		return -EINVAL;
-	}
-
-	reg = RD_REG_32(BMGR_OCPM_BURST_SIZE_REG_ADDR(BM_BASE));
-	burst_size <<= (2 * pool_id);
-
-	reg &= ~(mask);
-	reg |= burst_size;
-
-	// OCP Master burst size
-	WR_REG_32(BMGR_OCPM_BURST_SIZE_REG_ADDR(BM_BASE), reg);
-
 	// Sets number of buffers in pools
 	WR_REG_32(BMGR_POOL_SIZE_REG_ADDR(BM_BASE, pool_id), num_buffers);
 

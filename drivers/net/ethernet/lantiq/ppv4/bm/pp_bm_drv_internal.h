@@ -47,17 +47,17 @@
 /*! \def BMGR_DEFAULT_PCU_FIFO_SIZE
  *       PCU fifo size
  */
-#define BMGR_DEFAULT_PCU_FIFO_SIZE		(0x80)
+#define BMGR_DEFAULT_PCU_FIFO_SIZE		(0x400)
 
 /*! \def BMGR_DEFAULT_PCU_FIFO_LOW_THRESHOLD
  *       PCU fifo low threshold
  */
-#define BMGR_DEFAULT_PCU_FIFO_LOW_THRESHOLD	(1)
+#define BMGR_DEFAULT_PCU_FIFO_LOW_THRESHOLD	(0x100)
 
 /*! \def BMGR_DEFAULT_PCU_FIFO_HIGH_THRESHOLD
  *       PCU fifo high threshold
  */
-#define BMGR_DEFAULT_PCU_FIFO_HIGH_THRESHOLD	(0x70)
+#define BMGR_DEFAULT_PCU_FIFO_HIGH_THRESHOLD	(0x300)
 
 /*! \def BMGR_DEFAULT_WATERMARK_LOW_THRESHOLD
  *       Watermark low threshold
