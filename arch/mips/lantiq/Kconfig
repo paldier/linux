@@ -41,7 +41,6 @@ config SOC_GRX500
 	bool "GRX500"
 	select GENERIC_ISA_DMA
 	select MIPS_GIC
-	select INTEL_GPTC
 	select MIPS_CPU_SCACHE
 	select SYS_HAS_CPU_MIPS32_R3_5
 	select CPU_MIPSR2_IRQ_VI

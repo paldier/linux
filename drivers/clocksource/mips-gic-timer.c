@@ -62,7 +62,7 @@ static void gic_clockevent_cpu_init(unsigned int cpu,
 	cd->cpumask		= cpumask_of(cpu);
 	cd->set_next_event	= gic_next_event;
 
-	clockevents_config_and_register(cd, gic_frequency, 0x300, 0x7fffffff);
+	clockevents_config_and_register(cd, gic_frequency, 0x3000, 0x7fffffff);
 
 	enable_percpu_irq(gic_timer_irq, IRQ_TYPE_NONE);
 }

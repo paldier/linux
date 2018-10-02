@@ -486,7 +486,7 @@ config CLKSRC_VERSATILE
 	  platforms.
 
 config CLKSRC_MIPS_GIC
-	bool
+	bool "MIPS GIC clock source"
 	depends on MIPS_GIC
 	select CLKSRC_OF
 
