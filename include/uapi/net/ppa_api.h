@@ -477,7 +477,7 @@
 /* Other flags */
 #define FLG_PPA_PROCESSED		0x100	/* this used to mark ecah packets which are processed by ppa datapath driver*/
 #define SESSION_FLAG_TC_REMARK		0x40000000 /*Flag to sepcify bit 30 in extmark which specifies packet classified by iptables when set to 1*/
-#define SESSION_FLAG_DSCP_REMARK	0x00000020 /*Flag to enable DSCP remark in Stack when packet is not classified using PAE Flow Rule*/
+#define SESSION_FLAG_DSCP_REMARK	0x00000010 /*Flag to enable DSCP remark in Stack when packet is not classified using PAE Flow Rule*/
 #define SESSION_FLAG2_UPDATE_INFO_PROCESSED	0x10000000 /*Flag to specify ppa_update_session_info is complete*/
 
 #define MAX_DATA_FLOW_ENGINES 3 /* will be changed to runtime value*/

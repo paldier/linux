@@ -90,6 +90,34 @@
 #else
 #define WRAPROUND_SESSION_MIB WRAPROUND_32BITS
 #endif
+
+#if IS_ENABLED(CONFIG_INTEL_IPQOS_MPE_DS_ACCEL)
+/* Flag to extract bit 28 of extmark to check if DS_QOS is enabled for this session*/
+#define SESSION_DS_QOS_SET				0x10000000
+
+/* Flag to extract bit 17 of extmark that specifies if Ingress / Egress QoS enabled for sesssion */
+#define SESSION_ING_EGR_QOS				0x00020000
+
+/* Flag to extract bit 18 of extmark that specifies if classification is done from PCE or iptables */
+#define SESSION_PCE_CLASSIFICATION		0x00040000
+
+/* Flag to extract bits 19-20 of extmark that specifies if TC bits are set for Ingress Qs / Egress Qs / Both (Ingress & Egress Qs) */
+#define SESSION_ING_TC_SET				0x00080000
+#define SESSION_EGR_TC_SET				0x00100000
+
+/* Flag to extract bits 21-22 of extmark that specifies the Ingress group of the session */
+#define SESSION_ING_GROUP				0x00600000
+
+/* Flag to extract bits 23-27 of extmark that are set with TC of Ingress Qs */
+#define SESSION_INGRESS_TC				0x0F800000
+
+#define SESSION_FLAG2_DS_MPE_QOS		0x00008000 //Flag for DS_QOS capab
+
+#define ING_TC_SET_POS					19
+#define EGR_TC_SET_POS					20
+#define ING_GROUP_POS					21
+#define INGRESS_TC_BIT_POS				23
+#endif /* CONFIG_INTEL_IPQOS_MPE_DS_ACCEL */
 #if IS_ENABLED(WMM_QOS_CONFIG)
 typedef int (*PPA_QOS_CLASS2PRIO_CB)(int32_t , PPA_NETIF *, uint8_t *);
 #endif
@@ -158,6 +186,9 @@ typedef enum {
 	XDSL_PHY,
 	SESS_NAT_LOOPBACK,
 	LRO_ENG,
+#if IS_ENABLED(CONFIG_INTEL_IPQOS_MPE_DS_ACCEL)
+	MPE_DS_QOS,
+#endif
 	MAX_CAPS
 } PPA_API_CAPS;
 
