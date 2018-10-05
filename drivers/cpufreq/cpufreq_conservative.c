@@ -79,8 +79,10 @@ static unsigned int cs_dbs_timer(struct cpufreq_policy *policy)
 	 * changed in the meantime, so fall back to current frequency in that
 	 * case.
 	 */
-	if (requested_freq > policy->max || requested_freq < policy->min)
+	if (requested_freq > policy->max || requested_freq < policy->min) {
 		requested_freq = policy->cur;
+		dbs_info->requested_freq = requested_freq;
+	}
 
 	/* Check for frequency increase */
 	if (load > dbs_data->up_threshold) {
