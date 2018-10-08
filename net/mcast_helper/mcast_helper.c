@@ -1583,6 +1583,9 @@ static long mcast_helper_ioctl(struct file *f, unsigned int cmd, unsigned long a
 	struct net_device *upper_dev = NULL;
 	unsigned char s_mac[ETH_ALEN] = {0};
 
+	if (!capable(CAP_NET_ADMIN))
+		return -EPERM;
+
 	switch (cmd) {
 	case MCH_MEMBER_ENTRY_ADD:
 			if (copy_from_user(&mcast_mem, (MCAST_REC_t *)arg, sizeof(MCAST_REC_t))) {
@@ -1666,6 +1669,9 @@ int mcast_helper_seq_show(struct seq_file *seq, void *v)
 	MCAST_MAC_t *mac_rec = NULL;
 	struct list_head *gimc_list = mcast_helper_list_p(IPV4) ;
 
+	if (!capable(CAP_NET_ADMIN))
+		return -EPERM;
+
 	if (mch_acl_enabled) {
 		seq_printf(seq,
 				"%3s %10s "
@@ -1747,6 +1753,9 @@ int mcast_helper_seq_show6(struct seq_file *seq, void *v)
 	MCAST_MEMBER_t *gitxmc_rec = NULL;
 	MCAST_MAC_t *mac_rec = NULL;
 	struct list_head *gimc_list = mcast_helper_list_p(IPV6) ;
+
+	if (!capable(CAP_NET_ADMIN))
+		return -EPERM;
 
 	if (mch_acl_enabled) {
 		seq_printf(seq,
