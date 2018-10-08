@@ -1048,7 +1048,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	struct dp_subif_cache *dp_subif;
 	u32 idx;
 	dp_get_netif_subifid_fn_t subifid_fn_t;
-	int res = -1;
+	int res = DP_FAILURE;
 
 	idx = dp_subif_hash(netif);
 	//TODO handle DSL case in future
@@ -1061,6 +1061,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 		return res;
 	}
 	memcpy(subif, &dp_subif->subif, sizeof(dp_subif->subif));
+	rcu_read_unlock_bh();
 	subifid_fn_t = dp_subif->subif_fn;
 	if (subifid_fn_t) {
 		/*subif->subif will be set by callback api itself */
@@ -1068,11 +1069,9 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 		    subifid_fn_t(netif, skb, subif_data, dst_mac, subif,
 				 flags);
 		if (res != 0)
-			DP_DEBUG(DP_DBG_FLAG_DBG,
-				 "get_netif_subifid callback failed\n");
+			PR_ERR("get_netif_subifid callback function failed\n");
 	}
-	rcu_read_unlock_bh();
-	return DP_SUCCESS;
+	return res;
 }
 EXPORT_SYMBOL(dp_get_netif_subifid);
 
@@ -1091,7 +1090,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	int i, k;
 	int port_id = -1;
 	u16 bport = 0;
-	//dp_get_netif_subifid_fn_t subifid_fn_t;
 	int inst, start, end;
 	u8 match = 0;
 	u8 num = 0;
@@ -1138,7 +1136,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	}
 #endif
 	subif->flag_pmapper = 0;
-	//DP_LIB_LOCK(&dp_lock);
 	for (k = start; k < end; k++) {
 		if (dp_port_info[inst][k].status != PORT_SUBIF_REGISTERED)
 			continue;
@@ -1160,7 +1157,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 				match = 1;
 				port_id = k;
 				if (num > 0) {
-					//DP_LIB_UNLOCK(&dp_lock);
 					PR_ERR("Multiple same ctp_dev exist\n");
 					goto EXIT;
 				}
@@ -1185,7 +1181,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif->flag_bp = 1;
 					port_id = k;
 					if (num >= DP_MAX_CTP_PER_DEV) {
-						//DP_LIB_UNLOCK(&dp_lock);
 						PR_ERR("%s: Why CTP over %d\n",
 						       netif ? netif->name : "",
 						       DP_MAX_CTP_PER_DEV);
@@ -1227,7 +1222,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif->inst = inst;
 					subif->port_id = k;
 					subif->bport = tmp->bp;
-					//DP_LIB_UNLOCK(&dp_lock);
 					res = 0;
 					/*note: logical device no callback */
 					goto EXIT;
@@ -1237,7 +1231,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 		if (match)
 			break;
 	}
-	//DP_LIB_UNLOCK(&dp_lock);
 
 	if (port_id < 0) {
 		if (subif_data)

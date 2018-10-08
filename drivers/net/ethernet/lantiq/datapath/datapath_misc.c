@@ -1248,7 +1248,7 @@ int dp_subif_list_init(void)
 
 struct dp_subif_cache *dp_subif_lookup(struct hlist_head *head,
 				       struct net_device *dev,
-				       struct dp_subif_data *data)
+				       void *data)
 {
 	struct dp_subif_cache *item;
 
@@ -1265,8 +1265,8 @@ struct dp_subif_cache *dp_subif_lookup(struct hlist_head *head,
 	return NULL;
 }
 
-int32_t	dp_del_subif(struct net_device *netif, struct dp_subif_data *data,
-		     dp_subif_t *subif, char *subif_name)
+int32_t	dp_del_subif(struct net_device *netif, void *data, dp_subif_t *subif,
+		     char *subif_name, u32 flags)
 {
 	struct dp_subif_cache *dp_subif;
 	u32 idx;
@@ -1284,8 +1284,8 @@ int32_t	dp_del_subif(struct net_device *netif, struct dp_subif_data *data,
 	return 1;
 }
 
-int32_t	dp_update_subif(struct net_device *netif, struct dp_subif_data *data,
-			dp_subif_t *subif, char *subif_name)
+int32_t	dp_update_subif(struct net_device *netif, void *data,
+			dp_subif_t *subif, char *subif_name, u32 flags)
 {
 	struct dp_subif_cache *dp_subif_new, *dp_subif;
 	u32 idx;
@@ -1297,7 +1297,9 @@ int32_t	dp_update_subif(struct net_device *netif, struct dp_subif_data *data,
 	inst = subif->inst;
 	portid = subif->port_id;
 	port_info = &dp_port_info[inst][portid];
-	subifid_fn_t = port_info->cb.get_subifid_fn;
+	if (subifid_fn_t && !(flags & DP_F_SUBIF_LOGICAL)) {
+		subifid_fn_t = port_info->cb.get_subifid_fn;
+	}
 	vap = GET_VAP(subif->subif, port_info->vap_offset,
 		      port_info->vap_mask);
 
@@ -1311,8 +1313,7 @@ int32_t	dp_update_subif(struct net_device *netif, struct dp_subif_data *data,
 			dp_subif->dev = netif;
 			strncpy(dp_subif->name, subif_name,
 				sizeof(dp_subif->name) - 1);
-			if (subifid_fn_t)
-				dp_subif->subif_fn = subifid_fn_t;
+			dp_subif->subif_fn = subifid_fn_t;
 			hlist_add_head_rcu(&dp_subif->hlist,
 					   &dp_subif_list[idx]);
 			return 0;
@@ -1335,35 +1336,35 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			u32 flags)
 {
 /*Note: passing subif_name as subif_data to dp_get_netif_subifid_priv api */
-	char *subif_data;
+	void *subif_data;
 
-	subif_data = subif_name;
+	subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
 	if (flags & DP_F_DEREGISTER) {
 		if (data->ctp_dev)
-			dp_del_subif(data->ctp_dev, data, subif_id, subif_name);
+			dp_del_subif(data->ctp_dev, subif_data, subif_id,
+				     subif_name, flags);
 
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
-					      subif_id, 0)) {
-			dp_del_subif(dev, data, subif_id, subif_name);
-		} else {
-			subif_id->subif_num--;
-			dp_update_subif(dev, data, subif_id, subif_name);
-		}
+					      subif_id, 0))
+			dp_del_subif(dev, subif_data, subif_id, subif_name, flags);
+		else
+			dp_update_subif(dev, subif_data, subif_id, subif_name,
+					flags);
 	} else {
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data,
-					      NULL, subif_id, 0))
+					      NULL, subif_id, 0)) {
+			PR_ERR("DP subif synchronization fail\n");
 			return DP_FAILURE;
-		if (!subif_id->subif_num)
-			subif_id->subif_num = 1;
-		dp_update_subif(dev, data, subif_id, subif_name);
+		}
+		dp_update_subif(dev, subif_data, subif_id, subif_name, flags);
 		if (data->ctp_dev) {
 			if (dp_get_netif_subifid_priv(data->ctp_dev, NULL,
 						      subif_data, NULL,
 						      subif_id,	0))
 				return DP_FAILURE;
-			dp_update_subif(data->ctp_dev, data, subif_id,
-					subif_name);
+			dp_update_subif(data->ctp_dev, subif_data, subif_id,
+					subif_name, flags);
 		}
 	}
 	return 0;
