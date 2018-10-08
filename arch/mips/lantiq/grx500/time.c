@@ -53,7 +53,7 @@ void __init plat_time_init(void)
 		return;
 	}
 
-	clk = of_clk_get(np, 0);
+	clk = of_clk_get_by_name(np, "cpu");
 	if (IS_ERR(clk)) {
 		pr_err("Failed to get CPU clock: %ld\n", PTR_ERR(clk));
 		return;

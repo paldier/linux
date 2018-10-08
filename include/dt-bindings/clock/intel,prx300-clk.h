@@ -1,0 +1,89 @@
+#ifndef __INTEL_PRX300_CLK_H_
+#define __INTEL_PRX300_CLK_H_
+
+/* PLL clocks */
+#define PRX300_CLK_PLL0A	2
+#define PRX300_CLK_PLL0B	3
+#define PRX300_CLK_PLL1		4
+#define PRX300_CLK_PLL2		5
+#define PRX300_CLK_LJPLL3	6
+#define PRX300_CLK_LJPLL4	7
+#define PRX300_CLK_LJPLL5	8
+
+/* clocks from PLLs */
+/* ROPLL0A */
+#define PRX300_CLK_CPU		9
+#define PRX300_CLK_QSPI		10
+/* ROPLL0B */
+#define PRX300_CLK_SW		11
+#define PRX300_CLK_NGI		12
+#define PRX300_CLK_SSX4		13
+/* ROPLL1 */
+#define PRX300_CLK_DSP		14
+#define PRX300_CLK_IF		15
+/* ROPLL2 */
+#define PRX300_CLK_DDR		16
+/* LJPLL3  */
+#define PRX300_CLK_GPHY		17
+#define PRX300_CLK_CBPHY	18
+#define PRX300_CLK_POOL		19
+#define PRX300_CLK_PTP		20
+/* LJPLL4 */
+#define PRX300_CLK_PCIE		21
+/* LJPLL5 */
+#define PRX300_CLK_PONPHY	22
+#define PRX300_CLK_PONIP	23
+
+#define PRX300_CLK_SLIC		24
+/* Gate0 clock shift */
+#define PRX300_GCLK_XBAR0	50
+#define PRX300_GCLK_XBAR1	51
+#define PRX300_GCLK_XBAR7	52
+
+/* clocks under gate1-clk */
+#define PRX300_GCLK_V_CODEC	53
+#define PRX300_GCLK_DMA0		54
+#define PRX300_GCLK_I2C0		55
+#define PRX300_GCLK_I2C1		56
+#define PRX300_GCLK_I2C2		57
+#define PRX300_GCLK_SPI1		58
+#define PRX300_GCLK_SPI0		59
+#define PRX300_GCLK_QSPI		60
+#define PRX300_GCLK_CQEM		61
+#define PRX300_GCLK_SSO			62
+#define PRX300_GCLK_GPTC0		63
+#define PRX300_GCLK_GPTC1		64
+#define PRX300_GCLK_GPTC2		65
+#define PRX300_GCLK_URT0		66
+#define PRX300_GCLK_URT1		67
+#define PRX300_GCLK_SECPT		68
+#define PRX300_GCLK_SCPU		69
+#define PRX300_GCLK_MPE			70
+#define PRX300_GCLK_TDM			71
+#define PRX300_GCLK_PP			72
+#define PRX300_GCLK_DMA3		73
+#define PRX300_GCLK_SWITCH		74
+#define PRX300_GCLK_PON			75
+#define PRX300_GCLK_AON			76
+#define PRX300_GCLK_DDR			77
+
+/* clocks under gate2-clk */
+#define PRX300_GCLK_PCIE_CTRL0	78
+#define PRX300_GCLK_MSI0		79
+#define PRX300_GCLK_PD0			80
+#define PRX300_GCLK_PCIE_CTRL1	81
+#define PRX300_GCLK_MSI1		82
+#define PRX300_GCLK_PD1			83
+#define PRX300_GCLK_ASPI		84
+#define PRX300_GCLK_ADMA		85
+#define PRX300_GCLK_AHIF		86
+#define PRX300_GCLK_ASL			87
+
+/* clocks under gate3-clk */
+#define PRX300_GCLK_SWREF		88
+#define PRX300_GCLK_CBPHY0		89
+#define PRX300_GCLK_CBPHY1		90
+
+#define PRX300_CLK_NR_CLKS		120
+
+#endif /* __INTEL_PRX300_CLK_H_ */

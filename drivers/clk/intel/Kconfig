@@ -19,10 +19,10 @@ choice
 	depends on COMMON_CLK_INTEL
 	default GRX500_CLK
 
-config FALCONMX_CLK
-	bool "FALCONMX CLK"
+config PRX300_CLK
+	bool "PRX300 CLK"
 	help
-	  Clock driver for FALCONMX platform.
+	  Clock driver for PRX300 platform.
 
 config GRX500_CLK
 	bool "GRX500 CLK"
