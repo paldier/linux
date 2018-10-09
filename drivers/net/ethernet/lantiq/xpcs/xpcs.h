@@ -675,6 +675,9 @@ struct xpcs_prv_data {
 	/* Connection Type SFP or PHY */
 	u32 conntype;
 
+	/* Power save mode 0 - Normal Mode, 1 - power save mode */
+	u8 power_save;
+
 	/* XPCS Mode Switching */
 	struct xpcs_mode_cfg *mode_cfg;
 };

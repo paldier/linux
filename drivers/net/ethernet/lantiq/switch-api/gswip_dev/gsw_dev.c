@@ -285,13 +285,25 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 
 	of_irq_to_resource_table(gsw_dev_cell->of_node, &irqres, 1);
 	switch_pdata->irq_num = irqres.start;
-	
-	if(devid == LTQ_FLOW_DEV_INT_R) {
-		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_DEVID,&switch_pdata->ext_devid);
-		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_PHYID,&switch_pdata->ext_phyid);
-		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_BASEADDR,&switch_pdata->gswex_base);
-		of_property_read_u32(gsw_dev_cell->of_node,EXTERNAL_SWITCH_SGMIIBASEADDR,&switch_pdata->gswex_sgmiibase);
+
+
+	if (devid == LTQ_FLOW_DEV_INT_R) {
+		of_property_read_u32(gsw_dev_cell->of_node,
+				     EXTERNAL_SWITCH_DEVID,
+				     &switch_pdata->ext_devid);
+		of_property_read_u32(gsw_dev_cell->of_node,
+				     EXTERNAL_SWITCH_PHYID,
+				     &switch_pdata->ext_phyid);
+		of_property_read_u32(gsw_dev_cell->of_node,
+				     EXTERNAL_SWITCH_BASEADDR,
+				     &switch_pdata->gswex_base);
+		of_property_read_u32(gsw_dev_cell->of_node,
+				     EXTERNAL_SWITCH_SGMIIBASEADDR,
+				     &switch_pdata->gswex_sgmiibase);
 	}
+
+	of_property_read_u32(gsw_dev_cell->of_node, "gsw_mode",
+			     &switch_pdata->gsw_mode);
 
 #ifndef CONFIG_OF
 
@@ -335,7 +347,7 @@ static int update_gsw_dev_cell(struct device_node *np,
 	if (ret)
 		goto failed;
 
-	strncpy(gsw_dev_cells[idx].name, np->name, 
+	strncpy(gsw_dev_cells[idx].name, np->name,
 		(ARRAY_SIZE(gsw_dev_cells[idx].name) - 1));
 
 	gsw_dev_cells[idx].of_node = np;

@@ -30,6 +30,7 @@
 #define XPCS_CONN_TYPE "xpcs-conn"
 #define XPCS_MODE_NAME "xpcs-mode"
 #define XPCS_RESET_NAME "xpcs_reset"
+#define POWER_SAVE_MODE "power-save"
 
 static void xpcs_cl37_an(struct xpcs_prv_data *pdata);
 static void xpcs_cl73_an(struct xpcs_prv_data *pdata);
@@ -358,7 +359,7 @@ static void xpcs_cfg_table(struct xpcs_prv_data *pdata)
 {
 	u32 mplla_ctrl2 = 0;
 	u32 tx_eq0, tx_eq1;
-	u32 val = 0;
+	u32 val = 0, i = 0;
 
 	if (pdata->mpllb) {
 		XPCS_RGWR_VAL(pdata, PMA_MPLLB_C0, MPLLB_MULTIPLIER,
@@ -372,6 +373,12 @@ static void xpcs_cfg_table(struct xpcs_prv_data *pdata)
 
 		XPCS_RGWR_VAL(pdata, PMA_MPLLA_C3, MPPLA_BANDWIDTH,
 			      pdata->mode_cfg->mplla_bw);
+	}
+
+	/* In Power save mode below setting will save 10mW of Power */
+	if (pdata->power_save) {
+		for (i = 0; i < LANE_MAX - 1; i++)
+			pdata->mode_cfg->tx_iboost[i] = 0x3;
 	}
 
 	switch (pdata->mode_cfg->lane) {
@@ -915,6 +922,13 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 				(*pdata)->conntype);
 			return -EINVAL;
 		}
+	} else {
+		dev_err(dev, "Xpcs conn: cannot get property\n");
+		return -EINVAL;
+	}
+
+	if (!device_property_read_u32(dev, POWER_SAVE_MODE, &prop)) {
+		(*pdata)->power_save = prop;
 	} else {
 		dev_err(dev, "Xpcs conn: cannot get property\n");
 		return -EINVAL;

@@ -78,6 +78,7 @@ int gsw_set_def_pce_qmap(struct core_ops *ops)
 {
 	int i = 0, j = 0;
 	GSW_QoS_queuePort_t q_map;
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
 	int num_of_elem =
 		(sizeof(gsw_pce_path) / sizeof(struct _gsw_pce_path));
 
@@ -87,12 +88,28 @@ int gsw_set_def_pce_qmap(struct core_ops *ops)
 			memset(&q_map, 0, sizeof(GSW_QoS_queuePort_t));
 			q_map.nPortId = gsw_pce_path[j].eg_lpid;
 
+			if (gswdev->gsw_mode == GSW_SHORTCUT_MODE) {
+				if (q_map.nPortId == LOG_3) {
+					q_map.nQueueId = 0;	/* Use Q0 */
+					q_map.nRedirectPortId = LOG_3;
+				} else if (q_map.nPortId == LOG_4) {
+					q_map.nQueueId = 8;	/* Use Q8 */
+					q_map.nRedirectPortId = LOG_4;
+				} else {
+					q_map.nQueueId = gsw_pce_path[j].qid;
+					q_map.nRedirectPortId =
+						gsw_pce_path[j].redir_lpid;
+				}
+			} else {
+				q_map.nQueueId = gsw_pce_path[j].qid;
+				q_map.nRedirectPortId =
+					gsw_pce_path[j].redir_lpid;
+			}
+
 			if (gsw_pce_path[j].ext != X)
 				q_map.bExtrationEnable = gsw_pce_path[j].ext;
 
 			q_map.nTrafficClassId = i;
-			q_map.nQueueId = gsw_pce_path[j].qid;
-			q_map.nRedirectPortId = gsw_pce_path[j].redir_lpid;
 
 			ops->gsw_qos_ops.QoS_QueuePortSet(ops, &q_map);
 		}
@@ -212,12 +229,12 @@ int gsw_misc_config(struct core_ops *ops)
 	GSW_register_t reg;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
 	int i = 0;
-	
-	/* Ignore Undersized frames and forward to CPU for the MAC ports 
+
+	/* Ignore Undersized frames and forward to CPU for the MAC ports
 	 * MAC logical ports start from 2
 	 */
 	for (i = 0; i < gswdev->pnum; i++) {
-		reg.nRegAddr = ((SDMA_PRIO_USIGN_OFFSET + (2*6)) + (i * 6));
+		reg.nRegAddr = ((SDMA_PRIO_USIGN_OFFSET + (2 * 6)) + (i * 6));
 		ops->gsw_common_ops.RegisterGet(ops, &reg);
 
 		reg.nData |= (1 << SDMA_PRIO_USIGN_SHIFT);

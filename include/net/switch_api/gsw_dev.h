@@ -22,6 +22,9 @@
 #define MAC_DEV_NAME		"gsw_mac"
 #define CORE_DEV_NAME		"gsw_core"
 
+#define GSW_SHORTCUT_MODE	1
+#define GSW_FULLQOS_MODE	0
+
 /* This represents the GSWIP SubSystem block, one instance per SubSystem
  * For xrx500 GSWIP-L device ID is 0
  * For xrx500 GSWIP-R device ID is 1
