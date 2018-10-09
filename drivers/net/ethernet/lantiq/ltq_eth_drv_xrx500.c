@@ -1548,6 +1548,7 @@ static int prx300_phy_connect(struct net_device *dev, struct xrx500_port *port)
 {
 	struct phy_device *phydev = NULL;
 	struct ltq_eth_priv *priv = NULL;
+	struct mac_ops *ops;
 
 	priv = netdev_priv(dev);
 
@@ -1569,6 +1570,11 @@ static int prx300_phy_connect(struct net_device *dev, struct xrx500_port *port)
 			      | SUPPORTED_TP);
 	phydev->advertising = phydev->supported;
 	port->phydev = phydev;
+
+	/* restart xgmac */
+	ops = gsw_get_mac_ops(0, priv->xgmac_id);
+	if (ops && ops->soft_restart)
+		ops->soft_restart(ops);
 
 	pr_info("%s: attached PHY [%s] (phy_addr=%s, irq=%d)\n",
 		dev->name, phydev->drv->name,
