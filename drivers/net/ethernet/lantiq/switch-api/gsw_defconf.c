@@ -88,7 +88,7 @@ int gsw_set_def_pce_qmap(struct core_ops *ops)
 			memset(&q_map, 0, sizeof(GSW_QoS_queuePort_t));
 			q_map.nPortId = gsw_pce_path[j].eg_lpid;
 
-			if (gswdev->gsw_mode == GSW_SHORTCUT_MODE) {
+			if ((gswdev->gsw_mode & BIT(0)) == GSW_SHORTCUT_MODE) {
 				if (q_map.nPortId == LOG_3) {
 					q_map.nQueueId = 0;	/* Use Q0 */
 					q_map.nRedirectPortId = LOG_3;
