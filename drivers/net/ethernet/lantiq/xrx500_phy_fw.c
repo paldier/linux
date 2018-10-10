@@ -11,6 +11,7 @@
 #include <linux/module.h>
 #include <linux/firmware.h>
 #include <linux/of_platform.h>
+#include <linux/clk.h>
 #include <linux/reset.h>
 #include <linux/regmap.h>
 #include <linux/mfd/syscon.h>
@@ -30,6 +31,7 @@ struct xway_gphy_data {
 	struct device *dev;
 	struct regmap *syscfg, *cgu_syscfg, *chipid_syscfg, *aspa_syscfg;
 	void __iomem *base, *fcsi_base;
+	struct clk *clk;
 
 	dma_addr_t dma_addr;
 
@@ -90,9 +92,11 @@ static u32 xrx500_gphy[] = {
 #define PRX300_GPHY_CDB_PDI_PLL_CFG0 0x0
 #define PRX300_GPHY_CDB_PDI_PLL_CFG2 0x8
 #define PRX300_GPHY_CDB_PDI_PLL_MISC 0xc
-#define PRX300_PLL_FBDIV 0x145
+#define PRX300_PLL_FBDIV_40MHZ 0x145
+#define PRX300_PLL_FBDIV_25MHZ 0x82
 #define PRX300_PLL_LOCK_RST 0xb
-#define PRX300_PLL_REFDIV 0x4
+#define PRX300_PLL_REFDIV_40MHZ 0x4
+#define PRX300_PLL_REFDIV_25MHZ 0x1
 #define PRX300_GPHY_FORCE_LATCH 1
 #define PRX300_GPHY_CLEAR_STICKY 1
 /* Chiptop */
@@ -288,6 +292,16 @@ static int prx300_gphy_boot(struct xway_gphy_data *priv)
 {
 	struct prx300_reset_control *rst = &priv->rst.prx300;
 	u32 pin_strap_lo, pin_strap_hi;
+	u32 fbdiv = PRX300_PLL_FBDIV_40MHZ, refdiv = PRX300_PLL_REFDIV_40MHZ;
+
+	/* in low power mode, we need to explicitly set the freq to 25MHz */
+	if (clk_get_rate(priv->clk) < 40000000) {
+		clk_set_rate(priv->clk, 25000000);
+		fbdiv = PRX300_PLL_FBDIV_25MHZ;
+		refdiv = PRX300_PLL_REFDIV_25MHZ;
+		dev_dbg(priv->dev, "Setting clock to power mode (%lu)\n",
+			clk_get_rate(priv->clk));
+	}
 
 	/* set LAN interface to GPHY */
 	regmap_update_bits(priv->syscfg, PRX300_IFMUX_CFG, PRX300_LAN_MUX_MASK,
@@ -306,10 +320,9 @@ static int prx300_gphy_boot(struct xway_gphy_data *priv)
 	reset_control_deassert(rst->gphy_cdb);
 
 	/* Set divider and misc config, must be done before rcm calculation */
-	gsw_reg_w32(priv->base, (PRX300_PLL_FBDIV << 4) | PRX300_PLL_LOCK_RST,
+	gsw_reg_w32(priv->base, (fbdiv << 4) | PRX300_PLL_LOCK_RST,
 		    PRX300_GPHY_CDB_PDI_PLL_CFG0);
-	gsw_reg_w32(priv->base, (PRX300_PLL_REFDIV << 8),
-		    PRX300_GPHY_CDB_PDI_PLL_CFG2);
+	gsw_reg_w32(priv->base, (refdiv << 8), PRX300_GPHY_CDB_PDI_PLL_CFG2);
 	gsw_reg_w32(priv->base, (PRX300_GPHY_FORCE_LATCH << 13) |
 		    (PRX300_GPHY_CLEAR_STICKY << 14),
 		    PRX300_GPHY_CDB_PDI_PLL_MISC);
@@ -345,6 +358,7 @@ static int prx300_gphy_boot(struct xway_gphy_data *priv)
 
 static int prx300_dt_parse(struct xway_gphy_data *priv)
 {
+	int ret;
 	struct prx300_reset_control *rst = &priv->rst.prx300;
 	struct resource *res;
 	struct platform_device *pdev = container_of(priv->dev,
@@ -370,6 +384,19 @@ static int prx300_dt_parse(struct xway_gphy_data *priv)
 	priv->fcsi_base = devm_ioremap_resource(&pdev->dev, res);
 	if (!priv->fcsi_base)
 		return -ENOMEM;
+
+	/* get clock */
+	priv->clk = devm_clk_get(&pdev->dev, "freq");
+	if (IS_ERR(priv->clk)) {
+		dev_err(&pdev->dev, "unable to get freq clk\n");
+		return PTR_ERR(priv->clk);
+	}
+
+	ret = clk_prepare_enable(priv->clk);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable clock: %d\n", ret);
+		return ret;
+	}
 
 	/* get chiptop regmap */
 	priv->syscfg = syscon_regmap_lookup_by_phandle(priv->dev->of_node,
