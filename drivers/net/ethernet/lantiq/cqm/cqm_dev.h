@@ -45,5 +45,6 @@ struct cqm_data {
 	unsigned int pool_size[MAX_NUM_POOLS];
 	u32  dq_port[MAX_CPU_DQ_PORT_N_TYPE];
 	u32 num_dq_port;
+	u32 gsw_mode;
 };
 #endif

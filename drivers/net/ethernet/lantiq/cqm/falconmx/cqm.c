@@ -3,6 +3,7 @@
 #include "../cqm_dev.h"
 #include <net/datapath_proc_api.h>
 #include <net/switch_api/gsw_flow_ops.h>
+#include <net/switch_api/gsw_dev.h>
 
 #define OWN_BIT  BIT(31)
 #define COMPLETE_BIT  BIT(30)
@@ -3612,7 +3613,8 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	struct cqm_data *pdata = NULL;
 	const struct of_device_id *match;
 	u32 port_no, port_type;
-	int result;
+	int result, ret;
+	struct clk *cqm_clk;
 
 	memset(&cqm_dbg_cntrs, 0, sizeof(cqm_dbg_cntrs));
 	pdata = platform_get_drvdata(pdev);
@@ -3670,8 +3672,20 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 			cqm_ctrl->cbm_irq[i + 1] = 0;
 	}
 #ifndef CONFIG_USE_EMULATOR
-	cqm_ctrl->cbm_clk = pdata->cqm_clk[0];
-	clk_prepare_enable(pdata->cqm_clk[1]);
+	cqm_ctrl->cbm_clk = devm_clk_get(cqm_ctrl->dev, "freq");
+	if (IS_ERR(cqm_ctrl->cbm_clk)) {
+		ret = PTR_ERR(cqm_ctrl->cbm_clk);
+		dev_err(cqm_ctrl->dev, "failed to get cqm_ctrl->cqm:%d\n", ret);
+		return ret;
+	}
+	cqm_clk = devm_clk_get(cqm_ctrl->dev, "cbm");
+	if (IS_ERR(cqm_clk)) {
+		ret = PTR_ERR(cqm_clk);
+		dev_err(cqm_ctrl->dev, "failed to get cqm_clk:%d\n", ret);
+		return ret;
+	}
+	clk_prepare_enable(cqm_clk);
+	clk_prepare_enable(cqm_ctrl->cbm_clk);
 #endif
 	cqm_ctrl->syscfg = pdata->syscfg;
 	cqm_ctrl->force_xpcs = pdata->force_xpcs;
@@ -3765,6 +3779,15 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	/* Enable all the LS interrupts */
 	ls_intr_ctrl(0xFF0000, cqm_ctrl->ls);
 	/*set the Ingress port delay before enqueue*/
+	switch (pdata->gsw_mode) {
+	case SHORT_QOS_10G:
+		clk_set_rate(cqm_ctrl->cbm_clk, 400000000);
+	break;
+	case FULL_QOS_1G:
+	case SHORT_QOS_1G:
+		clk_set_rate(cqm_ctrl->cbm_clk, 250000000);
+	break;
+	};
 	dev_info(cqm_ctrl->dev, "CBM Clock: %ldHz\n",
 		 clk_get_rate(cqm_ctrl->cbm_clk));
 

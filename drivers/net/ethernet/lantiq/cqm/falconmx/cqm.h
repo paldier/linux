@@ -162,6 +162,13 @@ enum CQM_BUFF_SIZE {
 	CQM_SIZE3_BUF_SIZE,
 };
 
+enum CQM_QOS_LINK_MODE {
+	FULL_QOS_10G = 0,
+	SHORT_QOS_10G,
+	FULL_QOS_1G,
+	SHORT_QOS_1G,
+};
+
 /**************************************************
  *
  * Macros

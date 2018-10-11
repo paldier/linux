@@ -17,7 +17,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 			      int *num_res)
 {
 	struct device_node *node = NULL, *cpu_deq_port = NULL;
-	struct device_node *ret_node = NULL;
+	struct device_node *ret_node = NULL, *gsw_node = NULL;
 	int idx = 0;
 	struct cqm_data *cqm_pdata = NULL;
 	unsigned int intr[MAX_NUM_INTR];
@@ -67,17 +67,9 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 						   GFP_KERNEL);
 	memcpy(cqm_pdata->intrs, intr, (sizeof(unsigned int) * idx));
 	cqm_pdata->rcu_reset = of_reset_control_get(node, "cqm");
-	if (IS_ERR(cqm_pdata->rcu_reset)) {
+	if (IS_ERR(cqm_pdata->rcu_reset))
 		pr_err("No rcu reset for %s\n", dev_node_name[j].node_name);
-		/*return PTR_ERR(cqm_pdata->rcu_reset)*/;
-	}
 
-	cqm_pdata->cqm_clk[0] = (void *)of_clk_get_by_name(node, "freq");
-	if (IS_ERR(cqm_pdata->cqm_clk[0]))
-		pr_err("Error getting freq clk\n");
-	cqm_pdata->cqm_clk[1] = (void *)of_clk_get_by_name(node, "cbm");
-	if (IS_ERR(cqm_pdata->cqm_clk[1]))
-		pr_err("Error getting cqm clk\n");
 	cqm_pdata->syscfg = syscon_regmap_lookup_by_phandle(node,
 							    "intel,syscon");
 	if (IS_ERR(cqm_pdata->syscfg)) {
@@ -114,6 +106,13 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	cqm_pdata->num_dq_port = count;
 
 	ret_node = node;
+	gsw_node = of_find_node_by_name(NULL, "gsw_core");
+	if (!gsw_node) {
+		pr_err("Unable to get node gsw_core\n");
+		return NULL;
+	}
+	cqm_pdata->gsw_mode = 0;
+	of_property_read_u32(gsw_node, "gsw_mode", &cqm_pdata->gsw_mode);
 	return ret_node;
 
 err_free_pdata:
