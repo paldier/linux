@@ -95,7 +95,7 @@ enum {
 	PPA_PPPOA_CHECK_IFACE,
 };
 
-extern int32_t ppa_get_pppoa_info_fn(struct net_device *dev,
+extern int32_t (*ppa_get_pppoa_info_fn)(struct net_device *dev,
 		void *pvcc, uint32_t pppoa_id, void *value);
 
 static int get_pppoa_info(struct net_device *dev, void *pvcc,
@@ -111,7 +111,7 @@ static int get_pppoa_info(struct net_device *dev, void *pvcc,
 		return -1;
 
 	switch (pppoa_id) {
-	case PPA_PPPOA_GET_VC:
+	case PPA_PPPOA_GET_VCC:
 		*patmvcc = p_atm_vcc->atmvcc;
 		break;
 	default:
