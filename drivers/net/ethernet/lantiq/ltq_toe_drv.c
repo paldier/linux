@@ -71,8 +71,8 @@ static unsigned char __iomem *ltq_toe_membase; /* Virtual */
 /*static const unsigned char __iomem *lro_sram_membase_res0 = (unsigned char *)0xE2013000;*/
 static unsigned char __iomem *lro_sram_membase_res0;
 /*static unsigned int lro_sram_membase_res1 = 0xE2013100;*/
-static u32 g_tso_polling_mode;
-static u32 g_tso_irq_mode = 1;
+static u32 g_tso_polling_mode = 1;
+static u32 g_tso_irq_mode;
 
 static struct device *g_toe_dev;
 
