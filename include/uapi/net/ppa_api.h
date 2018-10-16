@@ -1555,18 +1555,18 @@ typedef struct {
 						qlen*/
 	uint32_t max_th1; /*!< Max Threshold for WRED Curve 1 in % of
 						qlen*/
-	uint32_t drop_th1; /*!< Threshold for red color packet*/
 	uint32_t max_p1; /*!< Max Drop Probability % at max_th1 for WRED Curve 1 */
+	uint32_t drop_th1; /*!< Threshold for red color packet*/
 } PPA_QOS_WRED;
 /*!
 	\brief QoS Queue Drop configuration structure
  */
 typedef struct {
 	int32_t enable; /*!< Whether shaper is enabled */
-	int32_t flags;  /*!< Drops flags - Drop for red color, yellow color, red color */
 	PPA_QOS_DROP_MODE mode; /*!< Mode of Queue Drop - Taildrop, WRED
 							 */
 	PPA_QOS_WRED wred; /*!< WRED configuration of the queue */
+	int32_t flags;  /*!< Drops flags - Drop for red color, yellow color, red color */
 } PPA_QOS_DROP_CFG;
 /*!
 	\brief Engine Selector Capabilities Structure
