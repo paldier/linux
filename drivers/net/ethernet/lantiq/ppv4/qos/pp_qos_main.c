@@ -764,7 +764,9 @@ static int check_queue_conf_validity(
 			node->data.queue.alias_slave_id = PP_QOS_INVALID_ID;
 			node->data.queue.rlm = pp_pool_get(qdev->rlms);
 		} else {
-			node->data.queue.alias_master_id = get_id_from_phy(qdev->mapping, get_phy_from_node(qdev->nodes, alias_node));
+			node->data.queue.alias_master_id = get_id_from_phy(
+					qdev->mapping,
+					get_phy_from_node(qdev->nodes, alias_node));
 			node->data.queue.alias_slave_id = PP_QOS_INVALID_ID;
 			node->data.queue.rlm = alias_node->data.queue.rlm;
 		}
@@ -2024,8 +2026,7 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (qdev->initialized) {
-		QOS_LOG_ERR(
-				"Device already initialized, can't initialize again\n");
+		QOS_LOG_ERR("Device already initialized, can't initialize again\n");
 		rc = -EINVAL;
 		goto out;
 	}
@@ -2055,7 +2056,8 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	QOS_LOG_INFO("wred total resources\t%u\n",
 			qdev->hwconf.wred_total_avail_resources);
 	QOS_LOG_INFO("qm_ddr_start\t\t0x%08X\n", qdev->hwconf.qm_ddr_start);
-	QOS_LOG_INFO("qm_num_of_pages\t%u\n", qdev->hwconf.qm_num_pages);
+	QOS_LOG_INFO("qm_num_of_pages\t\t%u\n", qdev->hwconf.qm_num_pages);
+	QOS_LOG_INFO("clock\t\t\t%u\n", qdev->hwconf.qos_clock);
 
 	if (conf->wred_p_const > 1023) {
 		QOS_LOG_ERR("wred_p_const should be not greater than 1023\n");
@@ -2067,7 +2069,7 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	qdev->hwconf.wred_max_q_size = conf->wred_max_q_size;
 
 	QOS_LOG_INFO("wred p const\t\t%u\n", qdev->hwconf.wred_const_p);
-	QOS_LOG_INFO("wred max q size\t%u\n", qdev->hwconf.wred_max_q_size);
+	QOS_LOG_INFO("wred max q size\t\t%u\n", qdev->hwconf.wred_max_q_size);
 
 	rc = load_firmware(qdev, FIRMWARE_FILE);
 	if (rc)
@@ -2085,7 +2087,6 @@ out:
 	QOS_LOG_DEBUG("pp_qos_dev_init completed with %d\n", rc);
 	return rc;
 }
-
 
 struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 {
@@ -2111,6 +2112,7 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 		qdev->hwconf.fw_logger_start =
 			initinfo->pl_data.fw_logger_start;
 		qdev->hwconf.fw_stat = initinfo->pl_data.fw_stat;
+		qdev->hwconf.qos_clock = initinfo->pl_data.qos_clock;
 		memcpy(&qdev->fwcom, &initinfo->fwcom, sizeof(struct fw_com));
 		rc = init_fwdata_internals(qdev);
 		if (rc)

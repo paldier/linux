@@ -233,6 +233,7 @@ struct cmd_init_qos {
 	unsigned int wred_avg_q_size_p;
 	unsigned int wred_max_q_size;
 	unsigned int num_of_ports;
+	unsigned int qos_clock;
 };
 
 struct cmd_move {
@@ -515,6 +516,7 @@ void create_init_qos_cmd(struct pp_qos_dev *qdev)
 	cmd.wred_avg_q_size_p = qdev->hwconf.wred_const_p;
 	cmd.wred_max_q_size = qdev->hwconf.wred_max_q_size;
 	cmd.num_of_ports = qdev->max_port + 1;
+	cmd.qos_clock = qdev->hwconf.qos_clock;
 	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_INIT_QOS\n",
 			qdev->drvcmds.cmd_id,
 			qdev->drvcmds.cmd_fw_id);
@@ -1346,7 +1348,7 @@ static uint32_t *fw_write_init_qos_cmd(
 {
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_INIT_QOS);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(7);
+	*buf++ = qos_u32_to_uc(8);
 	*buf++ = qos_u32_to_uc(cmd->qm_ddr_start & 0xFFFFFFFF);
 	*buf++ = qos_u32_to_uc(cmd->qm_num_pages);
 	*buf++ = qos_u32_to_uc(cmd->wred_total_avail_resources);
@@ -1354,6 +1356,7 @@ static uint32_t *fw_write_init_qos_cmd(
 	*buf++ = qos_u32_to_uc(cmd->wred_avg_q_size_p);
 	*buf++ = qos_u32_to_uc(cmd->wred_max_q_size);
 	*buf++ = qos_u32_to_uc(cmd->num_of_ports);
+	*buf++ = qos_u32_to_uc(cmd->qos_clock);
 	return buf;
 }
 

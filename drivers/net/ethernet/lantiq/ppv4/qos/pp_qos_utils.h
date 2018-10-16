@@ -206,6 +206,7 @@ struct hw_conf {
 	unsigned int	qm_num_pages;
 	unsigned int	fw_logger_start;
 	unsigned int	fw_stat;
+	unsigned int	qos_clock; /* In MHZ. */
 };
 
 struct fw_ver {
@@ -250,6 +251,7 @@ struct ppv4_qos_platform_data  {
 	unsigned int	qm_num_pages;
 	unsigned int	fw_logger_start;
 	unsigned int	fw_stat;
+	unsigned int	qos_clock; /* In MHZ. */
 };
 
 /* Info needed to create descriptor */

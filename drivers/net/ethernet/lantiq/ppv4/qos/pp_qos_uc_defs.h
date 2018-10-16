@@ -34,10 +34,10 @@
 #ifndef SRC_UC_HOST_DEFS_H_
 #define SRC_UC_HOST_DEFS_H_
 
-// UC version
+/* UC version */
 #define UC_VERSION_MAJOR	(1)
 #define UC_VERSION_MINOR	(0)
-#define UC_VERSION_BUILD	(5)
+#define UC_VERSION_BUILD	(8)
 
 /**************************************************************************
  *! @enum	UC_STATUS
@@ -47,13 +47,13 @@
  *
  **************************************************************************/
 enum uc_status {
-	//!< Status OK
+	/*!< Status OK */
 	UC_STATUS_OK,
 
-	//!< General failure
+	/*!< General failure */
 	UC_STATUS_GENERAL_FAILURE,
 
-	//!< Invalid user input
+	/*!< Invalid user input */
 	UC_STATUS_INVALID_INPUT,
 };
 
@@ -65,19 +65,19 @@ enum uc_status {
  *
  **************************************************************************/
 enum uc_logger_level {
-	//!< FATAL error occurred. SW will probably fail to proceed
+	/*!< FATAL error occurred. SW will probably fail to proceed */
 	UC_LOGGER_LEVEL_FATAL,
 
-	//!< General ERROR occurred.
+	/*!< General ERROR occurred. */
 	UC_LOGGER_LEVEL_ERROR,
 
-	//!< WARNING
+	/*!< WARNING */
 	UC_LOGGER_LEVEL_WARNING,
 
-	//!< Information print to the user
+	/*!< Information print to the user */
 	UC_LOGGER_LEVEL_INFO,
 
-	//!< Debug purposes level
+	/*!< Debug purposes level */
 	UC_LOGGER_LEVEL_DEBUG,
 };
 
@@ -89,16 +89,16 @@ enum uc_logger_level {
  *
  **************************************************************************/
 enum uc_logger_mode {
-	//!< Logger is disabled
+	/*!< Logger is disabled */
 	UC_LOGGER_MODE_NONE,
 
-	//!< Messages are written to the standard output
+	/*!< Messages are written to the standard output */
 	UC_LOGGER_MODE_STDOUT,
 
-	//!< Local file. N/A
+	/*!< Local file. N/A */
 //	UC_LOGGER_MODE_LOCAL_FILE,
 
-	//!< Messages are written to the host allocated memory
+	/*!< Messages are written to the host allocated memory */
 	UC_LOGGER_MODE_WRITE_HOST_MEM,
 };
 
@@ -110,52 +110,52 @@ enum uc_logger_mode {
  *
  **************************************************************************/
 enum tscd_node_conf {
-	//!< None
+	/*!< None */
 	TSCD_NODE_CONF_NONE					=	0x0000,
 
-	//!< Suspend/Resume node
+	/*!< Suspend/Resume node */
 	TSCD_NODE_CONF_SUSPEND_RESUME		=	0x0001,
 
-	//!< first child (Not relevant for queue)
+	/*!< first child (Not relevant for queue) */
 	TSCD_NODE_CONF_FIRST_CHILD			=	0x0002,
 
-	//!< last child (Not relevant for queue)
+	/*!< last child (Not relevant for queue) */
 	TSCD_NODE_CONF_LAST_CHILD			=	0x0004,
 
-	//!< 0 - BW Limit disabled >0 - define BW
+	/*!< 0 - BW Limit disabled >0 - define BW */
 	TSCD_NODE_CONF_BW_LIMIT				=	0x0008,
 
-	//!< Best Effort enable
+	/*!< Best Effort enable */
 	TSCD_NODE_CONF_BEST_EFFORT_ENABLE	=	0x0010,
 
-	//!< First Weighted-Round-Robin node (Not relevant for queue)
+	/*!< First Weighted-Round-Robin node (Not relevant for queue) */
 	TSCD_NODE_CONF_FIRST_WRR_NODE		=	0x0020,
 
-	//!< Node Weight (Not relevant for ports)
+	/*!< Node Weight (Not relevant for ports) */
 	TSCD_NODE_CONF_NODE_WEIGHT			=	0x0040,
 
-	//!< Update predecessor 0 (Not relevant for port)
+	/*!< Update predecessor 0 (Not relevant for port) */
 	TSCD_NODE_CONF_PREDECESSOR_0		=	0x0080,
 
-	//!< Update predecessor 1 (Not relevant for port)
+	/*!< Update predecessor 1 (Not relevant for port) */
 	TSCD_NODE_CONF_PREDECESSOR_1		=	0x0100,
 
-	//!< Update predecessor 2 (Not relevant for port)
+	/*!< Update predecessor 2 (Not relevant for port) */
 	TSCD_NODE_CONF_PREDECESSOR_2		=	0x0200,
 
-	//!< Update predecessor 3 (Not relevant for port)
+	/*!< Update predecessor 3 (Not relevant for port) */
 	TSCD_NODE_CONF_PREDECESSOR_3		=	0x0400,
 
-	//!< Update predecessor 4 (Not relevant for port)
+	/*!< Update predecessor 4 (Not relevant for port) */
 	TSCD_NODE_CONF_PREDECESSOR_4		=	0x0800,
 
-	//!< Update predecessor 5 (Not relevant for port)
+	/*!< Update predecessor 5 (Not relevant for port) */
 	TSCD_NODE_CONF_PREDECESSOR_5		=	0x1000,
 
-	//!< Shared BW limit group (0: no shared BW limit, 1-511: group ID)
+	/*!< Shared BW limit group (0: no shared BW limit, 1-511: group ID) */
 	TSCD_NODE_CONF_SHARED_BWL_GROUP		=	0x2000,
 
-	//!< All flags are set
+	/*!< All flags are set */
 	TSCD_NODE_CONF_ALL					=	0xFFFF
 };
 
@@ -167,52 +167,52 @@ enum tscd_node_conf {
  *
  **************************************************************************/
 enum wred_queue_conf {
-	//!< None
+	/*!< None */
 	WRED_QUEUE_CONF_NONE				=	0x0000,
 
-	//!< Q is active
+	/*!< Q is active */
 	WRED_QUEUE_CONF_ACTIVE_Q			=	0x0001,
 
-	//!< Disable flags valid
+	/*!< Disable flags valid */
 	WRED_QUEUE_CONF_DISABLE				=	0x0002,
 
-	//!< Use fixed green drop probability
+	/*!< Use fixed green drop probability */
 	WRED_QUEUE_CONF_FIXED_GREEN_DROP_P	=	0x0004,
 
-	//!< Use fixed yellow drop probability
+	/*!< Use fixed yellow drop probability */
 	WRED_QUEUE_CONF_FIXED_YELLOW_DROP_P	=	0x0008,
 
-	//!< Min average yellow
+	/*!< Min average yellow */
 	WRED_QUEUE_CONF_MIN_AVG_YELLOW		=	0x0010,
 
-	//!< Max average yellow
+	/*!< Max average yellow */
 	WRED_QUEUE_CONF_MAX_AVG_YELLOW		=	0x0020,
 
-	//!< Slope yellow
+	/*!< Slope yellow */
 	WRED_QUEUE_CONF_SLOPE_YELLOW		=	0x0040,
 
-	//!< INTERNAL CONFIGURATION. SHOULD NOT BE SET BY HOST
+	/*!< INTERNAL CONFIGURATION. SHOULD NOT BE SET BY HOST */
 	WRED_QUEUE_CONF_SHIFT_AVG_YELLOW	=	0x0080,
 
-	//!< Min average green
+	/*!< Min average green */
 	WRED_QUEUE_CONF_MIN_AVG_GREEN		=	0x0100,
 
-	//!< Max average green
+	/*!< Max average green */
 	WRED_QUEUE_CONF_MAX_AVG_GREEN		=	0x0200,
 
-	//!< Slope green
+	/*!< Slope green */
 	WRED_QUEUE_CONF_SLOPE_GREEN			=	0x0400,
 
-	//!< INTERNAL CONFIGURATION. SHOULD NOT BE SET BY HOST
+	/*!< INTERNAL CONFIGURATION. SHOULD NOT BE SET BY HOST */
 	WRED_QUEUE_CONF_SHIFT_AVG_GREEN		=	0x0800,
 
-	//!< Min guaranteed
+	/*!< Min guaranteed */
 	WRED_QUEUE_CONF_MIN_GUARANTEED		=	0x1000,
 
-	//!< max allowed
+	/*!< max allowed */
 	WRED_QUEUE_CONF_MAX_ALLOWED			=	0x2000,
 
-	//!< All flags are set
+	/*!< All flags are set */
 	WRED_QUEUE_CONF_ALL					=	0xFFFF
 };
 
@@ -224,22 +224,22 @@ enum wred_queue_conf {
  *
  **************************************************************************/
 enum port_conf {
-	//!< None
+	/*!< None */
 	PORT_CONF_NONE					=	0x0000,
 
-	//!< Ring Size
+	/*!< Ring Size */
 	PORT_CONF_RING_SIZE				=	0x0001,
 
-	//!< Ring address high
+	/*!< Ring address high */
 	PORT_CONF_RING_ADDRESS_HIGH		=	0x0002,
 
-	//!< Ring address low
+	/*!< Ring address low */
 	PORT_CONF_RING_ADDRESS_LOW		=	0x0004,
 
-	//!< Enable port
+	/*!< Enable port */
 	PORT_CONF_ACTIVE				=	0x0008,
 
-	//!< All flags are set
+	/*!< All flags are set */
 	PORT_CONF_ALL					=	0xFFFF
 };
 
@@ -254,7 +254,7 @@ struct port_stats_s {
 	u32	total_green_bytes;
 	u32	total_yellow_bytes;
 
-	// Following stats can not be reset
+	/* Following stats can not be reset */
 	u32	debug_back_pressure_status;
 };
 
@@ -290,16 +290,16 @@ struct hw_node_info_s {
  *
  **************************************************************************/
 enum port_stats_clear_flags {
-	//!< None
+	/*!< None */
 	PORT_STATS_CLEAR_NONE					=	0x0000,
 
-	//!< Clear port total green bytes stats
+	/*!< Clear port total green bytes stats */
 	PORT_STATS_CLEAR_TOTAL_GREEN_BYTES		=	0x0001,
 
-	//!< Clear port total yellow bytes stats
+	/*!< Clear port total yellow bytes stats */
 	PORT_STATS_CLEAR_TOTAL_YELLOW_BYTES		=	0x0002,
 
-	//!< All above stats will be cleared
+	/*!< All above stats will be cleared */
 	PORT_STATS_CLEAR_ALL					=	0xFFFF,
 };
 
@@ -324,7 +324,7 @@ struct queue_stats_s {
 	u32	total_dropped_bytes_high;
 	u32	total_red_dropped;
 
-	// Following stats can not be reset
+	/* Following stats can not be reset */
 	u32	qmgr_num_queue_entries;
 	u32	qmgr_null_pop_queue_counter;
 	u32	qmgr_empty_pop_queue_counter;
@@ -341,40 +341,40 @@ struct queue_stats_s {
  *
  **************************************************************************/
 enum queue_stats_clear_flags {
-	//!< None
+	/*!< None */
 	QUEUE_STATS_CLEAR_NONE					=	0x0000,
 
-	//!< Clear queue size bytes stats
+	/*!< Clear queue size bytes stats */
 	QUEUE_STATS_CLEAR_Q_SIZE_BYTES			=	0x0001,
 
-	//!< Clear queue average size bytes stats
+	/*!< Clear queue average size bytes stats */
 	QUEUE_STATS_CLEAR_Q_AVG_SIZE_BYTES		=	0x0002,
 
-	//!< Clear queue size entries stats
+	/*!< Clear queue size entries stats */
 	QUEUE_STATS_CLEAR_Q_SIZE_ENTRIES		=	0x0004,
 
-	//!< Clear drop probability yellow stats
+	/*!< Clear drop probability yellow stats */
 	QUEUE_STATS_CLEAR_DROP_P_YELLOW			=	0x0008,
 
-	//!< Clear drop probability green stats
+	/*!< Clear drop probability green stats */
 	QUEUE_STATS_CLEAR_DROP_P_GREEN			=	0x0010,
 
-	//!< Clear total bytes added stats
+	/*!< Clear total bytes added stats */
 	QUEUE_STATS_CLEAR_TOTAL_BYTES_ADDED		=	0x0020,
 
-	//!< Clear total accepts stats
+	/*!< Clear total accepts stats */
 	QUEUE_STATS_CLEAR_TOTAL_ACCEPTS			=	0x0040,
 
-	//!< Clear total drops stats
+	/*!< Clear total drops stats */
 	QUEUE_STATS_CLEAR_TOTAL_DROPS			=	0x0080,
 
-	//!< Clear total dropped bytes stats
+	/*!< Clear total dropped bytes stats */
 	QUEUE_STATS_CLEAR_TOTAL_DROPPED_BYTES	=	0x0100,
 
-	//!< Clear total RED drops stats
+	/*!< Clear total RED drops stats */
 	QUEUE_STATS_CLEAR_TOTAL_RED_DROPS		=	0x0200,
 
-	//!< All above stats will be cleared
+	/*!< All above stats will be cleared */
 	QUEUE_STATS_CLEAR_ALL					=	0xFFFF,
 };
 
@@ -430,6 +430,15 @@ struct system_stats_s {
 	u32	qmgr_cmd_machine_queue_15;
 
 	u32	tscd_num_of_used_nodes;
+
+	/* Error in Scheduler tree configuration */
+	u32	tscd_infinite_loop_error_occurred;
+
+	/* HW failed to complete the bwl credits updates */
+	u32	tscd_bwl_update_error_occurred;
+
+	/* Quanta size in KB */
+	u32	tscd_quanta;
 };
 
 /**************************************************************************
@@ -478,10 +487,10 @@ enum uc_qos_command {
  *
  **************************************************************************/
 struct uc_qos_cmd_s {
-	//!< Type of command (UC_QOS_COMMAND)
+	/*!< Type of command (UC_QOS_COMMAND) */
 	u32			type;
 
-	//!< Commands flags
+	/*!< Commands flags */
 	u32			flags;
 #define	UC_CMD_FLAG_IMMEDIATE				BIT(0)
 #define	UC_CMD_FLAG_BATCH_FIRST				BIT(1)
@@ -490,8 +499,8 @@ struct uc_qos_cmd_s {
 #define	UC_CMD_FLAG_UC_DONE					BIT(4)
 #define	UC_CMD_FLAG_UC_ERROR				BIT(5)
 
-	//!< Number of 32bit parameters available for this command.
-	// must be synced between the host and uc!
+	/*!< Number of 32bit parameters available for this command. */
+	/* must be synced between the host and uc! */
 	u32			num_params;
 
 	u32			param0;

@@ -357,6 +357,17 @@ static int pp_qos_config_from_of_node(
 	}
 	pdata->wred_prioritize_pop = val;
 
+	err = of_property_read_u32(node,
+				   "intel,clock-frequency-mhz",
+				   &val);
+	if (err) {
+		dev_err(dev,
+			"Could not get qos clock from DT, error is %d\n",
+			err);
+		return -ENODEV;
+	}
+	pdata->qos_clock = val;
+
 	/* Get reserved memory region */
 	node = of_parse_phandle(node, "memory-region", 0);
 	if (!node) {
@@ -480,11 +491,11 @@ static int pp_qos_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	dev_dbg(dev, "id(%d), max_port(%u), pop_prioritize(%u)\n",
+	dev_dbg(dev, "id(%d), max_port(%u), pop_prioritize(%u), clock(%u)\n",
 			init_info.pl_data.id,
 			init_info.pl_data.max_port,
-			init_info.pl_data.wred_prioritize_pop
-			);
+			init_info.pl_data.wred_prioritize_pop,
+			init_info.pl_data.qos_clock);
 
 	pdata->id = init_info.pl_data.id;
 	err = pp_qos_get_resources(pdev, &init_info);
