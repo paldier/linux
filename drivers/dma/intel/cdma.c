@@ -533,10 +533,10 @@ int dma_device_register(_dma_device_info *dev)
 	case DMA_BURSTL_4DW:
 		txbl = IFX_DMA_BURSTL_4;
 		break;
-    case DMA_BURSTL_2DW:
-        txbl = IFX_DMA_BURSTL_2;
-        break;
-    default:
+	case DMA_BURSTL_2DW:
+		txbl = IFX_DMA_BURSTL_2;
+		break;
+	default:
 		txbl = DMA_PORT_DEFAULT_TX_BURST_LEN;
 	}
 	switch (dev->rx_burst_len) {
@@ -546,10 +546,10 @@ int dma_device_register(_dma_device_info *dev)
 	case DMA_BURSTL_4DW:
 		rxbl = IFX_DMA_BURSTL_4;
 		break;
-    case DMA_BURSTL_2DW:
-        rxbl = IFX_DMA_BURSTL_2;
-        break;
-    default:
+	case DMA_BURSTL_2DW:
+		rxbl = IFX_DMA_BURSTL_2;
+	break;
+	default:
 		rxbl = DMA_PORT_DEFAULT_RX_BURST_LEN;
 	}
 	spin_lock_irqsave(&g_dma_spinlock, flags);
