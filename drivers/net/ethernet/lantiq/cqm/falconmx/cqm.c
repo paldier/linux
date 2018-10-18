@@ -3083,17 +3083,14 @@ static void init_cqm_enq_dma_port(int idx, s32 type)
 			   NET_IP_ALIGN +
 			   NET_SKB_PAD +
 			   CQM_POOL_METADATA);
-	/*enable backpressure*/
 	cbm_w32(enq + EQ_DMA_PORT(idx, cfg),
 		CFG_DMA_IGP_4_EQREQ_MASK |
-		CFG_DMA_IGP_4_EQPCEN_MASK |
-		CFG_DMA_IGP_4_BP_EN_MASK);
+		CFG_DMA_IGP_4_EQPCEN_MASK);
 
 	dev_dbg(cqm_ctrl->dev, "0x%x\n", (int)enq + EQ_DMA_PORT(idx, cfg));
 
 	dev_dbg(cqm_ctrl->dev, "0x%x\n", CFG_DMA_IGP_4_EQREQ_MASK |
-		  CFG_DMA_IGP_4_EQPCEN_MASK |
-		  CFG_DMA_IGP_4_BP_EN_MASK);
+		  CFG_DMA_IGP_4_EQPCEN_MASK);
 }
 
 static void setup_deq_dma_desc(u32 pid, u32 desc_num)
