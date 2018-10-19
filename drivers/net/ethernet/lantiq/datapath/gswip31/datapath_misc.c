@@ -1345,8 +1345,6 @@ static int dp_ctp_tc_map_set_31(struct dp_tc_cfg *tc, int flag,
 	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
 	ctp_tc_cfg.nLogicalPortId = mtr_subif->subif.port_id;
 	ctp_tc_cfg.nSubIfIdGroup = mtr_subif->subif.subif;
-		PR_ERR("Failed to get CTP info for ep=%d subif=%d\n",
-		       mtr_subif->subif.port_id, mtr_subif->subif.subif);
 	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigGet,
 			 gsw_handle, &ctp_tc_cfg) != 0) {
 		PR_ERR("Failed to get CTP info for ep=%d subif=%d\n",

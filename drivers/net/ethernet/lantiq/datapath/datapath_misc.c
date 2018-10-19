@@ -1290,14 +1290,14 @@ int32_t	dp_update_subif(struct net_device *netif, void *data,
 	struct dp_subif_cache *dp_subif_new, *dp_subif;
 	u32 idx;
 	int inst, portid, vap;
-	dp_get_netif_subifid_fn_t subifid_fn_t;
+	dp_get_netif_subifid_fn_t subifid_fn_t = NULL;
 	struct pmac_port_info *port_info;
 
 	idx = dp_subif_hash(netif);
 	inst = subif->inst;
 	portid = subif->port_id;
 	port_info = &dp_port_info[inst][portid];
-	if (subifid_fn_t && !(flags & DP_F_SUBIF_LOGICAL)) {
+	if (!(flags & DP_F_SUBIF_LOGICAL)) {
 		subifid_fn_t = port_info->cb.get_subifid_fn;
 	}
 	vap = GET_VAP(subif->subif, port_info->vap_offset,
@@ -1308,8 +1308,7 @@ int32_t	dp_update_subif(struct net_device *netif, void *data,
 		dp_subif = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
 		if (dp_subif) {
 			memcpy(&dp_subif->subif, subif, sizeof(subif));
-			memcpy((struct dp_subif_data *)dp_subif->data, data,
-			       sizeof(data));
+			memcpy(dp_subif->data, (u8 *)data, IFNAMSIZ);
 			dp_subif->dev = netif;
 			strncpy(dp_subif->name, subif_name,
 				sizeof(dp_subif->name) - 1);

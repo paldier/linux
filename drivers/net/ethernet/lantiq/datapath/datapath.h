@@ -118,7 +118,9 @@
 #define IFNAMSIZ 16
 #define DP_MAX_HW_CAP 4
 
-/*#define DP_SPIN_LOCK */
+#if (!IS_ENABLED(CONFIG_FALCONMX_CQM))
+#define DP_SPIN_LOCK 
+#endif
 #ifdef DP_SPIN_LOCK
 #define DP_LIB_LOCK    spin_lock_bh
 #define DP_LIB_UNLOCK  spin_unlock_bh
