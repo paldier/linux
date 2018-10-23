@@ -1344,9 +1344,6 @@ static int dp_alloc_qos_port(struct dp_node_alloc *node, int flag)
 		PR_ERR("failed to qos_port_allocate:%d\n", cqm_deq_port);
 		goto EXIT;
 	}
-	/* PR_INFO("qos_port_alloc succeed: %d/%d\n",
-	 *	   cqm_deq_port, qos_port);
-	 */
 	/* Configure QOS dequeue port */
 	qos_port_conf_set_default(&port_cfg);
 	port_cfg.ring_address =
@@ -2660,7 +2657,7 @@ int dp_node_unlink_31(struct dp_node_link *info, int flag)
 		/* Need to check ACTIVE Flag */
 		if (!(priv->qos_queue_stat[info->node_id.q_id].flag &
 		    PP_NODE_ACTIVE)) {
-			PR_INFO("Wrong Queue[%d] Stat(%d):Expect ACTIVE\n",
+			PR_ERR("Wrong Queue[%d] Stat(%d):Expect ACTIVE\n",
 				info->node_id.q_id,
 				priv->qos_queue_stat[info->node_id.q_id].flag);
 		}
@@ -2669,7 +2666,7 @@ int dp_node_unlink_31(struct dp_node_link *info, int flag)
 	} else if (info->node_type == DP_NODE_SCH) {
 		if (!(priv->qos_sch_stat[info->node_id.sch_id].c_flag &
 								PP_NODE_ACTIVE))
-			PR_INFO("Wrong Sched FLAG Expect ACTIVE\n");
+			PR_ERR("Wrong Sched FLAG Expect ACTIVE\n");
 		if (qos_sched_conf_get(priv->qdev, info->node_id.sch_id,
 				       &sched_cfg))
 			return DP_FAILURE;
@@ -2730,8 +2727,8 @@ int dp_node_link_add_31(struct dp_node_link *info, int flag)
 	}
 
 	if ((!info->dp_port) && (info->dp_port != DP_PORT(info).dp_port)) {
-		PR_INFO("Fix wrong dp_port from %d to %d\n",
-			info->dp_port, DP_PORT(info).dp_port);
+		PR_ERR("Fix wrong dp_port from %d to %d\n",
+		       info->dp_port, DP_PORT(info).dp_port);
 		info->dp_port = DP_PORT(info).dp_port;
 	}
 	t = kzalloc(sizeof(*t), GFP_KERNEL);
@@ -4396,7 +4393,7 @@ int dp_node_reserve(int inst, int ep, struct dp_port_data *data, int flags)
 		res = DP_FAILURE;
 		goto FREE_EXIT;
 	}
-	PR_INFO("queue size =%d for ep=%d\n", len, ep);
+	DP_DEBUG(DP_DBG_FLAG_QOS, "queue size =%d for ep=%d\n", len, ep);
 	resv_q = priv->resv[ep].resv_q;
 	for (i = 0; i < data->num_resv_q; i++) {
 		if (qos_queue_allocate(priv->qdev, &id)) {
@@ -4442,7 +4439,8 @@ RESERVE_SCHED:
 
 		len = sizeof(struct resv_sch) * data->num_resv_sched;
 		priv->resv[ep].resv_sched = kzalloc(len, GFP_ATOMIC);
-		PR_INFO("sched size =%d for ep=%d\n", len, ep);
+		DP_DEBUG(DP_DBG_FLAG_QOS, "sched size =%d for ep=%d\n",
+			 len, ep);
 		if (!priv->resv[ep].resv_sched) {
 			res = DP_FAILURE;
 			goto FREE_EXIT;

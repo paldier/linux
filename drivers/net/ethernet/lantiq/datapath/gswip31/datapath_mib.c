@@ -255,8 +255,8 @@ ssize_t proc_mib_timer_write(struct file *file, const char *buf, size_t count,
 #ifndef THREAD_MODE
 	mod_timer(&exp_timer, jiffies + poll_interval);
 #endif
-	PR_INFO("new poll_interval=%u sec\n",
-		(unsigned int)poll_interval / HZ);
+	DP_DEBUG(DP_DBG_FLAG_MIB, "new poll_interval=%u sec\n",
+		 (unsigned int)poll_interval / HZ);
 	return count;
 }
 
@@ -372,7 +372,7 @@ int dp_mib_init(u32 flag)
 	exp_timer.data = 0;
 	exp_timer.function = mib_wraparound_timer_poll;
 	add_timer(&exp_timer);
-	PR_INFO("dp_mib_init done\n");
+	DP_DEBUG(DP_DBG_FLAG_MIB, "dp_mib_init done\n");
 #endif
 	return 0;
 }

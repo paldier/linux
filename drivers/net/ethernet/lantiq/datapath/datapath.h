@@ -53,7 +53,7 @@
 
 #ifdef LOGF_KLOG_INFO
 #undef PR_INFO
-#define PR_INFO LOGF_KLOG_ERROR
+#define PR_INFO LOGF_KLOG_INFO
 #else
 #undef PR_INFO
 #define PR_INFO printk
@@ -122,9 +122,11 @@
 #define DP_SPIN_LOCK 
 #endif
 #ifdef DP_SPIN_LOCK
+#define DP_DEFINE_LOCK(lock) DEFINE_SPINLOCK(lock)
 #define DP_LIB_LOCK    spin_lock_bh
 #define DP_LIB_UNLOCK  spin_unlock_bh
 #else
+#define DP_DEFINE_LOCK(lock) DEFINE_MUTEX(lock)
 #define DP_LIB_LOCK    mutex_lock
 #define DP_LIB_UNLOCK  mutex_unlock
 #endif

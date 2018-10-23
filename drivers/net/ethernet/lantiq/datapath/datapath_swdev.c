@@ -42,12 +42,7 @@ static int dp_swdev_del_bport_from_list(struct br_info *br_item,
 struct hlist_head
 	g_bridge_id_entry_hash_table[DP_MAX_INST][BR_ID_ENTRY_HASH_TABLE_SIZE];
 
-#ifdef DP_SPIN_LOCK
-static DEFINE_SPINLOCK(dp_swdev_lock); /*datapath spinlock*/
-#else
-static DEFINE_MUTEX(dp_swdev_lock);
-#endif
-
+DP_DEFINE_LOCK(dp_swdev_lock);
 static inline void swdev_lock(void)
 {
 	DP_LIB_LOCK(&dp_swdev_lock);
@@ -694,11 +689,12 @@ static int dp_swdev_port_attr_set(struct net_device *dev,
 					lower_dev->name);
 			}
 		}
-		PR_INFO("flag=%d attr=%d stat=%d dev=%s orig/up_dev=%s/%s:%s\n",
-			attr->flags, attr->id, attr->u.stp_state,
-			dev->name,
-			attr->orig_dev ? attr->orig_dev->name : "NULL"
-			br_dev ? br_dev->name : "Null", buf);
+		DP_DEBUG(DP_DBG_FLAG_SWDEV,
+			 "flag=%d attr=%d stat=%d dev=%s ori/up_dev=%s/%s:%s\n",
+			 attr->flags, attr->id, attr->u.stp_state,
+			 dev->name,
+			 attr->orig_dev ? attr->orig_dev->name : "NULL"
+			 br_dev ? br_dev->name : "Null", buf);
 		return 0;
 	}
 #endif
@@ -804,12 +800,11 @@ static int dp_swdev_port_obj_add(struct net_device *dev,
 	{
 		struct net_device *br_dev = netdev_master_upper_dev_get(dev);
 
-		PR_INFO
-		("obj_add: obj-id=%d flag=%d dev=%s orig_dev=%s up-dev=%s\n",
-		 obj->id, obj->flags,
-		 dev->name,
-		 obj->orig_dev ? obj->orig_dev->name : "NULL",
-		 br_dev ? br_dev->name : "Null");
+		DP_DEBUG(DP_DBG_FLAG_SWDEV,
+			 "obj_add: obj-id=%d flag=%d dev=%s origdev=%s %s=%s\n",
+			 obj->id, obj->flags, dev->name,
+			 obj->orig_dev ? obj->orig_dev->name : "NULL", "up-dev",
+			 br_dev ? br_dev->name : "Null");
 		return 0;
 	}
 	return err; //TODO
@@ -852,12 +847,11 @@ static int dp_swdev_port_obj_del(struct net_device *dev,
 	{
 		struct net_device *br_dev = netdev_master_upper_dev_get(dev);
 
-		PR_INFO
-		("obj_del: obj-id=%d flag=%d dev=%s orig_dev=%s up-dev=%s\n",
-		 obj->id, obj->flags,
-		 dev->name,
-		 obj->orig_dev ? obj->orig_dev->name : "NULL",
-		 br_dev ? br_dev->name : "Null");
+		DP_DEBUG(DP_DBG_FLAG_SWDEV,
+			 "obj_del: obj-id=%d flag=%d dev=%s origdev=%s %s=%s\n",
+			 obj->id, obj->flags, dev->name,
+			 obj->orig_dev ? obj->orig_dev->name : "NULL", "up-dev",
+			 br_dev ? br_dev->name : "Null");
 		return 0;
 	}
 #endif
@@ -943,7 +937,8 @@ static int dp_ndo_bridge_setlink(struct net_device *dev,
 	if (!br_spec)
 		return -EINVAL;
 	nla_for_each_nested(attr, br_spec, rem) {
-		PR_INFO("nla_type(attr)=%d\n", nla_type(attr));
+		DP_DEBUG(DP_DBG_FLAG_SWDEV, "nla_type(attr)=%d\n",
+			 nla_type(attr));
 		if (nla_type(attr) != IFLA_BRIDGE_MODE)
 			continue;
 		if (nla_len(attr) < sizeof(mode))

@@ -2454,7 +2454,6 @@ int dp_sub_proc_install_31(void)
 
 	for (i = 0; i < ARRAY_SIZE(dp_proc_entries); i++)
 		dp_proc_entry_create(dp_proc_node, &dp_proc_entries[i]);
-	PR_INFO("dp_sub_proc_install ok\n");
 	return 0;
 }
 

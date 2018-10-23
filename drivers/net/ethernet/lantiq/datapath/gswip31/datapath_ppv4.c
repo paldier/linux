@@ -381,7 +381,7 @@ void init_qos_fn(void)
 	qos_dev_init = pp_qos_dev_init;
 #else
 	/*all NULL function pointer */
-	PR_INFO("call QOS function pointer set to NULL\n");
+	DP_DEBUG(DP_DBG_FLAG_QOS, "call QOS function pointer set to NULL\n");
 #endif /*CONFIG_LTQ_DATAPATH_DUMMY_QOS*/
 }
 
@@ -688,7 +688,7 @@ int init_ppv4_qos(int inst, int flag)
 		return DP_FAILURE;
 	}
 	if (!(flag & DP_PLATFORM_INIT)) {
-		PR_INFO("need to implement de-initialization for qos later\n");
+		/*need to implement de-initialization for qos later*/
 		priv->qdev = NULL;
 		return DP_SUCCESS;
 	}
@@ -698,7 +698,6 @@ int init_ppv4_qos(int inst, int flag)
 		       dp_port_prop[inst].qos_inst);
 		return DP_FAILURE;
 	}
-	PR_INFO("qos_dev_open qdev=%p\n", priv->qdev);
 	t = kzalloc(sizeof(*t), GFP_ATOMIC);
 	if (!t) {
 		PR_ERR("kzalloc fail: %d bytes\n", sizeof(*t));
@@ -716,7 +715,6 @@ int init_ppv4_qos(int inst, int flag)
 		       dp_port_prop[inst].qos_inst);
 		goto EXIT;
 	}
-	PR_INFO("qos_dev_init done\n");
 	if (cbm_cpu_port_get(&cpu_data, 0)) {
 		PR_ERR("cbm_cpu_port_get for CPU port?\n");
 		goto EXIT;
@@ -733,10 +731,11 @@ int init_ppv4_qos(int inst, int flag)
 	dp_deq_port_tbl[inst][idx].tx_ring_addr = flush_port->tx_ring_addr;
 	dp_deq_port_tbl[inst][idx].tx_ring_size = flush_port->tx_ring_size;
 	dp_deq_port_tbl[inst][idx].dp_port = 0;/* dummy one */
-	PR_INFO("DP Flush port[%d]: ring addr=0x%x size=%d pkt_credit=%d\n",
-		priv->cqm_drop_p, dp_deq_port_tbl[inst][idx].tx_ring_addr,
-		dp_deq_port_tbl[inst][idx].tx_ring_size,
-		dp_deq_port_tbl[inst][idx].tx_pkt_credit);
+	DP_DEBUG(DP_DBG_FLAG_QOS,
+		 "DP Flush port[%d]: ring addr=0x%x size=%d pkt_credit=%d\n",
+		 priv->cqm_drop_p, dp_deq_port_tbl[inst][idx].tx_ring_addr,
+		 dp_deq_port_tbl[inst][idx].tx_ring_size,
+		 dp_deq_port_tbl[inst][idx].tx_pkt_credit);
 #ifdef CONFIG_LTQ_DATAPATH_QOS_HAL
 	DP_DEBUG(DP_DBG_FLAG_DBG, "priv=%p deq_port_stat=%p q_dev=%p\n",
 		 priv, priv ? priv->deq_port_stat : NULL,
@@ -906,7 +905,7 @@ int ppv4_alloc_ring_31(int size, void **phy, void **virt)
 	if (!*virt)
 		return DP_FAILURE;
 
-	*phy = virt_to_phys(virt);
+	*phy = virt_to_phys(*virt);
 
 	return DP_SUCCESS;
 }

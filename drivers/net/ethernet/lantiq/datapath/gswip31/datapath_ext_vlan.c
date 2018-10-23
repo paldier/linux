@@ -245,16 +245,14 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 		ctp.bIngressExtendedVlanEnable = LTQ_FALSE;
 		ret = ops->gsw_ctp_ops.CTP_PortConfigSet(ops, &ctp);
 		if (ret != GSW_statusOk) {
-			PR_INFO("Fail:Ingress VLan operate disable in ctp\n");
+			PR_ERR("Fail:Ingress VLan operate disable in ctp\n");
 			return -EIO;
 		}
-		PR_INFO("ingress VLan operation disabled in ctp\n");
+		PR_ERR("ingress VLan operation disabled in ctp\n");
 		alloc.nExtendedVlanBlockId = block;
 		ret = ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 		if (ret != GSW_statusOk) {
-			PR_INFO("VLAN Free fail\n");
 			return -EIO;
-			PR_INFO("VLAN Free Success\n");
 		}
 	}
 	memset(&alloc, 0, sizeof(GSW_EXTENDEDVLAN_alloc_t));
@@ -264,7 +262,7 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 	alloc.nNumberOfEntries += vlan->n_vlan1_drop * 2;
 	alloc.nNumberOfEntries += vlan->n_vlan2_drop;
 	if (alloc.nNumberOfEntries == 0) {
-		PR_INFO("nNumberOfEntries == 0 , returning to caller\n");
+		PR_ERR("nNumberOfEntries == 0 , returning to caller\n");
 		return 0;
 	}
 
@@ -312,10 +310,8 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 	ret = ops->gsw_ctp_ops.CTP_PortConfigSet(ops, &ctp);
 
 	if (ret != GSW_statusOk) {
-		PR_INFO("Enable ingress vlan in ctp fail\n");
 		return -EIO;
 	}
-	PR_INFO("Enable ingress vlan in ctp success\n");
 	return 0;
 UPDATE_ERROR:
 	ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
@@ -381,7 +377,7 @@ static int bp_add_vlan1(struct core_ops *ops, struct vlan1 *vlan,
 		ret = ops->gsw_extvlan_ops.ExtendedVlan_Set(ops, vcfg);
 
 		if (ret != GSW_statusOk) {
-			PR_INFO("Fail updating Extended VLAN entry (%u, %u).\n",
+			PR_ERR("Fail updating Extended VLAN entry (%u, %u).\n",
 				alloc.nExtendedVlanBlockId, i);
 			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 			return -EIO;
@@ -394,7 +390,7 @@ static int bp_add_vlan1(struct core_ops *ops, struct vlan1 *vlan,
 	ret = ops->gsw_brdgport_ops.BridgePort_ConfigSet(ops, bpcfg);
 
 	if (ret != GSW_statusOk) {
-		PR_INFO("Failed in attaching Extended VLAN to Bridge Port.\n");
+		PR_ERR("Failed in attaching Extended VLAN to Bridge Port.\n");
 		ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 		return -EIO;
 	} else {
@@ -470,7 +466,7 @@ static int bp_add_vlan2(struct core_ops *ops, struct vlan2 *vlan,
 		ret = ops->gsw_extvlan_ops.ExtendedVlan_Set(ops, vcfg);
 
 		if (ret != GSW_statusOk) {
-			PR_INFO("Fail updating Extended VLAN entry (%u, %u).\n",
+			PR_ERR("Fail updating Extended VLAN entry (%u, %u).\n",
 				alloc.nExtendedVlanBlockId, i);
 			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 			return -EIO;
@@ -483,7 +479,7 @@ static int bp_add_vlan2(struct core_ops *ops, struct vlan2 *vlan,
 	ret = ops->gsw_brdgport_ops.BridgePort_ConfigSet(ops, bpcfg);
 
 	if (ret != GSW_statusOk) {
-		PR_INFO("Failed in attaching Extended VLAN to Bridge Port.\n");
+		PR_ERR("Failed in attaching Extended VLAN to Bridge Port.\n");
 		ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 		return -EIO;
 	} else {

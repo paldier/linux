@@ -647,7 +647,7 @@ struct dp_subif_cache {
 	struct hlist_node hlist;
 	dp_subif_t subif;
 	struct net_device *dev;
-	char name[16];
+	char name[IFNAMSIZ];
 	dp_get_netif_subifid_fn_t subif_fn;  /*!< Get Sub Interface Id
 					      * of netif/netdevice
 					      */

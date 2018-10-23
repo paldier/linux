@@ -1074,21 +1074,24 @@ int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo)
 	if (is_vlan_dev(dev)) {
 		num++;
 		vlan = vlan_dev_priv(dev);
-		PR_INFO("vlan proto:%x VID:%d real devname:%s\n",
-			vlan->vlan_proto, vlan->vlan_id,
-			vlan->real_dev ? vlan->real_dev->name : "NULL");
+
+		DP_DEBUG(DP_DBG_FLAG_DBG,
+			 "vlan proto:%x VID:%d real devname:%s\n",
+			 vlan->vlan_proto, vlan->vlan_id,
+			 vlan->real_dev ? vlan->real_dev->name : "NULL");
 		netdev_for_each_lower_dev(dev, lower_dev, iter) {
 			if (is_vlan_dev(lower_dev)) {
 				num++;
 				vinfo->in_proto = vlan->vlan_proto;
 				vinfo->in_vid = vlan->vlan_id;
 				vlan = vlan_dev_priv(lower_dev);
-				PR_INFO("%s:%x VID:%d %s:%s\n",
-					"Outer vlan proto",
-					vlan->vlan_proto, vlan->vlan_id,
-					"real devname",
-					vlan->real_dev ?
-					vlan->real_dev->name : "NULL");
+				DP_DEBUG(DP_DBG_FLAG_DBG,
+					 "%s:%x VID:%d %s:%s\n",
+					 "Outer vlan proto",
+					 vlan->vlan_proto, vlan->vlan_id,
+					 "real devname",
+					 vlan->real_dev ?
+					 vlan->real_dev->name : "NULL");
 				vinfo->out_proto = vlan->vlan_proto;
 				vinfo->out_vid = vlan->vlan_id;
 				vinfo->cnt = num;
@@ -1334,15 +1337,19 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			dp_subif_t *subif_id, struct dp_subif_data *data,
 			u32 flags)
 {
-/*Note: passing subif_name as subif_data to dp_get_netif_subifid_priv api */
-	void *subif_data;
+/*Note: passing subif_name as subif_data to dp_get_netif_subifid_priv api
+ *subif data can be any valid value other than subif_name also
+ *This is workaround for DSL case. Later they need to provide valid subif_name
+ */
+	void *subif_data = NULL;
 
-	subif_data = (void *)subif_name;
+	if (flags & DP_F_FAST_DSL)
+		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
 	if (flags & DP_F_DEREGISTER) {
 		if (data->ctp_dev)
 			dp_del_subif(data->ctp_dev, subif_data, subif_id,
-				     subif_name, flags);
+				     NULL, flags);
 
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
 					      subif_id, 0))
@@ -1363,7 +1370,7 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 						      subif_id,	0))
 				return DP_FAILURE;
 			dp_update_subif(data->ctp_dev, subif_data, subif_id,
-					subif_name, flags);
+					NULL, flags);
 		}
 	}
 	return 0;

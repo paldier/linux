@@ -90,11 +90,7 @@ char *dp_port_status_str[] = {
 
 static int try_walkaround;
 static int dp_init_ok;
-#ifdef DP_SPIN_LOCK
-static DEFINE_SPINLOCK(dp_lock); /*datapath spinlock*/
-#else
-static DEFINE_MUTEX(dp_lock);
-#endif
+DP_DEFINE_LOCK(dp_lock);
 unsigned int dp_dbg_err = 1; /*print error */
 static int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags);
 /*port 0 is reserved and never assigned to any one */
@@ -1061,8 +1057,8 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 		return res;
 	}
 	memcpy(subif, &dp_subif->subif, sizeof(dp_subif->subif));
-	rcu_read_unlock_bh();
 	subifid_fn_t = dp_subif->subif_fn;
+	rcu_read_unlock_bh();
 	if (subifid_fn_t) {
 		/*subif->subif will be set by callback api itself */
 		res =
@@ -1070,6 +1066,8 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 				 flags);
 		if (res != 0)
 			PR_ERR("get_netif_subifid callback function failed\n");
+	} else {
+		res = DP_SUCCESS;
 	}
 	return res;
 }
@@ -1205,7 +1203,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 						       dp_port_info[inst][k].
 							  subif_info[i].bp,
 						       bport);
-						//DP_LIB_UNLOCK(&dp_lock);
 						goto EXIT;
 					}
 					num++;
@@ -1248,22 +1245,6 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	subif->port_id = port_id;
 	subif->bport = bport;
 	subif->alloc_flag = dp_port_info[inst][port_id].alloc_flags;
-	#if 0
-	subifid_fn_t = dp_port_info[inst][port_id].cb.get_subifid_fn;
-
-	if (subifid_fn_t && !(flags & DP_F_SUBIF_LOGICAL)) {
-		/*subif->subif will be set by callback api itself */
-		res =
-		    subifid_fn_t(netif, skb, subif_data, dst_mac, subif,
-				 flags);
-		if (res != 0)
-			DP_DEBUG(DP_DBG_FLAG_DBG,
-				 "get_netif_subifid callback failed\n");
-		else if (!subif->subif_num)/*back-compatible */
-			subif->subif_num = 1;
-		goto EXIT;
-	}
-	#endif
 	subif->subif_num = num;
 	for (i = 0; i < num; i++) {
 		subif->subif_list[i] = subifs[i];
@@ -2597,14 +2578,12 @@ int dp_set_min_frame_len(s32 dp_port,
 			 s32 min_frame_len,
 			 uint32_t flags)
 {
-	PR_INFO("Dummy dp_set_min_frame_len, need to implement later\n");
 	return DP_SUCCESS;
 }
 EXPORT_SYMBOL(dp_set_min_frame_len);
 
 int dp_rx_enable(struct net_device *netif, char *ifname, uint32_t flags)
 {
-	PR_INFO("Dummy dp_rx_enable, need to implement later\n");
 	return DP_SUCCESS;
 }
 EXPORT_SYMBOL(dp_rx_enable);
@@ -2635,7 +2614,7 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 	}
 	if (vlan->mcast_flag == DP_MULTICAST_SESSION) 
 		info.dev_type |= 0x02;
-	PR_INFO("dev_type:0x%x\n", info.dev_type);
+	DP_DEBUG(DP_DBG_FLAG_PAE, "dev_type:0x%x\n", info.dev_type);
 	if (DP_CB(subif.inst, dp_tc_vlan_set))
 		return DP_CB(subif.inst, dp_tc_vlan_set)
 			    (dp_port_prop[subif.inst].ops[0],
