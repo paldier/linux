@@ -1104,7 +1104,9 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 			 *      we need find way to get cqm_dequeue_port
 			 *      and qos_port later
 			 */
-			PR_ERR("need set cqm_dequeue_port/qos_port... ?\n");
+			/* need set cqm_dequeue_port/qos_port since not fully
+			 * tested
+			 */
 			dp_q_tbl[inst][q_port.qid].cqm_dequeue_port =
 				q_port.cqe_deq;
 			dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port = -1;
@@ -1121,9 +1123,10 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		q_port.port_node =
 			dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port;
 
-		PR_ERR("need to further set q_port.q_node/port_node\n");
-		PR_ERR("via special internal QOS HAL API to get it\n");
-		PR_ERR("since it is created by caller itself\n");
+		/* need to further set q_port.q_node/port_node
+		 * via special internal QOS HAL API to get it
+		 * since it is created by caller itself\n");
+		 */
 
 	} else { /*auto sharing queue: if go to here, it means sharing queue
 		  *is ready and it is created by previous dp_register_subif_ext

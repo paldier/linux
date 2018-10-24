@@ -245,10 +245,11 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 		ctp.bIngressExtendedVlanEnable = LTQ_FALSE;
 		ret = ops->gsw_ctp_ops.CTP_PortConfigSet(ops, &ctp);
 		if (ret != GSW_statusOk) {
-			PR_ERR("Fail:Ingress VLan operate disable in ctp\n");
+			PR_ERR("Fail:Ingress VLAN operate disable in ctp\n");
 			return -EIO;
 		}
-		PR_ERR("ingress VLan operation disabled in ctp\n");
+		DP_DEBUG(DP_DBG_FLAG_SWDEV,
+			 "ingress VLAN operation disabled in ctp\n");
 		alloc.nExtendedVlanBlockId = block;
 		ret = ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 		if (ret != GSW_statusOk) {
@@ -262,7 +263,7 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 	alloc.nNumberOfEntries += vlan->n_vlan1_drop * 2;
 	alloc.nNumberOfEntries += vlan->n_vlan2_drop;
 	if (alloc.nNumberOfEntries == 0) {
-		PR_ERR("nNumberOfEntries == 0 , returning to caller\n");
+		DP_DEBUG(DP_DBG_FLAG_SWDEV,"nNumberOfEntries == 0\n");
 		return 0;
 	}
 
