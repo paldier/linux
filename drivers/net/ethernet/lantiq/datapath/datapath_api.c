@@ -1056,7 +1056,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 		rcu_read_unlock_bh();
 		return res;
 	}
-	memcpy(subif, &dp_subif->subif, sizeof(dp_subif->subif));
+	memcpy(subif, &dp_subif->subif, sizeof(*subif));
 	subifid_fn_t = dp_subif->subif_fn;
 	rcu_read_unlock_bh();
 	if (subifid_fn_t) {

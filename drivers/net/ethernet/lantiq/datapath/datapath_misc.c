@@ -1310,35 +1310,33 @@ int32_t	dp_update_subif(struct net_device *netif, void *data,
 	dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) { /*alloc new */
 		dp_subif = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
-		if (dp_subif) {
-			memcpy(&dp_subif->subif, subif, sizeof(subif));
-			dp_subif->data = kzalloc(IFNAMSIZ, GFP_KERNEL);
-			memcpy(&dp_subif->data, (u8 *)data, IFNAMSIZ);
-			dp_subif->dev = netif;
+		if (!dp_subif) 
+			return -1;
+		memcpy(&dp_subif->subif, subif, sizeof(dp_subif_t));
+		dp_subif->data = (u8 *)data;
+		dp_subif->dev = netif;
+		if (subif_name)
 			strncpy(dp_subif->name, subif_name,
 				sizeof(dp_subif->name) - 1);
-			dp_subif->subif_fn = subifid_fn_t;
-			hlist_add_head_rcu(&dp_subif->hlist,
-					   &dp_subif_list[idx]);
-			return 0;
-		}
+		dp_subif->subif_fn = subifid_fn_t;
+		hlist_add_head_rcu(&dp_subif->hlist,
+				&dp_subif_list[idx]);
+		return 0;
 	} else {
 		dp_subif_new = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
-		if (dp_subif_new) {
-			memcpy(&dp_subif_new->subif, subif, sizeof(subif));
-			dp_subif_new->data =
-					kzalloc(IFNAMSIZ, GFP_KERNEL);
-			memcpy(&dp_subif_new->data, (u8 *)data, IFNAMSIZ);
-			dp_subif_new->dev = netif;
-			strncpy(dp_subif_new->name, subif_name,
-				sizeof(dp_subif->name) - 1);
-			dp_subif_new->subif_fn = subifid_fn_t;
-			hlist_replace_rcu(&dp_subif->hlist,
-					  &dp_subif_new->hlist);
-			synchronize_rcu_bh();
-			kfree(dp_subif);
-			return 0;
-		}
+		if (!dp_subif_new)
+			return -1;
+		memcpy(&dp_subif_new->subif, subif, sizeof(dp_subif_t));
+		dp_subif_new->data = (u8 *)data;
+		dp_subif_new->dev = netif;
+		strncpy(dp_subif_new->name, subif_name,
+			sizeof(dp_subif->name) - 1);
+		dp_subif_new->subif_fn = subifid_fn_t;
+		hlist_replace_rcu(&dp_subif->hlist,
+				&dp_subif_new->hlist);
+		synchronize_rcu_bh();
+		kfree(dp_subif);
+		return 0;
 	}
 	return -1;
 }
