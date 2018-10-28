@@ -2164,3 +2164,20 @@ void qos_module_init(void)
 
 	QOS_LOG_INFO("qos_module_init completed\n");
 }
+
+int pp_qos_get_quanta(struct pp_qos_dev *qdev, unsigned int *quanta)
+{
+	struct qos_hw_info info = {0};
+
+	QOS_LOCK(qdev);
+	PP_QOS_ENTER_FUNC();
+
+	create_get_sys_info_cmd(qdev, qdev->hwconf.fw_stat, &info);
+	update_cmd_id(&qdev->drvcmds);
+	transmit_cmds(qdev);
+
+	*quanta = info.quanta;
+
+	QOS_UNLOCK(qdev);
+	return 0;
+}

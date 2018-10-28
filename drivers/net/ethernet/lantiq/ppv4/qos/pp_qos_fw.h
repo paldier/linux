@@ -103,9 +103,9 @@ int do_load_firmware(
 
 void add_suspend_port(struct pp_qos_dev *qdev, unsigned int port);
 void signal_uc(struct pp_qos_dev *qdev);
-void create_num_used_nodes_cmd(struct pp_qos_dev *qdev,
-		unsigned int addr,
-		uint32_t *num);
+void create_get_sys_info_cmd(struct pp_qos_dev *qdev,
+			     unsigned int addr,
+			     struct qos_hw_info *sys_info);
 #elif defined(PRINT_CREATE_CMD)
 #define create_move_cmd(qdev, dst, src, dst_port)\
 	QOS_LOG_DEBUG("MOVE: %u ==> %u\n", src, dst)
@@ -135,7 +135,7 @@ void create_num_used_nodes_cmd(struct pp_qos_dev *qdev,
 #define create_get_port_stats_cmd(qdev, phy, addr, pstat)
 #define create_get_node_info_cmd(qdev, phy, addr, info)
 #define create_push_desc_cmd(qdev, queue, size, color, addr)
-#define create_num_used_nodes_cmd(qdev, addr, num)
+#define create_get_sys_info_cmd(qdev, addr, sys_info)
 #define add_suspend_port(qdev, port)
 #define create_flush_queue_cmd(qdev, rlm)
 #else
@@ -161,7 +161,7 @@ void create_num_used_nodes_cmd(struct pp_qos_dev *qdev,
 #define create_get_node_info_cmd(qdev, phy, addr, info)
 #define create_push_desc_cmd(qdev, queue, size, color, addr)
 #define create_flush_queue_cmd(qdev, rlm)
-#define create_num_used_nodes_cmd(qdev, addr, num)
+#define create_get_sys_info_cmd(qdev, addr, sys_info)
 #define add_suspend_port(qdev, port)
 #endif
 #endif

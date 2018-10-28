@@ -178,6 +178,13 @@ struct shared_bandwidth_group {
 	uint8_t		reserved;
 };
 
+struct qos_hw_info {
+	uint32_t	num_used;
+	uint32_t	infinite_loop_error_occurred;
+	uint32_t	bwl_update_error_occurred;
+	uint32_t	quanta;
+};
+
 struct driver_cmds {
 	struct cmd_queue	*cmdq;
 	struct cmd_queue	*pendq;
@@ -639,6 +646,7 @@ void update_children_position(
 			struct qos_node *node_src);
 int allocate_ddr_for_qm(struct pp_qos_dev *qdev);
 int allocate_ddr_for_qm_on_platform(struct pp_qos_dev *qdev);
+int check_sync_with_fw(struct pp_qos_dev *qdev);
 
 #ifdef PP_QOS_TEST
 void test_cmd_queue(void);

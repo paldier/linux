@@ -67,7 +67,7 @@
 	OP(CMD_TYPE_REMOVE_SHARED_GROUP)	\
 	OP(CMD_TYPE_SET_SHARED_GROUP)		\
 	OP(CMD_TYPE_FLUSH_QUEUE)		\
-	OP(CMD_TYPE_GET_NUM_USED_NODES)		\
+	OP(CMD_TYPE_GET_SYSTEM_INFO)		\
 	OP(CMD_TYPE_INTERNAL)
 
 enum cmd_type {
@@ -405,10 +405,13 @@ struct cmd_remove_shared_group {
 	unsigned int id;
 };
 
-struct cmd_get_num_used_nodes {
+struct cmd_get_system_info {
 	struct cmd base;
 	unsigned int addr;
-	uint32_t *num;
+	uint32_t *num_used;
+	uint32_t *infinite_loop_error_occurred;
+	uint32_t *bwl_update_error_occurred;
+	uint32_t *quanta;
 };
 
 union driver_cmd {
@@ -433,7 +436,7 @@ union driver_cmd {
 	struct cmd_push_desc	pushd;
 	struct cmd_get_node_info node_info;
 	struct cmd_flush_queue flush_queue;
-	struct cmd_get_num_used_nodes num_used;
+	struct cmd_get_system_info sys_info;
 	struct cmd_internal	internal;
 };
 
@@ -1064,26 +1067,29 @@ void create_get_node_info_cmd(
 	qdev->drvcmds.cmd_fw_id++;
 }
 
-void create_num_used_nodes_cmd(
-		struct pp_qos_dev *qdev,
-		unsigned int addr,
-		uint32_t *num)
+void create_get_sys_info_cmd(struct pp_qos_dev *qdev,
+			     unsigned int addr,
+			     struct qos_hw_info *info)
 {
-	struct cmd_get_num_used_nodes cmd;
+	struct cmd_get_system_info cmd;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
 
 	memset(&cmd, 0, sizeof(cmd));
-	cmd_init(
-			qdev,
-			&(cmd.base),
-			CMD_TYPE_GET_NUM_USED_NODES,
-			sizeof(cmd),
-			CMD_FLAGS_POST_PROCESS);
+	cmd_init(qdev,
+		 &(cmd.base),
+		 CMD_TYPE_GET_SYSTEM_INFO,
+		 sizeof(cmd),
+		 CMD_FLAGS_POST_PROCESS);
 	cmd.addr =  addr;
-	cmd.num = num;
-	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_GET_NUM_USED_NODES\n",
+	cmd.num_used = &(info->num_used);
+	cmd.infinite_loop_error_occurred =
+			&(info->infinite_loop_error_occurred);
+	cmd.bwl_update_error_occurred = &(info->bwl_update_error_occurred);
+	cmd.quanta = &(info->quanta);
+
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_GET_SYSTEM_INFO\n",
 			qdev->drvcmds.cmd_id,
 			qdev->drvcmds.cmd_fw_id);
 	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
@@ -1701,7 +1707,7 @@ static uint32_t *fw_write_get_port_stats(
 
 static uint32_t *fw_write_get_system_info(
 		uint32_t *buf,
-		const struct cmd_get_num_used_nodes *cmd,
+		const struct cmd_get_system_info *cmd,
 		uint32_t flags)
 {
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_GET_SYSTEM_STATS);
@@ -2424,9 +2430,15 @@ static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
 		pstat->total_yellow_bytes = fw_pstat->total_yellow_bytes;
 		break;
 
-	case CMD_TYPE_GET_NUM_USED_NODES:
+	case CMD_TYPE_GET_SYSTEM_INFO:
 		fw_sys_stat = (struct system_stats_s *)qdev->stat;
-		*(dcmd->num_used.num) = fw_sys_stat->tscd_num_of_used_nodes;
+		*(dcmd->sys_info.num_used) =
+				fw_sys_stat->tscd_num_of_used_nodes;
+		*(dcmd->sys_info.infinite_loop_error_occurred) =
+				fw_sys_stat->tscd_infinite_loop_error_occurred;
+		*(dcmd->sys_info.bwl_update_error_occurred) =
+				fw_sys_stat->tscd_bwl_update_error_occurred;
+		*(dcmd->sys_info.quanta) = fw_sys_stat->tscd_quanta;
 		break;
 
 	case CMD_TYPE_GET_NODE_INFO:
@@ -2554,6 +2566,7 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 	struct fw_set_common common = {0};
 	struct fw_set_parent parent = {0};
 	struct fw_set_port port = {0};
+	unsigned int id;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
@@ -2749,9 +2762,9 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 					prev, &dcmd.port_stats, flags);
 			break;
 
-		case CMD_TYPE_GET_NUM_USED_NODES:
+		case CMD_TYPE_GET_SYSTEM_INFO:
 			cur = fw_write_get_system_info(
-					prev, &dcmd.num_used, flags);
+					prev, &dcmd.sys_info, flags);
 			break;
 
 		case CMD_TYPE_ADD_SHARED_GROUP:
@@ -2820,6 +2833,14 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 
 		common.suspend = 0;
 		for (i = 0; i < internals->suspend_port_index; ++i) {
+			/* In case port was suspended, and it was removed,
+			 * don't Resume it (Otherwise driver and fw will be
+			 * out of sync) */
+			id = get_id_from_phy(qdev->mapping,
+					     internals->suspend_ports[i]);
+			if (!QOS_ID_VALID(id))
+				continue;
+
 			prev = cur;
 			QOS_LOG_DEBUG("CMD_INTERNAL_RESUME_PORT port: %u\n",
 					internals->suspend_ports[i]);

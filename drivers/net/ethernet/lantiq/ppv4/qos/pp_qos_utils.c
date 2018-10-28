@@ -2635,7 +2635,7 @@ int check_sync_with_fw(struct pp_qos_dev *qdev)
 {
 	unsigned int i;
 	unsigned int used;
-	unsigned int res;
+	struct qos_hw_info hw_info = {0};
 	unsigned int id;
 	int rc;
 	const struct qos_node *node;
@@ -2643,7 +2643,6 @@ int check_sync_with_fw(struct pp_qos_dev *qdev)
 	struct pp_qos_node_info info;
 
 	rc = 0;
-	res = 0;
 	pool = pp_pool_init(NUM_OF_NODES, QOS_INVALID_ID);
 	if (pool == NULL) {
 		QOS_LOG_ERR("Can't create pool for firmware sync check\n");
@@ -2663,13 +2662,13 @@ int check_sync_with_fw(struct pp_qos_dev *qdev)
 		++node;
 	}
 
-	create_num_used_nodes_cmd(qdev, qdev->hwconf.fw_stat, &res);
+	create_get_sys_info_cmd(qdev, qdev->hwconf.fw_stat, &hw_info);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
-	QOS_ASSERT(res == used,
+	QOS_ASSERT(hw_info.num_used == used,
 		   "Driver's DB has %u used nodes, while firmware reports %u\n",
 		   used,
-		   res);
+		   hw_info.num_used);
 
 	id = pp_pool_get(pool);
 	while (QOS_ID_VALID(id)) {

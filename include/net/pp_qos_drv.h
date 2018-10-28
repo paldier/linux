@@ -140,7 +140,7 @@ struct pp_qos_parent_node_properties {
  * @parent:		parent's id
  * @priority:		strict priority, relevant only if parent uses wsp
  *                      arbitration
- * @bandwidth_share:	bandwidth precentage from parent
+ * @bandwidth_share:	bandwidth percentage from parent
  */
 struct pp_qos_child_node_properties {
 	unsigned int	parent;
@@ -179,7 +179,7 @@ struct pp_qos_port_stat {
  * @credit:		        amount of credit to add to the port.
  *                              when packet_credit is enabled this designates
  *                              packet credit, otherwise byte credit
- * @disable			disable port transmition
+ * @disable			disable port transmission
  */
 struct pp_qos_port_conf {
 	struct pp_qos_common_node_properties common_prop;
@@ -376,7 +376,7 @@ int pp_qos_port_stat_get(struct pp_qos_dev *qos_dev, unsigned int id,
 /**
  * @struct pp_qos_queue_stat - Statistics per queue
  * @reset:		       Should statistics be reset after reading
- * @queue_packets_occupancy:   Packetes currently in queue
+ * @queue_packets_occupancy:   Packets currently in queue
  * @queue_bytes_occupancy:     Bytes currently in queue
  * @total_packets_accepted:    Packets accepted by WRED
  * @total_packets_dropped:     Packets dropped by WRED due any reason
@@ -406,16 +406,16 @@ struct pp_qos_queue_stat {
  *                              min and max values are used
  * @wred_fixed_drop_prob_enable:use fixed drop probability for WRED instead of
  *                              slope
- * @queue_wred_min_avg_green:
- * @queue_wred_max_avg_green:
- * @queue_wred_slope_green:
- * @queue_wred_fixed_drop_prob_green:
- * @queue_wred_min_avg_yellow:
- * @queue_wred_max_avg_yellow:
- * @queue_wred_slope_yellow:
- * @queue_wred_fixed_drop_prob_yellow:
- * @queue_wred_min_guaranteed:
- * @queue_wred_max_allowed:
+ * @queue_wred_min_avg_green:	Start of the slope area (Below that no drops)
+ * @queue_wred_max_avg_green:	End of the slope area (Above that 100% drops)
+ * @queue_wred_slope_green:	0-90 degrees scale
+ * @queue_wred_fixed_drop_prob_green:	Fixed drop rate in between min & max
+ * @queue_wred_min_avg_yellow:	Start of the slope area (Below that no drops)
+ * @queue_wred_max_avg_yellow:	End of the slope area (Above that 100% drops)
+ * @queue_wred_slope_yellow:	0-90 degrees scale
+ * @queue_wred_fixed_drop_prob_yellow:	Fixed drop rate in between min & max
+ * @queue_wred_min_guaranteed:	Minimum descriptors guaranteed
+ * @queue_wred_max_allowed:	Maximum descriptors allowed in this queue
  */
 struct pp_qos_queue_conf {
 	struct pp_qos_common_node_properties common_prop;
@@ -903,6 +903,15 @@ int pp_qos_get_node_info(
 		unsigned int id,
 		struct pp_qos_node_info *info);
 
-
+/**
+ * pp_qos_get_quanta() - Gets QoS quanta (In MB). QoS credits calculations are done
+ *			 in Quanta scale. QoS will transmit a multiplication
+ *			 of a quanta in one iteration
+ * @qos_dev: handle to qos device instance obtained from pp_qos_dev_open
+ * @quanta: pointer which the quanta value will be written to
+ *
+ * Return: 0 on success
+ */
+int pp_qos_get_quanta(struct pp_qos_dev *qdev, unsigned int *quanta);
 
 #endif

@@ -29,6 +29,8 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/debugfs.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
 #include "pp_qos_common.h"
 #include "pp_qos_utils.h"
 #include "pp_qos_fw.h"
@@ -40,6 +42,133 @@ static struct {
 } dbg_data = {NULL, };
 
 #define PP_QOS_DEBUGFS_DIR "ppv4_qos"
+#define PP_QOS_DBG_MAX_BUF	(1024)
+#define PP_QOS_DBG_MAX_INPUT	(64)
+
+static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
+				size_t count, loff_t *pos)
+{
+	char *lbuf;
+	struct pp_qos_dev *qdev;
+	u32 limit;
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+	u32 id = 0;
+
+	pdev = (struct platform_device *)(file->private_data);
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (count >= PP_QOS_DBG_MAX_INPUT)
+		return count;
+
+	lbuf = kzalloc(count, GFP_KERNEL);
+
+	if (copy_from_user(lbuf, buf, count))
+		goto add_shared_bwl_group_done;
+
+	lbuf[count-1] = '\0';
+
+	if (sscanf(lbuf, "%u", &limit) != 1) {
+		pr_err("sscanf err\n");
+		goto add_shared_bwl_group_done;
+	}
+
+	pp_qos_shared_limit_group_add(qdev, limit, &id);
+
+	dev_info(&pdev->dev, "id %u, limit %u\n", id, limit);
+
+	add_shared_bwl_group_done:
+	kfree(lbuf);
+	return count;
+}
+
+static ssize_t add_shared_bwl_group_help(struct file *file,
+			char __user *user_buf, size_t count, loff_t *ppos)
+{
+	char *buff;
+	u32  len = 0;
+	ssize_t ret = 0;
+
+	buff = kmalloc(PP_QOS_DBG_MAX_BUF, GFP_KERNEL);
+	if (!buff)
+		return -ENOMEM;
+
+	len = scnprintf(buff, PP_QOS_DBG_MAX_BUF, "<limit>\n");
+	ret = simple_read_from_buffer(user_buf, count, ppos, buff, len);
+	kfree(buff);
+
+	return ret;
+}
+
+static ssize_t remove_shared_bwl_group(struct file *file,
+			const char __user *buf, size_t count, loff_t *pos)
+{
+	char *lbuf;
+	struct pp_qos_dev *qdev;
+	u32 id = 0;
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+
+	pdev = (struct platform_device *)(file->private_data);
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (count >= PP_QOS_DBG_MAX_INPUT)
+		return count;
+
+	lbuf = kzalloc(count, GFP_KERNEL);
+
+	if (copy_from_user(lbuf, buf, count))
+		goto remove_shared_bwl_group_done;
+
+	lbuf[count-1] = '\0';
+
+	if (sscanf(lbuf, "%u", &id) != 1) {
+		pr_err("sscanf err\n");
+		goto remove_shared_bwl_group_done;
+	}
+
+	pp_qos_shared_limit_group_remove(qdev, id);
+
+	dev_info(&pdev->dev, "id %u\n", id);
+
+remove_shared_bwl_group_done:
+	kfree(lbuf);
+	return count;
+}
+
+static ssize_t remove_shared_bwl_group_help(struct file *file,
+			char __user *user_buf, size_t count, loff_t *ppos)
+{
+	char *buff;
+	u32 len = 0;
+	ssize_t ret = 0;
+
+	buff = kmalloc(PP_QOS_DBG_MAX_BUF, GFP_KERNEL);
+	if (!buff)
+		return -ENOMEM;
+
+	len = scnprintf(buff, PP_QOS_DBG_MAX_BUF, "<bwl group id to remove>\n");
+	ret = simple_read_from_buffer(user_buf, count, ppos, buff, len);
+	kfree(buff);
+
+	return ret;
+}
+
+static const struct file_operations debug_add_shared_bwl_group_fops = {
+	.open    = simple_open,
+	.read    = add_shared_bwl_group_help,
+	.write   = add_shared_bwl_group,
+	.llseek  = default_llseek,
+};
+
+static const struct file_operations debug_remove_shared_bwl_group_fops = {
+	.open    = simple_open,
+	.read    = remove_shared_bwl_group_help,
+	.write   = remove_shared_bwl_group,
+	.llseek  = default_llseek,
+};
 
 static int pp_qos_dbg_node_show(struct seq_file *s, void *unused)
 {
@@ -553,65 +682,6 @@ static void print_fw_log(struct platform_device *pdev)
 	addr[1] = num;
 }
 
-static int ctrl_set(void *data, u64 val)
-{
-	struct platform_device *pdev;
-	struct pp_qos_drv_data *pdata;
-
-	pdev = data;
-	dev_info(&pdev->dev, "ctrl got %llu", val);
-	pdata = platform_get_drvdata(pdev);
-
-	switch (val) {
-#ifdef PP_QOS_TEST
-	case 0:
-		QOS_LOG_INFO("running basic tests\n");
-		basic_tests();
-		break;
-	case 1:
-		QOS_LOG_INFO("running advance tests\n");
-		advance_tests();
-		break;
-	case 2:
-		QOS_LOG_INFO("running all tests\n");
-		tests();
-		break;
-	case 7:
-		QOS_LOG_INFO("running falcon test\n");
-		falcon_test();
-		break;
-	case 8:
-		QOS_LOG_INFO("running simple test\n");
-		stat_test();
-		break;
-	case 9:
-		QOS_LOG_INFO("running load fw test\n");
-		load_fw_test();
-		break;
-	case 10:
-		QOS_LOG_INFO("running stat test\n");
-		stat_test();
-		break;
-	case 11:
-		QOS_LOG_INFO("running info test\n");
-		info_test();
-		break;
-
-#endif
-	case 14:
-		QOS_LOG_INFO("printing logger\n");
-		print_fw_log(pdev);
-		break;
-
-
-	default:
-		QOS_LOG_INFO("unknown test\n");
-		break;
-	}
-
-	return 0;
-}
-
 static int phy2id_get(void *data, u64 *val)
 {
 	uint16_t id;
@@ -634,17 +704,69 @@ out:
 	return 0;
 }
 
-DEFINE_SIMPLE_ATTRIBUTE(dbg_ctrl_fops, NULL, ctrl_set, "%llu\n");
+static int fw_logger_get(void *data, u64 *val)
+{
+	struct platform_device *pdev = data;
+
+	print_fw_log(pdev);
+
+	return 0;
+}
+
+static int check_sync_get(void *data, u64 *val)
+{
+	struct platform_device *pdev = data;
+	struct pp_qos_drv_data *pdata;
+	struct pp_qos_dev *qdev;
+
+	QOS_LOG_INFO("Checking sync with FW\n");
+
+	pdev = data;
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+	if (!qdev->initialized) {
+		dev_err(&pdev->dev, "Device is not initialized\n");
+		goto out;
+	}
+
+	check_sync_with_fw(pdata->qdev);
+out:
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(dbg_fw_logger_fops, fw_logger_get, NULL, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(dbg_check_sync_fops, check_sync_get, NULL, "%llu\n");
 DEFINE_SIMPLE_ATTRIBUTE(dbg_phy2id_fops, phy2id_get, NULL, "%llu\n");
 
 #define MAX_DIR_NAME 11
+
+struct debugfs_file {
+	const char			*name;
+	const struct file_operations	*fops;
+	mode_t				mode;
+};
+
+static struct debugfs_file qos_debugfs_files[] = {
+	{"nodeinfo", &debug_node_fops, 0400},
+	{"stat", &debug_stat_fops, 0400},
+	{"phy2id", &dbg_phy2id_fops, 0400},
+	{"fw_logger", &dbg_fw_logger_fops, 0400},
+	{"check_fw_sync", &dbg_check_sync_fops, 0400},
+	{"geninfo", &debug_gen_fops, 0400},
+	{"qstat", &debug_qstat_fops, 0400},
+	{"pstat", &debug_pstat_fops, 0400},
+	{"cmd", &debug_cmd_fops, 0200},
+	{"add_shared_bwl_group", &debug_add_shared_bwl_group_fops, 0400},
+	{"remove_shared_bwl_group", &debug_remove_shared_bwl_group_fops, 0400},
+};
+
 int qos_dbg_dev_init(struct platform_device *pdev)
 {
-
 	struct pp_qos_drv_data *pdata;
 	char   dirname[MAX_DIR_NAME];
 	struct dentry *dent;
 	int err;
+	u32 idx;
 
 	if (!pdev) {
 		dev_err(&pdev->dev, "Invalid platform device\n");
@@ -662,36 +784,17 @@ int qos_dbg_dev_init(struct platform_device *pdev)
 	}
 
 	pdata->dbg.dir = dent;
-	dent = debugfs_create_file(
-			"nodeinfo",
-			0400,
-			pdata->dbg.dir,
-			pdev,
-			&debug_node_fops
-			);
 
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating nodeinfo with %d\n",
-			err);
-		goto fail;
-	}
-
-	dent = debugfs_create_file(
-			"stat",
-			0400,
-			pdata->dbg.dir,
-			pdev,
-			&debug_stat_fops
-			);
-
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating stat with %d\n",
-			err);
-		goto fail;
+	for (idx = 0 ; idx < ARRAY_SIZE(qos_debugfs_files) ; idx++) {
+		dent = debugfs_create_file(qos_debugfs_files[idx].name,
+					   qos_debugfs_files[idx].mode,
+					   pdata->dbg.dir,
+					   pdev,
+					   qos_debugfs_files[idx].fops);
+		if (unlikely(IS_ERR_OR_NULL(dent))) {
+			err = (int) PTR_ERR(dent);
+			goto fail;
+		}
 	}
 
 	dent = debugfs_create_u16("node",
@@ -706,107 +809,11 @@ int qos_dbg_dev_init(struct platform_device *pdev)
 		goto fail;
 	}
 
-	dent = debugfs_create_file(
-			"ctrl",
-			0200,
-			pdata->dbg.dir,
-			pdev,
-			&dbg_ctrl_fops
-			);
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating ctrl with %d\n",
-			err);
-		goto fail;
-	}
-
-	dent = debugfs_create_file(
-			"phy2id",
-			0400,
-			pdata->dbg.dir,
-			pdev,
-			&dbg_phy2id_fops
-			);
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating phy2id with %d\n",
-			err);
-		goto fail;
-	}
-
-	dent = debugfs_create_file(
-			"geninfo",
-			0400,
-			pdata->dbg.dir,
-			pdev,
-			&debug_gen_fops
-			);
-
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating geninfo with %d\n",
-			err);
-		goto fail;
-	}
-
-	dent = debugfs_create_file(
-			"qstat",
-			0400,
-			pdata->dbg.dir,
-			pdev,
-			&debug_qstat_fops
-			);
-
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating qstat with %d\n",
-			err);
-		goto fail;
-	}
-
-	dent = debugfs_create_file(
-			"pstat",
-			0400,
-			pdata->dbg.dir,
-			pdev,
-			&debug_pstat_fops
-			);
-
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating pstat with %d\n",
-			err);
-		goto fail;
-	}
-
-
-	dent = debugfs_create_file(
-			"cmd",
-			0200,
-			pdata->dbg.dir,
-			pdev,
-			&debug_cmd_fops
-			);
-
-	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
-		dev_err(&pdev->dev,
-			"debugfs_create_file failed creating cmds with %d\n",
-			err);
-		goto fail;
-	}
-
 	return 0;
 
 fail:
 	debugfs_remove_recursive(pdata->dbg.dir);
 	return err;
-
 }
 
 void qos_dbg_dev_clean(struct platform_device *pdev)
