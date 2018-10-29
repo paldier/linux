@@ -240,6 +240,9 @@ static int show_value(struct device *dev,
 	struct spd_cnt smcl;
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 
+	if (!capable(CAP_SYS_PACCT))
+		return -EPERM;
+
 	if (attr->index == SHOW_NAME)
 		return sprintf(buf, "%s\n", SPD_MON_NAME);
 	else if (attr->index == SHOW_CLASS_B) {
