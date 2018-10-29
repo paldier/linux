@@ -1268,14 +1268,30 @@ struct dp_subif_cache *dp_subif_lookup(struct hlist_head *head,
 	return NULL;
 }
 
-int32_t	dp_del_subif(struct net_device *netif, void *data, dp_subif_t *subif,
+struct dp_subif_cache *dp_subif_lookup_safe(struct hlist_head *head,
+					    struct net_device *dev,
+					    void *data)
+{
+	struct dp_subif_cache *item;
+	struct hlist_node *n;
+
+	hlist_for_each_entry_safe(item, n, head, hlist) {
+		if (dev) {
+			if (item->dev == dev)
+				return item;
+		}
+	}
+	return NULL;
+}
+
+int32_t dp_del_subif(struct net_device *netif, void *data, dp_subif_t *subif,
 		     char *subif_name, u32 flags)
 {
 	struct dp_subif_cache *dp_subif;
 	u32 idx;
 
 	idx = dp_subif_hash(netif);
-	dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif, data);
+	dp_subif = dp_subif_lookup_safe(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) {
 		PR_ERR("Failed dp_subif_lookup: %s\n",
 		       netif ? netif->name : "NULL");
@@ -1288,12 +1304,12 @@ int32_t	dp_del_subif(struct net_device *netif, void *data, dp_subif_t *subif,
 	return 1;
 }
 
-int32_t	dp_update_subif(struct net_device *netif, void *data,
+int32_t dp_update_subif(struct net_device *netif, void *data,
 			dp_subif_t *subif, char *subif_name, u32 flags)
 {
 	struct dp_subif_cache *dp_subif_new, *dp_subif;
 	u32 idx;
-	int inst, portid, vap;
+	int inst, portid;
 	dp_get_netif_subifid_fn_t subifid_fn_t = NULL;
 	struct pmac_port_info *port_info;
 
@@ -1301,16 +1317,12 @@ int32_t	dp_update_subif(struct net_device *netif, void *data,
 	inst = subif->inst;
 	portid = subif->port_id;
 	port_info = &dp_port_info[inst][portid];
-	if (!(flags & DP_F_SUBIF_LOGICAL)) {
+	if (!(flags & DP_F_SUBIF_LOGICAL))
 		subifid_fn_t = port_info->cb.get_subifid_fn;
-	}
-	vap = GET_VAP(subif->subif, port_info->vap_offset,
-		      port_info->vap_mask);
-
-	dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif, data);
+	dp_subif = dp_subif_lookup_safe(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) { /*alloc new */
 		dp_subif = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
-		if (!dp_subif) 
+		if (!dp_subif)
 			return -1;
 		memcpy(&dp_subif->subif, subif, sizeof(dp_subif_t));
 		dp_subif->data = (u8 *)data;
@@ -1319,8 +1331,7 @@ int32_t	dp_update_subif(struct net_device *netif, void *data,
 			strncpy(dp_subif->name, subif_name,
 				sizeof(dp_subif->name) - 1);
 		dp_subif->subif_fn = subifid_fn_t;
-		hlist_add_head_rcu(&dp_subif->hlist,
-				&dp_subif_list[idx]);
+		hlist_add_head_rcu(&dp_subif->hlist, &dp_subif_list[idx]);
 		return 0;
 	} else {
 		dp_subif_new = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
@@ -1329,11 +1340,12 @@ int32_t	dp_update_subif(struct net_device *netif, void *data,
 		memcpy(&dp_subif_new->subif, subif, sizeof(dp_subif_t));
 		dp_subif_new->data = (u8 *)data;
 		dp_subif_new->dev = netif;
-		strncpy(dp_subif_new->name, subif_name,
-			sizeof(dp_subif->name) - 1);
+		if (subif_name)
+			strncpy(dp_subif_new->name, subif_name,
+				sizeof(dp_subif->name) - 1);
 		dp_subif_new->subif_fn = subifid_fn_t;
 		hlist_replace_rcu(&dp_subif->hlist,
-				&dp_subif_new->hlist);
+				  &dp_subif_new->hlist);
 		synchronize_rcu_bh();
 		kfree(dp_subif);
 		return 0;
@@ -1345,12 +1357,14 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			dp_subif_t *subif_id, struct dp_subif_data *data,
 			u32 flags)
 {
-/*Note: passing subif_name as subif_data to dp_get_netif_subifid_priv api
- *subif data can be any valid value other than subif_name also
- *This is workaround for DSL case. Later they need to provide valid subif_name
- */
 	void *subif_data = NULL;
 
+	/* Note: workaround to set dummy subif_data via subif_name for DSL case.
+	 *       During dp_get_netif_subifID, subif_data is used to get its PVC
+	 *       information.
+	 * Later VRX518/618 need to provide valid subif_data in order to support
+	 * multiple DSL instances during dp_register_subif_ext
+	 */
 	if (flags & DP_F_FAST_DSL)
 		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
@@ -1361,7 +1375,8 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
 					      subif_id, 0))
-			dp_del_subif(dev, subif_data, subif_id, subif_name, flags);
+			dp_del_subif(dev, subif_data, subif_id, subif_name,
+				     flags);
 		else
 			dp_update_subif(dev, subif_data, subif_id, subif_name,
 					flags);
@@ -1375,7 +1390,7 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 		if (data->ctp_dev) {
 			if (dp_get_netif_subifid_priv(data->ctp_dev, NULL,
 						      subif_data, NULL,
-						      subif_id,	0))
+						      subif_id, 0))
 				return DP_FAILURE;
 			dp_update_subif(data->ctp_dev, subif_data, subif_id,
 					NULL, flags);

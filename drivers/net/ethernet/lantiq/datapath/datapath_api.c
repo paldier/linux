@@ -996,7 +996,8 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 		dp_register_subif_private(inst, owner, dev,
 					  subif_name,
 					  subif_id, data, flags);
-	dp_sync_subifid(dev, subif_name, subif_id, data, flags);
+	if (!res)
+		dp_sync_subifid(dev, subif_name, subif_id, data, flags);
 	DP_LIB_UNLOCK(&dp_lock);
 
 	return res;
