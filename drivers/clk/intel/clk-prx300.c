@@ -135,7 +135,7 @@ static const struct intel_pll_clk_data prx300_pll_clks[] __initconst = {
 	[LJPLL4] = INTEL_PLL(PRX300_CLK_LJPLL4, PLL_PFM_V2, "ljpll4", pll_p,
 			     CLK_IGNORE_UNUSED, LJPLL4_CFG0, NULL, TYPE_LJPLL),
 	[LJPLL5] = INTEL_PLL(PRX300_CLK_LJPLL5, PLL_PFM_V2, "ljpll5", pll_p,
-			     CLK_IGNORE_UNUSED, LJPLL3_CFG0, NULL, TYPE_LJPLL),
+			     CLK_IGNORE_UNUSED, LJPLL5_CFG0, NULL, TYPE_LJPLL),
 };
 
 static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
@@ -146,10 +146,10 @@ static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
 		  PLL_DIV(PLL0A_CFG0), 12, PLL_DIV_WIDTH, 27, 1, 0, 0, pll_div),
 	INTEL_DIV(PRX300_CLK_SW, "sw", "pll0b", CLK_IGNORE_UNUSED,
 		  PLL_DIV(PLL0B_CFG0), 0, PLL_DIV_WIDTH, 24, 1, 0, 0, pll_div),
-	INTEL_DIV(PRX300_CLK_NGI, "ngi", "pll0b", CLK_IGNORE_UNUSED,
-		  PLL_DIV(PLL0B_CFG0), 8, PLL_DIV_WIDTH, 25, 1, 0, 0, pll_div),
 	INTEL_DIV(PRX300_CLK_SSX4, "ssx4", "pll0b", CLK_IGNORE_UNUSED,
-		  PLL_DIV(PLL0B_CFG0), 4, PLL_DIV_WIDTH, 26, 1, 0, 0, pll_div),
+		  PLL_DIV(PLL0B_CFG0), 4, PLL_DIV_WIDTH, 25, 1, 0, 0, pll_div),
+	INTEL_DIV(PRX300_CLK_NGI, "ngi", "pll0b", CLK_IGNORE_UNUSED,
+		  PLL_DIV(PLL0B_CFG0), 8, PLL_DIV_WIDTH, 26, 1, 0, 0, pll_div),
 	INTEL_DIV(PRX300_CLK_DSP, "dsp", "pll1", CLK_IGNORE_UNUSED,
 		  PLL_DIV(PLL1_CFG0), 0, PLL_DIV_WIDTH, 24, 1, 0, 0, pll_div),
 	INTEL_DIV(PRX300_CLK_IF, "voice_if_clk", "pll1", CLK_IGNORE_UNUSED,
