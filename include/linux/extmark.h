@@ -4,12 +4,12 @@
 /* Bit counting starts from Least significant bit, 0..31*/
 
 #define CPEID_START_BIT_POS 0
-#define CPEID_NO_OF_BITS 6
-#define CPEID_MASK 0x3f
+#define CPEID_NO_OF_BITS 5
+#define CPEID_MASK 0x1f
 
-#define QUEPRIO_START_BIT_POS 6
-#define QUEPRIO_NO_OF_BITS 4
-#define QUEPRIO_MASK 0x3c0
+#define QUEPRIO_START_BIT_POS 5
+#define QUEPRIO_NO_OF_BITS 5
+#define QUEPRIO_MASK 0x3e0
 
 #define SUBQUEUE_START_BIT_POS 10
 #define SUBQUEUE_NO_OF_BITS 3
