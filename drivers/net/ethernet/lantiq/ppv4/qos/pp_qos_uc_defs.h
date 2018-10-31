@@ -37,7 +37,7 @@
 /* UC version */
 #define UC_VERSION_MAJOR	(1)
 #define UC_VERSION_MINOR	(0)
-#define UC_VERSION_BUILD	(8)
+#define UC_VERSION_BUILD	(9)
 
 /**************************************************************************
  *! @enum	UC_STATUS
@@ -154,6 +154,9 @@ enum tscd_node_conf {
 
 	/*!< Shared BW limit group (0: no shared BW limit, 1-511: group ID) */
 	TSCD_NODE_CONF_SHARED_BWL_GROUP		=	0x2000,
+
+	//!< Set if Queue's port was changed (Relevant only for queue)
+	TSCD_NODE_CONF_SET_PORT_TO_QUEUE	=	0x4000,
 
 	/*!< All flags are set */
 	TSCD_NODE_CONF_ALL					=	0xFFFF

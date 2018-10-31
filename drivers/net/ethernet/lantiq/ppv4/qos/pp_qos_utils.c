@@ -1607,7 +1607,7 @@ static int post_order_travers_tree(struct pp_qos_dev *qdev,
 				    void *cdata,
 				    int (*operation)(
 					    struct pp_qos_dev *qdev,
-					    const struct qos_node *node,
+					    struct qos_node *node,
 					    void *odata),
 				    void *odata)
 {
@@ -1640,7 +1640,7 @@ struct ids_container_metadata {
 };
 
 static int update_ids_container(struct pp_qos_dev *qdev,
-		const struct qos_node *node, void *data)
+		struct qos_node *node, void *data)
 {
 	struct ids_container_metadata *ids;
 	unsigned int phy;
@@ -1696,10 +1696,28 @@ void get_bw_grp_members_under_node(struct pp_qos_dev *qdev, unsigned int id,
 			(void *)(uintptr_t)id, update_ids_container, &data);
 }
 
-static int update_predecessors(struct pp_qos_dev *qdev,
-		const struct qos_node *node, void *data)
+int update_predecessors(struct pp_qos_dev *qdev,
+		struct qos_node *node, void *data)
 {
-	create_update_preds_cmd(qdev, get_phy_from_node(qdev->nodes, node));
+	bool queue_port_changed = false;
+	u32  queue_port = QOS_INVALID_PHY;
+	u32  queue_id = PP_QOS_INVALID_ID;
+	u32  phy = get_phy_from_node(qdev->nodes, node);
+
+	if (node_queue(node)) {
+		queue_id = get_id_from_phy(qdev->mapping, phy);
+		queue_port = get_port(qdev->nodes, phy);
+		if (queue_port != node->data.queue.port_phy) {
+			QOS_LOG_DEBUG("Queue %u port changed from %u to %u\n",
+				      queue_id,
+				      node->data.queue.port_phy,
+				      queue_port);
+			node->data.queue.port_phy = queue_port;
+			queue_port_changed = true;
+		}
+	}
+
+	create_update_preds_cmd(qdev, phy, queue_port_changed);
 	return 1;
 }
 
@@ -1785,7 +1803,7 @@ STATIC_UNLESS_TEST unsigned int get_children_bandwidth_share(
 
 static int node_remove_wrapper(
 		struct pp_qos_dev *qdev,
-		const struct qos_node *node, void *data)
+		struct qos_node *node, void *data)
 {
 	uint16_t phy;
 	uint16_t id;
@@ -1800,7 +1818,7 @@ static int node_remove_wrapper(
 
 static int node_flush_wrapper(
 		struct pp_qos_dev *qdev,
-		const struct qos_node *node, void *data)
+		struct qos_node *node, void *data)
 {
 	uint16_t phy;
 	uint16_t id;
@@ -1815,7 +1833,7 @@ static int node_flush_wrapper(
 
 static int node_modify_blocked_status(
 		struct pp_qos_dev *qdev,
-		const struct qos_node *node, void *data)
+		struct qos_node *node, void *data)
 {
 	uint16_t phy;
 	uint16_t id;

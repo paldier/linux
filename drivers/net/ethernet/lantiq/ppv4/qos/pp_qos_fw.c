@@ -260,6 +260,8 @@ struct cmd_update_preds {
 	unsigned int phy;
 	unsigned int rlm;
 	unsigned int is_alias_slave;
+	u32 queue_port;
+	bool queue_port_changed;
 };
 
 struct port_properties {
@@ -618,7 +620,8 @@ void create_remove_node_cmd(
 	qdev->drvcmds.cmd_fw_id++;
 }
 
-void create_update_preds_cmd(struct pp_qos_dev *qdev, unsigned int phy)
+void create_update_preds_cmd(struct pp_qos_dev *qdev, unsigned int phy,
+		bool queue_port_changed)
 {
 	const struct qos_node *node;
 	struct cmd_update_preds cmd;
@@ -641,6 +644,8 @@ void create_update_preds_cmd(struct pp_qos_dev *qdev, unsigned int phy)
 	cmd.is_alias_slave =
 			(node->data.queue.alias_master_id == PP_QOS_INVALID_ID)
 			? 0 : 1;
+	cmd.queue_port = node->data.queue.port_phy;
+	cmd.queue_port_changed = queue_port_changed;
 
 	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_UPDATE_PREDECESSORS %u:%u-->%u-->%u-->%u-->%u-->%u\n",
 		      qdev->drvcmds.cmd_id,
@@ -1182,6 +1187,7 @@ struct fw_set_common {
 	int suspend;
 	unsigned int bw_limit;
 	unsigned int shared_bw_group;
+	u32 port_phy; /* Relevant only for queue */
 };
 
 struct fw_set_parent {
@@ -1537,7 +1543,7 @@ static uint32_t *fw_write_set_queue_cmd(
 
 	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_SET_QUEUE);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(27);
+	*buf++ = qos_u32_to_uc(28);
 	*buf++ = qos_u32_to_uc(phy);
 	*buf++ = qos_u32_to_uc(queue->rlm);
 	*buf++ = qos_u32_to_uc(common->valid | child->valid);
@@ -1547,6 +1553,7 @@ static uint32_t *fw_write_set_queue_cmd(
 	*buf++ = qos_u32_to_uc(common->shared_bw_group);
 	for (i = 0; i < 6; ++i)
 		*buf++ = qos_u32_to_uc(child->preds[i]);
+	*buf++ = qos_u32_to_uc(common->port_phy);
 	*buf++ = qos_u32_to_uc(queue->valid);
 	*buf++ = qos_u32_to_uc(queue->active);
 	*buf++ = qos_u32_to_uc(queue->disable);
@@ -2224,6 +2231,11 @@ static uint32_t *update_preds_cmd_wrapper(
 		fwdata->type_data.queue.valid = 0;
 		fwdata->type_data.queue.rlm = cmd->rlm;
 		fwdata->type_data.queue.is_alias_slave = cmd->is_alias_slave;
+		if (cmd->queue_port_changed) {
+			fwdata->common.port_phy = cmd->queue_port;
+			fwdata->common.valid |=
+				TSCD_NODE_CONF_SET_PORT_TO_QUEUE;
+		}
 
 		return fw_write_set_queue_cmd(
 				buf,

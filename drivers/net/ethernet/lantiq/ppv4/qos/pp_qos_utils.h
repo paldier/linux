@@ -157,6 +157,7 @@ struct qos_node {
 			uint8_t		yellow_slope;
 			uint16_t	alias_slave_id;
 			uint16_t	alias_master_id;
+			uint16_t	port_phy;
 		} queue;
 	} data;
 
@@ -578,6 +579,9 @@ unsigned int get_virtual_parent_phy(const struct pp_nodes *nodes,
 void node_update_children(struct pp_qos_dev *qdev,
 				 struct qos_node *parent,
 				 unsigned int new_phy);
+
+int update_predecessors(struct pp_qos_dev *qdev,
+			struct qos_node *node, void *data);
 
 void tree_update_predecessors(struct pp_qos_dev *qdev, unsigned int phy);
 /*

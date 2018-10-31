@@ -1065,7 +1065,7 @@ static int _pp_qos_queue_set(
 			phy = get_phy_from_id(qdev->mapping, id);
 			nodep = get_node_from_phy(qdev->nodes, phy);
 			if (phy != prev_phy)
-				create_update_preds_cmd(qdev, phy);
+				update_predecessors(qdev, nodep, NULL);
 		} else {
 			map_id_phy(qdev->mapping, id, phy);
 		}

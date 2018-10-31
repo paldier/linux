@@ -56,7 +56,8 @@ void create_set_sched_cmd(struct pp_qos_dev *qdev,
 void create_remove_node_cmd(struct pp_qos_dev *qdev, enum node_type type,
 			    unsigned int phy, unsigned int data);
 void create_parent_change_cmd(struct pp_qos_dev *qdev, unsigned int phy);
-void create_update_preds_cmd(struct pp_qos_dev *qdev, unsigned int phy);
+void create_update_preds_cmd(struct pp_qos_dev *qdev, unsigned int phy,
+		bool queue_port_changed);
 void create_init_qos_cmd(struct pp_qos_dev *qdev);
 void enqueue_cmds(struct pp_qos_dev *qdev);
 void check_completion(struct pp_qos_dev *qdev);
@@ -119,7 +120,7 @@ void create_get_sys_info_cmd(struct pp_qos_dev *qdev,
 	QOS_LOG_DEBUG("REMOVE: %u(%u)\n", phy, type)
 #define create_parent_change_cmd(qdev, phy)\
 	QOS_LOG_DEBUG("PARENT_CHANGE: %u\n", phy)
-#define create_update_preds_cmd(qdev, phy)\
+#define create_update_preds_cmd(qdev, phy, queue_port_changed)\
 	QOS_LOG_DEBUG("UPDATE_PREDS: %u\n", phy)
 #define create_get_queue_stats_cmd(qdev, phy, rlm, addr, qstat)
 #define create_init_qos_cmd(qdev)
@@ -145,7 +146,7 @@ void create_get_sys_info_cmd(struct pp_qos_dev *qdev,
 #define create_set_queue_cmd(qdev, conf, phy, parent, rlm, modified)
 #define create_remove_node_cmd(qdev, type, phy, data)
 #define create_parent_change_cmd(qdev, phy)
-#define create_update_preds_cmd(qdev, phy)
+#define create_update_preds_cmd(qdev, phy, queue_port_changed)
 #define create_get_queue_stats_cmd(qdev, phy, rlm, addr, qstat)
 #define create_init_qos_cmd(qdev)
 #define enqueue_cmds(qdev)
