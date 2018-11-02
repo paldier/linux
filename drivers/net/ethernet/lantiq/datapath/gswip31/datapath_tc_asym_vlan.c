@@ -254,6 +254,16 @@ static int tc_vlan_filter(struct core_ops *ops,
 	GSW_VLANFILTER_config_t *pcfg;
 	int i, j, k;
 
+	if (total <= 0) {
+		/* Update bridge port */
+		ret = update_bp(ops,
+				(u32)info->bp,
+				vlan->dir == DP_DIR_INGRESS,
+				NULL,
+				NULL);
+		return ret;
+	}
+
 	/* bridge port */
 	pcfg = kmalloc_array(total, sizeof(*pcfg), GFP_KERNEL);
 	if (!pcfg)
@@ -265,7 +275,7 @@ static int tc_vlan_filter(struct core_ops *ops,
 	/* untagged rule */
 	for (i = 0; i < vlan->n_vlan0; i++) {
 		if (!vlan->vlan0_list[i].def)
-	/* VLAN filter for untagged packet have default rule only */
+		/* VLAN filter for untagged packet have default rule only */
 			goto EXIT;
 		if ((vlan->vlan0_list[i].act.act & DP_VLAN_ACT_FWD)) {
 		/* default value was set to drop */
@@ -730,65 +740,67 @@ static int tc_ext_vlan(struct core_ops *ops,
 	GSW_EXTENDEDVLAN_config_t cfg;
 	int i, j;
 
-	alloc.nNumberOfEntries = (u32)total;
-	ret = ops->gsw_extvlan_ops.ExtendedVlan_Alloc(ops, &alloc);
-	if (ret != GSW_statusOk)
-		return -EIO;
-	DP_DEBUG(DP_DBG_FLAG_PAE, "ExtendedVlan_Alloc - %u[%u]\n",
-		 alloc.nExtendedVlanBlockId,
-		 alloc.nNumberOfEntries);
+	if (total > 0) {
+		alloc.nNumberOfEntries = (u32)total;
+		ret = ops->gsw_extvlan_ops.ExtendedVlan_Alloc(ops, &alloc);
+		if (ret != GSW_statusOk)
+			return -EIO;
+		DP_DEBUG(DP_DBG_FLAG_PAE, "ExtendedVlan_Alloc - %u[%u]\n",
+			 alloc.nExtendedVlanBlockId,
+			 alloc.nNumberOfEntries);
 
-	j = 0;
+		j = 0;
 
-	/* untagged rule */
-	for (i = 0; i < vlan->n_vlan0; i++) {
-		memset(&cfg, 0, sizeof(cfg));
-		cfg.nExtendedVlanBlockId = alloc.nExtendedVlanBlockId;
-		cfg.nEntryIndex = j;
-		j++;
-		ret = ext_vlan_cfg(ops,
-				   &cfg,
-				   vlan->vlan0_list[i].def,
-				   vlan->vlan0_list[i].outer.proto,
-				   NULL,
-				   NULL,
-				   &vlan->vlan0_list[i].act);
-		if (ret != 0)
-			goto ERROR;
-	}
+		/* untagged rule */
+		for (i = 0; i < vlan->n_vlan0; i++) {
+			memset(&cfg, 0, sizeof(cfg));
+			cfg.nExtendedVlanBlockId = alloc.nExtendedVlanBlockId;
+			cfg.nEntryIndex = j;
+			j++;
+			ret = ext_vlan_cfg(ops,
+					   &cfg,
+					   vlan->vlan0_list[i].def,
+					   vlan->vlan0_list[i].outer.proto,
+					   NULL,
+					   NULL,
+					   &vlan->vlan0_list[i].act);
+			if (ret != 0)
+				goto ERROR;
+		}
 
-	/* 1-tag rule */
-	for (i = 0; i < vlan->n_vlan1; i++) {
-		memset(&cfg, 0, sizeof(cfg));
-		cfg.nExtendedVlanBlockId = alloc.nExtendedVlanBlockId;
-		cfg.nEntryIndex = j;
-		j++;
-		ret = ext_vlan_cfg(ops,
-				   &cfg,
-				   vlan->vlan1_list[i].def,
-				   vlan->vlan1_list[i].outer.proto,
-				   &vlan->vlan1_list[i].outer,
-				   NULL,
-				   &vlan->vlan1_list[i].act);
-		if (ret != 0)
-			goto ERROR;
-	}
+		/* 1-tag rule */
+		for (i = 0; i < vlan->n_vlan1; i++) {
+			memset(&cfg, 0, sizeof(cfg));
+			cfg.nExtendedVlanBlockId = alloc.nExtendedVlanBlockId;
+			cfg.nEntryIndex = j;
+			j++;
+			ret = ext_vlan_cfg(ops,
+					   &cfg,
+					   vlan->vlan1_list[i].def,
+					   vlan->vlan1_list[i].outer.proto,
+					   &vlan->vlan1_list[i].outer,
+					   NULL,
+					   &vlan->vlan1_list[i].act);
+			if (ret != 0)
+				goto ERROR;
+		}
 
-	/* 2-tag rule */
-	for (i = 0; i < vlan->n_vlan2; i++) {
-		memset(&cfg, 0, sizeof(cfg));
-		cfg.nExtendedVlanBlockId = alloc.nExtendedVlanBlockId;
-		cfg.nEntryIndex = j;
-		j++;
-		ret = ext_vlan_cfg(ops,
-				   &cfg,
-				   vlan->vlan2_list[i].def,
-				   vlan->vlan2_list[i].outer.proto,
-				   &vlan->vlan2_list[i].outer,
-				   &vlan->vlan2_list[i].inner,
-				   &vlan->vlan2_list[i].act);
-		if (ret != 0)
-			goto ERROR;
+		/* 2-tag rule */
+		for (i = 0; i < vlan->n_vlan2; i++) {
+			memset(&cfg, 0, sizeof(cfg));
+			cfg.nExtendedVlanBlockId = alloc.nExtendedVlanBlockId;
+			cfg.nEntryIndex = j;
+			j++;
+			ret = ext_vlan_cfg(ops,
+					   &cfg,
+					   vlan->vlan2_list[i].def,
+					   vlan->vlan2_list[i].outer.proto,
+					   &vlan->vlan2_list[i].outer,
+					   &vlan->vlan2_list[i].inner,
+					   &vlan->vlan2_list[i].act);
+			if (ret != 0)
+				goto ERROR;
+		}
 	}
 
 	if ((info->dev_type & 0x01) == 0) {
@@ -798,14 +810,14 @@ static int tc_ext_vlan(struct core_ops *ops,
 				 (u32)info->subix,
 				 vlan->dir == DP_DIR_INGRESS,
 				 (info->dev_type & 0x02) != 0,
-				 &alloc);
+				 total > 0 ? &alloc : NULL);
 	} else {
 		/* Configure bridge port */
 		ret = update_bp(ops,
 				(u32)info->bp,
 				vlan->dir == DP_DIR_INGRESS,
 				NULL,
-				&alloc);
+				total > 0 ? &alloc : NULL);
 	}
 	if (ret == 0)
 		return 0;

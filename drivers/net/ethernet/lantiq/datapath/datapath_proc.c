@@ -865,9 +865,9 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 	int mcast = 0;
 	int dir = 0;
 	struct dp_tc_vlan vlan = {0};
-	struct dp_vlan0 vlan0_list = {0};
-	struct dp_vlan1 vlan1_list = {0};
-	struct dp_vlan2 vlan2_list = {0};
+	struct dp_vlan0 vlan0_list[1] = {0};
+	struct dp_vlan1 vlan1_list[4] = {0};
+	struct dp_vlan2 vlan2_list[3] = {0};
 	struct net_device *dev;
 
 #define TEST_VID 10
@@ -916,12 +916,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = FALSE\n");
 		PR_INFO("Output:Enqueued packet is received without change\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
+		vlan.vlan1_list = vlan1_list;
 		/*random proto for failing the pattern match*/
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, 0x100);
-		vlan1_list.act.act = DP_VLAN_ACT_DROP;
+		vlan1_list[0].act.act = DP_VLAN_ACT_DROP;
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -930,12 +930,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = FALSE\n");
 		PR_INFO("Output:Enqueued packet is received without change\n");
 		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
-		vlan.vlan0_list = &vlan0_list;
+		vlan.vlan0_list = vlan0_list;
 		/*random proto for failing the pattern match*/
-		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		set_pattern(&vlan0_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, 0x100);
-		vlan0_list.act.act = DP_VLAN_ACT_DROP;
+		vlan0_list[0].act.act = DP_VLAN_ACT_DROP;
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -944,12 +944,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE\n");
 		PR_INFO("Output:Enqueued packet is not received\n");
 		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
-		vlan.vlan0_list = &vlan0_list;
+		vlan.vlan0_list = vlan0_list;
 		/*random proto for failing the pattern match*/
-		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		set_pattern(&vlan0_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		vlan0_list.act.act = DP_VLAN_ACT_DROP;
+		vlan0_list[0].act.act = DP_VLAN_ACT_DROP;
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -961,12 +961,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and POP action\n");
 		PR_INFO("Output:Enqueued packet is received without vlantag\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    TEST_VID, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
-		vlan1_list.act.act = DP_VLAN_ACT_POP;
-		vlan1_list.act.pop_n = 1;
+		vlan1_list[0].act.act = DP_VLAN_ACT_POP;
+		vlan1_list[0].act.pop_n = 1;
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -975,15 +975,15 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and POP action\n");
 		PR_INFO("Output:Enqueued packet is received without vlantag\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 0, 1, mcast);
-		vlan.vlan2_list = &vlan2_list;
-		set_pattern(&vlan2_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan2_list = vlan2_list;
+		set_pattern(&vlan2_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    TEST_VID, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
-		set_pattern(&vlan2_list.inner, DP_VLAN_PATTERN_NOT_CARE,
+		set_pattern(&vlan2_list[0].inner, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
-		vlan2_list.act.act = DP_VLAN_ACT_POP;
-		vlan2_list.act.pop_n = 2;
+		vlan2_list[0].act.act = DP_VLAN_ACT_POP;
+		vlan2_list[0].act.pop_n = 2;
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -993,12 +993,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with vlan tag");
 		PR_INFO("that is pushed\n");
 		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
-		vlan.vlan0_list = &vlan0_list;
-		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan0_list = vlan0_list;
+		set_pattern(&vlan0_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan0_list.act, DP_VLAN_ACT_PUSH, 0, 1);
-		set_tag(&vlan0_list.act, 0, 0, 0, 10, 0x8100, 0);
+		set_action(&vlan0_list[0].act, DP_VLAN_ACT_PUSH, 0, 1);
+		set_tag(&vlan0_list[0].act, 0, 0, 0, 10, 0x8100, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1008,13 +1008,13 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags");
 		PR_INFO("that are pushed\n");
 		set_dev(&vlan, dev, ctp, 0, 1, 0, 0, mcast);
-		vlan.vlan0_list = &vlan0_list;
-		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan0_list = vlan0_list;
+		set_pattern(&vlan0_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan0_list.act, DP_VLAN_ACT_PUSH, 0, 2);
-		set_tag(&vlan0_list.act, 0, 0, 0, 10, 0x8100, 0);
-		set_tag(&vlan0_list.act, 0, 1, 1, 100, 0x8100, 0);
+		set_action(&vlan0_list[0].act, DP_VLAN_ACT_PUSH, 0, 2);
+		set_tag(&vlan0_list[0].act, 0, 0, 0, 10, 0x8100, 0);
+		set_tag(&vlan0_list[0].act, 0, 1, 1, 100, 0x8100, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1024,12 +1024,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with vlan tag");
 		PR_INFO("that is pushed\n");
 		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
-		vlan.vlan0_list = &vlan0_list;
-		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan0_list = vlan0_list;
+		set_pattern(&vlan0_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan0_list.act, DP_VLAN_ACT_PUSH, 0, 1);
-		set_tag(&vlan0_list.act, 0, 0, 0, 10, 0x8100, 0);
+		set_action(&vlan0_list[0].act, DP_VLAN_ACT_PUSH, 0, 1);
+		set_tag(&vlan0_list[0].act, 0, 0, 0, 10, 0x8100, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1039,13 +1039,13 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags");
 		PR_INFO("that are pushed\n");
 		set_dev(&vlan, dev, ctp, dir, 1, 0, 0, mcast);
-		vlan.vlan0_list = &vlan0_list;
-		set_pattern(&vlan0_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan0_list = vlan0_list;
+		set_pattern(&vlan0_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan0_list.act, DP_VLAN_ACT_PUSH, 0, 2);
-		set_tag(&vlan0_list.act, 0, 0, 0, 10, 0x8100, 0);
-		set_tag(&vlan0_list.act, 0, 1, 1, 100, 0x8100, 0);
+		set_action(&vlan0_list[0].act, DP_VLAN_ACT_PUSH, 0, 2);
+		set_tag(&vlan0_list[0].act, 0, 0, 0, 10, 0x8100, 0);
+		set_tag(&vlan0_list[0].act, 0, 1, 1, 100, 0x8100, 0);
 		dp_vlan_set(&vlan, 0);
 	break;
 	case 11:
@@ -1054,12 +1054,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags,");
 		PR_INFO("the original and the pushed one\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan1_list.act, DP_VLAN_ACT_PUSH, 0, 1);
-		set_tag(&vlan1_list.act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_PUSH, 0, 1);
+		set_tag(&vlan1_list[0].act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1069,13 +1069,13 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with 3 vlan tags,");
 		PR_INFO("the original and 2 pushed ones\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan1_list.act, DP_VLAN_ACT_PUSH, 0, 2);
-		set_tag(&vlan1_list.act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
-		set_tag(&vlan1_list.act, CP_FROM_OUTER, 1, 0, 0, 0, 0);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_PUSH, 0, 2);
+		set_tag(&vlan1_list[0].act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
+		set_tag(&vlan1_list[0].act, CP_FROM_OUTER, 1, 0, 0, 0, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1085,12 +1085,12 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with 2 vlan tags,");
 		PR_INFO("the original and the pushed one\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan1_list.act, DP_VLAN_ACT_PUSH, 0, 1);
-		set_tag(&vlan1_list.act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_PUSH, 0, 1);
+		set_tag(&vlan1_list[0].act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1100,13 +1100,13 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Output:Enqueued packet is received with 3 vlan tags");
 		PR_INFO("the original and 2 pushed ones\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan1_list.act, DP_VLAN_ACT_PUSH, 0, 2);
-		set_tag(&vlan1_list.act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
-		set_tag(&vlan1_list.act, CP_FROM_OUTER, 1, 0, 0, 0, 0);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_PUSH, 0, 2);
+		set_tag(&vlan1_list[0].act, CP_FROM_OUTER, 0, 0, 0, 0, 0);
+		set_tag(&vlan1_list[0].act, CP_FROM_OUTER, 1, 0, 0, 0, 0);
 		dp_vlan_set(&vlan, 0);
 	break;
 	case 15:
@@ -1114,11 +1114,11 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = FALSE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is received unaltered\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    100, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan1_list.act, DP_VLAN_ACT_DROP, 0, 0);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1127,11 +1127,11 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is dropped\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 1, 0, mcast);
-		vlan.vlan1_list = &vlan1_list;
-		set_pattern(&vlan1_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    10, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan1_list.act, DP_VLAN_ACT_DROP, 0, 0);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1140,14 +1140,14 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = FALSE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is received unaltered\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 0, 1, mcast);
-		vlan.vlan2_list = &vlan2_list;
-		set_pattern(&vlan2_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan2_list = vlan2_list;
+		set_pattern(&vlan2_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    100, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_pattern(&vlan2_list.inner, DP_VLAN_PATTERN_NOT_CARE,
+		set_pattern(&vlan2_list[0].inner, DP_VLAN_PATTERN_NOT_CARE,
 			    200, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan2_list.act, DP_VLAN_ACT_DROP, 0, 0);
+		set_action(&vlan2_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1156,14 +1156,14 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE and DROP action\n");
 		PR_INFO("Output:Enqueued packet is not received\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 0, 1, mcast);
-		vlan.vlan2_list = &vlan2_list;
-		set_pattern(&vlan2_list.outer, DP_VLAN_PATTERN_NOT_CARE,
+		vlan.vlan2_list = vlan2_list;
+		set_pattern(&vlan2_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    10, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_pattern(&vlan2_list.inner, DP_VLAN_PATTERN_NOT_CARE,
+		set_pattern(&vlan2_list[0].inner, DP_VLAN_PATTERN_NOT_CARE,
 			    20, DP_VLAN_PATTERN_NOT_CARE,
 			    DP_VLAN_PATTERN_NOT_CARE, DP_PROTO_IP4);
-		set_action(&vlan2_list.act, DP_VLAN_ACT_DROP, 0, 0);
+		set_action(&vlan2_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
 		dp_vlan_set(&vlan, 0);
 
 	break;
@@ -1178,10 +1178,10 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("PUSH for vid 5,6 POP for vid 7 and forward vid 8\n");
 		PR_INFO("Output:Enqueued packet received\n");
 		set_dev(&vlan, dev, ctp, dir, 0, 4, 0, mcast);
-		vlan1_list[0].def = DP_VLAN_DEF_ACCEPT;
-		vlan1_list[1].def = DP_VLAN_DEF_ACCEPT;
-		vlan1_list[2].def = DP_VLAN_DEF_ACCEPT;
-		vlan1_list[3].def = DP_VLAN_DEF_DROP;
+		vlan1_list[0].def = 0;
+		vlan1_list[1].def = 0;
+		vlan1_list[2].def = 0;
+		vlan1_list[3].def = 0;
 		vlan.vlan1_list = vlan1_list;
 		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
 			    5, DP_VLAN_PATTERN_NOT_CARE,
@@ -1205,6 +1205,98 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		set_action(&vlan1_list[2].act, DP_VLAN_ACT_POP, 1, 0);
 		set_action(&vlan1_list[3].act, DP_VLAN_ACT_FWD, 0, 0);
 
+		dp_vlan_set(&vlan, 0);
+	}
+	break;
+
+	case 20:
+		PR_INFO("This test to del rule\n");
+		set_dev(&vlan, dev, ctp, dir, 0, 0, 0, mcast);
+		vlan.vlan0_list = NULL;
+		vlan.vlan1_list = NULL;
+		vlan.vlan2_list = NULL;
+		dp_vlan_set(&vlan, 0);
+	break;
+	case 21:
+	{
+		PR_INFO("Input:IP packet single or double vlan tag,");
+		PR_INFO("with outer vid 74\n");
+		PR_INFO("Desc:pattern match = TRUE (vid match) , with action");
+		PR_INFO("forward vid 74 and drop other VLAN tag\n");
+		PR_INFO("Output:Enqueued pkt recv for vid 74 other vid drop\n");
+		set_dev(&vlan, dev, ctp, dir, 1, 2, 2, mcast);
+		vlan1_list[0].def = 1; /* default rule */
+		vlan1_list[1].def = 0;
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
+		set_pattern(&vlan1_list[1].outer, DP_VLAN_PATTERN_NOT_CARE,
+			    74, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan1_list[1].act, DP_VLAN_ACT_FWD, 0, 0);
+		vlan2_list[0].def = 1;
+		vlan2_list[1].def = 0;
+		vlan.vlan2_list = vlan2_list;
+		set_pattern(&vlan2_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_pattern(&vlan2_list[0].inner, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan2_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
+		set_pattern(&vlan2_list[1].outer, DP_VLAN_PATTERN_NOT_CARE,
+			    74, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_pattern(&vlan2_list[1].inner, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan2_list[1].act, DP_VLAN_ACT_FWD, 0, 0);
+		dp_vlan_set(&vlan, 0);
+	}
+	break;
+	case 22:
+	{
+		PR_INFO("Input:IP packet single or double vlan tag,");
+		PR_INFO("with outer vid 100 or 200\n");
+		PR_INFO("Desc:pattern match = TRUE (vid match) , with action");
+		PR_INFO("forward vid 100,200 and drop other VLAN tag\n");
+		PR_INFO("Output:Enq pkt recv for vid 100,200 other vid drop\n");
+		set_dev(&vlan, dev, ctp, dir, 0, 3, 2, mcast);
+		vlan1_list[0].def = 1; /* default rule */
+		vlan1_list[1].def = 0;
+		vlan1_list[2].def = 0;
+		vlan.vlan1_list = vlan1_list;
+		set_pattern(&vlan1_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan1_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
+		set_pattern(&vlan1_list[1].outer, 1,
+			    100, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan1_list[1].act, DP_VLAN_ACT_FWD, 0, 0);
+		set_pattern(&vlan1_list[2].outer, 2,
+			    300, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan1_list[2].act, DP_VLAN_ACT_DROP, 0, 0);
+		vlan2_list[0].def = 1;
+		vlan2_list[1].def = 0;
+		vlan.vlan2_list = vlan2_list;
+		set_pattern(&vlan2_list[0].outer, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_pattern(&vlan2_list[0].inner, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan2_list[0].act, DP_VLAN_ACT_DROP, 0, 0);
+		set_pattern(&vlan2_list[1].outer, 2,
+			    200, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_pattern(&vlan2_list[1].inner, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE,
+			    DP_VLAN_PATTERN_NOT_CARE, DP_VLAN_PATTERN_NOT_CARE);
+		set_action(&vlan2_list[1].act, DP_VLAN_ACT_FWD, 0, 0);
 		dp_vlan_set(&vlan, 0);
 	}
 	break;
