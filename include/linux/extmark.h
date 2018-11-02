@@ -35,7 +35,6 @@
 #define LROSESS_NO_OF_BITS 1
 #define LROSESS_MASK 0x80000000
 
-#endif
 
 #define GET_DATA_FROM_MARK_OPT(mark, mask, pos, value) \
 	(value = ((mark & mask) >> pos))
@@ -50,3 +49,5 @@
 	GET_DATA_FROM_MARK_OPT(mark, MASK(pos, len), pos, value)
 #define SET_DATA_FROM_MARK(mark, pos, len, value) \
 	SET_DATA_FROM_MARK_OPT(mark, MASK(pos, len), pos, value)
+
+#endif
