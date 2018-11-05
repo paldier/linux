@@ -304,11 +304,11 @@ static int __init intel_prx300_cgu_probe(struct platform_device *pdev)
 
 	map = syscon_node_to_regmap(np);
 	if (IS_ERR(map))
-		return -ENODEV;
+		return PTR_ERR(map);
 
 	ctx = intel_clk_init(map, PRX300_CLK_NR_CLKS);
 	if (IS_ERR(ctx))
-		return -ENOMEM;
+		return PTR_ERR(ctx);
 
 	ctx->np = np;
 	ctx->dev = dev;
