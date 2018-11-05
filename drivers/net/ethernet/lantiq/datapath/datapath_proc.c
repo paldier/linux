@@ -1224,7 +1224,7 @@ static int proc_asym_vlan(struct file *file, const char *buf, size_t count,
 		PR_INFO("Desc:pattern match = TRUE (vid match) , with action");
 		PR_INFO("forward vid 74 and drop other VLAN tag\n");
 		PR_INFO("Output:Enqueued pkt recv for vid 74 other vid drop\n");
-		set_dev(&vlan, dev, ctp, dir, 1, 2, 2, mcast);
+		set_dev(&vlan, dev, ctp, dir, 0, 2, 2, mcast);
 		vlan1_list[0].def = 1; /* default rule */
 		vlan1_list[1].def = 0;
 		vlan.vlan1_list = vlan1_list;

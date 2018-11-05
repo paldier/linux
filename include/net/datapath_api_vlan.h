@@ -92,8 +92,8 @@ struct dp_act_vlan {
 				*/
 };
 
-struct dp_vlan0 {
 #define DP_VLAN_DEF_RULE 1
+struct dp_vlan0 {
 	int def;		/* default rule for untagged packet */
 	struct dp_pattern_vlan outer;	/* match pattern.
 					 * only proto is valid for this case
