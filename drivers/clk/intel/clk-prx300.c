@@ -210,7 +210,7 @@ static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
 		   G_DMA3_SHIFT, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_SWITCH, "g_switch", NULL, 0, CGU_GATE1,
 		   G_SWITCH_SHIFT, GATE_CLK_HW, 0),
-	INTEL_GATE(PRX300_GCLK_PON, "g_pon", NULL, 0, CGU_GATE1,
+	INTEL_GATE(PRX300_GCLK_PON, "g_pon", "dd_pool", 0, CGU_GATE1,
 		   G_PON_SHIFT, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_AON, "g_aon", NULL, 0, CGU_GATE1,
 		   G_AON_SHIFT, GATE_CLK_HW, 0),
