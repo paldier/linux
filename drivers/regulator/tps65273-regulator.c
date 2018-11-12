@@ -64,7 +64,7 @@
 
 #define tps65273_reg_desc(num) {			\
 	.name		= "BUCK"#num,			\
-	.of_match	= of_match_ptr("BUCK"#num),	\
+	.of_match	= NULL,				\
 	.regulators_node = of_match_ptr("regulators"),	\
 	.id		= TPS65273_BUCK##num##_ID,		\
 	.ops		= &tps65273_ops,		\
@@ -204,6 +204,7 @@ static struct tps65273_platform_data *tps65273_parse_dt(struct device *dev)
 		}
 
 		init_data->constraints.valid_modes_mask = REGULATOR_MODE_NORMAL;
+		init_data->constraints.apply_uV = 0;
 	}
 
 	return pd;
