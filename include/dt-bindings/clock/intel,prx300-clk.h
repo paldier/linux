@@ -36,6 +36,7 @@
 #define PRX300_CLK_PONIP	51
 
 #define PRX300_CLK_SLIC		55
+#define PRX300_CLK_PONDEF	56
 
 /* Gate0 clock shift */
 #define PRX300_GCLK_XBAR0	80

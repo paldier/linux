@@ -19,6 +19,8 @@
 #define GATE_HW_REG_STAT(reg)	(reg)
 #define GATE_HW_REG_EN(reg)	((reg) + 0x4)
 #define GATE_HW_REG_DIS(reg)	((reg) + 0x8)
+#define MAX_DDIV_REG	8
+#define MAX_DIVIDER_VAL 64
 
 #define to_intel_clk_mux(_hw) container_of(_hw, struct intel_clk_mux, hw)
 #define to_intel_clk_divider(_hw) \
@@ -502,11 +504,96 @@ static void intel_clk_ddiv_disable(struct clk_hw *hw)
 			  ddiv->shift_gate, ddiv->width_gate, 0);
 }
 
+static int
+intel_clk_get_ddiv_val(u32 div, u32 *ddiv1, u32 *ddiv2)
+{
+	u32 idx, temp;
+
+	*ddiv1 = 1;
+	*ddiv2 = 1;
+
+	if (div > MAX_DIVIDER_VAL) {
+		pr_info("Crossed max DDIV %u\n", div);
+		div = MAX_DIVIDER_VAL;
+	}
+
+	if (div > 1) {
+		for (idx = 2; idx <= MAX_DDIV_REG; idx++) {
+			temp = DIV_ROUND_UP_ULL((u64)div, idx);
+			if ((div % idx == 0) && (temp <= MAX_DDIV_REG))
+				break;
+		}
+
+		if (idx > 8) {
+			pr_err("Invalid ddiv %u\n", div);
+			return -EINVAL;
+		}
+	}
+
+	*ddiv1 = temp;
+	*ddiv2 = idx;
+	return 0;
+}
+
+static long
+intel_clk_ddiv_round_rate(struct clk_hw *hw, unsigned long rate,
+			  unsigned long *prate)
+{
+	u32 div, ddiv1, ddiv2;
+	u64 rate64 = rate;
+
+	div = DIV_ROUND_CLOSEST_ULL((u64)*prate, rate);
+
+	if (div <= 0)
+		return *prate;
+
+	if (intel_clk_get_ddiv_val(div, &ddiv1, &ddiv2) != 0) {
+		if (intel_clk_get_ddiv_val(div + 1, &ddiv1, &ddiv2) != 0)
+			return -EINVAL;
+	}
+
+	rate64 = *prate;
+	do_div(rate64, ddiv1);
+	do_div(rate64, ddiv2);
+
+	return (unsigned long)rate64;
+}
+
+static int
+intel_clk_ddiv_set_rate(struct clk_hw *hw, unsigned long rate,
+			unsigned long prate)
+{
+	struct intel_clk_ddiv *ddiv = to_intel_clk_ddiv(hw);
+	u32 div, ddiv1, ddiv2;
+
+	div = DIV_ROUND_CLOSEST_ULL((u64)prate, rate);
+
+	if (intel_get_clk_val(ddiv->map, ddiv->reg, ddiv->shift2, 1)) {
+		div = DIV_ROUND_CLOSEST_ULL((u64)div, 5);
+		div = div * 2;
+	}
+
+	if (div <= 0)
+		return -EINVAL;
+
+	if (intel_clk_get_ddiv_val(div, &ddiv1, &ddiv2))
+		return -EINVAL;
+
+	intel_set_clk_val(ddiv->map, ddiv->reg,
+			  ddiv->shift0, ddiv->width0, ddiv1 - 1);
+
+	intel_set_clk_val(ddiv->map, ddiv->reg,
+			  ddiv->shift1, ddiv->width1, ddiv2 - 1);
+	return 0;
+}
+
 const static struct clk_ops intel_clk_ddiv_ops = {
 	.recalc_rate	= intel_clk_ddiv_recalc_rate,
 	.is_enabled	= intel_clk_ddiv_is_enabled,
 	.enable		= intel_clk_ddiv_enable,
 	.disable	= intel_clk_ddiv_disable,
+	.set_rate = intel_clk_ddiv_set_rate,
+	.round_rate = intel_clk_ddiv_round_rate,
 };
 
 int intel_clk_register_ddiv(struct intel_clk_provider *ctx,

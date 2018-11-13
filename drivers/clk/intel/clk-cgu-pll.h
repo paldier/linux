@@ -23,6 +23,7 @@ struct intel_pll_rate_table {
 	unsigned int	mult;
 	unsigned int	div;
 	unsigned int	frac;
+	unsigned int	pll_ena;
 };
 
 struct intel_clk_pll {

@@ -121,21 +121,48 @@ static const struct intel_clk_early_data prx300_early_clks[] __initconst = {
 	},
 };
 
+static const struct intel_pll_rate_table pll1_clk_vco[] __initconst = {
+	{40000000, 1572864, 39, 1,  5395553,  1},
+	{40000000, 160000, 16, 4,  0,  1},
+	{ 0 },
+};
+
+static const struct intel_pll_rate_table ljpll3_clk_vco[] __initconst = {
+	{40000000, 10000000, 250, 1,  0,  1},
+	{40000000, 5000000, 125, 1,  0,  1},
+	{ 0 },
+};
+
+static const struct intel_pll_rate_table ljpll4_clk_vco[] __initconst = {
+	{40000000, 5000000, 125, 1,  0,  1},
+	{40000000, 640000, 32, 2,  0,  1},
+	{ 0 },
+};
+
+static const struct intel_pll_rate_table ljpll5_clk_vco[] __initconst = {
+	{40000000, 5000000, 125, 1,  0,  1},
+	{ 0 },
+};
+
 static const struct intel_pll_clk_data prx300_pll_clks[] __initconst = {
 	[PLL0A] = INTEL_PLL(PRX300_CLK_PLL0A, PLL_PFM_V2, "pll0a", pll_p,
 			    CLK_IGNORE_UNUSED, PLL0A_CFG0, NULL, TYPE_ROPLL),
 	[PLL0B] = INTEL_PLL(PRX300_CLK_PLL0B, PLL_PFM_V2, "pll0b", pll_p,
 			    CLK_IGNORE_UNUSED, PLL0B_CFG0, NULL, TYPE_ROPLL),
 	[PLL1] = INTEL_PLL(PRX300_CLK_PLL1, PLL_PFM_V2, "pll1", pll_p,
-			   CLK_IGNORE_UNUSED, PLL1_CFG0, NULL, TYPE_ROPLL),
+			   CLK_IGNORE_UNUSED, PLL1_CFG0, pll1_clk_vco,
+			   TYPE_ROPLL),
 	[PLL2] = INTEL_PLL(PRX300_CLK_PLL2, PLL_PFM_V2, "pll2", pll_p,
 			   CLK_IGNORE_UNUSED, PLL2_CFG0, NULL, TYPE_ROPLL),
 	[LJPLL3] = INTEL_PLL(PRX300_CLK_LJPLL3, PLL_PFM_V2, "ljpll3", pll_p,
-			     CLK_IGNORE_UNUSED, LJPLL3_CFG0, NULL, TYPE_LJPLL),
+			     CLK_IGNORE_UNUSED, LJPLL3_CFG0, ljpll3_clk_vco,
+			     TYPE_LJPLL),
 	[LJPLL4] = INTEL_PLL(PRX300_CLK_LJPLL4, PLL_PFM_V2, "ljpll4", pll_p,
-			     CLK_IGNORE_UNUSED, LJPLL4_CFG0, NULL, TYPE_LJPLL),
+			     CLK_IGNORE_UNUSED, LJPLL4_CFG0, ljpll4_clk_vco,
+			     TYPE_LJPLL),
 	[LJPLL5] = INTEL_PLL(PRX300_CLK_LJPLL5, PLL_PFM_V2, "ljpll5", pll_p,
-			     CLK_IGNORE_UNUSED, LJPLL5_CFG0, NULL, TYPE_LJPLL),
+			     CLK_IGNORE_UNUSED, LJPLL5_CFG0, ljpll5_clk_vco,
+			     TYPE_LJPLL),
 };
 
 static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
@@ -156,6 +183,10 @@ static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
 		  PLL_DIV(PLL1_CFG0), 4, PLL_DIV_WIDTH, 25, 1, 0, 0, pll_div),
 	INTEL_DIV(PRX300_CLK_DDR, "ddr", "pll2", CLK_IGNORE_UNUSED,
 		  PLL_DIV(PLL2_CFG0), 0, PLL_DIV_WIDTH, 26, 1, 0, 0, pll_div),
+
+	/* Fixed Factor */
+	INTEL_FIXED_FACTOR(PRX300_CLK_PONDEF, "pondef", "dd_pool",
+			   CLK_SET_RATE_PARENT, 0, 0, 0, 0, 0, 1, 2),
 
 	/* Gate0 clocks */
 	INTEL_GATE(PRX300_GCLK_XBAR0, "g_xbar0", NULL, CLK_IGNORE_UNUSED,
@@ -210,7 +241,7 @@ static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
 		   G_DMA3_SHIFT, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_SWITCH, "g_switch", NULL, 0, CGU_GATE1,
 		   G_SWITCH_SHIFT, GATE_CLK_HW, 0),
-	INTEL_GATE(PRX300_GCLK_PON, "g_pon", "dd_pool", 0, CGU_GATE1,
+	INTEL_GATE(PRX300_GCLK_PON, "g_pon", NULL, 0, CGU_GATE1,
 		   G_PON_SHIFT, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_AON, "g_aon", NULL, 0, CGU_GATE1,
 		   G_AON_SHIFT, GATE_CLK_HW, 0),
@@ -262,8 +293,14 @@ static const struct intel_clk_ddiv_data prx300_ddiv_clks[] __initconst = {
 		   PLL_DIV(LJPLL3_CFG0), 18, PLL_DDIV_WIDTH,
 		   21, PLL_DDIV_WIDTH, 27, 1, 28, 0),
 	INTEL_DDIV(PRX300_CLK_PCIE, "pcie", "ljpll4", CLK_IGNORE_UNUSED,
-		   PLL_DIV(LJPLL4_CFG0), 0, PLL_DDIV_WIDTH, 3,
-		   PLL_DDIV_WIDTH, 24, 1, 29, 0),
+		   PLL_DIV(LJPLL4_CFG0), 0, PLL_DDIV_WIDTH,
+		   3, PLL_DDIV_WIDTH, 24, 1, 29, 0),
+	INTEL_DDIV(PRX300_CLK_PONPHY, "pon_phy", "ljpll5", CLK_IGNORE_UNUSED,
+		   PLL_DIV(LJPLL5_CFG0), 0, PLL_DDIV_WIDTH,
+		   3, PLL_DDIV_WIDTH, 24, 1, 29, 0),
+	INTEL_DDIV(PRX300_CLK_PONIP, "pon_ip", "ljpll5", CLK_IGNORE_UNUSED,
+		   PLL_DIV(LJPLL5_CFG0), 6, PLL_DDIV_WIDTH,
+		   9, PLL_DDIV_WIDTH, 25, 1, 28, 0),
 };
 
 static void __init prx300_clk_init(struct device_node *np)
@@ -316,6 +353,8 @@ static int __init intel_prx300_cgu_probe(struct platform_device *pdev)
 
 	intel_clk_register_plls(ctx, prx300_pll_clks,
 				ARRAY_SIZE(prx300_pll_clks));
+	intel_clk_plls_parse_vco_config(ctx, prx300_pll_clks,
+					ARRAY_SIZE(prx300_pll_clks));
 	intel_clk_register_branches(ctx, prx300_branch_clks,
 				    ARRAY_SIZE(prx300_branch_clks));
 	intel_clk_register_ddiv(ctx, prx300_ddiv_clks,

@@ -230,7 +230,7 @@ const static struct clk_ops intel_grx500_pll_ops = {
 
 static void
 prx300_pll_get_params(struct intel_clk_pll *pll, unsigned int *mult,
-		   unsigned int *div, unsigned int *frac)
+		      unsigned int *div, unsigned int *frac)
 {
 	*mult = intel_get_clk_val(pll->map, pll->reg + 0x8, 0, 12);
 	*div = intel_get_clk_val(pll->map, pll->reg + 0x8, 18, 6);
@@ -239,7 +239,7 @@ prx300_pll_get_params(struct intel_clk_pll *pll, unsigned int *mult,
 
 static int
 prx300_pll_set_params(struct intel_clk_pll *pll, unsigned int mult,
-		   unsigned int div, unsigned int frac)
+		      unsigned int div, unsigned int frac)
 {
 	intel_set_clk_val(pll->map, pll->reg + 0x8, 0, 12, mult);
 	intel_set_clk_val(pll->map, pll->reg + 0x8, 18, 6, div);
@@ -285,7 +285,7 @@ static void prx300_pll_disable(struct clk_hw *hw)
 
 static long
 prx300_pll_round_rate(struct clk_hw *hw, unsigned long rate,
-		   unsigned long *prate)
+		      unsigned long *prate)
 {
 	struct intel_clk_pll *pll = to_intel_clk_pll(hw);
 	int i;
@@ -309,7 +309,7 @@ prx300_pll_round_rate(struct clk_hw *hw, unsigned long rate,
 
 static int
 prx300_pll_set_rate(struct clk_hw *hw, unsigned long rate,
-		 unsigned long prate)
+		    unsigned long prate)
 {
 	struct intel_clk_pll *pll = to_intel_clk_pll(hw);
 	struct device *dev = pll->dev;
@@ -420,3 +420,39 @@ void intel_clk_register_plls(struct intel_clk_provider *ctx,
 		intel_clk_add_lookup(ctx, hw, list->id);
 	}
 }
+
+void intel_clk_plls_parse_vco_config(struct intel_clk_provider *ctx,
+				     const struct intel_pll_clk_data *list,
+				     u32 nr_clk)
+{
+	struct device *dev = ctx->dev;
+	struct device_node *child, *np = dev->of_node;
+	const struct intel_pll_clk_data *tmp;
+	struct of_phandle_args args;
+	u32 count = 0, idx;
+	struct clk *clk;
+
+	child = of_find_node_by_name(np, "plls_clk");
+
+	if (!child) {
+		dev_err(ctx->dev, "%s: Could not find plls_clk\n", __func__);
+		return;
+	}
+
+	do {
+		if (of_parse_phandle_with_args(child, "intel,pll_clks_vco",
+					       "#pll-clk-cells", count,
+					       &args) < 0)
+			break;
+
+		for (idx = 0, tmp = list; idx < nr_clk; idx++, tmp++) {
+			if (tmp->id == args.args[0]) {
+				clk = __clk_lookup(tmp->name);
+				if (clk_prepare_enable(clk))
+					continue;
+				clk_set_rate(clk, (unsigned long)args.args[1]);
+			}
+		}
+	} while (++count);
+}
+

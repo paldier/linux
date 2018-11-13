@@ -324,6 +324,9 @@ void intel_clk_register_branches(struct intel_clk_provider *ctx,
 void intel_clk_register_plls(struct intel_clk_provider *ctx,
 			     const struct intel_pll_clk_data *list,
 			     unsigned int nr_clk);
+void intel_clk_plls_parse_vco_config(struct intel_clk_provider *ctx,
+				     const struct intel_pll_clk_data *list,
+				     u32 nr_clk);
 int intel_clk_register_ddiv(struct intel_clk_provider *ctx,
 			    const struct intel_clk_ddiv_data *list,
 			    unsigned int nr_clk);
