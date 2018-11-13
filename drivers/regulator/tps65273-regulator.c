@@ -82,11 +82,16 @@
 	.uV_step	= TPS65273_STEP_VOLTAGE		\
 }
 
+struct tps65273_regulator_init_data {
+	struct device_node *of_node;
+	struct regulator_init_data *init_data;
+};
+
 struct tps65273_platform_data {
 	u32 slew_rate[TPS65273_NUM_REGULATOR];
 	u32 psm_mode[TPS65273_NUM_REGULATOR];
 	u32 vout_init_sel[TPS65273_NUM_REGULATOR];
-	struct regulator_init_data *init_data[TPS65273_NUM_REGULATOR];
+	struct tps65273_regulator_init_data rdata[TPS65273_NUM_REGULATOR];
 };
 
 struct tps_driver_data {
@@ -176,29 +181,31 @@ static struct tps65273_platform_data *tps65273_parse_dt(struct device *dev)
 
 	for (i = 0; i < rnum; i++) {
 		struct regulator_init_data *init_data;
+		struct device_node *of_node;
 
 		init_data = rmatch[i].init_data;
-		if (!init_data || !rmatch[i].of_node)
+		of_node = rmatch[i].of_node;
+
+		if (!init_data || !of_node)
 			continue;
 
-		pd->init_data[i] = init_data;
-		if (of_property_read_u32(rmatch[i].of_node,
-						"vout-slew-rate",
-						&pd->slew_rate[i])) {
+		pd->rdata[i].init_data = init_data;
+		pd->rdata[i].of_node = of_node;
+
+		if (of_property_read_u32(of_node, "vout-slew-rate",
+					 &pd->slew_rate[i])) {
 			dev_warn(dev, "Slew rate not specified\n");
 			pd->slew_rate[i] = 0;
 		}
 
-		if (of_property_read_u32(rmatch[i].of_node,
-						"vout-psm-mode",
-						&pd->psm_mode[i])) {
+		if (of_property_read_u32(of_node, "vout-psm-mode",
+					 &pd->psm_mode[i])) {
 			dev_warn(dev, "PSM mode not specified\n");
 			pd->psm_mode[i] = 0;
 		}
 
-		if (of_property_read_u32(rmatch[i].of_node,
-						"vout-init-selector",
-						&pd->vout_init_sel[i])) {
+		if (of_property_read_u32(of_node, "vout-init-selector",
+					 &pd->vout_init_sel[i])) {
 			dev_warn(dev, "VOUT init  not specified\n");
 			pd->vout_init_sel[i] = 0;
 		}
@@ -257,11 +264,11 @@ static int tps65273_probe(struct i2c_client *client,
 	config.regmap = tps->regmap;
 
 	for (i = 0; i < TPS65273_NUM_REGULATOR; i++) {
-		if (!tps->pdata->init_data[i])
+		if (!tps->pdata->rdata[i].init_data)
 			continue;
 
-		config.init_data = pdata->init_data[i];
-		config.of_node = client->dev.of_node;
+		config.init_data = pdata->rdata[i].init_data;
+		config.of_node = pdata->rdata[i].of_node;
 
 		tps->rdev[i] = devm_regulator_register(&client->dev,
 					&tps->driver_data->desc[i], &config);
