@@ -66,11 +66,11 @@
 	.name		= "BUCK"#num,			\
 	.of_match	= NULL,				\
 	.regulators_node = of_match_ptr("regulators"),	\
-	.id		= TPS65273_BUCK##num##_ID,		\
+	.id		= TPS65273_BUCK##num##_ID,	\
 	.ops		= &tps65273_ops,		\
 	.type		= REGULATOR_VOLTAGE,		\
 	.owner		= THIS_MODULE,			\
-	.n_voltages     = ARRAY_SIZE(vout_vsel_table),	\
+	.n_voltages	= ARRAY_SIZE(vout_vsel_table),	\
 	.volt_table	= vout_vsel_table,		\
 	.vsel_reg	= TPS65273_REG_VOUT##num##_SEL,	\
 	.vsel_mask	= TPS65273_VOUT_SEL_MASK,	\
