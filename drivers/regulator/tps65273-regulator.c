@@ -163,7 +163,7 @@ static struct tps65273_platform_data *tps65273_parse_dt(struct device *dev)
 
 	rmatch = devm_kzalloc(dev, sizeof(*rmatch) * rnum, GFP_KERNEL);
 	if (!rmatch)
-		return -ENOMEM;
+		return ERR_PTR(-ENOMEM);
 
 	for (i = 0; i < rnum; i++)
 		rmatch[i].name = tps65273_regulators[i].name;
