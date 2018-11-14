@@ -2075,7 +2075,7 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	if (rc)
 		goto out;
 
-	create_init_logger_cmd(qdev);
+	create_init_logger_cmd(qdev, UC_LOGGER_LEVEL_INFO);
 	create_init_qos_cmd(qdev);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);

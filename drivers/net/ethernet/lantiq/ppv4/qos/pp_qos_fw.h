@@ -74,7 +74,7 @@ void create_get_port_stats_cmd(
 		struct pp_qos_port_stat *pstat);
 int init_fwdata_internals(struct pp_qos_dev *qdev);
 void clean_fwdata_internals(struct pp_qos_dev *qdev);
-void create_init_logger_cmd(struct pp_qos_dev *qdev);
+void create_init_logger_cmd(struct pp_qos_dev *qdev, int level);
 void create_add_shared_group_cmd(struct pp_qos_dev *qdev,
 		unsigned int id,
 		unsigned int limit);

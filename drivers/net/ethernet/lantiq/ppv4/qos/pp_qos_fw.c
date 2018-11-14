@@ -489,14 +489,14 @@ static void cmd_init(
 }
 
 /* TODO - make less hard code */
-void create_init_logger_cmd(struct pp_qos_dev *qdev)
+void create_init_logger_cmd(struct pp_qos_dev *qdev, int level)
 {
 	struct cmd_init_logger cmd;
 
 	cmd_init(qdev, &(cmd.base), CMD_TYPE_INIT_LOGGER, sizeof(cmd), 0);
 	cmd.addr = qdev->hwconf.fw_logger_start;
 	cmd.mode = UC_LOGGER_MODE_WRITE_HOST_MEM;
-	cmd.level = UC_LOGGER_LEVEL_INFO;
+	cmd.level = level;
 	cmd.num_of_msgs = PPV4_QOS_LOGGER_BUF_SIZE / PPV4_QOS_LOGGER_MSG_SIZE;
 	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_INIT_LOGGER\n",
 			qdev->drvcmds.cmd_id,

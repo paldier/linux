@@ -31,6 +31,7 @@
 #include <linux/debugfs.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/string.h>
 #include "pp_qos_common.h"
 #include "pp_qos_utils.h"
 #include "pp_qos_fw.h"
@@ -46,7 +47,7 @@ static struct {
 #define PP_QOS_DBG_MAX_INPUT	(64)
 
 static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
-				size_t count, loff_t *pos)
+				    size_t count, loff_t *pos)
 {
 	char *lbuf;
 	struct pp_qos_dev *qdev;
@@ -67,7 +68,7 @@ static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
 	if (copy_from_user(lbuf, buf, count))
 		goto add_shared_bwl_group_done;
 
-	lbuf[count-1] = '\0';
+	lbuf[count - 1] = '\0';
 
 	if (sscanf(lbuf, "%u", &limit) != 1) {
 		pr_err("sscanf err\n");
@@ -78,13 +79,15 @@ static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
 
 	dev_info(&pdev->dev, "id %u, limit %u\n", id, limit);
 
-	add_shared_bwl_group_done:
+add_shared_bwl_group_done:
 	kfree(lbuf);
 	return count;
 }
 
 static ssize_t add_shared_bwl_group_help(struct file *file,
-			char __user *user_buf, size_t count, loff_t *ppos)
+					 char __user *user_buf,
+					 size_t count,
+					 loff_t *ppos)
 {
 	char *buff;
 	u32  len = 0;
@@ -156,6 +159,544 @@ static ssize_t remove_shared_bwl_group_help(struct file *file,
 	return ret;
 }
 
+#define DBG_MAX_PROPS	(32)
+
+struct dbg_set_props {
+	char		field[32];
+	char		desc[128];
+	unsigned int	*dest;
+};
+
+struct dbg_set_props_cbs {
+	int (*first_prop_cb)(struct pp_qos_dev *qdev,
+			     char *field,
+			     unsigned int val,
+			     void *user_data);
+
+	int (*done_props_cb)(struct pp_qos_dev *qdev,
+			     unsigned int val,
+			     void *user_data);
+};
+
+static ssize_t qos_dbg_set_props(struct file *fp,
+				 const char __user *user_buffer,
+				 size_t cnt,
+				 loff_t *pos,
+				 struct dbg_set_props_cbs *cbs,
+				 struct dbg_set_props props[],
+				 u16 num_elems,
+				 void *user_data)
+{
+	int rc;
+	unsigned int first_prop = 1;
+	uint8_t cmd[PP_QOS_DBG_MAX_INPUT];
+	uint8_t field[PP_QOS_DBG_MAX_INPUT];
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+	struct pp_qos_dev *qdev;
+	unsigned long res;
+	unsigned int id = PP_QOS_INVALID_ID;
+	char *tok;
+	char *ptr;
+	char *pval;
+	u16 ind;
+
+	pdev = (struct platform_device *)(fp->private_data);
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (cnt > PP_QOS_DBG_MAX_INPUT) {
+		dev_err(&pdev->dev, "Illegal length %zu\n", cnt);
+		return -EINVAL;
+	}
+
+	rc =  simple_write_to_buffer(cmd, PP_QOS_DBG_MAX_INPUT, pos,
+				     user_buffer, cnt);
+	if (rc < 0) {
+		dev_err(&pdev->dev, "Write failed with %d\n", rc);
+		return rc;
+	}
+
+	dev_info(&pdev->dev, "received %d bytes\n", rc);
+	cmd[rc] = '\0';
+	dev_info(&pdev->dev, "cmd->%s\n", cmd);
+	ptr = (char *)cmd;
+
+	while ((tok = strsep(&ptr, " \t\n\r")) != NULL) {
+		if (tok[0] == '\0')
+			continue;
+
+		strcpy(field, tok);
+		pval = strchr(field, '=');
+		if (!pval) {
+			dev_err(&pdev->dev, "Wrong format for prop %s\n", tok);
+			return rc;
+		}
+
+		*pval = '\0';
+		pval++;
+
+		kstrtoul(pval, 0, &res);
+
+		if (first_prop) {
+			first_prop = 0;
+			id = res;
+			if (cbs && cbs->first_prop_cb &&
+			    cbs->first_prop_cb(qdev, field, res, user_data)) {
+				dev_err(&pdev->dev, "first_prop_cb failed\n");
+				return rc;
+			}
+		}
+
+		for (ind = 0; ind < num_elems ; ind++) {
+			if (!strncmp(field, props[ind].field,
+				strlen(props[ind].field))) {
+				*(props[ind].dest) = res;
+				break;
+			}
+		}
+
+		if (ind == num_elems)
+			dev_err(&pdev->dev, "Not supported field %s", field);
+	}
+
+	if (id != PP_QOS_INVALID_ID) {
+		if (cbs && cbs->done_props_cb) {
+			if (cbs->done_props_cb(qdev, id, user_data)) {
+				dev_err(&pdev->dev, "done_props_cb failed\n");
+				return rc;
+			}
+		}
+	}
+
+	return rc;
+}
+
+static ssize_t qos_dbg_set_props_help(struct file *file,
+				      char __user *user_buf,
+				      size_t count,
+				      loff_t *ppos,
+				      const char *name,
+				      const char *format,
+				      struct dbg_set_props props[],
+				      u16 num_elems)
+{
+	char	*buff;
+	u32	len = 0;
+	u16	ind;
+	ssize_t	ret = 0;
+	u16	size = sizeof(props[0]) * num_elems + 256;
+
+	buff = kmalloc(size, GFP_KERNEL);
+	if (!buff)
+		return -ENOMEM;
+
+	len += scnprintf(buff + len, size - len, "<---- %s---->\n", name);
+	len += scnprintf(buff + len, size - len, "[FORMAT] %s\n", format);
+	len += scnprintf(buff + len, size - len, "Supported fields\n");
+	len += scnprintf(buff + len, size - len, "================\n");
+
+	for (ind = 0; ind < num_elems ; ind++) {
+		len += scnprintf(buff + len, size - len, "%-30s%s\n",
+				 props[ind].field, props[ind].desc);
+	}
+
+	ret = simple_read_from_buffer(user_buf, count, ppos, buff, len);
+	kfree(buff);
+
+	return ret;
+}
+
+static void dbg_add_prop(struct dbg_set_props *props, u16 *pos, u16 size,
+		const char *name, const char *desc, unsigned int *dest)
+{
+	if (*pos >= size) {
+		pr_err("pos %d >= size %d", *pos, size);
+		return;
+	}
+
+	strncpy(props[*pos].field, name, sizeof(props[*pos].field));
+	strncpy(props[*pos].desc, desc, sizeof(props[*pos].desc));
+	props[*pos].dest = dest;
+
+	(*pos)++;
+}
+
+static u16 create_port_props(struct dbg_set_props *props, u16 size,
+		unsigned int *id, struct pp_qos_port_conf *pconf)
+{
+	u16 num = 0;
+
+	dbg_add_prop(props, &num, size, "port",
+		"Logical id. Must exist as the first property!", id);
+	dbg_add_prop(props, &num, size, "bw", "Limit in kbps (80kbps steps)",
+		&pconf->common_prop.bandwidth_limit);
+	dbg_add_prop(props, &num, size, "shared",
+		"Shared bw group: 1-511 (0 for remove group)",
+		&pconf->common_prop.shared_bandwidth_group);
+	dbg_add_prop(props, &num, size, "arb",
+		"Arbitration: 0 - WSP, 1 - WRR",
+		&pconf->port_parent_prop.arbitration);
+	dbg_add_prop(props, &num, size, "be",
+		"Best effort enable: best effort scheduling is enabled",
+		&pconf->port_parent_prop.best_effort_enable);
+	dbg_add_prop(props, &num, size, "r_size",
+		"Ring size", &pconf->ring_size);
+	dbg_add_prop(props, &num, size, "pkt_cred",
+		"Packet credit: 0 - byte credit, 1 - packet credit",
+		&pconf->packet_credit_enable);
+	dbg_add_prop(props, &num, size, "cred", "Port credit", &pconf->credit);
+	dbg_add_prop(props, &num, size, "dis",
+		"Disable port tx", &pconf->disable);
+
+	return num;
+}
+
+static int port_first_prop_cb(struct pp_qos_dev *qdev,
+			      char *field,
+			      unsigned int val,
+			      void *user_data)
+{
+	/* Make sure first property is the port id */
+	if (strncmp(field, "port", strlen("port"))) {
+		pr_err("First prop (%s) must be port\n", field);
+		return -EINVAL;
+	}
+
+	if (pp_qos_port_conf_get(qdev, val, user_data) != 0) {
+		pr_err("pp_qos_port_conf_get failed (id %u)", val);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int port_done_props_cb(struct pp_qos_dev *qdev,
+			      unsigned int val,
+			      void *user_data)
+{
+	if (pp_qos_port_set(qdev, val, user_data) != 0) {
+		pr_err("pp_qos_port_set failed (id %u)", val);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static ssize_t set_port(struct file *fp,
+			const char __user *user_buffer,
+			size_t cnt,
+			loff_t *pos)
+{
+	struct pp_qos_port_conf conf;
+	struct dbg_set_props_cbs cbs = {port_first_prop_cb,
+					port_done_props_cb};
+	unsigned int id = PP_QOS_INVALID_ID;
+	u16 num_elems;
+	ssize_t ret;
+	struct dbg_set_props *props;
+
+	props = kmalloc_array(DBG_MAX_PROPS, sizeof(struct dbg_set_props),
+			      GFP_KERNEL);
+	if (!props)
+		return -ENOMEM;
+
+	num_elems = create_port_props(props, DBG_MAX_PROPS, &id, &conf);
+
+	ret = qos_dbg_set_props(fp, user_buffer, cnt, pos, &cbs,
+				props, num_elems, &conf);
+	kfree(props);
+
+	return ret;
+}
+
+static ssize_t set_port_help(struct file *file,
+			     char __user *user_buf,
+			     size_t count,
+			     loff_t *ppos)
+{
+	unsigned int id = PP_QOS_INVALID_ID;
+	struct pp_qos_port_conf conf;
+	const char *name = "set port";
+	const char *format =
+		"echo port=[logical_id] [field]=[value]... > set_port";
+	u16 num_elems;
+	ssize_t ret;
+	struct dbg_set_props *props;
+
+	props = kmalloc_array(DBG_MAX_PROPS, sizeof(struct dbg_set_props),
+			      GFP_KERNEL);
+	if (!props)
+		return -ENOMEM;
+
+	num_elems = create_port_props(props, DBG_MAX_PROPS, &id, &conf);
+
+	ret = qos_dbg_set_props_help(file, user_buf, count, ppos, name, format,
+				props, num_elems);
+	kfree(props);
+
+	return ret;
+}
+
+static u16 create_sched_props(struct dbg_set_props *props, u16 size,
+		unsigned int *id, struct pp_qos_sched_conf *pconf)
+{
+	u16 num = 0;
+
+	dbg_add_prop(props, &num, size, "sched",
+		"Logical id. Must exist as the first property!", id);
+	dbg_add_prop(props, &num, size, "bw", "Limit in kbps (80kbps steps)",
+		&pconf->common_prop.bandwidth_limit);
+	dbg_add_prop(props, &num, size, "shared",
+		"Shared bw group: 1-511 (0 for remove group)",
+		&pconf->common_prop.shared_bandwidth_group);
+	dbg_add_prop(props, &num, size, "arb",
+		"Arbitration: 0 - WSP, 1 - WRR",
+		&pconf->sched_parent_prop.arbitration);
+	dbg_add_prop(props, &num, size, "be",
+		"Best effort enable: best effort scheduling is enabled",
+		&pconf->sched_parent_prop.best_effort_enable);
+	dbg_add_prop(props, &num, size, "parent", "logical parent id",
+		&pconf->sched_child_prop.parent);
+	dbg_add_prop(props, &num, size, "priority",
+		"priority (0-7) in WSP", &pconf->sched_child_prop.priority);
+	dbg_add_prop(props, &num, size, "bw_share", "percentage from parent",
+		&pconf->sched_child_prop.bandwidth_share);
+
+	return num;
+}
+
+static int sched_first_prop_cb(struct pp_qos_dev *qdev,
+			       char *field,
+			       unsigned int val,
+			       void *user_data)
+{
+	/* Make sure first property is the sched id */
+	if (strncmp(field, "sched", strlen("sched"))) {
+		pr_err("First prop (%s) must be sched\n", field);
+		return -EINVAL;
+	}
+
+	if (pp_qos_sched_conf_get(qdev, val, user_data) != 0) {
+		pr_err("pp_qos_sched_conf_get failed (id %u)", val);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int sched_done_props_cb(struct pp_qos_dev *qdev,
+			       unsigned int val,
+			       void *user_data)
+{
+	if (pp_qos_sched_set(qdev, val, user_data) != 0) {
+		pr_err("pp_qos_sched_set failed (id %u)", val);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static ssize_t set_sched(struct file *fp,
+			 const char __user *user_buffer,
+			 size_t cnt,
+			 loff_t *pos)
+{
+	struct pp_qos_sched_conf conf;
+	struct dbg_set_props_cbs cbs = {sched_first_prop_cb,
+					sched_done_props_cb};
+	unsigned int id = PP_QOS_INVALID_ID;
+	u16 num_elems;
+	ssize_t ret;
+	struct dbg_set_props *props;
+
+	props = kmalloc_array(DBG_MAX_PROPS, sizeof(struct dbg_set_props),
+			      GFP_KERNEL);
+	if (!props)
+		return -ENOMEM;
+
+	num_elems = create_sched_props(props, DBG_MAX_PROPS, &id, &conf);
+
+	ret = qos_dbg_set_props(fp, user_buffer, cnt, pos, &cbs,
+				props, num_elems, &conf);
+	kfree(props);
+
+	return ret;
+}
+
+static ssize_t set_sched_help(struct file *file,
+			      char __user *user_buf,
+			      size_t count,
+			      loff_t *ppos)
+{
+	unsigned int id = PP_QOS_INVALID_ID;
+	struct pp_qos_sched_conf conf;
+	const char *name = "set sched";
+	const char *format =
+		"echo sched=[logical_id] [field]=[value]... > set_sched";
+	u16 num_elems;
+	ssize_t ret;
+	struct dbg_set_props *props;
+
+	props = kmalloc_array(DBG_MAX_PROPS, sizeof(struct dbg_set_props),
+			      GFP_KERNEL);
+	if (!props)
+		return -ENOMEM;
+
+	num_elems = create_sched_props(props, DBG_MAX_PROPS, &id, &conf);
+
+	ret = qos_dbg_set_props_help(file, user_buf, count, ppos, name, format,
+				props, num_elems);
+	kfree(props);
+
+	return ret;
+}
+
+static u16 create_queue_props(struct dbg_set_props *props, u16 size,
+		unsigned int *id, struct pp_qos_queue_conf *pconf)
+{
+	u16 num = 0;
+
+	dbg_add_prop(props, &num, size, "queue",
+		"Logical id. Must exist as the first property!", id);
+	dbg_add_prop(props, &num, size, "bw", "Limit in kbps (80kbps steps)",
+		&pconf->common_prop.bandwidth_limit);
+	dbg_add_prop(props, &num, size, "shared",
+		"Shared bw group: 1-511 (0 for remove group)",
+		&pconf->common_prop.shared_bandwidth_group);
+	dbg_add_prop(props, &num, size, "parent", "logical parent id",
+		&pconf->queue_child_prop.parent);
+	dbg_add_prop(props, &num, size, "priority",
+		"priority (0-7) in WSP", &pconf->queue_child_prop.priority);
+	dbg_add_prop(props, &num, size, "bw_share", "percentage from parent",
+		&pconf->queue_child_prop.bandwidth_share);
+	dbg_add_prop(props, &num, size, "max_burst", "in kbps (4KB steps)",
+		&pconf->max_burst);
+	dbg_add_prop(props, &num, size, "blocked", "drop enqueued packets",
+		&pconf->blocked);
+	dbg_add_prop(props, &num, size, "wred_enable", "enable wred drops",
+		&pconf->wred_enable);
+	dbg_add_prop(props, &num, size, "wred_fixed_drop_prob",
+		"fixed prob instead of slope",
+		&pconf->wred_fixed_drop_prob_enable);
+	dbg_add_prop(props, &num, size, "wred_min_avg_green",
+		"Start of the slope area",
+		&pconf->queue_wred_min_avg_green);
+	dbg_add_prop(props, &num, size, "wred_max_avg_green",
+		"End of the slope area",
+		&pconf->queue_wred_max_avg_green);
+	dbg_add_prop(props, &num, size, "wred_slope_green", "0-90 scale",
+		&pconf->queue_wred_slope_green);
+	dbg_add_prop(props, &num, size, "wred_fixed_drop_prob_green",
+		"fixed drop rate",
+		&pconf->queue_wred_fixed_drop_prob_green);
+	dbg_add_prop(props, &num, size, "wred_min_avg_yellow",
+		"Start of the slope area",
+		&pconf->queue_wred_min_avg_yellow);
+	dbg_add_prop(props, &num, size, "wred_max_avg_yellow",
+		"End of the slope area",
+		&pconf->queue_wred_max_avg_yellow);
+	dbg_add_prop(props, &num, size, "wred_slope_yellow", "0-90 scale",
+		&pconf->queue_wred_slope_yellow);
+	dbg_add_prop(props, &num, size, "wred_fixed_drop_prob_yellow",
+		"fixed drop rate",
+		&pconf->queue_wred_fixed_drop_prob_yellow);
+	dbg_add_prop(props, &num, size, "wred_min_guaranteed",
+		"guaranteed for this queue",
+		&pconf->queue_wred_min_guaranteed);
+	dbg_add_prop(props, &num, size, "wred_max_allowed",
+		"Max allowed for this queue",
+		&pconf->queue_wred_max_allowed);
+
+	return num;
+}
+
+static int queue_first_prop_cb(struct pp_qos_dev *qdev,
+			       char *field,
+			       unsigned int val,
+			       void *user_data)
+{
+	/* Make sure first property is the queue id */
+	if (strncmp(field, "queue", strlen("queue"))) {
+		pr_err("First prop (%s) must be queue\n", field);
+		return -EINVAL;
+	}
+
+	if (pp_qos_queue_conf_get(qdev, val, user_data) != 0) {
+		pr_err("pp_qos_queue_conf_get failed (id %u)", val);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int queue_done_props_cb(struct pp_qos_dev *qdev,
+			       unsigned int val,
+			       void *user_data)
+{
+	if (pp_qos_queue_set(qdev, val, user_data) != 0) {
+		pr_err("pp_qos_queue_set failed (id %u)", val);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static ssize_t set_queue(struct file *fp,
+			 const char __user *user_buffer,
+			 size_t cnt,
+			 loff_t *pos)
+{
+	struct pp_qos_queue_conf conf;
+	struct dbg_set_props_cbs cbs = {queue_first_prop_cb,
+					queue_done_props_cb};
+	unsigned int id = PP_QOS_INVALID_ID;
+	u16 num_elems;
+	ssize_t ret;
+	struct dbg_set_props *props;
+
+	props = kmalloc_array(DBG_MAX_PROPS, sizeof(struct dbg_set_props),
+			      GFP_KERNEL);
+	if (!props)
+		return -ENOMEM;
+
+	num_elems = create_queue_props(props, DBG_MAX_PROPS, &id, &conf);
+
+	ret = qos_dbg_set_props(fp, user_buffer, cnt, pos, &cbs,
+				props, num_elems, &conf);
+	kfree(props);
+
+	return ret;
+}
+
+static ssize_t set_queue_help(struct file *file,
+			      char __user *user_buf,
+			      size_t count,
+			      loff_t *ppos)
+{
+	unsigned int id = PP_QOS_INVALID_ID;
+	struct pp_qos_queue_conf conf;
+	const char *name = "set queue";
+	const char *format =
+		"echo queue=[logical_id] [field]=[value]... > set_queue";
+	u16 num_elems;
+	ssize_t ret;
+	struct dbg_set_props *props;
+
+	props = kmalloc_array(DBG_MAX_PROPS, sizeof(struct dbg_set_props),
+			      GFP_KERNEL);
+	if (!props)
+		return -ENOMEM;
+
+	num_elems = create_queue_props(props, DBG_MAX_PROPS, &id, &conf);
+
+	ret = qos_dbg_set_props_help(file, user_buf, count, ppos, name, format,
+				props, num_elems);
+	kfree(props);
+
+	return ret;
+}
+
 static const struct file_operations debug_add_shared_bwl_group_fops = {
 	.open    = simple_open,
 	.read    = add_shared_bwl_group_help,
@@ -167,6 +708,27 @@ static const struct file_operations debug_remove_shared_bwl_group_fops = {
 	.open    = simple_open,
 	.read    = remove_shared_bwl_group_help,
 	.write   = remove_shared_bwl_group,
+	.llseek  = default_llseek,
+};
+
+static const struct file_operations debug_set_port_fops = {
+	.open    = simple_open,
+	.read    = set_port_help,
+	.write   = set_port,
+	.llseek  = default_llseek,
+};
+
+static const struct file_operations debug_set_sched_fops = {
+	.open    = simple_open,
+	.read    = set_sched_help,
+	.write   = set_sched,
+	.llseek  = default_llseek,
+};
+
+static const struct file_operations debug_set_queue_fops = {
+	.open    = simple_open,
+	.read    = set_queue_help,
+	.write   = set_queue,
 	.llseek  = default_llseek,
 };
 
@@ -429,6 +991,7 @@ struct queue_stat_info {
 	uint32_t qid;
 	struct queue_stats_s qstat;
 };
+
 static int pp_qos_dbg_qstat_show(struct seq_file *s, void *unused)
 {
 	unsigned int i;
@@ -494,12 +1057,11 @@ static int pp_qos_dbg_qstat_show(struct seq_file *s, void *unused)
 		num =   *((uint32_t *)(qdev->stat));
 		for (j = 0; j < num; ++j) {
 			seq_printf(s, "%u\t\t%u\t\t%u\t\t%u\t\t%u\n",
-					stat->qid,
-					stat->qstat.queue_size_entries,
-					stat->qstat.total_accepts,
-					stat->qstat.total_drops,
-					stat->qstat.total_red_dropped
-				  );
+				   stat->qid,
+				   stat->qstat.queue_size_entries,
+				   stat->qstat.total_accepts,
+				   stat->qstat.total_drops,
+				   stat->qstat.total_red_dropped);
 			++stat;
 		}
 	}
@@ -537,9 +1099,9 @@ static int pp_qos_dbg_pstat_show(struct seq_file *s, void *unused)
 		transmit_cmds(qdev);
 		if (statp.total_green_bytes || statp.total_yellow_bytes)
 			seq_printf(s, "%u\t\t%u\t\t%u\t\t\n",
-					i,
-					statp.total_green_bytes,
-					statp.total_yellow_bytes);
+				   i,
+				   statp.total_green_bytes,
+				   statp.total_yellow_bytes);
 	}
 	return 0;
 }
@@ -573,6 +1135,110 @@ static const struct file_operations debug_qstat_fops = {
 
 static const struct file_operations debug_pstat_fops = {
 	.open = pp_qos_dbg_pstat_open,
+	.read = seq_read,
+	.release = single_release,
+};
+
+#define ARB_STR(a)                             \
+	((a) == PP_QOS_ARBITRATION_WSP ? "WSP" : \
+	 (a) == PP_QOS_ARBITRATION_WRR ? "WRR" :  \
+	 (a) == PP_QOS_ARBITRATION_WFQ ? "WFQ" :  \
+	 "Unknown")
+
+static void __dbg_dump_subtree(struct pp_qos_dev *qdev,
+			       struct qos_node *node,
+			       u32 depth,
+			       struct seq_file *s)
+{
+	u32 idx, tab_idx, n = 0;
+	u32 child_phy, node_id;
+	char tabs_str[PP_QOS_DBG_MAX_INPUT];
+	bool last_child;
+	struct qos_node *child;
+
+	if (depth > 6) {
+		pr_err("Maximum depth of 6 exceeded\n");
+		return;
+	}
+
+	tabs_str[0] = '\0';
+	for (tab_idx = 0 ; tab_idx < depth ; tab_idx++)
+		n += snprintf(tabs_str + n, PP_QOS_DBG_MAX_INPUT - n, "|\t");
+
+	for (idx = 0; idx < node->parent_prop.num_of_children ; ++idx) {
+		last_child = (idx == (node->parent_prop.num_of_children - 1));
+		child_phy = node->parent_prop.first_child_phy + idx;
+		node_id = get_id_from_phy(qdev->mapping, child_phy);
+		child = get_node_from_phy(qdev->nodes, child_phy);
+
+		if (last_child)
+			seq_printf(s, "%s'-- ", tabs_str);
+		else
+			seq_printf(s, "%s|-- ", tabs_str);
+
+		if (node_sched(child)) {
+			seq_printf(s, "Sched-%u(%u)-%s\n",
+				   node_id, child_phy,
+				   ARB_STR(child->parent_prop.arbitration));
+			__dbg_dump_subtree(qdev, child, depth + 1, s);
+		} else if (node_queue(child)) {
+			seq_printf(s, "Queue-%u(%u)-rlm-%u\n",
+				   node_id, child_phy,
+				   child->data.queue.rlm);
+		}
+	}
+}
+
+/**
+ * @brief dump complete qos tree
+ */
+static int pp_qos_dbg_tree_show(struct seq_file *s, void *unused)
+{
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+	struct pp_qos_dev *qdev;
+	struct qos_node *node;
+	u32 node_id, node_phy;
+
+	pdev = s->private;
+
+	pr_info("tree_show called\n");
+	if (unlikely(!pdev)) {
+		seq_puts(s, "pdev Null\n");
+		return 0;
+	}
+
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (unlikely(!qos_device_ready(qdev))) {
+		seq_puts(s, "Device is not ready\n");
+		return 0;
+	}
+
+	/* Iterate through all port nodes */
+	for (node_phy = 0; node_phy < NUM_OF_NODES; ++node_phy) {
+		node = get_node_from_phy(qdev->nodes, node_phy);
+		node_id = get_id_from_phy(qdev->mapping, node_phy);
+		if (node_port(node)) {
+			seq_printf(s, "|-- Port-%u(%u)-%s\n",
+				   node_id,
+				   get_phy_from_id(qdev->mapping, node_id),
+				   ARB_STR(node->parent_prop.arbitration));
+			__dbg_dump_subtree(qdev, node, 1, s);
+		}
+	}
+
+	return 0;
+}
+
+static int pp_qos_dbg_tree_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, pp_qos_dbg_tree_show, inode->i_private);
+}
+
+static const struct file_operations debug_tree_fops = {
+	.open = pp_qos_dbg_tree_open,
 	.read = seq_read,
 	.release = single_release,
 };
@@ -684,7 +1350,7 @@ static void print_fw_log(struct platform_device *pdev)
 
 static int phy2id_get(void *data, u64 *val)
 {
-	uint16_t id;
+	u16 id;
 	struct platform_device *pdev;
 	struct pp_qos_drv_data *pdata;
 	struct pp_qos_dev *qdev;
@@ -713,6 +1379,39 @@ static int fw_logger_get(void *data, u64 *val)
 	return 0;
 }
 
+static int fw_logger_set(void *data, u64 val)
+{
+	struct platform_device *pdev = data;
+	struct pp_qos_drv_data *pdata = platform_get_drvdata(pdev);
+	struct pp_qos_dev *qdev = pdata->qdev;
+
+	dev_info(&pdev->dev, "fw_logger_set setting new fw logger level %u\n",
+		 (u32)val);
+
+	switch (val) {
+	case 0:
+		dev_info(&pdev->dev, "Optional levels:\n");
+		dev_info(&pdev->dev, "Fatal: %d\n", UC_LOGGER_LEVEL_FATAL);
+		dev_info(&pdev->dev, "Warning: %d\n", UC_LOGGER_LEVEL_WARNING);
+		dev_info(&pdev->dev, "Info: %d\n", UC_LOGGER_LEVEL_INFO);
+		dev_info(&pdev->dev, "Debug: %d\n", UC_LOGGER_LEVEL_DEBUG);
+		dev_info(&pdev->dev, "Register Dump: %d\n",
+			 UC_LOGGER_LEVEL_DUMP_REGS);
+		break;
+	case UC_LOGGER_LEVEL_FATAL:
+	case UC_LOGGER_LEVEL_WARNING:
+	case UC_LOGGER_LEVEL_INFO:
+	case UC_LOGGER_LEVEL_DEBUG:
+	case UC_LOGGER_LEVEL_DUMP_REGS:
+		create_init_logger_cmd(qdev, (int)val);
+		break;
+	default:
+		dev_info(&pdev->dev, "Not supported fw logger level");
+	}
+
+	return 0;
+}
+
 static int check_sync_get(void *data, u64 *val)
 {
 	struct platform_device *pdev = data;
@@ -734,7 +1433,8 @@ out:
 	return 0;
 }
 
-DEFINE_SIMPLE_ATTRIBUTE(dbg_fw_logger_fops, fw_logger_get, NULL, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(dbg_fw_logger_fops, fw_logger_get,
+			fw_logger_set, "%llu\n");
 DEFINE_SIMPLE_ATTRIBUTE(dbg_check_sync_fops, check_sync_get, NULL, "%llu\n");
 DEFINE_SIMPLE_ATTRIBUTE(dbg_phy2id_fops, phy2id_get, NULL, "%llu\n");
 
@@ -756,8 +1456,12 @@ static struct debugfs_file qos_debugfs_files[] = {
 	{"qstat", &debug_qstat_fops, 0400},
 	{"pstat", &debug_pstat_fops, 0400},
 	{"cmd", &debug_cmd_fops, 0200},
+	{"tree", &debug_tree_fops, 0400},
 	{"add_shared_bwl_group", &debug_add_shared_bwl_group_fops, 0400},
 	{"remove_shared_bwl_group", &debug_remove_shared_bwl_group_fops, 0400},
+	{"set_port", &debug_set_port_fops, 0400},
+	{"set_sched", &debug_set_sched_fops, 0400},
+	{"set_queue", &debug_set_queue_fops, 0400},
 };
 
 int qos_dbg_dev_init(struct platform_device *pdev)
@@ -778,7 +1482,7 @@ int qos_dbg_dev_init(struct platform_device *pdev)
 	snprintf(dirname, MAX_DIR_NAME, "qos%d", pdata->id);
 	dent = debugfs_create_dir(dirname, dbg_data.dir);
 	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
+		err = (int)PTR_ERR(dent);
 		dev_err(&pdev->dev, "debugfs_create_dir failed with %d\n", err);
 		return err;
 	}
@@ -792,17 +1496,17 @@ int qos_dbg_dev_init(struct platform_device *pdev)
 					   pdev,
 					   qos_debugfs_files[idx].fops);
 		if (unlikely(IS_ERR_OR_NULL(dent))) {
-			err = (int) PTR_ERR(dent);
+			err = (int)PTR_ERR(dent);
 			goto fail;
 		}
 	}
 
 	dent = debugfs_create_u16("node",
-			0600,
-			pdata->dbg.dir,
-			&pdata->dbg.node);
+				  0600,
+				  pdata->dbg.dir,
+				  &pdata->dbg.node);
 	if (IS_ERR_OR_NULL(dent)) {
-		err = (int) PTR_ERR(dent);
+		err = (int)PTR_ERR(dent);
 		dev_err(&pdev->dev,
 			"debugfs_create_u16 failed creating nodeinfo with %d\n",
 			err);
@@ -834,7 +1538,7 @@ int qos_dbg_module_init(void)
 
 	dir = debugfs_create_dir(PP_QOS_DEBUGFS_DIR, NULL);
 	if (IS_ERR_OR_NULL(dir)) {
-		rc = (int) PTR_ERR(dir);
+		rc = (int)PTR_ERR(dir);
 		pr_err("debugfs_create_dir failed with %d\n", rc);
 		return rc;
 	}

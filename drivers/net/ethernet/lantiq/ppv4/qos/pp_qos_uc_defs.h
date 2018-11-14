@@ -61,25 +61,72 @@ enum uc_status {
  *! @enum	UC_LOGGER_LEVEL
  **************************************************************************
  *
- * @brief UC Logger level enum
+ * @brief UC Logger level enum. It is recommended to use the defines below
+ * for presets
  *
  **************************************************************************/
 enum uc_logger_level {
-	/*!< FATAL error occurred. SW will probably fail to proceed */
-	UC_LOGGER_LEVEL_FATAL,
+	//!< FATAL error occurred. SW will probably fail to proceed
+	UC_LOGGER_LEVEL_FATAL_ONLY		=	0x01,
 
-	/*!< General ERROR occurred. */
-	UC_LOGGER_LEVEL_ERROR,
+	//!< General ERROR occurred.
+	UC_LOGGER_LEVEL_ERROR_ONLY		=	0x02,
 
-	/*!< WARNING */
-	UC_LOGGER_LEVEL_WARNING,
+	//!< WARNING
+	UC_LOGGER_LEVEL_WARNING_ONLY		=	0x04,
 
-	/*!< Information print to the user */
-	UC_LOGGER_LEVEL_INFO,
+	//!< Information print to the user
+	UC_LOGGER_LEVEL_INFO_ONLY		=	0x08,
 
-	/*!< Debug purposes level */
-	UC_LOGGER_LEVEL_DEBUG,
+	//!< Debug purposes level
+	UC_LOGGER_LEVEL_DEBUG_ONLY		=	0x10,
+
+	//!< Dump all writings to registers
+	UC_LOGGER_LEVEL_DUMP_REG_ONLY		=	0x20,
+
+	//!< Dump all commands
+	UC_LOGGER_LEVEL_COMMANDS_ONLY		=	0x40,
 };
+
+/* Below levels will be normally used from host. */
+/* Each level includes all higher priorities levels messages */
+
+//!< FATAL level messages
+#define UC_LOGGER_LEVEL_FATAL	(UC_LOGGER_LEVEL_FATAL_ONLY	|	\
+				UC_LOGGER_LEVEL_COMMANDS_ONLY)
+
+//!< ERRORS level messages
+#define UC_LOGGER_LEVEL_ERROR	(UC_LOGGER_LEVEL_FATAL_ONLY	|	\
+				UC_LOGGER_LEVEL_ERROR_ONLY	|	\
+				UC_LOGGER_LEVEL_COMMANDS_ONLY)
+
+//!< WARNING level messages
+#define UC_LOGGER_LEVEL_WARNING	(UC_LOGGER_LEVEL_FATAL_ONLY	|	\
+				UC_LOGGER_LEVEL_ERROR_ONLY	|	\
+				UC_LOGGER_LEVEL_WARNING_ONLY	|	\
+				UC_LOGGER_LEVEL_COMMANDS_ONLY)
+
+//!< INFO level messages
+#define UC_LOGGER_LEVEL_INFO	(UC_LOGGER_LEVEL_FATAL_ONLY	|	\
+				UC_LOGGER_LEVEL_ERROR_ONLY	|	\
+				UC_LOGGER_LEVEL_WARNING_ONLY	|	\
+				UC_LOGGER_LEVEL_INFO_ONLY	|	\
+				UC_LOGGER_LEVEL_COMMANDS_ONLY)
+
+//!< DEBUG level messages
+#define UC_LOGGER_LEVEL_DEBUG	(UC_LOGGER_LEVEL_FATAL_ONLY	|	\
+				UC_LOGGER_LEVEL_ERROR_ONLY	|	\
+				UC_LOGGER_LEVEL_WARNING_ONLY	|	\
+				UC_LOGGER_LEVEL_INFO_ONLY	|	\
+				UC_LOGGER_LEVEL_DEBUG_ONLY	|	\
+				UC_LOGGER_LEVEL_COMMANDS_ONLY)
+
+//!< DUMP to registers level messages
+#define UC_LOGGER_LEVEL_DUMP_REGS	(UC_LOGGER_LEVEL_FATAL_ONLY	| \
+					UC_LOGGER_LEVEL_ERROR_ONLY	| \
+					UC_LOGGER_LEVEL_WARNING_ONLY	| \
+					UC_LOGGER_LEVEL_DUMP_REG_ONLY	| \
+					UC_LOGGER_LEVEL_COMMANDS_ONLY)
 
 /**************************************************************************
  *! @enum	UC_LOGGER_MODE
@@ -455,6 +502,7 @@ enum uc_qos_command {
 	UC_QOS_COMMAND_GET_FW_VERSION,
 	UC_QOS_COMMAND_MULTIPLE_COMMANDS,
 	UC_QOS_COMMAND_INIT_UC_LOGGER,
+	UC_QOS_COMMAND_SET_UC_LOGGER_LEVEL,
 	UC_QOS_COMMAND_INIT_QOS,
 	UC_QOS_COMMAND_ADD_PORT,
 	UC_QOS_COMMAND_REMOVE_PORT,
