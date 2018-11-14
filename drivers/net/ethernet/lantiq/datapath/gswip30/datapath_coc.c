@@ -393,6 +393,8 @@ void proc_coc_read(struct seq_file *s)
 	GSW_QoS_meterCfg_t meter_cfg;
 	struct core_ops *gsw_handle;
 
+	if (!capable(CAP_NET_ADMIN))
+		return;
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	seq_puts(s, "  Basic DP COC Info:\n");
 	seq_printf(s, "    dp_coc_ena=%d @ 0x%p (DP %s)\n", dp_coc_ena,
@@ -473,6 +475,8 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 	char *param_list[3];
 #define MIN_POLL_TIME 1
 
+	if (!capable(CAP_NET_ADMIN))
+		return count;
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;

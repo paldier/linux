@@ -30,6 +30,8 @@ static void proc_parser_read(struct seq_file *s)
 {
 	s8 cpu, mpe1, mpe2, mpe3;
 
+	if (!capable(CAP_NET_ADMIN))
+		return;
 	dp_get_gsw_parser_31(&cpu, &mpe1, &mpe2, &mpe3);
 	seq_printf(s, "cpu : %s with parser size =%d bytes\n",
 		   parser_flag_str(cpu), parser_size_via_index(0));
@@ -54,6 +56,8 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 	int inst = 0;
 	struct core_ops *gsw_handle;
 
+	if (!capable(CAP_NET_ADMIN))
+		return count;
 	memset(&pce, 0, sizeof(pce));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
@@ -257,6 +261,7 @@ char *get_bp_member_string(int inst, u16 bp, char *buf)
 	sprintf(buf + strlen(buf), " Fid=%d ", bp_cfg.nBridgeId);
 	return buf;
 }
+
 /* proc_print_ctp_bp_info is an callback API, not a standalone proc API */
 int proc_print_ctp_bp_info(struct seq_file *s, int inst,
 			   struct pmac_port_info *port,
@@ -278,9 +283,13 @@ int proc_print_ctp_bp_info(struct seq_file *s, int inst,
 	kfree(buf);
 	return 0;
 }
+
 static struct dp_proc_entry dp_proc_entries[] = {
 	/*name single_callback_t multi_callback_t/_start write_callback_t */
 	{PROC_PARSER, proc_parser_read, NULL, NULL, proc_parser_write},
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+	{PROC_COC, proc_coc_read, NULL, NULL, proc_coc_write},
+#endif
 	{DP_PROC_CBMLOOKUP, NULL, lookup_dump31, lookup_start31,
 		proc_get_qid_via_index31},
 

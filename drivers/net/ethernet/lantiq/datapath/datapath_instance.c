@@ -468,6 +468,8 @@ int proc_inst_dev_dump(struct seq_file *s, int pos)
 {
 	struct subif_basic *tmp;
 
+	if (!capable(CAP_SYS_PACCT))
+		return -1;
 	while (!dp_dev_proc) {
 		dev_hash_index++;
 		pos = 0;
@@ -549,6 +551,8 @@ static u32 mod_hash_index;
 static struct dp_mod *dp_mod_proc;
 int proc_inst_mod_dump(struct seq_file *s, int pos)
 {
+	if (!capable(CAP_SYS_PACCT))
+		return -1;
 	while (!dp_mod_proc) {
 		mod_hash_index++;
 		pos = 0;
@@ -577,6 +581,8 @@ int proc_inst_dump(struct seq_file *s, int pos)
 {
 	struct dp_cap cap;
 
+	if (!capable(CAP_SYS_PACCT))
+		return -1;
 	if (!dp_port_prop[pos].valid)
 		goto NEXT;
 	seq_printf(s, "Inst[%d] Type=%u ver=%d\n",
@@ -597,6 +603,8 @@ NEXT:
 
 int proc_inst_hal_dump(struct seq_file *s, int pos)
 {
+	if (!capable(CAP_SYS_PACCT))
+		return -1;
 	if (!hw_cap_list[pos].valid)
 		goto NEXT;
 

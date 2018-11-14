@@ -172,6 +172,8 @@ static int dp_coc_cpufreq_notifier(struct notifier_block *nb,
 
 void proc_coc_read(struct seq_file *s)
 {
+	if (!capable(CAP_NET_ADMIN))
+		return;
 }
 
 int dp_set_rmon_threshold(struct ltq_cpufreq_threshold *threshold,
@@ -184,6 +186,8 @@ EXPORT_SYMBOL(dp_set_rmon_threshold);
 ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 		       loff_t *ppos)
 {
+	if (!capable(CAP_NET_ADMIN))
+		return count;
 	return count;
 }
 

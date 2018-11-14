@@ -25,6 +25,11 @@
 #define PROC_DPORT "dport"	/*TMU dequeue port info */
 #define DP_PROC_CBMLOOKUP "lookup"
 
+#define MAX_GSW_L_PMAC_PORT  7
+#define MAX_GSW_R_PMAC_PORT  16
+static GSW_RMON_Port_cnt_t gsw_l_rmon_mib[MAX_GSW_L_PMAC_PORT];
+static GSW_RMON_Port_cnt_t gsw_r_rmon_mib[MAX_GSW_R_PMAC_PORT];
+static GSW_RMON_Redirect_cnt_t gswr_rmon_redirect;
 
 enum RMON_MIB_TYPE {
 	RX_GOOD_PKTS = 0,
@@ -127,6 +132,8 @@ static void proc_parser_read(struct seq_file *s)
 {
 	s8 cpu, mpe1, mpe2, mpe3;
 
+	if (!capable(CAP_NET_ADMIN))
+		return;
 	dp_get_gsw_parser_30(&cpu, &mpe1, &mpe2, &mpe3);
 	seq_printf(s, "cpu : %s with parser size =%d bytes\n",
 		   parser_flag_str(cpu), parser_size_via_index(0));
@@ -151,6 +158,8 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 	int inst = 0;
 	struct core_ops *gsw_handle;
 
+	if (!capable(CAP_NET_ADMIN))
+		return count;
 	memset(&pce, 0, sizeof(pce));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
@@ -395,6 +404,276 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 	print_dash_line(s); \
 	} while (0)
 
+typedef int (*ingress_pmac_set_callback_t) (dp_pmac_cfg_t *pmac_cfg,
+					    u32 value);
+typedef int (*egress_pmac_set_callback_t) (dp_pmac_cfg_t *pmac_cfg,
+					   u32 value);
+struct ingress_pmac_entry {
+	char *name;
+	ingress_pmac_set_callback_t ingress_callback;
+};
+
+struct egress_pmac_entry {
+	char *name;
+	egress_pmac_set_callback_t egress_callback;
+};
+
+static int ingress_err_disc_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.err_disc = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_ERR_DISC;
+	return 0;
+}
+
+static int ingress_pmac_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.pmac = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PRESENT;
+	return 0;
+}
+
+static int ingress_pmac_pmap_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.def_pmac_pmap = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMAP;
+	return 0;
+}
+
+static int ingress_pmac_en_pmap_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.def_pmac_en_pmap = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMAPENA;
+	return 0;
+}
+
+static int ingress_pmac_tc_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.def_pmac_tc = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_CLASS;
+	return 0;
+}
+
+static int ingress_pmac_en_tc_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.def_pmac_en_tc = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_CLASSENA;
+	return 0;
+}
+
+static int ingress_pmac_subifid_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.def_pmac_subifid = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_SUBIF;
+	return 0;
+}
+
+static int ingress_pmac_srcport_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->ig_pmac.def_pmac_src_port = value;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_SPID;
+	return 0;
+}
+
+static int ingress_pmac_hdr1_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[0] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR1;
+	return 0;
+}
+
+static int ingress_pmac_hdr2_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[1] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR2;
+	return 0;
+}
+
+static int ingress_pmac_hdr3_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[2] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR3;
+	return 0;
+}
+
+static int ingress_pmac_hdr4_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[3] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR4;
+	return 0;
+}
+
+static int ingress_pmac_hdr5_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[4] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR5;
+	return 0;
+}
+
+static int ingress_pmac_hdr6_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[5] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR6;
+	return 0;
+}
+
+static int ingress_pmac_hdr7_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[6] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR7;
+	return 0;
+}
+
+static int ingress_pmac_hdr8_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	u8 hdr;
+
+	hdr = (u8)value;
+	pmac_cfg->ig_pmac.def_pmac_hdr[7] = hdr;
+	pmac_cfg->ig_pmac_flags = IG_PMAC_F_PMACHDR8;
+	return 0;
+}
+
+static int egress_fcs_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.fcs = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_FCS;
+	return 0;
+}
+
+static int egress_l2hdr_bytes_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.num_l2hdr_bytes_rm = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_L2HDR_RM;
+	return 0;
+}
+
+static int egress_rx_dma_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.rx_dma_chan = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_RXID;
+	return 0;
+}
+
+static int egress_pmac_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.pmac = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_PMAC;
+	return 0;
+}
+
+static int egress_res_dw_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.res_dw1 = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_RESDW1;
+	return 0;
+}
+
+static int egress_res1_dw_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.res1_dw0 = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_RES1DW0;
+	return 0;
+}
+
+static int egress_res2_dw_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.res2_dw0 = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_RES2DW0;
+	return 0;
+}
+
+static int egress_tc_ena_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.tc_enable = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_TCENA;
+	return 0;
+}
+
+static int egress_dec_flag_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.dec_flag = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_DECFLG;
+	return 0;
+}
+
+static int egress_enc_flag_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.enc_flag = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_ENCFLG;
+	return 0;
+}
+
+static int egress_mpe1_flag_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.mpe1_flag = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_MPE1FLG;
+	return 0;
+}
+
+static int egress_mpe2_flag_set(dp_pmac_cfg_t *pmac_cfg, u32 value)
+{
+	pmac_cfg->eg_pmac.mpe2_flag = value;
+	pmac_cfg->eg_pmac_flags = EG_PMAC_F_MPE2FLG;
+	return 0;
+}
+
+static struct ingress_pmac_entry ingress_entries[] = {
+	{"errdisc", ingress_err_disc_set},
+	{"pmac", ingress_pmac_set},
+	{"pmac_pmap", ingress_pmac_pmap_set},
+	{"pmac_en_pmap", ingress_pmac_en_pmap_set},
+	{"pmac_tc", ingress_pmac_tc_set},
+	{"pmac_en_tc", ingress_pmac_en_tc_set},
+	{"pmac_subifid", ingress_pmac_subifid_set},
+	{"pmac_srcport", ingress_pmac_srcport_set},
+	{"pmac_hdr1", ingress_pmac_hdr1_set},
+	{"pmac_hdr2", ingress_pmac_hdr2_set},
+	{"pmac_hdr3", ingress_pmac_hdr3_set},
+	{"pmac_hdr4", ingress_pmac_hdr4_set},
+	{"pmac_hdr5", ingress_pmac_hdr5_set},
+	{"pmac_hdr6", ingress_pmac_hdr6_set},
+	{"pmac_hdr7", ingress_pmac_hdr7_set},
+	{"pmac_hdr8", ingress_pmac_hdr8_set},
+	{NULL, NULL}
+};
+
+static struct egress_pmac_entry egress_entries[] = {
+	{"rx_dmachan", egress_rx_dma_set},
+	{"rm_l2hdr", egress_l2hdr_bytes_set},
+	{"fcs", egress_fcs_set},
+	{"pmac", egress_pmac_set},
+	{"res_dw1", egress_res_dw_set},
+	{"res1_dw0", egress_res1_dw_set},
+	{"res2_dw0", egress_res2_dw_set},
+	{"tc_enable", egress_tc_ena_set},
+	{"dec_flag", egress_dec_flag_set},
+	{"enc_flag", egress_enc_flag_set},
+	{"mpe1_flag", egress_mpe1_flag_set},
+	{"mpe2_flag", egress_mpe2_flag_set},
+	{NULL, NULL}
+};
+
 static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 {
 	int i;
@@ -402,6 +681,8 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 	struct core_ops *gsw_handle;
 	char flag_buf[20];
 
+	if (!capable(CAP_NET_ADMIN))
+		return -1;
 	if (pos == 0) {
 		memset(gsw_r_rmon_mib, 0, sizeof(gsw_r_rmon_mib));
 		memset(gsw_l_rmon_mib, 0, sizeof(gsw_l_rmon_mib));
@@ -678,6 +959,8 @@ static ssize_t proc_gsw_rmon_write(struct file *file, const char *buf,
 	int num;
 	char *param_list[10];
 
+	if (!capable(CAP_NET_ADMIN))
+		return count;
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -738,6 +1021,8 @@ static int proc_dport_dump(struct seq_file *s, int pos)
 	cbm_dq_port_res_t res;
 	u32 flag = 0;
 
+	if (!capable(CAP_NET_ADMIN))
+		return -1;
 	memset(&res, 0, sizeof(cbm_dq_port_res_t));
 	if (cbm_dequeue_port_resources_get(pos, &res, flag) == 0) {
 		seq_printf(s, "Dequeue port=%d free_base=0x%x\n", pos,
@@ -771,7 +1056,10 @@ int proc_ep_dump(struct seq_file *s, int pos)
 	u32 flag = 0;
 	int i;
 	struct pmac_port_info *port = get_port_info(0, pos);
-
+#endif
+	if (!capable(CAP_NET_ADMIN))
+		return -1;
+#if defined(NEW_CBM_API) && NEW_CBM_API
 	if (cbm_dp_port_resources_get
 	    (&pos, &num, &res, port ? port->alloc_flags : flag) == 0) {
 		for (i = 0; i < num; i++) {
@@ -843,6 +1131,8 @@ ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 	dp_pmac_cfg_t pmac_cfg;
 	int inst = 0;
 
+	if (!capable(CAP_NET_ADMIN))
+		return count;
 	memset(&pmac_cfg, 0, sizeof(dp_pmac_cfg_t));
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
@@ -912,6 +1202,9 @@ static struct dp_proc_entry dp_proc_entries[] = {
 	{PROC_PARSER, proc_parser_read, NULL, NULL, proc_parser_write},
 	{PROC_RMON_PORTS, NULL, proc_gsw_port_rmon_dump,
 	 proc_gsw_rmon_port_start, proc_gsw_rmon_write},
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+	{PROC_COC, proc_coc_read, NULL, NULL, proc_coc_write},
+#endif
 	{PROC_EP, NULL, proc_ep_dump, NULL, ep_port_write},
 	{PROC_DPORT, NULL, proc_dport_dump, NULL, NULL},
 	{DP_PROC_CBMLOOKUP, NULL, lookup_dump30, lookup_start30,
