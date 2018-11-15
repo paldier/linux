@@ -36,6 +36,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <linux/iopoll.h>
 #include <linux/spi/spi.h>
 #include <linux/dma-mapping.h>
 #include <linux/dmaengine.h>
@@ -882,9 +883,32 @@ unsigned int cadence_qspi_apb_is_controller_ready(void *reg_base)
 {
 	return cadence_qspi_wait_idle(reg_base);
 }
+
 void cadence_qspi_apb_controller_init(struct struct_cqspi *cadence_qspi)
 {
+	unsigned int reg;
+	int ret;
+
 	cadence_qspi_apb_controller_disable(cadence_qspi->iobase);
+
+	/* phy mode initialization */
+	CQSPI_WRITEL(0, cadence_qspi->iobase + CQSPI_PHY_CONFIG_REG);
+
+	reg = 0x14 << CQSPI_PHY_MASTER_INITIAL_DELAY_LSB;
+	CQSPI_WRITEL(reg, cadence_qspi->iobase + CQSPI_PHY_MASTER_CONTROL_REG);
+
+	reg = 0x4 << CQSPI_PHY_CONFIG_TX_DLL_DELAY_LSB;
+	reg |= 0x1 << CQSPI_PHY_CONFIG_RESYNC_LSB;
+	reg |= 0x1 << CQSPI_PHY_CONFIG_RESET_LSB;
+	CQSPI_WRITEL(reg, cadence_qspi->iobase + CQSPI_PHY_CONFIG_REG);
+
+	ret = readl_poll_timeout(cadence_qspi->iobase +
+				 CQSPI_DLL_OBSERVABLE_LOWER_REG, reg,
+				 reg & CQSPI_DLL_OBSERVABLE_LOWER_REG,
+				 1, 100);
+	if (ret)
+		dev_warn(&cadence_qspi->pdev->dev,
+			 "timeout waiting for qspi dll lock\n");
 
 	/* Configure the remap address register, no remap */
 	CQSPI_WRITEL(0, cadence_qspi->iobase + CQSPI_REG_REMAP);
@@ -894,6 +918,7 @@ void cadence_qspi_apb_controller_init(struct struct_cqspi *cadence_qspi)
 	cadence_qspi_apb_controller_enable(cadence_qspi->iobase);
 	return;
 }
+
 unsigned int calculate_ticks_for_ns(unsigned int ref_clk_hz,
 	unsigned int ns_val)
 {
