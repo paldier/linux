@@ -846,6 +846,24 @@ struct dp_dev_data {
 	int txout_poolid; /*!< [out] For legacy ACA to free BM buffer in
 			   *   in falcon_mx
 			   */
+	u16 max_ctp;    /*!< [in] maximum subif required which will be mapped to
+			 * GSWIP continuous CTP block.
+			 * Since very limited CTP in GSWIP and it is already
+			 * out of range, some drivers have to specify this
+			 * parameter to save the system resource, for example
+			 * of G.INIT in falcon_mx:
+			 * 1) single LAN port only: it is value should be 16
+			 * 2) two Lan Ports:
+			 *      a) 1st lan port: 8 CPT with 8 subif only
+			 *      b) 2nd lan port: 16 CTP with 16 subif
+			 *         Note: first 8 subif/CTP will not be used
+			 *         at all for the HW back-pressure design based
+			 *         subif ID.
+			 * Currently DP just add this parameter, but not really
+			 * implemented yet since DP need to change the flow, ie,
+			 * move the CTP allocation from dp_alloc_port to
+			 * dp_register_dev
+			 */
 };
 
 /*! @addtogroup Datapath_Driver_API */

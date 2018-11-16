@@ -73,6 +73,12 @@ struct ltq_eth_priv {
 	int id;
 	int wan;
 	int jumbo_enabled;
+	int lct_en;
+	int extra_subif;
+	/*! min netdevices for extra subif/lct */
+	int start;
+	/*! max netdevices for extra subif/lct */
+	int end;
 	#define FLAG_PAUSE_AUTO         0x00000001
 	#define FLAG_FULL_DUPLEX        0x00000002
 	#define FLAG_10_BASE_T          0x00000010

@@ -1870,8 +1870,6 @@ static void rx_dbg_zero_port(struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 			 "Recv Data");
 }
 
-/* This macro is for testing packet reception to LCT dev*/
-#define TEST_LCT 1
 /* clone skb to send one copy to lct dev for multicast/broadcast
  * otherwise for unicast send only to lct device
  * return 0 - Caller will not proceed handling i.e. for unicast do rx only for
@@ -1896,25 +1894,17 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		}
 		lct_skb->dev = dp_port->subif_info[vap].netif;
 		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
-#if TEST_LCT
-		skb_pull(lct_skb, sizeof(struct pmac_rx_hdr));
-		ret = netif_rx(lct_skb);
 		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s) ret(%d)\n",
 			 lct_skb->dev->name ? lct_skb->dev->name : "NULL",
 			 ret);
-#else
 		rx_fn(lct_skb->dev, NULL, lct_skb, lct_skb->len);
-#endif
 		return 1;
 	} else if (memcmp(skb->data + PMAC_SIZE, skb->dev->dev_addr, 6) == 0) {
 		/* unicast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
-#if TEST_LCT
-		skb_pull(skb, sizeof(struct pmac_rx_hdr));
-		ret = netif_rx(skb);
-#else
+		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s) ret(%d)\n",
+				 skb->dev->name ? skb->dev->name : "NULL", ret);
 		rx_fn(skb->dev, NULL, skb, skb->len);
-#endif
 		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
 		return 0;
 	}
