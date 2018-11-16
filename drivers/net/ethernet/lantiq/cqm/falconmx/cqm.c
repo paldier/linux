@@ -3567,7 +3567,7 @@ static int conf_bm(struct cqm_data *pdata)
 		switch (i) {
 		case CQM_SIZE0_BUF_SIZE:
 			p_param[i].max_allowed = cqm_ctrl->fmx_pool_ptrs[i];
-			p_param[i].min_guaranteed = cqm_ctrl->fmx_pool_ptrs[i];
+			p_param[i].min_guaranteed = 0x40;
 			break;
 		case CQM_SIZE1_BUF_SIZE:
 			p_param[i].max_allowed = (cqm_ctrl->fmx_pool_ptrs[i]
