@@ -567,13 +567,13 @@ static int br_selective_flood6(struct net_bridge_port *p, struct sk_buff *skb)
 			case ICMPV6_MGM_REPORT:
 			case ICMPV6_MGM_REDUCTION:
 			case ICMPV6_MLD2_REPORT:
-				return 1;	/* Allow control packets */
+				return 0;	/* Allow control packets */
 			default:
 				break;
 			}
 		}
 	} else if (iph->nexthdr == IPPROTO_ICMPV6) {
-		return 1;       /* Allow all other ICMPv6 packets  */
+		return 0;       /* Allow all other ICMPv6 packets  */
 	}
 
 	return br_snoop_multicast_data(p, &daddr, &saddr);
@@ -590,10 +590,6 @@ static int br_selective_flood4(struct net_bridge_port *p, struct sk_buff *skb)
 	int ver = 3;
 
 	iph = (struct iphdr *)skb_network_header(skb);
-	/* Skip snooping 224.0.0.x and 239.x.x.x */
-	if ((ntohl(iph->daddr) & 0xffffff00U) == 0xe0000000U ||
-			(ntohl(iph->daddr) & 0xff000000U) == 0xef000000U)
-		return 1;
 
 	/* Also not interested if IP dest address is not a multicast address */
 	if (!IN_MULTICAST(ntohl(iph->daddr)))
@@ -621,7 +617,9 @@ static int br_selective_flood4(struct net_bridge_port *p, struct sk_buff *skb)
 		case IGMPV2_HOST_MEMBERSHIP_REPORT:
 		case IGMPV3_HOST_MEMBERSHIP_REPORT:
 		case IGMP_HOST_LEAVE_MESSAGE:
-			return 1;	/* Allow control packets */
+			if ((ntohl(iph->daddr) & 0xffffff00U) == 0xe0000000U ||
+				(ntohl(iph->daddr) & 0xff000000U) == 0xef000000U)
+				return 0;	/* Allow control packets */
 		default:
 			break;
 		}
