@@ -1823,9 +1823,13 @@ int pce_pattern_delete(void *cdev, ltq_pce_table_t *pthandle, u32 index)
 	/* Ethertype */
 	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->ethertype_idx,
 			      pce_tm_ptcl_tbl_delete)
-	/*  PPP Protocol */
-	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->ppp_prot_idx,
-			      pce_tm_ptcl_tbl_delete)
+
+	if (IS_VRSN_30_31(gswdev->gipver)) {
+		/*  PPP Protocol */
+		IFX_PCE_TM_IDX_DELETE(0xFF, ptable->ppp_prot_idx,
+				      pce_tm_ptcl_tbl_delete)
+	}
+
 	/* PPPoE */
 	IFX_PCE_TM_IDX_DELETE(0xFF, ptable->pppoe_idx,
 			      pce_tm_pppoe_tbl_delete)

@@ -11323,7 +11323,8 @@ GSW_return_t GSW_MulticastTableEntryRead(void *cdev,
 				memset(parm, 0, sizeof(GSW_multicastTableRead_t));
 				parm->bLast = 1;
 				gswdev->msw_rinx_31 = 0;
-			}			
+			}
+
 			ret = GSW_statusOk;
 			goto UNLOCK_AND_RETURN;
 		}
@@ -25650,6 +25651,8 @@ GSW_return_t GSW_QOS_MeterAlloc(void *cdev, GSW_QoS_meterCfg_t *param)
 		ret = GSW_statusErr;
 		goto UNLOCK_AND_RETURN;
 	}
+
+	ret = GSW_statusOk;
 
 UNLOCK_AND_RETURN:
 
