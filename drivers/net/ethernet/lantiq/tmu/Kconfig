@@ -4,7 +4,7 @@
 
 menuconfig LTQ_TMU
 	bool "TMU QoS Support"
-	depends on SOC_GRX500 && LTQ_CBM && GRX500_CBM
+	depends on SOC_GRX500 && LTQ_CBM && GRX500_CBM && LTQ_DATAPATH
 	default y
 	---help---
 	  TMU QoS HW Support
