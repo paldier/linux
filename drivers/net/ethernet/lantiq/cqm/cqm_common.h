@@ -13,7 +13,11 @@
 #define LS_PORT_NUM             4
 #define CBM_MAX_INT_LINES       8
 #define CBM_DMA_DESC_OWN        1U/*belong to DMA*/
-#define CBM_DMA_DATA_OFFSET     128
+ /* DMA offset to be 128 byte aligned
+  * CBM_DMA_DATA_OFFSET + NET_IP_ALIGN + NET_SKB_PAD +
+  * CQM_POOL_METADATA = 128 + 6(byte offset for IP ALIGN)
+  */
+#define CBM_DMA_DATA_OFFSET     96
 /* TCP lite and LRO expects it to be 128 */
 #define CBM_GRX550_DMA_DATA_OFFSET     128
 #define DEFAULT_WAIT_CYCLES     20
