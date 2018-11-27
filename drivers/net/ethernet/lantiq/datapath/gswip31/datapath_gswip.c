@@ -1038,6 +1038,100 @@ int dp_meter_alloc_31(int inst, int *meterid, int flag)
 	return 0;
 }
 
+static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
+			   int flag, struct dp_meter_subif *mtr_subif)
+{
+	struct core_ops *gsw_handle;
+	GSW_BRIDGE_portConfig_t bp_cfg;
+	GSW_CTP_portConfig_t ctp_cfg;
+	GSW_return_t ret;
+	struct pmac_port_info *port_info;
+
+	if (!mtr_subif) {
+		PR_ERR("mtr_subif NULL\n");
+		return -1;
+	}
+	memset(&bp_cfg, 0, sizeof(GSW_BRIDGE_portConfig_t));
+	memset(&ctp_cfg, 0, sizeof(GSW_CTP_portConfig_t));
+	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
+	if (!gsw_handle)
+		return -1;
+	if (flag & DP_METER_ATTACH_CTP) {/* CTP port Flag */
+		if (mtr_subif->subif.flag_pmapper) {
+			PR_ERR("can't use CTP,pmapper is enable\n");
+			return -1;
+		}
+		port_info = &dp_port_info[mtr_subif->subif.inst]
+					[mtr_subif->subif.port_id];
+		ctp_cfg.nLogicalPortId = mtr_subif->subif.port_id;
+		ctp_cfg.nSubIfIdGroup  = GET_VAP(mtr_subif->subif.subif,
+						 port_info->vap_offset,
+						 port_info->vap_mask);
+		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigGet,
+				   &ctp_cfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("PortConfigGet API failed :%d\n", ret);
+			return -1;
+		}
+		if (meter->dir == DP_DIR_INGRESS) {
+			ctp_cfg.eMask = GSW_CTP_PORT_CONFIG_INGRESS_MARKING;
+			ctp_cfg.eIngressMarkingMode = meter->mode;
+		} else if (meter->dir == DP_DIR_EGRESS) {
+			if (meter->mode != DP_INTERNAL) {
+				ctp_cfg.eMask =
+				GSW_CTP_PORT_CONFIG_EGRESS_MARKING_OVERRIDE;
+				ctp_cfg.bEgressMarkingOverrideEnable = 1;
+				ctp_cfg.eEgressMarkingModeOverride =
+					meter->mode;
+			} else {
+				DP_DEBUG(DP_DBG_FLAG_PAE,
+					 "mode:internal invalid for egress\n");
+			}
+		} else {
+			return -1;
+		}
+		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigSet,
+				   &ctp_cfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("PortConfigSet API failed :%d\n", ret);
+			return -1;
+		}
+	}
+	if (flag & DP_METER_ATTACH_BRPORT) {/*BRIDGE port Flag*/
+		if (!mtr_subif->subif.flag_bp) {
+			PR_ERR("flag_bp value 0\n");
+			return -1;
+		}
+		bp_cfg.nBridgePortId = mtr_subif->subif.bport;
+		ret = GSW_CORE_API(gsw_handle,
+				   gsw_brdgport_ops.BridgePort_ConfigGet,
+				   &bp_cfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("BridgePort_ConfigGet API failed :%d\n", ret);
+			return -1;
+		}
+		if (meter->dir == DP_DIR_EGRESS) {
+			PR_ERR("No Egress color marking for bridge port\n");
+			return -1;
+		} else if (meter->dir == DP_DIR_INGRESS) {
+			bp_cfg.eMask =
+				GSW_BRIDGE_PORT_CONFIG_MASK_INGRESS_MARKING;
+			bp_cfg.eIngressMarkingMode = meter->mode;
+		} else {
+			PR_ERR(" invalid color mark dir\n");
+			return -1;
+		}
+		ret = GSW_CORE_API(gsw_handle,
+				   gsw_brdgport_ops.BridgePort_ConfigSet,
+				   &bp_cfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("BridgePort_ConfigSet API failed :%d\n", ret);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		    int flag, struct dp_meter_subif *mtr_subif)
 {
@@ -1050,7 +1144,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	GSW_return_t ret;
 	int bret = 0;
 
-	if(!mtr_subif) {
+	if (!mtr_subif) {
 		PR_ERR("mtr_subif NULL\n");
 		return -1;
 	}
@@ -1058,6 +1152,8 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	if (!gsw_handle)
 		return -1;
 
+	if (flag & DP_COL_MARKING)
+		return dp_set_col_mark(dev, meter, flag, mtr_subif);
 	memset(&meter_cfg, 0, sizeof(GSW_QoS_meterCfg_t));
 	meter_cfg.nCbs = meter->cbs;
 	meter_cfg.nRate = METER_CIR(meter->cir);
@@ -1073,8 +1169,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		return -1;
 	}
 	meter_cfg.nMeterId = meter->meter_id;
-	if (flag & DP_METER_COL_MARKING_ONLY)
-		meter_cfg.nColourBlindMode = meter->mode;
+	meter_cfg.nColourBlindMode = meter->col_mode;
 	ret = GSW_CORE_API(gsw_handle, gsw_qos_ops.QoS_MeterCfgSet,
 			   &meter_cfg);
 	if (ret != GSW_statusOk) {
@@ -1312,7 +1407,8 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		port_info = &dp_port_info[mtr_subif->subif.inst][mtr_subif->subif.port_id];
+		port_info = &dp_port_info[mtr_subif->subif.inst]
+					[mtr_subif->subif.port_id];
 		if (!port_info) {
 			PR_ERR(" port_info is NULL\n");
 			bret = -1;

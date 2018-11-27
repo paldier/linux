@@ -1084,7 +1084,7 @@ int dp_qos_level_get(struct dp_qos_level *dp, int flag);
 
 /*! Enumeration for color marking mode for drop precedence selection */
 enum dp_col_marking {
-	/*!< Do not color mark */
+	/*!< Mark all to green */
 	DP_NO_MARKING,
 	/*!< Internal marking derives the color of the packet from internal
 	     data flow instead of using VLAN tag or DSCP */
@@ -1133,7 +1133,7 @@ struct dp_meter_cfg {
 	/*!< meter for egressing traffic */
 #define DP_DIR_EGRESS  1
 	/*!< Configure color marking only, no meter setup */
-#define DP_METER_COL_MARKING_ONLY	BIT(0)
+#define DP_COL_MARKING			BIT(0)
 	/*!< Attach meter to PCE rule e.g., CPU traffic limiting */
 #define DP_METER_ATTACH_PCE		BIT(1)
 	/*!< Attach meter to CTP port */
@@ -1189,7 +1189,7 @@ int dp_meter_alloc(int inst, int *meterid, int flag);
  *		PCE table instance.
  * @param: [in] meter meter parameters: rates, color marking
  * @param: [in] flag:
- *	   DP_METER_COL_MARKING_ONLY	- setup only color marking
+ *	   DP_COL_MARKING		- setup only color marking
  *	   DP_METER_ATTACH_PCE		- setup PCE rule meter e.g., CPU traffic
  *	   DP_METER_ATTACH_CTP		- setup CTP port metering
  *	   DP_METER_ATTACH_BPORT	- setup bridge port metering
@@ -1206,7 +1206,6 @@ int dp_meter_add(struct net_device *dev, struct dp_meter_cfg *meter, int flag);
  * @param: [in] dev pointer to netdevice CTP/BP/Bridge
  * @param: [in] meter meter parameters: rates, color marking
  * @param: [in] flag:
- *	   DP_METER_COL_MARKING_ONLY	- setup only color marking
  *	   DP_METER_ATTACH_PCE		- setup PCE rule meter e.g., CPU traffic
  *	   DP_METER_ATTACH_CTP		- setup CTP port metering
  *	   DP_METER_ATTACH_BPORT	- setup bridge port metering
