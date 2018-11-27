@@ -858,7 +858,7 @@ int qos_dump(struct seq_file *s, int pos)
 	int i;
 
 	if (!capable(CAP_NET_ADMIN))
-		return -1;
+		return -EPERM;
 	if (pos == 0) {
 		seq_puts(s, "Note:\n");
 		seq_puts(s, "  x/y :physical node/logical node\n");
@@ -962,7 +962,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 	unsigned int level = 0, num = 0;
 
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;

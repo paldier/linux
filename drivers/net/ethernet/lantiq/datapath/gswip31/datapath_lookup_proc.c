@@ -396,7 +396,7 @@ int lookup_start31(void)
 int lookup_dump31(struct seq_file *s, int pos)
 {
 	if (!capable(CAP_NET_ADMIN))
-		return -1;
+		return -EPERM;
 	if (find_pattern(pos, s, -1) < 0)
 		return pos;
 	pos++;
@@ -416,7 +416,7 @@ ssize_t proc_get_qid_via_index31(struct file *file, const char *buf,
 	int num;
 
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	len = (count >= sizeof(data)) ? (sizeof(data) - 1) : count;
 	DP_DEBUG(DP_DBG_FLAG_LOOKUP, "len=%d\n", len);
 

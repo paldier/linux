@@ -476,7 +476,7 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 #define MIN_POLL_TIME 1
 
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;

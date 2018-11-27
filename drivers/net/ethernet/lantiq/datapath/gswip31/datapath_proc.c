@@ -57,7 +57,7 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 	struct core_ops *gsw_handle;
 
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	memset(&pce, 0, sizeof(pce));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;

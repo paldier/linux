@@ -159,7 +159,7 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 	struct core_ops *gsw_handle;
 
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	memset(&pce, 0, sizeof(pce));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
@@ -682,7 +682,7 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 	char flag_buf[20];
 
 	if (!capable(CAP_NET_ADMIN))
-		return -1;
+		return -EPERM;
 	if (pos == 0) {
 		memset(gsw_r_rmon_mib, 0, sizeof(gsw_r_rmon_mib));
 		memset(gsw_l_rmon_mib, 0, sizeof(gsw_l_rmon_mib));
@@ -960,7 +960,7 @@ static ssize_t proc_gsw_rmon_write(struct file *file, const char *buf,
 	char *param_list[10];
 
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -1022,7 +1022,7 @@ static int proc_dport_dump(struct seq_file *s, int pos)
 	u32 flag = 0;
 
 	if (!capable(CAP_NET_ADMIN))
-		return -1;
+		return -EPERM;
 	memset(&res, 0, sizeof(cbm_dq_port_res_t));
 	if (cbm_dequeue_port_resources_get(pos, &res, flag) == 0) {
 		seq_printf(s, "Dequeue port=%d free_base=0x%x\n", pos,
@@ -1058,7 +1058,7 @@ int proc_ep_dump(struct seq_file *s, int pos)
 	struct pmac_port_info *port = get_port_info(0, pos);
 #endif
 	if (!capable(CAP_NET_ADMIN))
-		return -1;
+		return -EPERM;
 #if defined(NEW_CBM_API) && NEW_CBM_API
 	if (cbm_dp_port_resources_get
 	    (&pos, &num, &res, port ? port->alloc_flags : flag) == 0) {
@@ -1132,7 +1132,7 @@ ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 	int inst = 0;
 
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	memset(&pmac_cfg, 0, sizeof(dp_pmac_cfg_t));
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);

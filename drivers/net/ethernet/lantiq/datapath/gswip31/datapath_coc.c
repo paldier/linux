@@ -187,7 +187,7 @@ ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 		       loff_t *ppos)
 {
 	if (!capable(CAP_NET_ADMIN))
-		return count;
+		return -EPERM;
 	return count;
 }
 
