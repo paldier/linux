@@ -485,6 +485,8 @@
 #define SESSION_FLAG2_CONTAINER 		0x00008000
 #define SESSION_FLAG2_NON_ETHWAN_SESSION 	0x00010000
 
+#define SESSION_FLAG2_DS_MPE_QOS		0x00020000 /* Flag for DS_QOS capability */
+
 /* Other flags */
 #define FLG_PPA_PROCESSED		0x100	/* this used to mark ecah packets which are processed by ppa datapath driver*/
 #define SESSION_FLAG_TC_REMARK		0x40000000 /*Flag to sepcify bit 30 in extmark which specifies packet classified by iptables when set to 1*/

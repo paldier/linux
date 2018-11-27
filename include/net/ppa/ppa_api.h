@@ -111,7 +111,6 @@
 /* Flag to extract bits 23-27 of extmark that are set with TC of Ingress Qs */
 #define SESSION_INGRESS_TC				0x0F800000
 
-#define SESSION_FLAG2_DS_MPE_QOS		0x00008000 //Flag for DS_QOS capab
 
 #define ING_TC_SET_POS					19
 #define EGR_TC_SET_POS					20
