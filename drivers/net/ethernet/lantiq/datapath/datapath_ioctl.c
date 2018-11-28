@@ -10,13 +10,16 @@ static int get_tsinfo(struct net_device *dev,
 		      struct ethtool_ts_info *ts_info)
 {
 	struct mac_ops *ops;
-	struct pmac_port_info *port = get_port_info_via_dp_name(dev);
+	dp_subif_t subif = {0};
 	int inst = 0;
 	int err = 0;
 
-	if (!port)
+	if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
+		PR_ERR("%s dp_get_netif_subifid failed for %s\n",
+				__func__, dev->name);
 		return -EFAULT;
-	ops = dp_port_prop[inst].mac_ops[port->port_id];
+	}
+	ops = dp_port_prop[inst].mac_ops[subif.port_id];
 	if (!ops)
 		return -EFAULT;
 	err = ops->mac_get_ts_info(ops, ts_info);
