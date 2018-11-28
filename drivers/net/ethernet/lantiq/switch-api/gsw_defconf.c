@@ -37,7 +37,6 @@ static struct _gsw_pce_path gsw_pce_path[] = {
 	{ LOG_9,	X,	0,	0,	24,	PMAC_0},
 	{ LOG_10,	X,	0,	0,	24,	PMAC_0},
 	{ LOG_11,	X,	0,	0,	24,	PMAC_0},
-	{ LOG_0,	X,	0,	0,	24,	PMAC_0},
 	/* QID 25 */
 	{ LOG_3,	X,	1,	1,	25,	PMAC_0},
 	{ LOG_4,	X,	1,	1,	25,	PMAC_0},
@@ -48,7 +47,6 @@ static struct _gsw_pce_path gsw_pce_path[] = {
 	{ LOG_9,	X,	1,	1,	25,	PMAC_0},
 	{ LOG_10,	X,	1,	1,	25,	PMAC_0},
 	{ LOG_11,	X,	1,	1,	25,	PMAC_0},
-	{ LOG_0,	X,	1,	1,	25,	PMAC_0},
 	/* QID 26 */
 	{ LOG_3,	X,	2,	2,	26,	PMAC_0},
 	{ LOG_4,	X,	2,	2,	26,	PMAC_0},
@@ -59,7 +57,6 @@ static struct _gsw_pce_path gsw_pce_path[] = {
 	{ LOG_9,	X,	2,	2,	26,	PMAC_0},
 	{ LOG_10,	X,	2,	2,	26,	PMAC_0},
 	{ LOG_11,	X,	2,	2,	26,	PMAC_0},
-	{ LOG_0,	X,	2,	2,	26,	PMAC_0},
 	/* QID 27 */
 	{ LOG_3,	X,	3,	15,	27,	PMAC_0},
 	{ LOG_4,	X,	3,	15,	27,	PMAC_0},
@@ -70,7 +67,7 @@ static struct _gsw_pce_path gsw_pce_path[] = {
 	{ LOG_9,	X,	3,	15,	27,	PMAC_0},
 	{ LOG_10,	X,	3,	15,	27,	PMAC_0},
 	{ LOG_11,	X,	3,	15,	27,	PMAC_0},
-	{ LOG_0,	X,	3,	15,	27,	PMAC_0},
+	{ LOG_0,	X,	0,	15,	27,	PMAC_0},
 };
 
 /* Do the GSWIP PCE Q-MAP configuration */
