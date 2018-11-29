@@ -243,9 +243,9 @@ struct qos_ops {
 	/* Command: GSW_QOS_METER_ACT ; Index: 0x2B */
 	GSW_return_t (*QoS_Meter_Act)(void *, GSW_QoS_mtrAction_t *);
 	/* Command: GSW_QOS_COLOR_MARKING_TABLE_SET ; Index: 0x2C */
-	GSW_return_t (*QOS_ColorMarkingTableGet)(void *, GSW_QoS_colorMarkingEntry_t *);
-	/* Command: GSW_QOS_COLOR_MARKING_TABLE_GET ; Index: 0x2D */
 	GSW_return_t (*QOS_ColorMarkingTableSet)(void *, GSW_QoS_colorMarkingEntry_t *);
+	/* Command: GSW_QOS_COLOR_MARKING_TABLE_GET ; Index: 0x2D */
+	GSW_return_t (*QOS_ColorMarkingTableGet)(void *, GSW_QoS_colorMarkingEntry_t *);
 	/* Command: GSW_QOS_COLOR_REMARKING_TABLE_SET ; Index: 0x2E */
 	GSW_return_t (*QOS_ColorReMarkingTableSet)(void *, GSW_QoS_colorRemarkingEntry_t *);
 	/* Command: GSW_QOS_COLOR_REMARKING_TABLE_GET ; Index: 0x2F */
