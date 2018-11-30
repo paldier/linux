@@ -34,7 +34,8 @@ struct dp_pattern_vlan {
 		  * DP_VLAN_PATTERN_NOT_CARE: don't care
 		  */
 #define DP_PROTO_IP4    ETH_P_IP /*IP packet 0x0800*/
-#define DP_PROTO_PPPOE  ETH_P_PPP_DISC /*PPPoE packet: 0x8863 & 0x8864) */
+#define DP_PROTO_PPPOE  ETH_P_PPP_DISC /*PPPoE packet: 0x8863 */
+#define DP_PROTO_PPPOE_SES ETH_P_PPP_SES /*PPPoE packet: 0x8864 */
 #define DP_PROTO_ARP    ETH_P_ARP /*ARP 0x0806*/
 #define DP_PROTO_IP6    ETH_P_IPV6 /*IPv6 packet 0x86DD*/
 #define DP_PROTO_EAPOL  ETH_P_PAE /*EAPOL packet 0x888E */
