@@ -426,31 +426,32 @@ void intel_clk_plls_parse_vco_config(struct intel_clk_provider *ctx,
 				     u32 nr_clk)
 {
 	struct device *dev = ctx->dev;
-	struct device_node *child, *np = dev->of_node;
+	struct device_node *np = dev->of_node;
 	const struct intel_pll_clk_data *tmp;
 	struct of_phandle_args args;
 	u32 count = 0, idx;
 	struct clk *clk;
 
-	child = of_find_node_by_name(np, "plls_clk");
-
-	if (!child) {
-		dev_err(ctx->dev, "%s: Could not find plls_clk\n", __func__);
-		return;
-	}
-
 	do {
-		if (of_parse_phandle_with_args(child, "intel,pll_clks_vco",
-					       "#pll-clk-cells", count,
-					       &args) < 0)
+		if (of_parse_phandle_with_fixed_args(np,
+						     "intel,pll_clks_vco",
+						     3, count, &args) < 0)
 			break;
 
 		for (idx = 0, tmp = list; idx < nr_clk; idx++, tmp++) {
 			if (tmp->id == args.args[0]) {
 				clk = __clk_lookup(tmp->name);
-				if (clk_prepare_enable(clk))
-					continue;
-				clk_set_rate(clk, (unsigned long)args.args[1]);
+				if (clk_prepare_enable(clk) == 0) {
+					if (!args.args[2]) {
+						clk_disable_unprepare(clk);
+					} else {
+						if (clk_set_rate(clk, args.args[1]))
+							dev_warn(ctx->dev, "%s clk: %s clk_set_rate failed\n",
+								__func__, tmp->name);
+					}
+				} else
+					dev_warn(ctx->dev, "%s clk: %s enable failed\n",
+						__func__, tmp->name);
 			}
 		}
 	} while (++count);
