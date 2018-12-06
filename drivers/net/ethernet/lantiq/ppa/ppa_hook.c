@@ -698,14 +698,21 @@ static unsigned int ppa_postrt_hook_fn(void *priv,
 		struct nf_conn *ct = NULL;
 		enum ip_conntrack_info ctinfo;
 		uint32_t flags;
-
+		/* Post routing hook gets invoked twice for IPSec Path in new PPA
+		hook mechanism (similar to netfilter). So in the first call
+		we skip the learning, since it will be a normal TCP/UDP session
+		packet which will eventually take the IPSec Path */
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
-	struct iphdr *hdr = ip_hdr(skb);
-	/* exclude the encrypted ipsec tunnel packets */
-	if (hdr->protocol != IPPROTO_ESP) {
-#endif /* CONFIG_PPA_MPE_IP97*/
-		if (!ppa_hook_session_add_fn)
+		struct iphdr *hdr = ip_hdr(skb);
+		if (hdr->protocol == IPPROTO_ESP || skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn)
 			return NF_ACCEPT;
+		/* In the Second call (After Encryption) we skip again for
+		ESP type since we call this hook in xfrm_output_resume before
+		old conntrack reset, based on which the p_item was created */
+#else
+		if (skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn)
+			return NF_ACCEPT;
+#endif
 
 #if IS_ENABLED(CONFIG_INTEL_IPQOS_ACCEL_DISABLE)
 		/* check for 13th bit in NFMARK set by IPQOS classifier */
@@ -726,9 +733,7 @@ static unsigned int ppa_postrt_hook_fn(void *priv,
 			 PPA_F_SESSION_ORG_DIR : PPA_F_SESSION_REPLY_DIR;
 
 		ppa_hook_session_add_fn(skb, ct, flags);
-#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
-	}
-#endif /* CONFIG_PPA_MPE_IP97*/
+
 	return NF_ACCEPT;
 }
 
