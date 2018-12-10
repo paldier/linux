@@ -21,6 +21,7 @@
 #include <linux/of_mdio.h>
 #include <linux/of_irq.h>
 #include <linux/of_device.h>
+#include <linux/thermal.h>
 
 #ifdef CONFIG_USERSPACE_LINK_NOTIFICATION
 #include <net/genetlink.h>
@@ -1280,6 +1281,197 @@ static int phy_netdevice_event(struct notifier_block *nb, unsigned long action,
 	return NOTIFY_OK;
 }
 
+#ifdef CONFIG_XRX500_ETH_DRV_THERMAL_SUPPORT
+
+static int ltq_eth_thermal_get_max_state(struct thermal_cooling_device *cdev,
+					 unsigned long *state)
+{
+	struct xrx500_hw *hw = cdev->devdata;
+	struct xrx500_thermal *thermal = &hw->thermal;
+
+	*state = thermal->max_state;
+
+	return 0;
+}
+
+static int ltq_eth_thermal_get_cur_state(struct thermal_cooling_device *cdev,
+					 unsigned long *state)
+{
+	struct xrx500_hw *hw = (struct xrx500_hw *)cdev->devdata;
+	struct xrx500_thermal *thermal = &hw->thermal;
+
+	*state = thermal->cur_state;
+
+	return 0;
+}
+
+static int advertising_min = ADVERTISED_10baseT_Half  |
+			    ADVERTISED_10baseT_Full;
+
+static int ltq_eth_thermal_recover_state(struct net_device *dev)
+{
+	struct ltq_eth_priv *priv = netdev_priv(dev);
+	int ret = 0;
+
+	if (priv && priv->needs_recovery) {
+		ret = set_settings(dev, &priv->bkup_cmd);
+		if (ret)
+			return ret;
+
+		priv->needs_recovery = false;
+	}
+
+	return ret;
+}
+
+static int ltq_eth_thermal_set_cur_state(struct thermal_cooling_device *cdev,
+					 unsigned long state)
+{
+	struct ethtool_cmd cmd;
+	int ret, i, j;
+	struct xrx500_hw *hw = cdev->devdata;
+	struct xrx500_thermal *thermal = &hw->thermal;
+
+	if (WARN_ON(state > thermal->max_state))
+		return -EINVAL;
+
+	if (thermal->cur_state == state)
+		return 0;
+
+	for (i = 0, j = 0; i < hw->num_devs; i++) {
+		struct net_device *dev = hw->devs[i];
+		struct ltq_eth_priv *priv = netdev_priv(dev);
+
+		if (state == 0) { /* cooling disabled */
+			if (ltq_eth_thermal_recover_state(dev))
+				pr_err("%s: failed to recover settings for %s\n",
+				       __func__, dev->name);
+			continue;
+		}
+
+		if (priv->wan)
+			continue;
+
+		if (!netif_carrier_ok(dev))
+			continue;  /* phy puts hw in sleep if no link */
+
+		ret = get_settings(dev, &cmd);
+		if (ret) {
+			pr_err("Failed to get settings for %s\n", dev->name);
+			continue;
+		}
+
+		if (j < state) { /* reduce speed */
+			if (cmd.advertising == advertising_min)
+				continue;
+
+			priv->bkup_cmd.phy_address = cmd.phy_address;
+			priv->bkup_cmd.advertising = cmd.advertising;
+			priv->bkup_cmd.autoneg = cmd.autoneg;
+
+			cmd.cmd = ETHTOOL_SLINKSETTINGS;
+			cmd.advertising = advertising_min;
+			cmd.autoneg = AUTONEG_ENABLE;
+
+			ret = set_settings(dev, &cmd);
+			if (ret) {
+				pr_err("%s: Failed to set settings for %s (reducing)\n",
+				       __func__, dev->name);
+				continue;
+			}
+
+			j++;
+			priv->needs_recovery = true;
+
+		} else { /* recover to previous settings */
+			if (ltq_eth_thermal_recover_state(dev)) {
+				pr_err("%s: Failed to set settings for %s (recovery)\n",
+				       __func__, dev->name);
+				continue;
+			}
+		}
+	}
+
+	thermal->cur_state = state;
+
+	return ret;
+}
+
+static struct thermal_cooling_device_ops ltq_eth_thermal_ops = {
+	.get_max_state = ltq_eth_thermal_get_max_state,
+	.get_cur_state = ltq_eth_thermal_get_cur_state,
+	.set_cur_state = ltq_eth_thermal_set_cur_state,
+};
+
+static ssize_t show_advrt_min(struct device *dev, struct device_attribute *attr,
+			      char *buf)
+{
+	if (!capable(CAP_NET_ADMIN))
+		return -EPERM;
+
+	return sprintf(buf, "%d\n", advertising_min);
+}
+
+static ssize_t store_advrt_min(struct device *dev, struct device_attribute *attr,
+			       const char *buf, size_t count)
+{
+	int advrt_min;
+
+	if (!capable(CAP_NET_ADMIN))
+		return -EPERM;
+
+	if (kstrtoint(buf, 10, &advrt_min))
+		return -EINVAL;
+
+	advertising_min = advrt_min;
+
+	return 0;
+}
+static DEVICE_ATTR(advrt_min, S_IWUSR | S_IRUSR, show_advrt_min, store_advrt_min);
+
+static int ltq_eth_thermal_init(struct device_node *np, struct xrx500_hw *hw)
+{
+	struct thermal_cooling_device *cdev;
+
+	hw->thermal.max_state = hw->num_devs;
+
+	cdev = thermal_of_cooling_device_register(np, "eth_thermal", hw,
+						  &ltq_eth_thermal_ops);
+	if (IS_ERR(cdev)) {
+		pr_err("Failed to setup thermal device (err %ld)\n",
+		       PTR_ERR(cdev));
+		return PTR_ERR(cdev);
+	}
+
+	hw->thermal.cdev = cdev;
+
+	if (device_create_file(&cdev->device, &dev_attr_advrt_min)) {
+		dev_err(&cdev->device,
+			"couldn't create device file for advrt_min\n");
+	}
+
+	return 0;
+}
+
+void ltq_eth_thermal_exit(struct xrx500_hw *hw)
+{
+	device_remove_file(&hw->thermal.cdev->device, &dev_attr_advrt_min);
+	thermal_cooling_device_unregister(hw->thermal.cdev);
+}
+
+#else
+
+static int ltq_eth_thermal_init(struct device_node *np, struct xrx500_hw *hw)
+{
+	return 0;
+}
+
+static void ltq_eth_thermal_exit(struct xrx500_hw *hw)
+{
+}
+
+#endif
+
 static void
 xrx500_of_port(struct net_device *dev, struct device_node *port)
 {
@@ -1378,7 +1570,7 @@ static int ltq_eth_dev_reg(struct xrx500_hw *hw, u32 xgmac_id_param,
 		ltq_eth_drv_eth_addr_setup(eth_dev[i], priv->id, priv->wan);
 		err = register_netdev(eth_dev[i]);
 		if (err) {
-			pr_err("%s: failed to register netdevice: %s %d\n",
+			pr_err("%s: failed to register netdevice: %p %d\n",
 			       __func__, eth_dev[i], err);
 				return -1;
 		}
@@ -2021,6 +2213,15 @@ static int ltq_eth_drv_init(struct platform_device *pdev)
 	/* Register the netlink notification */
 	ltq_eth_genetlink_init();
 #endif
+
+	if (of_find_property(node, "#cooling-cells", NULL)) {
+		ret = ltq_eth_thermal_init(node, &xrx500_hw);
+		if (ret) {
+			pr_err("%s: net cooling device not registered (err %d)\n",
+			       __func__, ret);
+		}
+	}
+
 	pr_info("Lantiq ethernet driver for XRX500 init.\n");
 	return 0;
 }
@@ -2108,6 +2309,8 @@ static void ltq_eth_drv_exit(struct platform_device *pdev)
 		mdiobus_unregister(xrx500_hw.mii_bus_pae);
 		mdiobus_free(xrx500_hw.mii_bus_pae);
 	}
+
+	ltq_eth_thermal_exit(&xrx500_hw);
 
 	memset(&xrx500_hw, 0, sizeof(xrx500_hw));
 #ifdef CONFIG_USERSPACE_LINK_NOTIFICATION

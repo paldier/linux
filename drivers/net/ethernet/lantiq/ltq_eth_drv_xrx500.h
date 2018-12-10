@@ -35,6 +35,13 @@ struct xrx500_port {
 	struct device_node *phy_node;
 };
 
+struct xrx500_thermal {
+	struct thermal_cooling_device *cdev;
+
+	unsigned int cur_state;
+	unsigned int max_state;
+};
+
 struct xrx500_hw {
 	struct mii_bus *mii_bus;
 	struct mii_bus *mii_bus_pae;
@@ -42,6 +49,7 @@ struct xrx500_hw {
 	int num_devs;
 	int port_map[NUM_ETH_INF];
 	unsigned short wan_map;
+	struct xrx500_thermal thermal;
 };
 
 /**
@@ -80,6 +88,8 @@ struct ltq_eth_priv {
 	int start;
 	/*! max netdevices for extra subif/lct */
 	int end;
+	struct ethtool_cmd bkup_cmd;
+	bool needs_recovery;
 	#define FLAG_PAUSE_AUTO         0x00000001
 	#define FLAG_FULL_DUPLEX        0x00000002
 	#define FLAG_10_BASE_T          0x00000010
