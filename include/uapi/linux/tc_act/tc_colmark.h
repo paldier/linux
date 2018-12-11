@@ -11,19 +11,19 @@
 #define COLMARK_F_METER_TYPE		0x4
 
 enum tc_drop_precedence {
-	NO_MARKING,
-	INTERNAL = 1,
-	DEI = 2,
-	PCP_8P0D = 3,
-	PCP_7P1D = 4,
-	PCP_6P2D = 5,
-	PCP_5P3D = 6,
-	DSCP_AF = 7,
+	TC_COLMARK_NO_MARKING,
+	TC_COLMARK_INTERNAL = 1,
+	TC_COLMARK_DEI = 2,
+	TC_COLMARK_PCP_8P0D = 3,
+	TC_COLMARK_PCP_7P1D = 4,
+	TC_COLMARK_PCP_6P2D = 5,
+	TC_COLMARK_PCP_5P3D = 6,
+	TC_COLMARK_DSCP_AF = 7,
 };
 
 enum tc_meter_type {
-	srTCM,
-	trTCM,
+	TC_COLMARK_SRTCM,
+	TC_COLMARK_TRTCM,
 };
 
 struct tc_colmark {
