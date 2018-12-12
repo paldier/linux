@@ -2053,11 +2053,11 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 		goto out;
 	}
 
-	QOS_LOG_INFO("wred total resources\t%u\n",
+	QOS_LOG_DEBUG("wred total resources\t%u\n",
 			qdev->hwconf.wred_total_avail_resources);
-	QOS_LOG_INFO("qm_ddr_start\t\t0x%08X\n", qdev->hwconf.qm_ddr_start);
-	QOS_LOG_INFO("qm_num_of_pages\t\t%u\n", qdev->hwconf.qm_num_pages);
-	QOS_LOG_INFO("clock\t\t\t%u\n", qdev->hwconf.qos_clock);
+	QOS_LOG_DEBUG("qm_ddr_start\t\t0x%08X\n", qdev->hwconf.qm_ddr_start);
+	QOS_LOG_DEBUG("qm_num_of_pages\t\t%u\n", qdev->hwconf.qm_num_pages);
+	QOS_LOG_DEBUG("clock\t\t\t%u\n", qdev->hwconf.qos_clock);
 
 	if (conf->wred_p_const > 1023) {
 		QOS_LOG_ERR("wred_p_const should be not greater than 1023\n");
@@ -2068,8 +2068,8 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	qdev->hwconf.wred_const_p = conf->wred_p_const;
 	qdev->hwconf.wred_max_q_size = conf->wred_max_q_size;
 
-	QOS_LOG_INFO("wred p const\t\t%u\n", qdev->hwconf.wred_const_p);
-	QOS_LOG_INFO("wred max q size\t\t%u\n", qdev->hwconf.wred_max_q_size);
+	QOS_LOG_DEBUG("wred p const\t\t%u\n", qdev->hwconf.wred_const_p);
+	QOS_LOG_DEBUG("wred max q size\t\t%u\n", qdev->hwconf.wred_max_q_size);
 
 	rc = load_firmware(qdev, FIRMWARE_FILE);
 	if (rc)

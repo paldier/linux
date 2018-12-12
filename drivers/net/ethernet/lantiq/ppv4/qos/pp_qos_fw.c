@@ -148,7 +148,7 @@ int do_load_firmware(
 	hdr->major = le32_to_cpu(hdr->major);
 	hdr->minor = le32_to_cpu(hdr->minor);
 	hdr->build = le32_to_cpu(hdr->build);
-	QOS_LOG_INFO("Firmware size(%zu) major(%u) minor(%u) build(%u)\n",
+	QOS_LOG_DEBUG("Firmware size(%zu) major(%u) minor(%u) build(%u)\n",
 			size,
 			hdr->major,
 			hdr->minor,
@@ -195,7 +195,9 @@ int do_load_firmware(
 				FW_OK_SIGN, val);
 		return  -ENODEV;
 	}
-	QOS_LOG_INFO("FW is running :)\n");
+
+	QOS_LOG_INFO("QoS FW ver %d.%d.%d was loaded\n", qdev->fwver.major,
+		     qdev->fwver.minor, qdev->fwver.build);
 	*((uint32_t *)(qdev->fwcom.cmdbuf)) = 0;
 	return 0;
 }
