@@ -22709,6 +22709,9 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			tbl_prog_brdgeport_ingress.val[0] &= ~(1 << 13);
 	}
 
+#ifdef GSW_BRIDGE_PORT_SRC_IP_LOOKUP_DISABLE
+	tbl_prog_brdgeport_ingress.val[0] &= ~(1 << 9);
+#else
 	if (param->eMask & GSW_BRIDGE_PORT_CONFIG_MASK_MC_SRC_IP_LOOKUP) {
 		/* 0- disable , 1 - enable*/
 		if (param->bMcSrcIpLookupEnable)
@@ -22716,6 +22719,7 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 		else
 			tbl_prog_brdgeport_ingress.val[0] &= ~(1 << 9);
 	}
+#endif
 
 	if (param->eMask & GSW_BRIDGE_PORT_CONFIG_MASK_MC_DEST_MAC_LOOKUP) {
 		/* 1- disable , 0 - enable*/

@@ -180,6 +180,7 @@ Where as CLEAR_FILL_CTRL_REG takes care of clear then fill.
 
 #define IS_VRSN_NOT_31(ver) \
 	((ver != LTQ_GSWIP_3_1))
+#define GSW_BRIDGE_PORT_SRC_IP_LOOKUP_DISABLE 1
 
 /*PHY Reg 0x4 */
 #define PHY_AN_ADV_10HDX 0x20

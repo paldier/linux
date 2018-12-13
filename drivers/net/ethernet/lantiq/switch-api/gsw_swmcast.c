@@ -224,7 +224,7 @@ int gsw_get_swmcast_entry(void *cdev, GSW_multicastTableRead_t *parm, u32 loc)
 	gsw_pce_table_read(cdev, &pcetable);
 
 	if (pcetable.valid == 1) {
-		parm->bExclSrcIP = ((pcetable.key[2] >> 14) & 0x3);
+		parm->eModeMember = ((pcetable.key[2] >> 14) & 0x3);
 
 		/* Pattern */
 		parm->nFID = pcetable.key[2] & 0x3F;
@@ -316,7 +316,7 @@ static int set_pce_hash_table(void *cdev, MCAST_HASHTBL *phtable, u32 loc)
 	pcetable.key[0] = phtable->first_idx;
 	pcetable.key[1] = phtable->nxt_idx;
 	pcetable.valid = phtable->valid;
-	pcetable.key[2] = ((phtable->excl_src_ip & 0x3) << 14);
+	pcetable.key[2] = ((phtable->src_ip_mode & 0x3) << 14);
 
 	/* Pattern */
 	pcetable.key[2] |= phtable->key.fid & 0x3F;
@@ -415,7 +415,7 @@ int gsw_insert_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 
 	pattern.fid = parm->nFID;
 
-	hashidx = cal_hash(parm->eModeMember, &pattern, parm->eIPVersion);
+	hashidx = cal_hash(GSW_IGMP_MEMBER_EXCLUDE, &pattern, parm->eIPVersion);
 
 	ret = search_hashtable_entry(hashidx, &pattern, &found_loc);
 
@@ -556,7 +556,7 @@ int gsw_search_hashtable_entry(void *cdev, GSW_multicastTable_t *parm, GSW_multi
 
 	pattern.fid = parm->nFID;
 
-	hashidx = cal_hash(parm->eModeMember, &pattern, parm->eIPVersion);
+	hashidx = cal_hash(GSW_IGMP_MEMBER_EXCLUDE, &pattern, parm->eIPVersion);
 
 	ret = search_hashtable_entry(hashidx, &pattern, &found_loc);
 
@@ -735,7 +735,7 @@ int gsw_remove_hashtable_entry(void *cdev, GSW_multicastTable_t *parm)
 
 	pattern.fid = parm->nFID;
 
-	hashidx = cal_hash(parm->eModeMember, &pattern, parm->eIPVersion);
+	hashidx = cal_hash(GSW_IGMP_MEMBER_EXCLUDE, &pattern, parm->eIPVersion);
 
 	if (MATCH_FOUND != search_hashtable_entry(hashidx, &pattern, &loc))
 		return ENTRY_CANNOT_REMOVE;
