@@ -33,6 +33,7 @@
 #include <net/switch_api/gsw_dev.h>
 #include "xrx500_phy_fw.h"
 #include "ltq_eth_drv_xrx500.h"
+#include "xpcs/xpcs.h"
 
 #define LTQ_ETH_MAX_DATA_LEN 9000
 
@@ -256,7 +257,7 @@ static int  ethtool_eee_set(struct net_device *dev,
 }
 
 /* Structure of the ether tool operation  */
-static const struct ethtool_ops ethtool_ops = {
+static struct ethtool_ops ethtool_ops = {
 	.get_drvinfo		= get_drvinfo,
 	.get_settings		= get_settings,
 	.set_settings		= set_settings,
@@ -716,6 +717,13 @@ static int ltq_eth_init(struct net_device *dev)
 			pr_warn("connect phy of port %d failed\n",
 				priv->port[i].num);
 		dev->ethtool_ops = &ethtool_ops;
+		
+		if (!priv->port[i].phy_node) {
+			ethtool_ops.get_link_ksettings = 
+				serdes_ethtool_get_link_ksettings;
+			ethtool_ops.set_link_ksettings = 
+				serdes_ethtool_set_link_ksettings;
+		}
 	}
 
 	if (priv->lct_en == 1) {

@@ -22,6 +22,10 @@
 #include <linux/phy/phy.h>
 #include <linux/reset.h>
 #include "xpcs.h"
+#include <linux/netdevice.h>
+#include <net/datapath_api.h>
+#include "../ltq_eth_drv_xrx500.h"
+
 
 #define MAX_BUSY_RETRY	2000
 #define XPCS_IRQ_NAME "xpcs_irq"
@@ -873,11 +877,6 @@ static int xpcs_init(struct xpcs_prv_data *pdata)
 		return -EINVAL;
 	}
 
-	if (xpcs_sysfs_init(pdata)) {
-		dev_dbg(pdata->dev, "%s: sysfs init failed!\n", pdata->name);
-		return -EINVAL;
-	}
-
 	return ret;
 }
 
@@ -948,11 +947,11 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 }
 #endif
 
-static int xpcs_reset(struct platform_device *pdev)
+static int xpcs_reset(struct device *dev)
 {
 	struct reset_control *xpcs_rst;
 
-	xpcs_rst = devm_reset_control_get(&pdev->dev, XPCS_RESET_NAME);
+	xpcs_rst = devm_reset_control_get(dev, XPCS_RESET_NAME);
 
 	if (IS_ERR(xpcs_rst))
 		return -1;
@@ -964,13 +963,112 @@ static int xpcs_reset(struct platform_device *pdev)
 	return 0;
 }
 
+struct xpcs_prv_data *priv_data[MAX_XPCS] = {0};
+
+int serdes_ethtool_get_link_ksettings(struct net_device *dev,
+				   struct ethtool_link_ksettings *cmd)
+{
+	struct ltq_eth_priv *priv = netdev_priv(dev);
+
+	serdes_ethtool_ksettings_get(priv->xgmac_id, cmd);
+
+	return 0;
+}
+EXPORT_SYMBOL(serdes_ethtool_get_link_ksettings);
+
+int serdes_ethtool_set_link_ksettings(struct net_device *dev,
+				   const struct ethtool_link_ksettings *cmd)
+{
+	struct ltq_eth_priv *priv = netdev_priv(dev);
+	int ret = 0;
+
+	ret = serdes_ethtool_ksettings_set(priv->xgmac_id, cmd);
+
+	return ret;
+}
+EXPORT_SYMBOL(serdes_ethtool_set_link_ksettings);
+
+void serdes_ethtool_ksettings_get(u32 idx,
+			       struct ethtool_link_ksettings *cmd)
+{
+	struct xpcs_prv_data *pdata = priv_data[idx];
+
+	if (pdata->mode == TENG_KR_MODE)
+		cmd->base.speed = SPEED_10000;
+	else if (pdata->mode == ONEG_XAUI_MODE)
+		cmd->base.speed = SPEED_1000;
+
+	return;
+}
+
+int serdes_ethtool_ksettings_set(u32 idx,
+			      const struct ethtool_link_ksettings *cmd)
+{
+	u32 speed = cmd->base.speed;
+	u32 mode;
+	struct xpcs_prv_data *pdata = priv_data[idx];
+
+	printk("Speed got is %d priv_data[idx].mode\n",speed);
+	
+	if (speed != SPEED_10000 &&
+	    speed != SPEED_1000)
+		return -EINVAL;
+
+	if (speed == SPEED_10000 && (pdata->mode != TENG_KR_MODE)) {
+		printk("Mode changing to: %s\n","10G");
+		mode = TENG_KR_MODE;
+	} else if (speed == SPEED_1000 && (pdata->mode != ONEG_XAUI_MODE)) {
+		printk("Mode changing to: %s\n","1G");
+		mode = ONEG_XAUI_MODE;
+	}
+
+	/* Restart Xpcs & PHY */
+	xpcs_reinit(idx, mode);
+
+	return 0;
+}
+
+int xpcs_reinit(int idx, u32 mode)
+{
+	struct xpcs_prv_data *pdata = priv_data[idx];
+	struct device *dev = pdata->dev;
+	struct phy *phy = pdata->phy;
+	int ret = 0;
+
+	/* RCU reset PHY */
+	phy_power_off(phy);
+
+	/* RCU reset XPCS */
+	ret = xpcs_reset(dev);	
+	if (ret < 0) {
+		dev_dbg(dev, "xpcs_reset err %s.\n", pdata->name);
+		return ret;
+	}
+
+	/* Power ON PHY */
+	phy_power_on(pdata->phy);
+
+	/* Change mode to new mode */
+	pdata->mode = mode;
+
+	/* Power ON XPCS */
+	ret = xpcs_init(pdata);
+	if (ret < 0) {
+		dev_dbg(dev, "xpcs_init err %s.\n", pdata->name);
+		return ret;
+	}
+
+	return ret;
+}
+
 static int xpcs_probe(struct platform_device *pdev)
 {
 	struct resource *res;
-	struct xpcs_prv_data *pdata = NULL;
 	struct device *dev = &pdev->dev;
 	int ret = XPCS_SUCCESS;
-
+	struct xpcs_prv_data *pdata;
+	int i = 0;
+	
 	if (dev->of_node) {
 		if (xpcs_parse_dts(pdev, &pdata) != XPCS_SUCCESS) {
 			dev_dbg(dev, "xpcs dt parse failed!\n");
@@ -984,6 +1082,11 @@ static int xpcs_probe(struct platform_device *pdev)
 				"Get private data from end point failed!\n");
 			return -EINVAL;
 		}
+	}
+
+	for (i = 0; i < MAX_XPCS; i++) {
+		if (!priv_data[i])
+			priv_data[i] = pdata;
 	}
 
 	pdata->id = pdev->id;
@@ -1028,7 +1131,7 @@ static int xpcs_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	if (xpcs_reset(pdev)) {
+	if (xpcs_reset(dev)) {
 		dev_err(dev, "Failed to do %s reset:\n", pdata->name);
 		return -EINVAL;
 	}
@@ -1036,6 +1139,11 @@ static int xpcs_probe(struct platform_device *pdev)
 	/* Initialize XPCS */
 	if (xpcs_init(pdata)) {
 		dev_err(dev, "%s Initialization Failed!!\n", pdata->name);
+		return -EINVAL;
+	}
+
+	if (xpcs_sysfs_init(pdata)) {
+		dev_dbg(dev, "%s: sysfs init failed!\n", pdata->name);
 		return -EINVAL;
 	}
 

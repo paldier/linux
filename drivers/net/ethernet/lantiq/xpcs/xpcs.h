@@ -2,6 +2,7 @@
 #define _XPCS_H_
 
 #include <linux/types.h>
+#include <linux/ethtool.h>
 
 #define XPCS_SUCCESS			0
 #define XPCS_FAILURE			-1
@@ -543,6 +544,8 @@
 #define PCS_DIG_STS_PSEQ_STATE_POS		2
 #define PCS_DIG_STS_PSEQ_STATE_WIDTH		3
 
+#define MAX_XPCS 3
+
 enum {
 	BACKPL_ETH_PCS = 0,
 	OTHER_PCS_CONFIG = 1
@@ -760,6 +763,11 @@ static inline void XPCS_RGWR(struct xpcs_prv_data *pdata, u32 reg, u32 val)
 	} while (0)
 
 int xpcs_sysfs_init(struct xpcs_prv_data *priv);
+int serdes_ethtool_get_link_ksettings(struct net_device *dev, struct ethtool_link_ksettings *cmd);
+int serdes_ethtool_set_link_ksettings(struct net_device *dev, const struct ethtool_link_ksettings *cmd);
+void serdes_ethtool_ksettings_get(u32 idx, struct ethtool_link_ksettings *cmd);
+int serdes_ethtool_ksettings_set(u32 idx, const struct ethtool_link_ksettings *cmd);
+int xpcs_reinit(int idx, u32 mode);
 
 #endif
 
