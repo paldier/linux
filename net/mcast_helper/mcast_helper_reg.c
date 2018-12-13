@@ -172,8 +172,8 @@ static int mcast_helper_dereg_callback(struct net_device *netdev,
 		mc_callback_rec = list_entry(liter, MCAST_CALLBACK_t, list);
 		if (mc_callback_rec != NULL) {
 			if (mc_callback_rec->netDev->name != NULL) {
-				if (!strncmp (netdev->name, mc_callback_rec->netDev->name, strlen(mc_callback_rec->netDev->name))) {
-					if (!strncmp (modName->name, mc_callback_rec->modName->name, strlen(mc_callback_rec->netDev->name))) {
+				if (!strncmp (netdev->name, mc_callback_rec->netDev->name, IFNAMSIZ)) {
+					if (!strncmp (modName->name, mc_callback_rec->modName->name, MODULE_NAME_LEN)) {
 						list_del(&mc_callback_rec->list);
 						kfree(mc_callback_rec);
 						if ((flags & LTQ_MC_F_FW_RESET) == LTQ_MC_F_FW_RESET)
