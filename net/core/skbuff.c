@@ -82,6 +82,9 @@
 #include <net/lantiq_cbm_api.h>
 #endif
 
+#if IS_ENABLED(CONFIG_PPA)
+#include <net/ppa/ppa_api.h>
+#endif
 
 struct kmem_cache *skbuff_head_cache __read_mostly;
 static struct kmem_cache *skbuff_fclone_cache __read_mostly;
@@ -260,7 +263,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
 	skb_reset_tail_pointer(skb);
 	skb->end = skb->tail + size;
 #if IS_ENABLED(CONFIG_PPA)
-	skb->ptr_ppa_pitem = 0;
+	skb->ptr_ppa_pitem = NULL;
 #endif
 	skb->mac_header = (typeof(skb->mac_header))~0U;
 	skb->transport_header = (typeof(skb->transport_header))~0U;
@@ -708,6 +711,10 @@ static void skb_release_all(struct sk_buff *skb)
 
 void __kfree_skb(struct sk_buff *skb)
 {
+#if IS_ENABLED(CONFIG_PPA)
+	if (ppa_hook_pitem_refcnt_dec_fn && skb->ptr_ppa_pitem)
+		ppa_hook_pitem_refcnt_dec_fn(skb);
+#endif
 	skb_release_all(skb);
 	kfree_skbmem(skb);
 }
@@ -728,9 +735,6 @@ void kfree_skb(struct sk_buff *skb)
 		smp_rmb();
 	else if (likely(!atomic_dec_and_test(&skb->users)))
 		return;
-#if IS_ENABLED(CONFIG_PPA)
-	skb->ptr_ppa_pitem = 0;
-#endif
 	trace_kfree_skb(skb, __builtin_return_address(0));
 	__kfree_skb(skb);
 }
@@ -886,7 +890,8 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	new->extmark	 = old->extmark;
 #endif
 #if IS_ENABLED(CONFIG_PPA)
-	new->ptr_ppa_pitem = old->ptr_ppa_pitem;
+	if (ppa_hook_pitem_refcnt_inc_fn && new->ptr_ppa_pitem)
+		ppa_hook_pitem_refcnt_inc_fn(new);
 #endif
 	CHECK_SKB_FIELD(protocol);
 	CHECK_SKB_FIELD(csum);

@@ -125,6 +125,8 @@ int32_t (*ppa_hook_session_bradd_fn)(PPA_BUF *, PPA_SESSION *, uint32_t) = NULL;
 int32_t (*ppa_hook_session_del_fn)(PPA_SESSION *, uint32_t) = NULL;
 #endif /*CONFIG_PPA_RT_SESS_LEARNING*/
 
+void (*ppa_hook_pitem_refcnt_inc_fn)(PPA_BUF *) = NULL;
+void (*ppa_hook_pitem_refcnt_dec_fn)(PPA_BUF *) = NULL;
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 int32_t (*ppa_hook_session_ipsec_add_fn)(PPA_XFRM_STATE *, sa_direction) = NULL;
 int32_t (*ppa_hook_session_ipsec_del_fn)(PPA_XFRM_STATE *) = NULL;
@@ -452,6 +454,8 @@ EXPORT_SYMBOL(ppa_hook_session_add_fn);
 EXPORT_SYMBOL(ppa_hook_session_bradd_fn);
 #endif /*CONFIG_PPA_BR_SESS_LEARNING*/
 EXPORT_SYMBOL(ppa_hook_session_del_fn);
+EXPORT_SYMBOL(ppa_hook_pitem_refcnt_inc_fn);
+EXPORT_SYMBOL(ppa_hook_pitem_refcnt_dec_fn);
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 EXPORT_SYMBOL(ppa_hook_session_ipsec_add_fn);
 EXPORT_SYMBOL(ppa_hook_session_ipsec_del_fn);

@@ -810,7 +810,7 @@ struct sk_buff {
 	__u32 DW0, DW1, DW2, DW3;
 #endif
 #ifdef CONFIG_PPA
-	__u32			ptr_ppa_pitem;
+	void			*ptr_ppa_pitem;
 #endif
 
 	/* private: */

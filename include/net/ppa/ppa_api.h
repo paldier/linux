@@ -966,6 +966,8 @@ int32_t ppa_mc_group_update(PPA_MC_GROUP *, uint32_t);
 int32_t ppa_mc_group_get(IP_ADDR_C, IP_ADDR_C, PPA_MC_GROUP *, uint32_t);
 int32_t ppa_mc_entry_modify(IP_ADDR_C, IP_ADDR_C, PPA_MC_GROUP *, PPA_SESSION_EXTRA *, uint32_t);
 int32_t ppa_mc_entry_get(IP_ADDR_C, IP_ADDR_C, PPA_SESSION_EXTRA *, uint32_t);
+void ppa_pitem_refcnt_inc(PPA_BUF *ppa_buf);
+void ppa_pitem_refcnt_dec(PPA_BUF *ppa_buf);
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 int32_t ppa_session_ipsec_add(PPA_XFRM_STATE *ppa_x, sa_direction dir);
 int32_t ppa_session_ipsec_delete(PPA_XFRM_STATE *ppa_x);

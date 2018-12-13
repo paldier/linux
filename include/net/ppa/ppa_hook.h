@@ -56,6 +56,17 @@ extern int32_t (*ppa_hook_session_add_fn)(PPA_BUF *skb, PPA_SESSION *p_session, 
 extern int32_t ppa_hook_session_add_fn(PPA_BUF *skb, PPA_SESSION *p_session, uint32_t flags);
 #endif
 extern int32_t (*ppa_hook_session_bradd_fn)(PPA_BUF *skb, PPA_SESSION *p_session, uint32_t flags);
+/*!
+  \brief If skb stores a p_item, increase ref count of the p_item->used
+  \param[in] skb points to the skb pointer
+ */
+extern void (*ppa_hook_pitem_refcnt_inc_fn)(PPA_BUF *skb);
+/*!
+  \brief If skb stores a p_item, call ppa_session_put
+  \param[in] skb points to the skb pointer
+ */
+extern void (*ppa_hook_pitem_refcnt_dec_fn)(PPA_BUF *skb);
+
 #if defined(CONFIG_PPA_MPE_IP97)
 #ifdef NO_DOXY
 extern int32_t (*ppa_hook_session_ipsec_add_fn)(PPA_XFRM_STATE *, sa_direction);
