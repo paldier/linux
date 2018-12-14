@@ -681,6 +681,8 @@ struct xpcs_prv_data {
 	/* Power save mode 0 - Normal Mode, 1 - power save mode */
 	u8 power_save;
 
+	struct reset_control *xpcs_rst;
+
 	/* XPCS Mode Switching */
 	struct xpcs_mode_cfg *mode_cfg;
 };
@@ -763,10 +765,10 @@ static inline void XPCS_RGWR(struct xpcs_prv_data *pdata, u32 reg, u32 val)
 	} while (0)
 
 int xpcs_sysfs_init(struct xpcs_prv_data *priv);
-int serdes_ethtool_get_link_ksettings(struct net_device *dev, struct ethtool_link_ksettings *cmd);
-int serdes_ethtool_set_link_ksettings(struct net_device *dev, const struct ethtool_link_ksettings *cmd);
-void serdes_ethtool_ksettings_get(u32 idx, struct ethtool_link_ksettings *cmd);
-int serdes_ethtool_ksettings_set(u32 idx, const struct ethtool_link_ksettings *cmd);
+void xpcs_ethtool_ksettings_get(u32 idx,
+				struct ethtool_link_ksettings *cmd);
+int xpcs_ethtool_ksettings_set(u32 idx,
+			       const struct ethtool_link_ksettings *cmd);
 int xpcs_reinit(int idx, u32 mode);
 
 #endif

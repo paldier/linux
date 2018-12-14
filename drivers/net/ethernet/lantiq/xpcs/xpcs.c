@@ -24,7 +24,6 @@
 #include "xpcs.h"
 #include <linux/netdevice.h>
 #include <net/datapath_api.h>
-#include "../ltq_eth_drv_xrx500.h"
 
 
 #define MAX_BUSY_RETRY	2000
@@ -45,6 +44,8 @@ static int xpcs_teng_xaui_mode(struct xpcs_prv_data *pdata);
 static int xpcs_teng_kr_mode(struct xpcs_prv_data *pdata);
 static int xpcs_2p5g_xaui_mode(struct xpcs_prv_data *pdata);
 static int xpcs_synphy_reset_sts(struct xpcs_prv_data *pdata);
+
+struct xpcs_prv_data *priv_data[MAX_XPCS] = {0};
 
 struct xpcs_mode_cfg mode_cfg[MAX_XPCS_MODE] = {
 	{
@@ -191,9 +192,16 @@ static int xpcs_rxtx_stable(struct xpcs_prv_data *pdata)
 		pseq_state = XPCS_RGRD_VAL(pdata, PCS_DIG_STS, PSEQ_STATE);
 
 		if (pseq_state == 4) {
-			dev_info(pdata->dev,
-				 "%s: Tx/Rx stable (Power_Good State)\n",
-				 pdata->name);
+			if (pdata->mode == TENG_KR_MODE)
+				pr_info("%s: Tx/Rx stable (Power_Good State) "
+					"Speed: 10G\n", pdata->name);
+			else if (pdata->mode == ONEG_XAUI_MODE)
+				pr_info("%s: Tx/Rx stable (Power_Good State) "
+					"Speed: 1G\n", pdata->name);
+			else if (pdata->mode == TWOP5G_GMII_MODE)
+				pr_info("%s: Tx/Rx stable (Power_Good State) "
+					"Speed: 2.5G\n", pdata->name);
+
 			break;
 		}
 
@@ -949,47 +957,17 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 
 static int xpcs_reset(struct device *dev)
 {
-	struct reset_control *xpcs_rst;
+	struct xpcs_prv_data *pdata = dev_get_drvdata(dev);
 
-	xpcs_rst = devm_reset_control_get(dev, XPCS_RESET_NAME);
-
-	if (IS_ERR(xpcs_rst))
-		return -1;
-
-	reset_control_assert(xpcs_rst);
+	reset_control_assert(pdata->xpcs_rst);
 	udelay(1);
-	reset_control_deassert(xpcs_rst);
+	reset_control_deassert(pdata->xpcs_rst);
 
 	return 0;
 }
 
-struct xpcs_prv_data *priv_data[MAX_XPCS] = {0};
-
-int serdes_ethtool_get_link_ksettings(struct net_device *dev,
-				   struct ethtool_link_ksettings *cmd)
-{
-	struct ltq_eth_priv *priv = netdev_priv(dev);
-
-	serdes_ethtool_ksettings_get(priv->xgmac_id, cmd);
-
-	return 0;
-}
-EXPORT_SYMBOL(serdes_ethtool_get_link_ksettings);
-
-int serdes_ethtool_set_link_ksettings(struct net_device *dev,
-				   const struct ethtool_link_ksettings *cmd)
-{
-	struct ltq_eth_priv *priv = netdev_priv(dev);
-	int ret = 0;
-
-	ret = serdes_ethtool_ksettings_set(priv->xgmac_id, cmd);
-
-	return ret;
-}
-EXPORT_SYMBOL(serdes_ethtool_set_link_ksettings);
-
-void serdes_ethtool_ksettings_get(u32 idx,
-			       struct ethtool_link_ksettings *cmd)
+void xpcs_ethtool_ksettings_get(u32 idx,
+				struct ethtool_link_ksettings *cmd)
 {
 	struct xpcs_prv_data *pdata = priv_data[idx];
 
@@ -1000,33 +978,30 @@ void serdes_ethtool_ksettings_get(u32 idx,
 
 	return;
 }
+EXPORT_SYMBOL(xpcs_ethtool_ksettings_get);
 
-int serdes_ethtool_ksettings_set(u32 idx,
-			      const struct ethtool_link_ksettings *cmd)
+int xpcs_ethtool_ksettings_set(u32 idx,
+			       const struct ethtool_link_ksettings *cmd)
 {
 	u32 speed = cmd->base.speed;
 	u32 mode;
 	struct xpcs_prv_data *pdata = priv_data[idx];
 
-	printk("Speed got is %d priv_data[idx].mode\n",speed);
-	
 	if (speed != SPEED_10000 &&
 	    speed != SPEED_1000)
 		return -EINVAL;
 
-	if (speed == SPEED_10000 && (pdata->mode != TENG_KR_MODE)) {
-		printk("Mode changing to: %s\n","10G");
+	if (speed == SPEED_10000 && (pdata->mode != TENG_KR_MODE))
 		mode = TENG_KR_MODE;
-	} else if (speed == SPEED_1000 && (pdata->mode != ONEG_XAUI_MODE)) {
-		printk("Mode changing to: %s\n","1G");
+	else if (speed == SPEED_1000 && (pdata->mode != ONEG_XAUI_MODE))
 		mode = ONEG_XAUI_MODE;
-	}
 
 	/* Restart Xpcs & PHY */
 	xpcs_reinit(idx, mode);
 
 	return 0;
 }
+EXPORT_SYMBOL(xpcs_ethtool_ksettings_set);
 
 int xpcs_reinit(int idx, u32 mode)
 {
@@ -1035,24 +1010,40 @@ int xpcs_reinit(int idx, u32 mode)
 	struct phy *phy = pdata->phy;
 	int ret = 0;
 
+	if (!dev || !phy) {
+		printk("Cannot get phy or dev\n");
+		return -1;
+	}
+
+	/* Xpcs reset assert */
+	reset_control_assert(pdata->xpcs_rst);
+
 	/* RCU reset PHY */
 	phy_power_off(phy);
 
-	/* RCU reset XPCS */
-	ret = xpcs_reset(dev);	
+	/* Exit PHY */
+	phy_exit(phy);
+
+	/* Init PHY */
+	ret = phy_init(phy);
+
 	if (ret < 0) {
-		dev_dbg(dev, "xpcs_reset err %s.\n", pdata->name);
+		dev_dbg(dev, "phy_init err %s.\n", pdata->name);
 		return ret;
 	}
 
 	/* Power ON PHY */
-	phy_power_on(pdata->phy);
+	phy_power_on(phy);
+
+	/* Xpcs reset deassert */
+	reset_control_deassert(pdata->xpcs_rst);
 
 	/* Change mode to new mode */
 	pdata->mode = mode;
 
 	/* Power ON XPCS */
 	ret = xpcs_init(pdata);
+
 	if (ret < 0) {
 		dev_dbg(dev, "xpcs_init err %s.\n", pdata->name);
 		return ret;
@@ -1068,7 +1059,8 @@ static int xpcs_probe(struct platform_device *pdev)
 	int ret = XPCS_SUCCESS;
 	struct xpcs_prv_data *pdata;
 	int i = 0;
-	
+	struct reset_control *xpcs_rst;
+
 	if (dev->of_node) {
 		if (xpcs_parse_dts(pdev, &pdata) != XPCS_SUCCESS) {
 			dev_dbg(dev, "xpcs dt parse failed!\n");
@@ -1084,10 +1076,12 @@ static int xpcs_probe(struct platform_device *pdev)
 		}
 	}
 
-	for (i = 0; i < MAX_XPCS; i++) {
-		if (!priv_data[i])
-			priv_data[i] = pdata;
-	}
+	if (!strcmp(pdata->name, "wan_xpcs"))
+		priv_data[0] = pdata;
+	else if (!strcmp(pdata->name, "lan_xpcs0"))
+		priv_data[1] = pdata;
+	else if (!strcmp(pdata->name, "lan_xpcs1"))
+		priv_data[2] = pdata;
 
 	pdata->id = pdev->id;
 	pdata->dev = dev;
@@ -1131,6 +1125,11 @@ static int xpcs_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	pdata->xpcs_rst = devm_reset_control_get(dev, XPCS_RESET_NAME);
+
+	if (IS_ERR(pdata->xpcs_rst))
+		return -1;
+
 	if (xpcs_reset(dev)) {
 		dev_err(dev, "Failed to do %s reset:\n", pdata->name);
 		return -EINVAL;
@@ -1146,8 +1145,6 @@ static int xpcs_probe(struct platform_device *pdev)
 		dev_dbg(dev, "%s: sysfs init failed!\n", pdata->name);
 		return -EINVAL;
 	}
-
-	dev_info(dev, "%s Initialized!!\n", pdata->name);
 
 	return XPCS_SUCCESS;
 }

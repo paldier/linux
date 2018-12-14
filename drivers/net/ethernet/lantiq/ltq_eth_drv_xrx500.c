@@ -698,6 +698,29 @@ static int ltq_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	return -EOPNOTSUPP;
 }
 
+int serdes_ethtool_get_link_ksettings(struct net_device *dev,
+				   struct ethtool_link_ksettings *cmd)
+{
+	struct ltq_eth_priv *priv = netdev_priv(dev);
+
+	/* Speed Get in Ethtool */
+	xpcs_ethtool_ksettings_get(priv->xgmac_id, cmd);
+
+	return 0;
+}
+
+int serdes_ethtool_set_link_ksettings(struct net_device *dev,
+				   const struct ethtool_link_ksettings *cmd)
+{
+	struct ltq_eth_priv *priv = netdev_priv(dev);
+	int ret = 0;
+
+	/* Speed Set in Ethtool */
+	ret = xpcs_ethtool_ksettings_set(priv->xgmac_id, cmd);
+
+	return ret;
+}
+
 /* init of the network device */
 static int ltq_eth_init(struct net_device *dev)
 {
@@ -716,14 +739,17 @@ static int ltq_eth_init(struct net_device *dev)
 		else if (g_soc_data.phy_connect_func(dev, &priv->port[i]))
 			pr_warn("connect phy of port %d failed\n",
 				priv->port[i].num);
+
 		dev->ethtool_ops = &ethtool_ops;
-		
-		if (!priv->port[i].phy_node) {
-			ethtool_ops.get_link_ksettings = 
-				serdes_ethtool_get_link_ksettings;
-			ethtool_ops.set_link_ksettings = 
-				serdes_ethtool_set_link_ksettings;
-		}
+	}
+
+	if (!priv->port[i].phy_node) {
+		ethtool_ops.get_link_ksettings =
+			serdes_ethtool_get_link_ksettings;
+		ethtool_ops.set_link_ksettings =
+			serdes_ethtool_set_link_ksettings;
+
+		dev->ethtool_ops = &ethtool_ops;
 	}
 
 	if (priv->lct_en == 1) {
