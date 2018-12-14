@@ -91,6 +91,7 @@ struct dp_act_vlan {
 				*  copy from recv pkt's inner tag(CP_FROM_INNER)
 				*  copy from recv pkt's outer tag(CP_FROM_OUTER)
 				*/
+	unsigned char dscp_pcp_map[64]; /* DSCP to P-bit mapping table */
 };
 
 #define DP_VLAN_DEF_RULE 1
