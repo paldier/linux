@@ -244,8 +244,8 @@ int mdio_set_clause(void *pdev, u32 clause, u32 phy_id)
 
 	SET_N_BITS(mdio_c22p, phy_id, MDIO_CL22P_PORT0_WIDTH, clause);
 
-	mac_printf("MDIO: portID %d set to %s\n", phy_id,
-		   clause ? "Clause 22" : "Clause 45");
+	mac_dbg("MDIO: portID %d set to %s\n", phy_id,
+		clause ? "Clause 22" : "Clause 45");
 
 	/* Select port 0, 1, 2 and 3 as Clause 22/45 ports */
 	XGMAC_RGWR(pdata, MDIO_C22P, mdio_c22p);
@@ -441,11 +441,21 @@ static int xgmac_mdio_read(struct mii_bus *bus, int phyadr, int phyreg)
 	struct mac_ops *pdev = bus->priv;
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	int phydata;
+	int clause;
 
 	mac_dbg("XGMAC %d: MDIO Read phyadr = %d, phyreg = %d\n",
 		pdata->mac_idx, phyadr, phyreg);
 
-	xgmac_mdio_single_rd(pdev, 0, phyadr, phyreg, &phydata);
+	if (phyreg & MII_ADDR_C45)
+		clause = 0;
+	else
+		clause = 1;
+
+	if (clause != mdio_get_clause(pdev, phyadr))
+		mdio_set_clause(pdev, clause, phyadr);
+
+	xgmac_mdio_single_rd(pdev, (phyreg >> 16) & 0x1F, phyadr,
+			     phyreg & 0xFFFF, &phydata);
 
 	mac_dbg("XGMAC %d: MDIO Read phydata = %#x\n",
 		pdata->mac_idx, phydata);
@@ -471,8 +481,18 @@ static int xgmac_mdio_write(struct mii_bus *bus, int phyadr, int phyreg,
 	struct mac_ops *pdev = bus->priv;
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	int ret = 0;
+	int clause;
 
-	xgmac_mdio_single_wr(pdev, 0, phyadr, phyreg, phydata);
+	if (phyreg & MII_ADDR_C45)
+		clause = 0;
+	else
+		clause = 1;
+
+	if (clause != mdio_get_clause(pdev, phyadr))
+		mdio_set_clause(pdev, clause, phyadr);
+
+	xgmac_mdio_single_wr(pdev, (phyreg >> 16) & 0x1F, phyadr,
+			     phyreg & 0xFFFF, phydata);
 
 	mac_dbg("XGMAC %d: MDIO Write"
 		"phyadr %x phyreg %x phydata %x Completed\n",
