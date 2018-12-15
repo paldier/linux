@@ -544,7 +544,7 @@
 #define PCS_DIG_STS_PSEQ_STATE_POS		2
 #define PCS_DIG_STS_PSEQ_STATE_WIDTH		3
 
-#define MAX_XPCS 3
+#define MAX_XPCS 				6
 
 enum {
 	BACKPL_ETH_PCS = 0,
@@ -683,6 +683,9 @@ struct xpcs_prv_data {
 
 	struct reset_control *xpcs_rst;
 
+	/* mac_idx where xpcs is connected */
+	u32 mac_idx;
+
 	/* XPCS Mode Switching */
 	struct xpcs_mode_cfg *mode_cfg;
 };
@@ -769,7 +772,7 @@ void xpcs_ethtool_ksettings_get(u32 idx,
 				struct ethtool_link_ksettings *cmd);
 int xpcs_ethtool_ksettings_set(u32 idx,
 			       const struct ethtool_link_ksettings *cmd);
-int xpcs_reinit(int idx, u32 mode);
+int xpcs_reinit(struct device *dev, u32 mode);
 
 #endif
 

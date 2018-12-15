@@ -34,6 +34,8 @@
 #define XPCS_MODE_NAME "xpcs-mode"
 #define XPCS_RESET_NAME "xpcs_reset"
 #define POWER_SAVE_MODE "power-save"
+#define XPCS_MAC_IDX	"mac_idx"
+
 
 static void xpcs_cl37_an(struct xpcs_prv_data *pdata);
 static void xpcs_cl73_an(struct xpcs_prv_data *pdata);
@@ -934,6 +936,13 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 		return -EINVAL;
 	}
 
+	if (!device_property_read_u32(dev, XPCS_MAC_IDX, &prop)) {
+		(*pdata)->mac_idx = prop;
+	} else {
+		dev_err(dev, "Xpcs conn: cannot get property\n");
+		return -EINVAL;
+	}
+
 	if (!device_property_read_u32(dev, POWER_SAVE_MODE, &prop)) {
 		(*pdata)->power_save = prop;
 	} else {
@@ -971,6 +980,11 @@ void xpcs_ethtool_ksettings_get(u32 idx,
 {
 	struct xpcs_prv_data *pdata = priv_data[idx];
 
+	if (!pdata) {
+		pr_err("XPCS %d is not initialized\n",idx);
+		return;
+	}
+
 	if (pdata->mode == TENG_KR_MODE)
 		cmd->base.speed = SPEED_10000;
 	else if (pdata->mode == ONEG_XAUI_MODE)
@@ -987,6 +1001,11 @@ int xpcs_ethtool_ksettings_set(u32 idx,
 	u32 mode;
 	struct xpcs_prv_data *pdata = priv_data[idx];
 
+	if (!pdata) {
+		pr_err("XPCS %d is not initialized\n",idx);
+		return -1;
+	}
+	
 	if (speed != SPEED_10000 &&
 	    speed != SPEED_1000)
 		return -EINVAL;
@@ -995,18 +1014,19 @@ int xpcs_ethtool_ksettings_set(u32 idx,
 		mode = TENG_KR_MODE;
 	else if (speed == SPEED_1000 && (pdata->mode != ONEG_XAUI_MODE))
 		mode = ONEG_XAUI_MODE;
+	else
+		return -1;
 
 	/* Restart Xpcs & PHY */
-	xpcs_reinit(idx, mode);
+	xpcs_reinit(pdata->dev, mode);
 
 	return 0;
 }
 EXPORT_SYMBOL(xpcs_ethtool_ksettings_set);
 
-int xpcs_reinit(int idx, u32 mode)
+int xpcs_reinit(struct device *dev, u32 mode)
 {
-	struct xpcs_prv_data *pdata = priv_data[idx];
-	struct device *dev = pdata->dev;
+	struct xpcs_prv_data *pdata = dev_get_drvdata(dev);
 	struct phy *phy = pdata->phy;
 	int ret = 0;
 
@@ -1076,12 +1096,7 @@ static int xpcs_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (!strcmp(pdata->name, "wan_xpcs"))
-		priv_data[0] = pdata;
-	else if (!strcmp(pdata->name, "lan_xpcs0"))
-		priv_data[1] = pdata;
-	else if (!strcmp(pdata->name, "lan_xpcs1"))
-		priv_data[2] = pdata;
+	priv_data[pdata->mac_idx] = pdata;
 
 	pdata->id = pdev->id;
 	pdata->dev = dev;

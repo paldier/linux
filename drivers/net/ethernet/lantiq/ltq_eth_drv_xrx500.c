@@ -256,8 +256,31 @@ static int  ethtool_eee_set(struct net_device *dev,
 	return retval;
 }
 
-/* Structure of the ether tool operation  */
-static struct ethtool_ops ethtool_ops = {
+int serdes_ethtool_get_link_ksettings(struct net_device *dev,
+				   struct ethtool_link_ksettings *cmd)
+{
+	struct ltq_eth_priv *priv = netdev_priv(dev);
+
+	/* Speed Get in Ethtool */
+	xpcs_ethtool_ksettings_get(priv->xgmac_id, cmd);
+
+	return 0;
+}
+
+int serdes_ethtool_set_link_ksettings(struct net_device *dev,
+				   const struct ethtool_link_ksettings *cmd)
+{
+	struct ltq_eth_priv *priv = netdev_priv(dev);
+	int ret = 0;
+
+	/* Speed Set in Ethtool */
+	ret = xpcs_ethtool_ksettings_set(priv->xgmac_id, cmd);
+
+	return ret;
+}
+
+/* Structure of the ether tool operation in Phy case  */
+static const struct ethtool_ops ethtool_ops = {
 	.get_drvinfo		= get_drvinfo,
 	.get_settings		= get_settings,
 	.set_settings		= set_settings,
@@ -268,6 +291,14 @@ static struct ethtool_ops ethtool_ops = {
 	.get_eee		= ethtool_eee_get,
 	.set_eee		= ethtool_eee_set,
 };
+
+/* Structure of the ether tool operation in No-Phy case */
+static const struct ethtool_ops serdes_ethtool_ops = {
+	.get_drvinfo		= get_drvinfo,
+	.get_link_ksettings	= serdes_ethtool_get_link_ksettings,
+	.set_link_ksettings	= serdes_ethtool_set_link_ksettings,
+};
+
 
 /* open the network device interface*/
 static int ltq_eth_open(struct net_device *dev)
@@ -698,29 +729,6 @@ static int ltq_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	return -EOPNOTSUPP;
 }
 
-int serdes_ethtool_get_link_ksettings(struct net_device *dev,
-				   struct ethtool_link_ksettings *cmd)
-{
-	struct ltq_eth_priv *priv = netdev_priv(dev);
-
-	/* Speed Get in Ethtool */
-	xpcs_ethtool_ksettings_get(priv->xgmac_id, cmd);
-
-	return 0;
-}
-
-int serdes_ethtool_set_link_ksettings(struct net_device *dev,
-				   const struct ethtool_link_ksettings *cmd)
-{
-	struct ltq_eth_priv *priv = netdev_priv(dev);
-	int ret = 0;
-
-	/* Speed Set in Ethtool */
-	ret = xpcs_ethtool_ksettings_set(priv->xgmac_id, cmd);
-
-	return ret;
-}
-
 /* init of the network device */
 static int ltq_eth_init(struct net_device *dev)
 {
@@ -744,12 +752,7 @@ static int ltq_eth_init(struct net_device *dev)
 	}
 
 	if (!priv->port[i].phy_node) {
-		ethtool_ops.get_link_ksettings =
-			serdes_ethtool_get_link_ksettings;
-		ethtool_ops.set_link_ksettings =
-			serdes_ethtool_set_link_ksettings;
-
-		dev->ethtool_ops = &ethtool_ops;
+		dev->ethtool_ops = &serdes_ethtool_ops;
 	}
 
 	if (priv->lct_en == 1) {
