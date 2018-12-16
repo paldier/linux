@@ -257,6 +257,13 @@ int32_t (*ppa_register_qos_class2prio_hook_fn)(int32_t, PPA_NETIF *, PPA_QOS_CLA
 #endif
 #endif
 
+#if IS_ENABLED(CONFIG_PPA_API_DIRECTPATH)
+int32_t (*ppa_directpath_port_add_fn)(void) = NULL;
+int32_t (*ppa_check_if_netif_directpath_fn)(PPA_NETIF *netif,  uint16_t flag) = NULL;
+int32_t (*ppa_phys_port_add_hook_fn)(PPA_IFNAME *ifname, uint32_t port) = NULL;
+int32_t (*ppa_phys_port_remove_hook_fn)(uint32_t port) = NULL;
+#endif
+
 /**********************************************************************************************
  * PPA Extra ethernet interface hook function :ppa_hook_addppa_hook_directpath_register_dev_fn_if_fn
  * it is used to register/de-register a device for direct path support
@@ -482,6 +489,13 @@ EXPORT_SYMBOL(ppa_hook_disconn_if_fn);
 #if defined(WMM_QOS_CONFIG) && WMM_QOS_CONFIG
 EXPORT_SYMBOL(ppa_register_qos_class2prio_hook_fn);
 #endif
+#endif
+
+#if IS_ENABLED(CONFIG_PPA_API_DIRECTPATH)
+EXPORT_SYMBOL(ppa_directpath_port_add_fn);
+EXPORT_SYMBOL(ppa_check_if_netif_directpath_fn);
+EXPORT_SYMBOL(ppa_phys_port_add_hook_fn);
+EXPORT_SYMBOL(ppa_phys_port_remove_hook_fn);
 #endif
 EXPORT_SYMBOL(ppa_hook_directpath_register_dev_fn);
 EXPORT_SYMBOL(ppa_hook_directpath_ex_register_dev_fn);

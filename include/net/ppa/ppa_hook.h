@@ -244,6 +244,39 @@ extern int32_t ppa_register_qos_class2prio_hook_fn(int32_t port_id, PPA_NETIF *n
 #endif
 #endif
 /*!
+  \This function adds all the PPE_DIRECTPATH_DATA_ENTRY_VALID ports as Physical ports in PPA
+  \return The return value can be any one of the following:  \n
+  - PPA_SUCCESS on sucess
+  - PPA_FAILURE on error
+ */ 
+extern int32_t (*ppa_directpath_port_add_fn)(void);
+/*!
+  \This function checks a netdevice is a directpath device or not
+  \param[in] netif Pointer to the network device structure in  the protocol stack. For eg. pointer to a struct netdevice
+  \param[in] flag  Directpath specific flags
+  \return The return value can be any one of the following:  \n
+  - PPA_SUCCESS on sucess
+  - PPA_FAILURE on error
+ */
+extern int32_t (*ppa_check_if_netif_directpath_fn)(PPA_NETIF *netif,  uint16_t flag);
+/*!
+  \This function allocates phys port for network interfaces
+  \param[in] ifname Name of netdevice
+  \param[in] port Port to be allocated
+  \return The return value can be any one of the following:  \n
+  - PPA_SUCCESS on sucess
+  - PPA_FAILURE on error
+ */
+extern int32_t (*ppa_phys_port_add_hook_fn)(PPA_IFNAME *ifname, uint32_t port);
+/*!
+  \This function deallocates phys port for network interfaces
+  \param[in] port Port to be deallocated
+  \return The return value can be any one of the following:  \n
+  - PPA_SUCCESS on sucess
+  - PPA_FAILURE on error
+ */
+extern int32_t (*ppa_phys_port_remove_hook_fn)(uint32_t port);
+/*!
   \brief This function allows a device driver to register or deregister a network device to the PPA
   \param[out] if_id  PPA specific Interface Identifier. It is currently a number between 0 to 7. This Id is returned by the PPA module
   \param[in] dev Pointer to the network device structure in  the protocol stack. For eg. pointer to a struct netdevice

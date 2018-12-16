@@ -176,15 +176,19 @@ int32_t (*ppa_drv_hal_get_mpoa_type_hook)(uint32_t dslwan_qid, uint32_t *mpoa_ty
 #if IS_ENABLED(CONFIG_SOC_GRX500)
 int ppa_drv_directpath_send(PPA_SUBIF *subif, PPA_SKBUF *skb, int32_t len, uint32_t flags)
 {
-	if (!ppa_drv_directpath_send_hook)
+	if (!ppa_drv_directpath_send_hook) {
+		PPA_SKB_FREE(skb);
 		return PPA_EINVAL;
+	}
 	return ppa_drv_directpath_send_hook(subif, skb, len, flags);
 }
 #else
 int ppa_drv_directpath_send(uint32_t if_id, PPA_SKBUF *skb, int32_t len, uint32_t flags)
 {
-	if (!ppa_drv_directpath_send_hook)
+	if (!ppa_drv_directpath_send_hook) {
+		PPA_SKB_FREE(skb);
 		return PPA_EINVAL;
+	}
 	return ppa_drv_directpath_send_hook(if_id, skb, len, flags);
 }
 #endif
