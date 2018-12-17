@@ -47,8 +47,6 @@ static int xpcs_teng_kr_mode(struct xpcs_prv_data *pdata);
 static int xpcs_2p5g_xaui_mode(struct xpcs_prv_data *pdata);
 static int xpcs_synphy_reset_sts(struct xpcs_prv_data *pdata);
 
-struct xpcs_prv_data *priv_data[MAX_XPCS] = {0};
-
 struct xpcs_mode_cfg mode_cfg[MAX_XPCS_MODE] = {
 	{
 		.id = TENG_KR_MODE,
@@ -896,6 +894,7 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 {
 	struct device *dev = &pdev->dev;
 	u32 prop = 0;
+	struct device_node *mac_np;
 
 	(*pdata) = devm_kzalloc(dev, sizeof(pdata), GFP_KERNEL);
 
@@ -911,7 +910,6 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 	/* Retrieve the xpcs mode */
 	if (!device_property_read_u32(dev, XPCS_MODE_NAME, &prop)) {
 		(*pdata)->mode = prop;
-
 		if ((*pdata)->mode >= MAX_XPCS_MODE) {
 			dev_err(dev, "Xpcs mode: %u is invalid\n",
 				(*pdata)->mode);
@@ -931,13 +929,6 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 				(*pdata)->conntype);
 			return -EINVAL;
 		}
-	} else {
-		dev_err(dev, "Xpcs conn: cannot get property\n");
-		return -EINVAL;
-	}
-
-	if (!device_property_read_u32(dev, XPCS_MAC_IDX, &prop)) {
-		(*pdata)->mac_idx = prop;
 	} else {
 		dev_err(dev, "Xpcs conn: cannot get property\n");
 		return -EINVAL;
@@ -975,13 +966,13 @@ static int xpcs_reset(struct device *dev)
 	return 0;
 }
 
-void xpcs_ethtool_ksettings_get(u32 idx,
+void xpcs_ethtool_ksettings_get(struct device *dev,
 				struct ethtool_link_ksettings *cmd)
 {
-	struct xpcs_prv_data *pdata = priv_data[idx];
+	struct xpcs_prv_data *pdata = dev_get_drvdata(dev);
 
 	if (!pdata) {
-		pr_err("XPCS %d is not initialized\n",idx);
+		pr_err("XPCS %s is not initialized\n",pdata->name);
 		return;
 	}
 
@@ -994,15 +985,15 @@ void xpcs_ethtool_ksettings_get(u32 idx,
 }
 EXPORT_SYMBOL(xpcs_ethtool_ksettings_get);
 
-int xpcs_ethtool_ksettings_set(u32 idx,
+int xpcs_ethtool_ksettings_set(struct device *dev,
 			       const struct ethtool_link_ksettings *cmd)
 {
 	u32 speed = cmd->base.speed;
 	u32 mode;
-	struct xpcs_prv_data *pdata = priv_data[idx];
+	struct xpcs_prv_data *pdata = dev_get_drvdata(dev);
 
 	if (!pdata) {
-		pr_err("XPCS %d is not initialized\n",idx);
+		pr_err("XPCS %s is not initialized\n",pdata->name);
 		return -1;
 	}
 	
@@ -1078,8 +1069,6 @@ static int xpcs_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int ret = XPCS_SUCCESS;
 	struct xpcs_prv_data *pdata;
-	int i = 0;
-	struct reset_control *xpcs_rst;
 
 	if (dev->of_node) {
 		if (xpcs_parse_dts(pdev, &pdata) != XPCS_SUCCESS) {
@@ -1095,8 +1084,6 @@ static int xpcs_probe(struct platform_device *pdev)
 			return -EINVAL;
 		}
 	}
-
-	priv_data[pdata->mac_idx] = pdata;
 
 	pdata->id = pdev->id;
 	pdata->dev = dev;

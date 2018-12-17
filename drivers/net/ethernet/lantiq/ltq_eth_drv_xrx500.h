@@ -66,6 +66,7 @@ struct ltq_eth_priv {
 	s32 f_dp;   /* status for register to datapath*/
 	u32 dp_port_id;
 	int xgmac_id;
+	struct device_node *xpcs_node;
 	struct xrx500_port port[NUM_ETH_INF];
 	int num_port;
 	struct xrx500_hw				*hw;

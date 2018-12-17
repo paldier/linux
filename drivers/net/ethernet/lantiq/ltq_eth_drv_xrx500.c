@@ -260,11 +260,22 @@ int serdes_ethtool_get_link_ksettings(struct net_device *dev,
 				   struct ethtool_link_ksettings *cmd)
 {
 	struct ltq_eth_priv *priv = netdev_priv(dev);
+	struct platform_device *pdev;
+	int ret = 0;
 
-	/* Speed Get in Ethtool */
-	xpcs_ethtool_ksettings_get(priv->xgmac_id, cmd);
-
-	return 0;
+	if (!priv->xpcs_node)
+		return -1;
+	
+	pdev = of_find_device_by_node(priv->xpcs_node);
+	if (pdev) {
+		/* Speed Get in Ethtool */
+		xpcs_ethtool_ksettings_get(&pdev->dev, cmd);
+	} else {		
+		pr_err("Cannot get Xpcs pdev for %s\n",dev->name);
+		ret = -1;
+	}
+	
+	return ret;
 }
 
 int serdes_ethtool_set_link_ksettings(struct net_device *dev,
@@ -272,9 +283,20 @@ int serdes_ethtool_set_link_ksettings(struct net_device *dev,
 {
 	struct ltq_eth_priv *priv = netdev_priv(dev);
 	int ret = 0;
+	struct platform_device *pdev;
+
+	if (!priv->xpcs_node)
+		return -1;
 
 	/* Speed Set in Ethtool */
-	ret = xpcs_ethtool_ksettings_set(priv->xgmac_id, cmd);
+	pdev = of_find_device_by_node(priv->xpcs_node);
+	if (pdev) {
+		/* Speed Get in Ethtool */
+		ret = xpcs_ethtool_ksettings_set(&pdev->dev, cmd);
+	} else {
+		pr_err("Cannot get Xpcs pdev for %s\n",dev->name);
+		ret = -1;
+	}
 
 	return ret;
 }
@@ -1424,7 +1446,7 @@ static int xrx500_of_iface(struct xrx500_hw *hw, struct device_node *iface,
 {
 	struct ltq_eth_priv *priv;
 	struct dp_dev_data dev_data = {0};
-	struct device_node *port;
+	struct device_node *port, *mac_np;
 	const __be32 *wan;
 	u32 dp_dev_port_param, dp_port_id_param, xgmac_id_param;
 	u32 lct_en_param = 0, extra_subif_param = 0;
@@ -1476,14 +1498,24 @@ static int xrx500_of_iface(struct xrx500_hw *hw, struct device_node *iface,
 		return ret;
 	}
 
-	ret = of_property_read_u32(iface, "intel,xgmac-id",
-				   &xgmac_id_param);
-	if (ret < 0) {
-		pr_debug("Property intel,xgmac-id not exist for if %s\n",
-			 name);
-		priv->xgmac_id = -1;
-	} else {
+	priv->xgmac_id = -1;
+
+	mac_np = of_parse_phandle(iface, "mac", 0);	
+	if (mac_np) {
+		ret = of_property_read_u32(mac_np, "mac_idx", &xgmac_id_param);
+		if (ret < 0) {
+			pr_info("ERROR : Property mac_idx not read from DT for if %s\n",
+				name);
+			return ret;
+		}
+
 		priv->xgmac_id = xgmac_id_param;
+		
+		priv->xpcs_node = of_parse_phandle(mac_np, "xpcs", 0);
+		if (!priv->xpcs_node) {
+			pr_info("Cannot get xpcs node\n");
+			return -EINVAL;			
+		}
 	}
 
 	ret = of_property_read_u32(iface, "intel,lct-en",
