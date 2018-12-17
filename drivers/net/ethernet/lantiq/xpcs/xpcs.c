@@ -23,8 +23,6 @@
 #include <linux/reset.h>
 #include "xpcs.h"
 #include <linux/netdevice.h>
-#include <net/datapath_api.h>
-
 
 #define MAX_BUSY_RETRY	2000
 #define XPCS_IRQ_NAME "xpcs_irq"
@@ -35,7 +33,6 @@
 #define XPCS_RESET_NAME "xpcs_reset"
 #define POWER_SAVE_MODE "power-save"
 #define XPCS_MAC_IDX	"mac_idx"
-
 
 static void xpcs_cl37_an(struct xpcs_prv_data *pdata);
 static void xpcs_cl73_an(struct xpcs_prv_data *pdata);
@@ -193,13 +190,13 @@ static int xpcs_rxtx_stable(struct xpcs_prv_data *pdata)
 
 		if (pseq_state == 4) {
 			if (pdata->mode == TENG_KR_MODE)
-				pr_info("%s: Tx/Rx stable (Power_Good State) "
+				pr_debug("%s: Tx/Rx stable (Power_Good State) "
 					"Speed: 10G\n", pdata->name);
 			else if (pdata->mode == ONEG_XAUI_MODE)
-				pr_info("%s: Tx/Rx stable (Power_Good State) "
+				pr_debug("%s: Tx/Rx stable (Power_Good State) "
 					"Speed: 1G\n", pdata->name);
 			else if (pdata->mode == TWOP5G_GMII_MODE)
-				pr_info("%s: Tx/Rx stable (Power_Good State) "
+				pr_debug("%s: Tx/Rx stable (Power_Good State) "
 					"Speed: 2.5G\n", pdata->name);
 
 			break;
@@ -894,7 +891,6 @@ static int xpcs_parse_dts(struct platform_device *pdev,
 {
 	struct device *dev = &pdev->dev;
 	u32 prop = 0;
-	struct device_node *mac_np;
 
 	(*pdata) = devm_kzalloc(dev, sizeof(pdata), GFP_KERNEL);
 
