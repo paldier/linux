@@ -1764,22 +1764,19 @@ static int prx300_phy_connect(struct net_device *dev, struct xrx500_port *port)
 
 	priv = netdev_priv(dev);
 
-	phydev = of_phy_connect(dev, port->phy_node, &xrx500_mdio_link,
-				0, port->phy_if);
-	if (!phydev) {
+	phydev = of_phy_find_device(port->phy_node);
+	if (!phydev || !phydev->mdio.dev.driver) {
 		netdev_err(dev, "Unable to find phydev\n");
 		return -ENODEV;
 	}
 
-	phydev->supported &= (SUPPORTED_10baseT_Half
-			      | SUPPORTED_10baseT_Full
-			      | SUPPORTED_100baseT_Half
-			      | SUPPORTED_100baseT_Full
-			      | SUPPORTED_1000baseT_Half
-			      | SUPPORTED_1000baseT_Full
-			      | SUPPORTED_Autoneg
-			      | SUPPORTED_MII
-			      | SUPPORTED_TP);
+	phydev = of_phy_connect(dev, port->phy_node, &xrx500_mdio_link,
+				0, port->phy_if);
+	if (!phydev) {
+		netdev_err(dev, "Unable to connect phydev\n");
+		return -ENODEV;
+	}
+
 	phydev->advertising = phydev->supported;
 	port->phydev = phydev;
 
