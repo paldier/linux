@@ -2204,13 +2204,14 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 		if (rc)
 			goto err;
 		qos_devs[id] = qdev;
-		QOS_LOG_INFO("Initialized qos instance\nmax_port:\t\t%u\n",
+		
+		QOS_LOG_DEBUG("Initialized qos instance\nmax_port:\t\t%u\n",
 				qdev->max_port);
-		QOS_LOG_INFO("fw_logger_start:\t0x%08X\n",
+		QOS_LOG_DEBUG("fw_logger_start:\t0x%08X\n",
 				qdev->hwconf.fw_logger_start);
-		QOS_LOG_INFO("fw_stat:\t\t0x%08X\n",
+		QOS_LOG_DEBUG("fw_stat:\t\t0x%08X\n",
 				qdev->hwconf.fw_stat);
-		QOS_LOG_INFO("cmdbuf:\t\t0x%08X\ncmdbuf size:\t\t%zu\n",
+		QOS_LOG_DEBUG("cmdbuf:\t\t0x%08X\ncmdbuf size:\t\t%zu\n",
 				(unsigned int)(uintptr_t)qdev->fwcom.cmdbuf,
 				qdev->fwcom.cmdbuf_sz);
 	} else {
@@ -2247,8 +2248,6 @@ void qos_module_init(void)
 
 	for (i = 0 ; i < MAX_QOS_INSTANCES; ++i)
 		qos_devs[i] = NULL;
-
-	QOS_LOG_INFO("qos_module_init completed\n");
 }
 
 int pp_qos_get_quanta(struct pp_qos_dev *qdev, unsigned int *quanta)

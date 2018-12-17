@@ -963,13 +963,9 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 
 	if (device_id == 1) {
 		addr_gswr = devm_ioremap_resource(&pdev->dev, memres);
-		pr_debug("addr_gswr = 0x%p\n", addr_gswr);
 
 		if (IS_ERR(addr_gswr))
 			return PTR_ERR(addr_gswr);
-
-		pr_err("%s:%s:%d (Register r base:0x%p)\n",
-		       __FILE__, __func__, __LINE__, addr_gswr);
 	}
 
 

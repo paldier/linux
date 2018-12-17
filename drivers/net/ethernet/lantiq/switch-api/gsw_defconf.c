@@ -132,10 +132,6 @@ int gsw_get_def_pce_qmap(struct core_ops *ops)
 		return -EIO;
 	}
 
-	printk("\nGSWIP Default PCE-Q-MAP\n");
-	printk("%15s %15s %15s %15s %15s %15s\n",
-	       "EgLpid", "Ext", "Traf_Cls", "Q_Map_Mode", "Qid", "Redir_Lpid");
-
 	for (j = 0; j < num_of_elem; j++) {
 		for (i = gsw_pce_path[j].tc_from;
 		     i <= gsw_pce_path[j].tc_to; i++) {
@@ -143,11 +139,6 @@ int gsw_get_def_pce_qmap(struct core_ops *ops)
 			q_map.nTrafficClassId = i;
 			q_map.nPortId = gsw_pce_path[j].eg_lpid;
 			ops->gsw_qos_ops.QoS_QueuePortGet(ops, &q_map);
-			printk("%15d %15d %15d %15d %15d %15d ",
-			       q_map.nPortId, q_map.bExtrationEnable,
-			       q_map.nTrafficClassId, q_map.eQMapMode,
-			       q_map.nQueueId, q_map.nRedirectPortId);
-			printk("\n");
 
 		}
 	}
@@ -206,21 +197,12 @@ int gsw_get_def_bypass_qmap(struct core_ops *ops)
 		return -EIO;
 	}
 
-	printk("\nGSWIP Default PCE Bypass Q-MAP\n");
-	printk("%15s %15s %15s %15s %15s %15s\n",
-	       "EgMpid", "Ext", "Traf_Cls", "Q_Map_Mode", "Qid", "Redir_Lpid");
-
 	for (j = 0; j < num_of_elem; j++) {
 		memset(&q_map, 0, sizeof(GSW_QoS_queuePort_t));
 		q_map.nPortId = gsw_bypass_path[j].eg_pid;
 		q_map.bRedirectionBypass = 1;
 		q_map.bExtrationEnable = gsw_bypass_path[j].ext;
 		ops->gsw_qos_ops.QoS_QueuePortGet(ops, &q_map);
-		printk("%15d %15d %15d %15d %15d %15d ",
-		       q_map.nPortId, q_map.bExtrationEnable,
-		       q_map.nTrafficClassId, q_map.eQMapMode,
-		       q_map.nQueueId, q_map.nRedirectPortId);
-		printk("\n");
 	}
 
 	return 0;
@@ -362,8 +344,6 @@ static int pmac_ig_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 		ops->gsw_pmac_ops.Pmac_Ig_CfgSet(ops, &ig_cfg);
 	}
 
-	pr_debug("PMAC_IG_CFG_SET for PMAC %d %s\n", pmacid,
-		(dpu == NON_DPU) ? "Non-DPU" : "DPU");
 	return 0;
 }
 
@@ -379,11 +359,6 @@ int pmac_get_ig_cfg(struct core_ops *ops, u8 pmacid)
 		return -EIO;
 	}
 
-	printk("\nGSWIP PMAC IG CFG\n");
-	printk("%10s %10s %10s %10s %10s %10s %10s %10s %10s\n",
-	       "PmacId", "TxDmaChId", "ErrPktDisc", "ClassEn",
-	       "ClassDef", "eSubId", "bSpIdDef", "bPmacPr", "DefPmacHdr");
-
 	for (i = PMAC0_TX_DMACHID_START; i <= PMAC0_TX_DMACHID_END; i++) {
 		memset((void *)&ig_cfg, 0x00, sizeof(ig_cfg));
 
@@ -391,16 +366,6 @@ int pmac_get_ig_cfg(struct core_ops *ops, u8 pmacid)
 		ig_cfg.nTxDmaChanId	= i;
 
 		ops->gsw_pmac_ops.Pmac_Ig_CfgGet(ops, &ig_cfg);
-		printk("%10d %10d %10d %10d %10d %10d %10d %10d %10x:%x:%x:%x:%x:%x:%x:%x",
-		       ig_cfg.nPmacId, ig_cfg.nTxDmaChanId,
-		       ig_cfg.bErrPktsDisc, ig_cfg.bClassEna,
-		       ig_cfg.bClassDefault, ig_cfg.eSubId,
-		       ig_cfg.bSpIdDefault, ig_cfg.bPmacPresent,
-		       ig_cfg.defPmacHdr[0], ig_cfg.defPmacHdr[1],
-		       ig_cfg.defPmacHdr[2], ig_cfg.defPmacHdr[3],
-		       ig_cfg.defPmacHdr[4], ig_cfg.defPmacHdr[5],
-		       ig_cfg.defPmacHdr[6], ig_cfg.defPmacHdr[7]);
-		printk("\n");
 	}
 
 	return 0;
@@ -495,9 +460,6 @@ static int pmac_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 		}
 	}
 
-	pr_debug("PMAC_EG_CFG_SET for PMAC %d %s\n", pmacid,
-		(dpu == NON_DPU) ? "Non-DPU" : "DPU");
-
 	return 0;
 }
 
@@ -512,14 +474,6 @@ int pmac_get_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dst_port)
 		pr_err("%s: Open SWAPI device FAILED!\n", __func__);
 		return -EIO;
 	}
-
-	printk("\nGSWIP PMAC EG CFG\n");
-
-	printk("\n\nDestination portId = %d\n\n", dst_port);
-	printk("%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s\n",
-	       "PmacId", "RxDmaChId", "BslTrafCls", "BslSegDis",
-	       "PmacEna", "RedirEna", "DestPortId", "TrafCls", "Mpe1",
-	       "Mpe2", "FlowId", "FcsEn");
 
 	for (k = 0; k <= 3; k++) {
 		for (i = 0; i <= 3; i++) {
@@ -539,20 +493,6 @@ int pmac_get_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dst_port)
 
 				ops->gsw_pmac_ops.Pmac_Eg_CfgGet(ops,
 								 &eg_cfg);
-				printk("%10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d",
-				       eg_cfg.nPmacId,
-				       eg_cfg.nRxDmaChanId,
-				       eg_cfg.nBslTrafficClass,
-				       eg_cfg.bBslSegmentDisable,
-				       eg_cfg.bPmacEna,
-				       eg_cfg.bRedirEnable,
-				       eg_cfg.nDestPortId,
-				       eg_cfg.nTrafficClass,
-				       eg_cfg.bMpe1Flag,
-				       eg_cfg.bMpe2Flag,
-				       eg_cfg.nFlowIDMsb,
-				       eg_cfg.bFcsEna);
-				printk("\n");
 			}
 		}
 	}
@@ -579,8 +519,6 @@ static int pmac_glbl_cfg(struct core_ops *ops, u8 pmacid)
 	glbl_cfg.eProcFlagsEgCfg = GSW_PMAC_PROC_FLAGS_MIX;
 
 	ops->gsw_pmac_ops.Pmac_Gbl_CfgSet(ops, &glbl_cfg);
-
-	pr_debug("PMAC_GLBL_CFG_SET for PMAC %d\n", pmacid);
 
 	return 0;
 }
@@ -684,21 +622,12 @@ int pmac_get_bp_cfg(struct core_ops *ops, u8 pmacid)
 	}
 
 	/* Do the GSWIP PMAC BM table configuration */
-	printk("\nGSWIP PMAC BP CFG\n");
-	printk("%10s %10s %10s %10s\n",
-	       "PmacId", "TxDmaChId", "TxQMask", "RxPortMask");
-
 	for (m = PMAC0_TX_DMACHID_START; m <= PMAC0_TX_DMACHID_END; m++) {
 		memset((void *)&bm_cfg, 0x00, sizeof(bm_cfg));
 		bm_cfg.nPmacId		= pmacid;
 		bm_cfg.nTxDmaChanId	= m;
 
 		ops->gsw_pmac_ops.Pmac_Bm_CfgGet(ops, &bm_cfg);
-
-		printk("%10d %10d %10x %10x",
-		       bm_cfg.nPmacId, bm_cfg.nTxDmaChanId,
-		       bm_cfg.txQMask, bm_cfg.rxPortMask);
-		printk("\n");
 	}
 
 	return 0;
@@ -721,7 +650,6 @@ int gsw_pmac_init_nondpu(void)
 	pmac_eg_cfg(ops, 1, NON_DPU);
 	pmac_bp_cfg(ops, NON_DPU);
 
-	pr_debug("\n\t GSW PMAC Init Done!!!\n");
 	return 0;
 }
 
@@ -742,7 +670,6 @@ int gsw_pmac_init_dpu(void)
 	pmac_eg_cfg(ops, 1, NON_DPU);
 	pmac_bp_cfg(ops, DPU);
 
-	pr_debug("\n\t GSW PMAC Init Done!!!\n");
 	return 0;
 }
 

@@ -1085,8 +1085,6 @@ int dp_platform_queue_set(int inst, u32 flag)
 			return -1;
 		}
 		priv->ppv4_drop_q = q.qid;
-	} else {
-		PR_INFO("drop queue: %d\n", priv->ppv4_drop_q);
 	}
 	/*Map all lookup entry to drop queue at the beginning*/
 	cbm_queue_map_set(dp_port_prop[inst].cbm_inst, priv->ppv4_drop_q,

@@ -196,7 +196,7 @@ FILE *get_fp(void);
 #define mac_dbg printf
 #endif
 #else
-#define mac_printf printk
+#define mac_printf pr_debug
 #define mac_dbg pr_debug
 #endif
 

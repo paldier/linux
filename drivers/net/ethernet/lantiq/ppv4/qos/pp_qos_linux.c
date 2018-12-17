@@ -539,7 +539,7 @@ static int __init pp_qos_mod_init(void)
 	qos_dbg_module_init();
 	rc = platform_driver_register(&pp_qos_driver);
 	PPV4_QOS_MANUAL_ADD(rc);
-	pr_info("pp_qos_driver init, status %d\n", rc);
+
 	return rc;
 }
 
@@ -549,7 +549,6 @@ static void __exit pp_qos_mod_exit(void)
 	platform_driver_unregister(&pp_qos_driver);
 
 	qos_dbg_module_clean();
-	pr_info("pp_qos_driver exit\n");
 }
 
 //device_initcall(pp_qos_mod_init);

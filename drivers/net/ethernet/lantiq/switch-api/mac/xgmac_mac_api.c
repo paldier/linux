@@ -98,8 +98,6 @@ int xgmac_disable_tx_flow_ctl(void *pdev)
 	reg_val = XGMAC_RGRD(pdata, MAC_TX_FCR);
 
 	if (MAC_GET_VAL(reg_val, MAC_TX_FCR, TFE) != 0) {
-		mac_dbg("XGMAC %d: Disable TX Flow Control\n",
-			pdata->mac_idx);
 		MAC_SET_VAL(reg_val, MAC_TX_FCR, TFE, 0);
 		XGMAC_RGWR(pdata, MAC_TX_FCR, reg_val);
 	}
@@ -491,12 +489,8 @@ int xgmac_set_mac_address(void *pdev, u8 *mac_addr)
 	/* Since 16 bits only need to check, not checking the previous value */
 	XGMAC_RGWR(pdata, MAC_MACA0HR, mac_addr_hi);
 
-	if (XGMAC_RGRD(pdata, MAC_MACA0LR) != mac_addr_lo) {
-		mac_dbg("XGMAC %d: Setting mac_addr as %08x%04x\n",
-			pdata->mac_idx,  mac_addr_lo,
-			(mac_addr_hi & 0x0000FFFF));
+	if (XGMAC_RGRD(pdata, MAC_MACA0LR) != mac_addr_lo)
 		XGMAC_RGWR(pdata, MAC_MACA0LR, mac_addr_lo);
-	}
 
 	return 0;
 }

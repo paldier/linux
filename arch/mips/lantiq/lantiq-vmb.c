@@ -81,15 +81,11 @@ static irqreturn_t fw_vmb_ipi1_hdlr(int irq, void *ptr)
 	struct VMB_vpe_t *vpet_t;
 	struct FW_vmb_msg_t *fw_t;
 
-	pr_info("[%s]:[%d] CPU = %d irq = %d\n", __func__, __LINE__,
-		smp_processor_id(), (irq - MIPS_GIC_IRQ_BASE));
-
 	/* This handler is from FW_VMB_IPI1 so called from CPU1 */
 	cpu = 1;
 	cid = which_core(cpu);
 	vid = vpe_in_core(cpu);
 
-	pr_info("[%s]:[%d] cid = %d, vid = %d\n", __func__, __LINE__, cid, vid);
 	vpet_t = &core_t[cid].vpe_t[vid];
 	fw_t = (struct FW_vmb_msg_t *)VMB_get_msg_addr(cpu, 1);
 
@@ -108,7 +104,6 @@ static irqreturn_t fw_vmb_ipi1_hdlr(int irq, void *ptr)
 		vmb_cpu_free(cpu);
 		vmb_tc_free(cpu, -1);
 
-		pr_info("[%s]:[%d], cpu = %d\n", __func__, __LINE__, cpu);
 		if (vpet_t->vmb_callback_fn && vpet_t->vmb_callback_fn != NULL)
 			vpet_t->vmb_callback_fn(vpet_t->fw_vmb.status);
 
@@ -122,15 +117,7 @@ static irqreturn_t fw_vmb_ipi1_hdlr(int irq, void *ptr)
 		vmb_tc_free(cpu, -1);
 
 		vpet_t->bl_status = IBL_ACTIVE;
-		pr_info("[%s]:[%d], cpu = %d\n", __func__, __LINE__, cpu);
 	}
-
-	/* Clear DDR section */
-	if (vpet_t->fw_vmb.status == (uint32_t)FW_VMB_ACK)
-		pr_info("[%s]:[%d]\n", __func__, __LINE__);
-
-	pr_info("[%s]:[%d]\n", __func__, __LINE__);
-	pr_info("  vmb_wq = %p\n",  &vpet_t->v_wq.vmb_wq);
 
 	/* Set the wakeup_vpe and wakeup the waitqueue */
 	vpet_t->v_wq.wakeup_vpe = 1;
@@ -169,7 +156,6 @@ static irqreturn_t fw_vmb_ipi2_hdlr(int irq, void *ptr)
 		vmb_cpu_free(cpu);
 		vmb_tc_free(cpu, -1);
 
-		pr_info("[%s]:[%d], cpu = %d\n", __func__, __LINE__, cpu);
 		if (vpet_t->vmb_callback_fn && vpet_t->vmb_callback_fn != NULL)
 			vpet_t->vmb_callback_fn(vpet_t->fw_vmb.status);
 
@@ -182,7 +168,6 @@ static irqreturn_t fw_vmb_ipi2_hdlr(int irq, void *ptr)
 		vmb_cpu_free(cpu);
 		vmb_tc_free(cpu, -1);
 		vpet_t->bl_status = IBL_ACTIVE;
-		pr_info("[%s]:[%d], cpu = %d\n", __func__, __LINE__, cpu);
 	}
 
 	/* Set the wakeup_vpe and wakeup the waitqueue */
@@ -199,16 +184,11 @@ static irqreturn_t fw_vmb_ipi3_hdlr(int irq, void *ptr)
 	struct VMB_vpe_t *vpet_t;
 	struct FW_vmb_msg_t *fw_t;
 
-	pr_info("[%s]:[%d] CPU = %d irq = %d\n", __func__,
-		__LINE__, smp_processor_id(), (irq - MIPS_GIC_IRQ_BASE));
-
 	/* This handler is from FW_VMB_IPI3 so called from CPU3 */
 	cpu = 3;
 	cid = which_core(cpu);
 	vid = vpe_in_core(cpu);
 
-	pr_info("[%s]:[%d] cid = %d, vid = %d\n",
-		__func__, __LINE__, cid, vid);
 	vpet_t = &core_t[cid].vpe_t[vid];
 	fw_t = (struct FW_vmb_msg_t *)VMB_get_msg_addr(cpu, 1);
 
@@ -227,7 +207,6 @@ static irqreturn_t fw_vmb_ipi3_hdlr(int irq, void *ptr)
 		vmb_cpu_free(cpu);
 		vmb_tc_free(cpu, -1);
 
-		pr_info("[%s]:[%d], cpu = %d\n", __func__, __LINE__, cpu);
 		if (vpet_t->vmb_callback_fn && vpet_t->vmb_callback_fn != NULL)
 			vpet_t->vmb_callback_fn(vpet_t->fw_vmb.status);
 
@@ -241,14 +220,7 @@ static irqreturn_t fw_vmb_ipi3_hdlr(int irq, void *ptr)
 		vmb_tc_free(cpu, -1);
 
 		vpet_t->bl_status = IBL_ACTIVE;
-		pr_info("[%s]:[%d], cpu = %d\n", __func__, __LINE__, cpu);
 	}
-
-	if (vpet_t->fw_vmb.status == (uint32_t)FW_VMB_ACK)
-		pr_info("[%s]:[%d]\n", __func__, __LINE__);
-
-	pr_info("[%s]:[%d]\n", __func__, __LINE__);
-	pr_info("  vmb_wq = %p\n",  &vpet_t->v_wq.vmb_wq);
 
 	/* Set the wakeup_vpe and wakeup the waitqueue */
 	vpet_t->v_wq.wakeup_vpe = 1;
@@ -305,7 +277,6 @@ static int linux_cpu_ipi_update(unsigned long cpu)
 
 static int __init vmb_cpu_active(unsigned int hcpu)
 {
-	pr_info("[%s]:[%d], cpu = %ld\n", __func__, __LINE__, (long)hcpu);
 	if (hcpu != 0)
 		linux_cpu_ipi_update((unsigned long)hcpu);
 
@@ -329,8 +300,6 @@ static void vmb_check_IBL_fw_msg(void)
 
 			spin_lock(&vpet[j].vpe_lock);
 			cpu = get_cpu_id(i, j);
-			pr_info("[%s]:[%d] vpet[j].bl_status = %d, cpu = %d\n",
-				__func__, __LINE__, vpet[j].bl_status, cpu);
 			fw_msg_t = (struct FW_vmb_msg_t *)VMB_get_msg_addr(cpu, 1);
 			memcpy(&vpet[j].fw_vmb, fw_msg_t,
 			       sizeof(struct FW_vmb_msg_t));
@@ -366,9 +335,6 @@ static int update_DB_from_DT(struct VMB_vpe_t *vt)
 
 	strlcpy(vt->name, name, sizeof(vt->name));
 	vt->cpu_status |= CPU_BOOTUP_DT;
-
-	pr_info("[%s]:[%d], cpuid = %d name = %s\n",
-		__func__, __LINE__, vt->cpu_id, vt->name);
 
 	/* for CPU 0, no need to get IRQ for VMB */
 	if (vt->cpu_id == 0)
@@ -581,9 +547,6 @@ static int __init vmb_init(void)
 {
 	memset(core_t, 0, sizeof(struct VMB_core_t));
 
-	pr_info("MAXCORE = %d, MAXCPU = %d, MAXTCS = %d MAX_VPE = %d\n",
-		MAX_CORE, MAX_CPU, MAX_TC, MAX_VPE);
-
 	/*
 	 * CPU notifier for Linux SMP bootup indication notify (CPU_STARTING)
 	 * from start_secondary
@@ -631,18 +594,12 @@ static void gic_trigger(int8_t cpu)
 {
 	switch (cpu) {
 	case 1:
-		pr_info("[%s]:[%d] VMB_CPU_IPI1 - %d CPU = %d\n",
-			__func__, __LINE__, g_cpu_vmb_irq[1], cpu);
 		gic_send_ipi_simple(g_cpu_vmb_irq[1], 0);
 		break;
 	case 2:
-		pr_info("[%s]:[%d] VMB_CPU_IPI2 - %d CPU = %d\n",
-			__func__, __LINE__, g_cpu_vmb_irq[2], cpu);
 		gic_send_ipi_simple(g_cpu_vmb_irq[2], 0);
 		break;
 	case 3:
-		pr_info("[%s]:[%d] VMB_CPU_IPI3 - %d CPU = %d\n",
-			__func__, __LINE__, g_cpu_vmb_irq[3], cpu);
 		gic_send_ipi_simple(g_cpu_vmb_irq[3], 0);
 		break;
 	default:
@@ -796,9 +753,6 @@ int8_t vmb_cpu_force_stop(int8_t cpu)
 		goto fin_fstop;
 	}
 
-	pr_info("[%s]:[%d] OUTSIDE wakeup_vpe = %d vpet->fw_vmb.status = %d\n",
-		__func__, __LINE__, vpet->v_wq.wakeup_vpe, vpet->fw_vmb.status);
-
 	vpet->v_wq.wakeup_vpe = 0;
 
 	if (vpet->fw_vmb.status == (uint32_t)IBL_IN_WAIT) {
@@ -947,9 +901,6 @@ int8_t vmb_cpu_start(int8_t cpu, struct CPU_launch_t cpu_launch,
 
 	memset(vmb_fw_msg_t, 0, sizeof(struct VMB_fw_msg_t));
 
-	pr_info("[%s]:[%d] vmb_fw_msg_t = %p cpu = %d !\n",
-		__func__, __LINE__, vmb_fw_msg_t, cpu);
-
 	vmb_fw_msg_t->msg_id = VMB_CPU_START;
 	memcpy(&vmb_fw_msg_t->cpu_launch, &cpu_launch,
 	       sizeof(vmb_fw_msg_t->cpu_launch));
@@ -960,10 +911,6 @@ int8_t vmb_cpu_start(int8_t cpu, struct CPU_launch_t cpu_launch,
 			vmb_fw_msg_t->tc_launch[i].mt_group = vpet->vpemt_grp;
 		}
 	}
-
-	pr_info("[%s]:[%d]  start_address = %u cpu = %d !!!!\n",
-		__func__, __LINE__,
-		(unsigned int)(vmb_fw_msg_t->cpu_launch.start_addr), cpu);
 
 	/* update the allocated yield resource bitmap */
 	vmb_fw_msg_t->cpu_launch.yield_res = (uint32_t)yieldres_t;
@@ -976,9 +923,6 @@ int8_t vmb_cpu_start(int8_t cpu, struct CPU_launch_t cpu_launch,
 	spin_unlock(&vpet->vpe_lock);
 	gic_trigger(cpu);
 	mips_ihb();
-
-	pr_info("[%s]:[%d] WAITING FOR RESPONSE vpet->v_wq.wakeup_vpe = %d !\n",
-		__func__, __LINE__, vpet->v_wq.wakeup_vpe);
 
 	/* Wait for timeout */
 	ret1 = wait_event_interruptible_timeout(vpet->v_wq.vmb_wq,
@@ -996,14 +940,11 @@ int8_t vmb_cpu_start(int8_t cpu, struct CPU_launch_t cpu_launch,
 		ret = -VMB_ETIMEOUT;
 		goto fin;
 	}
-	pr_info("[%s]:[%d] OUTSIDE wakeup_vpe = %d vpet->fw_vmb.status = %d\n",
-		__func__, __LINE__, vpet->v_wq.wakeup_vpe, vpet->fw_vmb.status);
 	memset(vmb_fw_msg_t, 0, sizeof(struct VMB_fw_msg_t));
 	vpet->v_wq.wakeup_vpe = 0;
 
 	if (vpet->fw_vmb.status == (uint32_t)FW_VMB_ACK) {
 		ret = VMB_SUCCESS;
-		pr_err("[%s]:[%d] ret = %d\n", __func__, __LINE__, ret);
 	} else {
 		ret = -VMB_ENACK;
 		pr_err("[%s]:[%d] -ENACK recieved from FW ..\n",
@@ -1042,8 +983,6 @@ int8_t vmb_tc_alloc(uint8_t cpu)
 				tct[i].tc_status |= TC_ACTIVE;
 				ret = i;
 				tct[i].vpe_id = v_id;
-				pr_info("[%s]:[%d] CPU tct tc_status = %x\n",
-					__func__, __LINE__, tct[i].tc_status);
 				goto fin_talloc;
 			} else {
 				ret = -VMB_EBUSY;
@@ -1161,9 +1100,6 @@ int8_t vmb_tc_start(uint8_t cpu, struct TC_launch_t tc_launch[],
 	gic_trigger(cpu);
 	mips_ihb();
 
-	pr_info("[%s]:[%d] OUTSIDE wakeup_vpe = %d vpet->fw_vmb.status = %d\n",
-		__func__, __LINE__, vpet->v_wq.wakeup_vpe, vpet->fw_vmb.status);
-
 	/* Wait for timeout */
 	ret1 = wait_event_interruptible_timeout(vpet->v_wq.vmb_wq,
 					(vpet->v_wq.wakeup_vpe == 1),
@@ -1179,15 +1115,11 @@ int8_t vmb_tc_start(uint8_t cpu, struct TC_launch_t tc_launch[],
 		goto fin_tcstart;
 	}
 
-	pr_info("[%s]:[%d] OUTSIDE wakeup_vpe = %d vpet->fw_vmb.status = %d\n",
-		__func__, __LINE__, vpet->v_wq.wakeup_vpe, vpet->fw_vmb.status);
-
 	memset(vmb_fw_msg_t, 0, sizeof(struct VMB_fw_msg_t));
 	vpet->v_wq.wakeup_vpe = 0;
 
 	if (vpet->fw_vmb.status == (uint32_t)FW_VMB_ACK) {
 		ret = VMB_SUCCESS;
-		pr_err("[%s]:[%d] ret = %d\n", __func__, __LINE__, ret);
 	} else {
 		ret = -VMB_ENACK;
 		pr_err("[%s]:[%d] -ENACK recieved from FW. Resetting\n",
@@ -1240,14 +1172,11 @@ int8_t vmb_tc_stop(uint8_t cpu, uint8_t tc_num)
 		goto fin_tcstop;
 	}
 
-	pr_info("[%s]:[%d] OUTSIDE wakeup_vpe = %d vpet->fw_vmb.status = %d\n",
-		__func__, __LINE__, vpet->v_wq.wakeup_vpe, vpet->fw_vmb.status);
 	memset(vmb_fw_msg_t, 0, sizeof(struct VMB_fw_msg_t));
 	vpet->v_wq.wakeup_vpe = 0;
 
 	if (vpet->fw_vmb.status == (uint32_t)FW_VMB_ACK) {
 		ret = VMB_SUCCESS;
-		pr_err("[%s]:[%d]  ret = %d\n", __func__, __LINE__, ret);
 	} else {
 		ret = -VMB_ENACK;
 		pr_err("[%s]:[%d] -ENACK recieved from FW. Resetting\n",
@@ -1541,9 +1470,6 @@ int32_t fw_vmb_get_irq(uint8_t cpu)
 
 	if (cpu < MAX_CPU)
 		ret = g_fw_vmb_hwirq[cpu];
-
-	pr_info("[%s]:[%d] CPU = %d  IRQ = %d !!!\n",
-		__func__, __LINE__, cpu, ret);
 
 	return ret;
 }

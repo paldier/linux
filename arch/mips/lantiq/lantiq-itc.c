@@ -46,7 +46,6 @@ int32_t itc_init(void)
 			ehb; \
 			"
 		);
-	pr_info("\nInitial ITC_Address_Map0 %08x\n", read_c0_dtaglo());
 
 	if (read_c0_dtaglo() & ITC_En) {
 		pr_info("ITC Memory is already initialised for Core %d at address %x !!!",
@@ -182,9 +181,6 @@ int32_t itc_init(void)
 
 		ITC_Cell_Sem_off = ITC_Cell_Sem_off + (128 * (0x1 << ITC_EntryGrain));
 	}
-
-	pr_info("\n ITC Init done on Core %d on CPU %d !!!\n",
-		(smp_processor_id() / 2), smp_processor_id());
 
 	return 0;
 }

@@ -69,8 +69,6 @@ static int get_buff_resv_bytes(int cbm_inst, int size)
 {
 	int bsl_thr_val = 0x2800;
 
-	dev_info(cqm_ctrl->dev, "BSL thres %d size %d\n", BSL_THRES, size);
-
 	if (size < cqm_ctrl->num_pools)
 		bsl_thr_val = cqm_ctrl->prx300_pool_size[size] - BSL_THRES;
 	else

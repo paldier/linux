@@ -212,7 +212,7 @@ struct mac_ops *get_mac_ops(ethsw_api_dev_t *gswdev, int idx)
 	u32 max_mac = gsw_get_mac_subifcnt(dev_id);
 
 	if (idx < 2 || idx > max_mac + 1) {
-		printk("Invalid MAC Idx %d, Only MAC idx > 2 is Allowed\n", idx);
+		pr_info("Invalid MAC Idx %d, Only MAC idx > 2 is Allowed\n", idx);
 		return NULL;
 	}
 
@@ -1661,7 +1661,7 @@ static int gsw3x_msw_table_rm(void *cdev, GSW_multicastTable_t *parm)
 	}
 
 	if (MATCH == 0)
-		pr_err("The GIP/SIP not found\n");
+		pr_info("The GIP/SIP not found\n");
 
 	return GSW_statusOk;
 }
@@ -3271,11 +3271,9 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 		PCE_GCTRL_0_MC_VALID_SHIFT, PCE_GCTRL_0_MC_VALID_SIZE, 0x1);
 #else
 
-	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
+	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) ||
+	    (ethcinit->sdev == LTQ_FLOW_DEV_INT_R))
 		gsw_pmicro_code_init(cdev);
-		pr_debug("Switch API: PCE MicroCode loaded !!\n");
-	}
-
 #endif
 
 	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
@@ -12133,7 +12131,6 @@ GSW_return_t GSW_HW_Init(void *cdev, GSW_HW_Init_t *parm)
 		//rst_multi_sw_table(cdev);
 		/* HW Init */
 		gsw_pmicro_code_init_f24s(cdev);
-		printk("Switch API: PCE MicroCode loaded for LTQ_FLOW_DEV_EXT_AX3000_F24S\n");
 		/*hardcoded setting for LTQ_FLOW_DEV_EXT_AX3000_F24S*/
 		ret = GSW_statusOk;
 
@@ -21850,8 +21847,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 #endif
 
 	if (param->nBridgePortId >= gswdev->num_of_bridge_port) {
-		pr_err("nBridgePortId %d is out of range [num_of_bridge_port supported =%d]\n",
-		       param->nBridgePortId, (gswdev->num_of_bridge_port - 1));
 		ret = GSW_statusErr;
 		goto UNLOCK_AND_RETURN;
 	}
@@ -21907,7 +21902,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 	/*Both ingress/egress states must be same
 	 if not equal return error*/
 	if (IngressStpState != EgressStpState) {
-		pr_err("IngressStpState != EgressStpState");
 		ret = GSW_statusErr;
 		goto UNLOCK_AND_RETURN;
 	}
@@ -21961,7 +21955,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 					gswdev->brdgeconfig_idx[param->nBridgeId].IndexInUsageCnt++;
 				}
 			} else {
-				pr_err("gswdev->brdgeconfig_idx[param->nBridgeId].IndexInUse not in use\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -21997,7 +21990,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			FirstIdx = param->nIngressExtendedVlanBlockId;
 
 			if (FirstIdx >= gswdev->num_of_extendvlan) {
-				pr_err("in FirstIdx %d >= gswdev->num_of_egvlan %d\n", FirstIdx, gswdev->num_of_extendvlan);
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22006,7 +21998,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			  Since it will be marked as InUse during allocation.
 			*/
 			if (!gswdev->extendvlan_idx.vlan_idx[FirstIdx].IndexInUse) {
-				pr_err("!gswdev->extendvlan_idx.vlan_idx[FirstIdx].IndexInUse\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22016,7 +22007,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			*/
 			if (gswdev->extendvlan_idx.vlan_idx[FirstIdx].VlanBlockId
 			    != param->nIngressExtendedVlanBlockId) {
-				pr_err("VlanBlockId != param->nIngressExtendedVlanBlockId\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22045,8 +22035,8 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			/*Set Last Index of the Block*/
 			tbl_prog_brdgeport_ingress.val[2] &= ~(0x3FF);
 			tbl_prog_brdgeport_ingress.val[2] |= ((LastIdx - 1) & 0x3FF);
-			pr_err("\nBridge port ExVlan FirstIdx = %d\n", FirstIdx);
-			pr_err("Bridge port ExVlan LastIdx  = %d\n", LastIdx - 1);
+			pr_debug("Bridge port ExVlan FirstIdx = %d\n", FirstIdx);
+			pr_debug("Bridge port ExVlan LastIdx  = %d\n", LastIdx - 1);
 
 			if (!(param->eMask & GSW_BRIDGE_PORT_CONFIG_MASK_FORCE)) {
 				/*Usage count will be incremented only once during vlan blk assignment
@@ -22099,7 +22089,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			FirstIdx = param->nEgressExtendedVlanBlockId;
 
 			if (FirstIdx >= gswdev->num_of_extendvlan) {
-				pr_err("FirstIdx >= gswdev->num_of_egvlan\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22108,7 +22097,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			  Since it will be marked as InUse during allocation.
 			*/
 			if (!gswdev->extendvlan_idx.vlan_idx[FirstIdx].IndexInUse) {
-				pr_err("!gswdev->extendvlan_idx.vlan_idx[FirstIdx].IndexInUse\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22118,7 +22106,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			*/
 			if (gswdev->extendvlan_idx.vlan_idx[FirstIdx].VlanBlockId
 			    != param->nEgressExtendedVlanBlockId) {
-				pr_err("VlanBlockId!= param->nEgressExtendedVlanBlockId\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22791,7 +22778,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			*/
 			if (gswdev->vlanfilter_idx.filter_idx[FirstIdx].FilterBlockId
 			    != param->nIngressVlanFilterBlockId) {
-				pr_err("FilterBlockId != param->nIngressVlanFilterBlockId\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22906,7 +22892,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			FirstIdx = param->nEgressVlanFilter1BlockId;
 
 			if (FirstIdx > gswdev->num_of_vlanfilter) {
-				pr_err("FirstIdx > gswdev->num_of_vlanfilter\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22915,7 +22900,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			  Since it will be marked as InUse during allocation.
 			*/
 			if (!gswdev->vlanfilter_idx.filter_idx[FirstIdx].IndexInUse) {
-				pr_err("!gswdev->vlanfilter_idx.filter_idx[FirstIdx].IndexInUse\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -22925,7 +22909,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			*/
 			if (gswdev->vlanfilter_idx.filter_idx[FirstIdx].FilterBlockId
 			    != param->nEgressVlanFilter1BlockId) {
-				pr_err("FilterBlockId != param->nEgressVlanFilter1BlockId\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -23040,7 +23023,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			FirstIdx = param->nEgressVlanFilter2BlockId;
 
 			if (FirstIdx > gswdev->num_of_vlanfilter) {
-				pr_err("FirstIdx > gswdev->num_of_vlanfilter\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -23049,7 +23031,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			  Since it will be marked as InUse during allocation.
 			*/
 			if (!gswdev->vlanfilter_idx.filter_idx[FirstIdx].IndexInUse) {
-				pr_err("!gswdev->vlanfilter_idx.filter_idx[FirstIdx].IndexInUse\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -23059,7 +23040,6 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			*/
 			if (gswdev->vlanfilter_idx.filter_idx[FirstIdx].FilterBlockId
 			    != param->nEgressVlanFilter2BlockId) {
-				pr_err("FilterBlockId != param->nEgressVlanFilter2BlockId\n");
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -23891,7 +23871,6 @@ GSW_return_t GSW_CtpPortConfigSet(void *cdev, GSW_CTP_portConfig_t *param)
 
 	/*Checking based on number of logical port*/
 	if (param->nLogicalPortId >= gswdev->tpnum) {
-		pr_err("nLogicalPortId %d  >=  gswdev->pnum %d\n", param->nLogicalPortId, gswdev->pnum);
 		ret = GSW_statusErr;
 		goto UNLOCK_AND_RETURN;
 	}
@@ -23968,9 +23947,6 @@ GSW_return_t GSW_CtpPortConfigSet(void *cdev, GSW_CTP_portConfig_t *param)
 
 	if (param->eMask & GSW_CTP_PORT_CONFIG_MASK_BRIDGE_PORT_ID) {
 		if (param->nBridgePortId >= gswdev->num_of_bridge_port) {
-			pr_err("nBridgePortId (%i) >= num_of_bridge_port (%i)\n",
-			       param->nBridgePortId,
-			       gswdev->num_of_bridge_port);
 			ret = GSW_statusErr;
 			goto UNLOCK_AND_RETURN;
 		}
@@ -24061,7 +24037,6 @@ GSW_return_t GSW_CtpPortConfigSet(void *cdev, GSW_CTP_portConfig_t *param)
 			FirstIdx = param->nIngressExtendedVlanBlockId;
 
 			if (FirstIdx > gswdev->num_of_extendvlan) {
-				pr_err("FirstIdx %d > gswdev->num_of_extendvlan %d\n", FirstIdx, gswdev->num_of_egvlan);
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -24070,7 +24045,6 @@ GSW_return_t GSW_CtpPortConfigSet(void *cdev, GSW_CTP_portConfig_t *param)
 			  Since it will be marked as InUse during allocation.
 			*/
 			if (!gswdev->extendvlan_idx.vlan_idx[FirstIdx].IndexInUse) {
-				pr_err("Not in use gswdev->extendvlan_idx.vlan_idx[%d].IndexInUse\n", FirstIdx);
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}
@@ -24080,8 +24054,6 @@ GSW_return_t GSW_CtpPortConfigSet(void *cdev, GSW_CTP_portConfig_t *param)
 			*/
 			if (gswdev->extendvlan_idx.vlan_idx[FirstIdx].VlanBlockId
 			    != param->nIngressExtendedVlanBlockId) {
-				pr_err("gswdev->extendvlan_idx.vlan_idx[FirstIdx].VlanBlockId != param->nIngressExtendedVlanBlockId\n");
-				pr_err("param->nIngressExtendedVlanBlockId = %d\n", param->nIngressExtendedVlanBlockId);
 				ret = GSW_statusErr;
 				goto UNLOCK_AND_RETURN;
 			}

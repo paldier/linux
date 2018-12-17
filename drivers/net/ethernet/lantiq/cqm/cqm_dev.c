@@ -28,8 +28,6 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	unsigned int pool_size = 0;
 	u8 count = 0;
 
-	pr_info("[%s] .. [%d]\n", __func__, __LINE__);
-
 	node = of_find_node_by_name(NULL, dev_node_name[j].node_name);
 	if (!node) {
 		pr_err("Unable to get node %s for %s\n",
@@ -54,11 +52,11 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	memcpy(*res, resource, (sizeof(struct resource) * idx));
 	cqm_pdata->num_resources = idx;
 	*num_res = idx;
-	pr_info("num_res %d\n", *num_res);
+	pr_debug("num_res %d\n", *num_res);
 
 	for (idx = 0; idx < MAX_NUM_INTR; idx++) {
 		intr[idx] = irq_of_parse_and_map(node, idx);
-		pr_info("intr %d\n", intr[idx]);
+		pr_debug("intr %d\n", intr[idx]);
 		if (!intr[idx])
 			break;
 	}
@@ -136,7 +134,6 @@ int add_cqm_dev(int i)
 		       __func__, __LINE__, dev_node_name[i].dev_name);
 		return CBM_FAILURE;
 	}
-	pr_info("parse dts done\n");
 #if 1
 
 	pdev = platform_device_alloc(dev_node_name[i].dev_name, 1);
@@ -153,7 +150,6 @@ int add_cqm_dev(int i)
 		platform_set_drvdata(pdev, pdata);
 	/* Add resources to platform device */
 	if ((num_res > 0) && res) {
-		pr_info("adding resources\n");
 		ret = platform_device_add_resources(pdev, res, num_res);
 		if (ret) {
 			pr_info("%s: Failed to add resources for %s.\n",
@@ -162,7 +158,6 @@ int add_cqm_dev(int i)
 		}
 	}
 
-	pr_info("resources added\n");
 	/* Add platform device */
 	ret = platform_device_add(pdev);
 	if (ret) {
@@ -172,7 +167,6 @@ int add_cqm_dev(int i)
 	}
 #endif
 
-	pr_info(" Successfully Registered Platform device %s.\n", pdev->name);
 	return ret;
 
 err_free_pdata:
@@ -197,10 +191,8 @@ static int cqm_platdev_parse_dts(void)
 	int i, dev_add = 0;
 
 	for (i = 0; i < CQM_NUM_DEV_SUPP; i++) {
-		pr_info("dev %s\n", dev_node_name[i].dev_name);
 		if (!add_cqm_dev(i)) {
 			dev_add++;
-			pr_info("device added\n");
 		}
 	}
 	if (!dev_add)
@@ -210,7 +202,6 @@ static int cqm_platdev_parse_dts(void)
 
 static __init int cqm_platdev_init(void)
 {
-	pr_info("%s is called\n", __func__);
 	cqm_platdev_parse_dts();
 	return 0;
 }

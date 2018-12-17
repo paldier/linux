@@ -1510,9 +1510,7 @@ int gsw_pmicro_code_init_f24s(void *cdev)
 		return GSW_statusErr;
 	}
 
-	printk("PCE f24s micro-code init\n");
 	/* Disable all physical port  */
-
 	for (j = 0; j < gswdev->pnum; j++) {
 		printk("gswdev->pnum =%d j= %d\n", gswdev->pnum, j);
 		gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (j * 0x6)),
@@ -1591,8 +1589,6 @@ int gsw_pmicro_code_init(void *cdev)
 		no_ports = gswdev->tpnum;
 	else
 		no_ports = gswdev->pnum;
-
-	pr_debug("Enter PCE micro-code init\n");
 
 	/* Disable all physical port  */
 	for (j = 0; j < no_ports; j++) {
@@ -1695,7 +1691,6 @@ int gsw_pmicro_code_init(void *cdev)
 	gsw_w32(cdev, BM_QUEUE_GCTRL_GL_MOD_OFFSET, BM_QUEUE_GCTRL_GL_MOD_SHIFT,
 		Gl_Mod_Size, 0);
 
-	pr_debug("Exit PCE micro-code init\n");
 	return GSW_statusOk;
 }
 
@@ -1722,7 +1717,7 @@ int pce_action_delete(void *cdev, ltq_pce_table_t *pthandle, u32 index)
 	if (ptbl.valid == 1) {
 		if (((ptbl.val[0] >> 1) & 0x1)  && (gswdev->gipver == LTQ_GSWIP_3_0)) {
 			u32 index = (ptbl.val[2] & 0x3F);
-			pr_err("\n VLAN action delete at % index in %s", index, __func__);
+			pr_debug("\n VLAN action delete at % index in %s", index, __func__);
 
 			if (pthandle->pce_sub_tbl.vlan_act_tbl_cnt[index] > 0)
 				pthandle->pce_sub_tbl.vlan_act_tbl_cnt[index]--;

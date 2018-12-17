@@ -1135,7 +1135,8 @@ static int gphy_rmon_poll_thread(void *arg)
 	int port_tx_prev[NUM_OF_PORTS] = {0, 0, 0, 0, 0, 0};
 	GSW_RMON_Port_cnt_t param;
 	GSW_portLinkCfg_t param_link;
-	printk(KERN_INFO "start %p ..\n", current);
+
+	pr_debug("start %p ..\n", current);
 	allow_signal(SIGKILL);
 
 	while (!kthread_should_stop()) {
@@ -1216,7 +1217,7 @@ int AR10_F2_GPHY_LED_init(void)
 				   "gphy_rmon_poll_thread");
 
 	if (!IS_ERR(gphy_rmon_poll_thread_id)) {
-		printk(KERN_EMERG "GPHY RMON poll thread created..\n");
+		pr_debug("GPHY RMON poll thread created..\n");
 		wake_up_process(gphy_rmon_poll_thread_id);
 	}
 

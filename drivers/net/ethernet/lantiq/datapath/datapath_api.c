@@ -2786,7 +2786,7 @@ int dp_basic_proc(void)
 		PR_INFO("NMI_MASK\n");
 #endif
 	dp_init_ok = 1;
-	PR_INFO("datapath init done\n");
+
 	return res;
 }
 

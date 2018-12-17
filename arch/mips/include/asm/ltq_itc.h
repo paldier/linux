@@ -27,7 +27,7 @@
 #define ITC_AddrMask		0x3f	/* 128K ITC address space */
 #define ITC_EntryGrain		0	/* 128 bytes between Entries (Cells)*/
 
-#define DEBUG_ITC
+#undef DEBUG_ITC
 
 int32_t itc_init(void);
 void itc_sem_wait(uint8_t semId);
