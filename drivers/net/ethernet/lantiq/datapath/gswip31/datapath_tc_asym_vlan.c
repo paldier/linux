@@ -588,7 +588,7 @@ static int ext_vlan_action_cfg(struct core_ops *ops,
 
 	/* Copy DSCP table */
 	memcpy(pcfg->nDscp2PcpMap, act->dscp_pcp_map,
-	       (sizeof(unsigned char) * 64));
+	       sizeof(pcfg->nDscp2PcpMap));
 	/* forward without modification */
 	if ((act->act & DP_VLAN_ACT_FWD))
 		return 0;
