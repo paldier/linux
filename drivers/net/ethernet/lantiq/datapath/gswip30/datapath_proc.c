@@ -20,6 +20,7 @@
 #include "datapath_misc.h"
 
 #define PROC_PARSER "parser"
+#define PROC_COC "coc"
 #define PROC_RMON_PORTS  "rmon"
 #define PROC_EP "ep"	/*EP/port ID info */
 #define PROC_DPORT "dport"	/*TMU dequeue port info */

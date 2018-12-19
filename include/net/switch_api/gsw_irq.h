@@ -5,17 +5,8 @@ For licensing information, see the file 'LICENSE' in the root folder of
 this software module.
 ******************************************************************************/
 
-
 #ifndef _GSW_IRQ_H_
 #define _GSW_IRQ_H_
-
-typedef struct {
-	unsigned int blk;
-	unsigned int event;
-	unsigned int portid;
-	void *call_back;
-	void *param;
-} GSW_Irq_Op_t;
 
 typedef enum {
 	BM 		= 0,
@@ -26,11 +17,6 @@ typedef enum {
 } GSWIP_IRQ_BLK;
 
 typedef enum {
-	PCE_INVALID_EVENT_IERQ		= 0xFE,
-	PCE_INVALID_PORT_IERQ 		= 0xFF
-} GSWIP_PCE_INVALID_IERQ;
-
-typedef enum {
 	PCE_MAC_TABLE_FULL			= 0,
 	PCE_IGMP_TABLE_FULL			= 1,
 	PCE_PARSER_READY 			= 2,
@@ -39,8 +25,16 @@ typedef enum {
 	PCE_CLASSIFICATION_PHASE_2 	= 5,
 	PCE_FLOW_TABLE_RULE_MATCHED = 6,
 	PCE_MAC_TABLE_CHANGE 		= 7,
+	PCE_METER_EVENT = 8,
 } GSWIP_PCE_EVENT;
 
+typedef struct {
+	unsigned int blk;
+	unsigned int event;
+	unsigned int portid;
+	void *call_back;
+	void *param;
+} GSW_Irq_Op_t;
 
 typedef enum {
 	XGMAC_BLK	= 0,

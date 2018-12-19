@@ -4406,5 +4406,13 @@
 #define PCE_ISR_1_SHIFT					0
 #define PCE_ISR_1_SIZE					16
 
+#define PCE_PIER_OFFSET(idx)				(0x488 + (0xA * idx))
+#define PCE_PIER_METER_SHIFT				8
+#define PCE_PIER_METER_SIZE				1
+
+#define PCE_PISR_OFFSET(idx)				(0x489 + (0xA * idx))
+#define PCE_PISR_METER_SHIFT				8
+#define PCE_PISR_METER_SIZE				1
+
 /* --------------------------------------------------- */
 #endif /* _LTQ_GSWITCH_REG_H_ */

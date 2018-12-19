@@ -10,7 +10,7 @@ ifneq ($(CONFIG_LTQ_DATAPATH_HAL_GSWIP31_MIB),)
 obj-$(CONFIG_LTQ_DATAPATH) += datapath_mib.o
 endif
 
-ifneq ($(CONFIG_LTQ_DATAPATH_HAL_GSWIP31_COC),)
+ifneq ($(CONFIG_LTQ_DATAPATH_CPUFREQ),)
 obj-$(CONFIG_LTQ_DATAPATH) += datapath_coc.o
 endif
 

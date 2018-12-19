@@ -30,8 +30,6 @@
 #include <net/switch_api/gsw_flow_ops.h>
 #ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
 #include <linux/cpufreq.h>
-#include <cpufreq/ltq_cpufreq.h>
-
 #endif /*CONFIG_LTQ_DATAPATH_CPUFREQ*/
 
 /*! @mainpage Datapath Manager API
@@ -361,9 +359,9 @@ typedef int32_t(*dp_get_mib_fn_t)(dp_subif_t *subif, dp_drv_mib_t *,
 typedef int32_t(*dp_get_netif_subifid_fn_t)(struct net_device *netif,
 	struct sk_buff *skb, void *subif_data, uint8_t dst_mac[DP_MAX_ETH_ALEN],
 	dp_subif_t *subif, uint32_t flags);	/*!< @brief   get subifid */
-#if defined(CONFIG_LTQ_DATAPATH_CPUFREQ) && defined(CONFIG_LTQ_CPUFREQ)
-typedef int32_t(*dp_coc_confirm_stat)(enum ltq_cpufreq_state new_state,
-	enum ltq_cpufreq_state old_st, uint32_t f); /*!< @brief Confirm state
+#if defined(CONFIG_LTQ_DATAPATH_CPUFREQ)
+typedef int32_t(*dp_coc_confirm_stat)(int new_state,
+	int old_st, uint32_t f); /*!< @brief Confirm state
 						     *   by COC
 						     */
 #endif
@@ -1112,7 +1110,7 @@ int dp_get_port_subitf_via_dev(struct net_device *dev,
  *@param[in] flag flag
  *@return 0 if OK / -1 if error
  */
-int dp_coc_new_stat_req(enum ltq_cpufreq_state new_state, uint32_t flag);
+int dp_coc_new_stat_req(int new_state, uint32_t flag);
 
 /*!
  *@brief  The API is for dp_get_port_subitf_via_dev
@@ -1121,12 +1119,9 @@ int dp_coc_new_stat_req(enum ltq_cpufreq_state new_state, uint32_t flag);
  *@return 0 if OK / -1 if error
  */
 /*! DP's submodule to call it */
-int dp_set_rmon_threshold(struct ltq_cpufreq_threshold *threshold,
-			  uint32_t flags);
+/*int dp_set_rmon_threshold(struct dp_coc_threshold *threshold,
+			  uint32_t flags);*/
 #endif /*! CONFIG_LTQ_DATAPATH_CPUFREQ*/
-
-/*! @brief enum ltq_cpufreq_state */
-enum ltq_cpufreq_state;
 /*! get port flag. for TMU proc file cat /proc/tmu/queue1 and /proc/tmu/eqt */
 u32 get_dp_port_flag(int k);
 

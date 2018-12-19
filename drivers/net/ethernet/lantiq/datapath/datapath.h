@@ -333,7 +333,7 @@ enum DP_DBG_FLAG {
 	DP_DBG_ENUM_OR_STRING(DP_DBG_FLAG_MAX, "")\
 }
 
-enum {
+enum QOS_FLAG {
 	NODE_LINK_ADD = 0, /*add a link node */
 	NODE_LINK_GET,     /*get a link node */
 	NODE_LINK_EN_GET,  /*Get link status: enable/disable */
@@ -619,6 +619,14 @@ struct dp_tc_vlan_info {
 	int inst;  /*DP instance */
 };
 
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+enum CPUFREQ_FLAG {
+	PRE_CHANGE = 0,		/*! Cpufreq transition prechange */
+	POST_CHANGE,		/*! Cpufreq transition postchange */
+	POLICY_NOTIFY,		/*! Cpufreq policy notifier */
+};
+#endif
+
 /*port 0 is reserved*/
 extern int dp_inst_num;
 extern struct inst_property dp_port_prop[DP_MAX_INST];
@@ -671,12 +679,13 @@ void proc_mib_timer_read(struct seq_file *s);
 int mpe_fh_netfiler_install(void);
 int dp_coc_cpufreq_exit(void);
 int dp_coc_cpufreq_init(void);
+int dp_cpufreq_notify_init(int inst);
 int qos_dump_start(void);
 int qos_dump(struct seq_file *s, int pos);
 ssize_t proc_qos_write(struct file *file, const char *buf,
 		       size_t count, loff_t *ppos);
-int update_coc_up_sub_module(enum ltq_cpufreq_state new_state,
-			     enum ltq_cpufreq_state old_state, uint32_t flag);
+int update_coc_up_sub_module(int new_state,
+			     int old_state, uint32_t flag);
 void proc_coc_read(struct seq_file *s);
 ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 		       loff_t *ppos);
@@ -741,7 +750,7 @@ void dp_dump_raw_data(char *buf, int len, char *prefix_str);
 int ltq_tso_xmit(struct sk_buff *skb, void *hdr, int len, int flags);
 #endif
 
-int dp_set_meter_rate(enum ltq_cpufreq_state stat, unsigned int rate);
+//int dp_set_meter_rate(enum ltq_cpufreq_state stat, unsigned int rate);
 char *dp_skb_csum_str(struct sk_buff *skb);
 extern struct dentry *dp_proc_node;
 int get_dp_dbg_flag_str_size(void);

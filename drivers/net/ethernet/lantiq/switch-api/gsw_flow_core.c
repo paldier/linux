@@ -2897,6 +2897,9 @@ static GSW_return_t legacy_switch_core_init(void *cdev)
 		}
 	}
 
+	/*Initalize GSWIP Irq*/
+	GSW_Irq_init(cdev);
+
 	return GSW_statusOk;
 }
 

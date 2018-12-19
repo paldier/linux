@@ -1275,8 +1275,8 @@ EXIT:
 }
 
 #ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
-int update_coc_up_sub_module(enum ltq_cpufreq_state new_state,
-			     enum ltq_cpufreq_state old_state, uint32_t flag)
+int update_coc_up_sub_module(int new_state,
+			     int old_state, uint32_t flag)
 {
 	int i;
 	dp_coc_confirm_stat fn;

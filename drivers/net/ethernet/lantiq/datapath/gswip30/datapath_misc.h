@@ -30,6 +30,16 @@ struct gsw_itf {
 	u16 n;
 };
 
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+/* threshold data for D0:D3 */
+struct dp_coc_threshold {
+	int	th_d0;
+	int	th_d1;
+	int	th_d2;
+	int	th_d3;
+};
+#endif
+
 #define SET_PMAC_PORTMAP(pmac, port_id) do { \
 	if ((port_id) <= 7) \
 		(pmac)->port_map2 = 1 << (port_id); \
@@ -77,6 +87,9 @@ int lookup_dump30(struct seq_file *s, int pos);
 int lookup_start30(void);
 ssize_t proc_get_qid_via_index30(struct file *file, const char *buf,
 				 size_t count, loff_t *ppos);
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+int dp_handle_cpufreq_event_30(int event_id, void *cfg);
+#endif
 
 #endif
 

@@ -137,6 +137,9 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	DP_DEBUG(DP_DBG_FLAG_INST,
 		 "dp_request_inst ok: inst=%d, dp_inst_num=%d\n",
 		 i, dp_inst_num);
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+	dp_cpufreq_notify_init(i);
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(dp_request_inst);

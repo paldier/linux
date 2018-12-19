@@ -39,13 +39,6 @@ config LTQ_ETH_XRX500
         ---help---
         Lantiq Ethernet driver for XRX500 series.
 
-config XRX500_ETH_DRV_COC_SUPPORT
-		bool "CoC support in the ethernet driver"
-        depends on LTQ_ETH_XRX500 && LTQ_DATAPATH_CPUFREQ
-		default n
-		---help---
-		CoC support in the Ethernet driver of XRX500 series
-
 config XRX500_ETH_DRV_THERMAL_SUPPORT
 	bool "ThermaL support in the ethernet driver"
 	depends on LTQ_ETH_XRX500 && THERMAL

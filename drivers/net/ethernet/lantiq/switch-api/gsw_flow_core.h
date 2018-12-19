@@ -866,17 +866,19 @@ typedef struct {
 
 /*Switch IRQ related structures*/
 typedef struct gsw_pce_irq gsw_pce_irq;
+
 struct gsw_pce_irq {
 	gsw_pce_irq *pNext;
-	char Port_ier_enabled;
-	unsigned short P_IER_MASK;
-	char Event_ier_enable;
-	unsigned short E_IER_MASK;
-	unsigned short P_ISR_MASK;
-	unsigned short E_ISR_MASK;
+	u32 portId;
+	int pce_ier_mask;
+	int pce_gier_mask;
+	int pce_pier_mask;
+	int pce_isr_mask;
+	int pce_gisr_mask;
+	int pce_pisr_mask;
 	void *call_back;
 	void *param;
-} ;
+};
 
 struct pce_irq_linklist {
 	gsw_pce_irq	*first_ptr;

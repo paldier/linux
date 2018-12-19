@@ -135,6 +135,14 @@ config LTQ_DATAPATH_DDR_SIMULATE_GSWIP31
 	depends on LTQ_DATAPATH
 	---help---
 	  test prx300 HAL in GRX350 boards
+
+config LTQ_DATAPATH_CPUFREQ
+	bool "Datapath DFS(COC) support"
+	depends on LTQ_DATAPATH && CPU_FREQ
+	default n
+	---help---
+	  It is to support DFS(COC) in Datapath
+
 source "drivers/net/ethernet/lantiq/datapath/gswip31/Kconfig"
 source "drivers/net/ethernet/lantiq/datapath/gswip30/Kconfig"
 endif

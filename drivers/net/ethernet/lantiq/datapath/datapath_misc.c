@@ -41,6 +41,15 @@
 #define dp_memcpy(x, y, z)   memcpy(x, y, z)
 #endif
 
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#include <linux/cpufreq.h>
+static int dp_coc_inst;
+static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
+					      unsigned long event, void *data);
+static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
+					  unsigned long event, void *data);
+#endif
+
 struct hlist_head dp_subif_list[DP_SUBIF_LIST_HASH_SIZE];
 char *parser_flags_str[] = {
 	"PARSER_FLAGS_NO",
@@ -1410,3 +1419,69 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 	}
 	return 0;
 }
+
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
+					  unsigned long event, void *data)
+{
+	struct cpufreq_policy *policy = data;
+	DP_DEBUG(DP_DBG_FLAG_COC,"%s; cpu=%d\n",
+		 event ? "CPUFREQ_NOTIFY" : "CPUFREQ_ADJUST",
+		 policy->cpu);
+	if (event != CPUFREQ_ADJUST) {
+		DP_DEBUG(DP_DBG_FLAG_COC, "policy (min, max, cur):%u, %u, %u\n",
+			 policy->min, policy->max, policy->cur);
+		return NOTIFY_DONE;
+	}
+	if (!dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event)
+		return NOTIFY_OK;
+	return
+	dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event(POLICY_NOTIFY, policy);
+}
+
+/* keep track of frequency transitions */
+static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
+					      unsigned long event, void *data)
+{
+	struct cpufreq_freqs *freq = data;
+	if (event == CPUFREQ_PRECHANGE) {
+		if (!dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event)
+			return NOTIFY_STOP_MASK;
+		return dp_port_prop[dp_coc_inst].info.
+					dp_handle_cpufreq_event(PRE_CHANGE, freq);
+	} else if (event == CPUFREQ_POSTCHANGE) {
+		if (!dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event)
+			return NOTIFY_STOP_MASK;
+		return dp_port_prop[dp_coc_inst].info.
+					dp_handle_cpufreq_event(POST_CHANGE, freq);
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block dp_coc_cpufreq_transition_notifier_block = {
+	.notifier_call = dp_coc_cpufreq_transition_notifier
+};
+
+static struct notifier_block dp_coc_cpufreq_policy_notifier_block = {
+	.notifier_call = dp_coc_cpufreq_policy_notifier
+};
+
+int dp_cpufreq_notify_init(int inst)
+{
+	
+	dp_coc_inst = inst;
+	if (cpufreq_register_notifier
+	    (&dp_coc_cpufreq_transition_notifier_block,
+	    CPUFREQ_TRANSITION_NOTIFIER)) {
+		PR_ERR("cpufreq_register_notifier failed?\n");
+		return -1;
+	}
+	if (cpufreq_register_notifier
+	    (&dp_coc_cpufreq_policy_notifier_block,
+	    CPUFREQ_POLICY_NOTIFIER)) {
+		PR_ERR("cpufreq_register_notifier failed?\n");
+		return -1;
+	}
+	return 0;
+}
+#endif

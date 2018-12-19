@@ -16,13 +16,6 @@ config LTQ_DATAPATH_HAL_GSWIP31_MIB
 	---help---
 	  It is to aggregate GSWIP-L/R, TMU and driver's MIB counter
 
-config LTQ_DATAPATH_HAL_GSWIP30_CPUFREQ
-	bool "Datapath DFS(COC) support"
-	depends on LTQ_DATAPATH && LTQ_CPUFREQ && LTQ_ETHSW_API
-	default y
-	---help---
-	  It is to support DFS(COC) in Datapath
-
 config LTQ_DATAPATH_DDR_SIMULATE_GSWIP31
 	bool "Datapath Simulation GSWIP3.1 based on GRX500 board"
 	default n

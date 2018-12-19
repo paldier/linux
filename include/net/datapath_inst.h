@@ -140,6 +140,9 @@ struct inst_info {
 	int (*dp_tc_vlan_set)(struct core_ops *ops, struct dp_tc_vlan *vlan,
 			      struct dp_tc_vlan_info *info,
 			      int flag);
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+	int (*dp_handle_cpufreq_event)(int event_id, void *cfg);
+#endif
 };
 
 struct dp_inst {

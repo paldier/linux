@@ -9,13 +9,15 @@ this software module.
 
 typedef void (*gsw_call_back)(void *param);
 
-extern ethsw_api_dev_t *ecoredev[LTQ_FLOW_DEV_MAX];
+#define IS_PCE_IER_MATCH(p1, p2) (p1->pce_ier_mask==p2->pce_ier_mask)
+#define IS_PCE_GIER_MATCH(p1, p2) (p1->pce_gier_mask==p2->pce_gier_mask)
+#define IS_PCE_PIER_MATCH(p1, p2) (p1->pce_pier_mask==p2->pce_pier_mask)
+#define INVALID -1
 
 GSW_return_t  GSW_Debug_PrintPceIrqList(void *cdev)
 {
 	gsw_pce_irq *irq;
-	unsigned int i = 0;
-	unsigned int port = 0;
+	u32 i = 0;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -24,70 +26,61 @@ GSW_return_t  GSW_Debug_PrintPceIrqList(void *cdev)
 	}
 
 	irq = gswdev->PceIrqList->first_ptr;
-	printk("\n");
 
 	while (irq != NULL) {
-		printk("PCE Node %d:\n", i);
-		printk("Irq address          = 0x%x\n", (u32)irq);
-		printk("Next Irq Address     = 0x%x\n\n", (u32)irq->pNext);
 
-		if (irq->Port_ier_enabled)
-			printk("\tPort IER			= ENABLED\n");
-		else
-			printk("\tPort IER			= DISABLED\n");
-
-		for (i = 0; i < 12; i++) {
-			if (irq->P_IER_MASK & (1 << i)) {
-				port = i;
-				break;
-			}
+		if (irq->pce_gier_mask == INVALID &&
+		    irq->pce_ier_mask == INVALID &&
+		    irq->pce_pier_mask == INVALID) {
+			goto cont;
 		}
 
-		printk("\tP_IER_MASK			= %u (port no)\n", port);
+		printk("PCE Node                 %d:\n", i);
+		printk("PceIrqList address                 = 0x%p\n", irq);
+		printk("PceIrqList Next Irq Address                 = 0x%p\n\n", irq->pNext);
 
-		if (irq->Event_ier_enable)
-			printk("\tEvent IER			= ENABLED\n");
-		else
-			printk("\tEvent IER			= DISABLED\n");
+		printk("pce_ier_mask                 = %u (port no)\n", irq->portId);
 
-		switch (irq->E_IER_MASK) {
+		switch (irq->pce_gier_mask) {
 		case PCE_MAC_TABLE_CHANGE:
-			printk("\tE_IER_MASK			= PCE_MAC_TABLE_CHANGE\n");
+			printk("pce_gier_mask                 = PCE_MAC_TABLE_CHANGE\n");
 			break;
 
 		case PCE_FLOW_TABLE_RULE_MATCHED:
-			printk("\tE_IER_MASK			= PCE_FLOW_TABLE_RULE_MATCHED\n");
+			printk("pce_gier_mask                 = PCE_FLOW_TABLE_RULE_MATCHED\n");
 			break;
 
 		case PCE_CLASSIFICATION_PHASE_2:
-			printk("\tE_IER_MASK			= PCE_CLASSIFICATION_PHASE_2\n");
+			printk("pce_gier_mask                 = PCE_CLASSIFICATION_PHASE_2\n");
 			break;
 
 		case PCE_CLASSIFICATION_PHASE_1:
-			printk("\tE_IER_MASK			= PCE_CLASSIFICATION_PHASE_1\n");
+			printk("pce_gier_mask                 = PCE_CLASSIFICATION_PHASE_1\n");
 			break;
 
 		case PCE_CLASSIFICATION_PHASE_0:
-			printk("\tE_IER_MASK			= PCE_CLASSIFICATION_PHASE_0\n");
+			printk("pce_gier_mask                 = PCE_CLASSIFICATION_PHASE_0\n");
 			break;
 
 		case PCE_PARSER_READY:
-			printk("\tE_IER_MASK			= PCE_PARSER_READY\n");
+			printk("pce_gier_mask                 = PCE_PARSER_READY\n");
 			break;
 
 		case PCE_IGMP_TABLE_FULL:
-			printk("\tE_IER_MASK			= PCE_IGMP_TABLE_FULL\n");
+			printk("pce_gier_mask                 = PCE_IGMP_TABLE_FULL\n");
 			break;
 
 		case PCE_MAC_TABLE_FULL:
-			printk("\tE_IER_MASK			= PCE_MAC_TABLE_FULL\n");
+			printk("pce_gier_mask                 = PCE_MAC_TABLE_FULL\n");
 			break;
 		}
 
-		printk("\tP_ISR_MASK			= %u\n", irq->P_ISR_MASK);
-		printk("\tE_ISR_MASK			= %u\n", irq->E_ISR_MASK);
-		printk("\tcall_back				= 0x%x\n", (u32)irq->call_back);
+		printk("pce_isr_mask                 = %u\n", irq->pce_isr_mask);
+		printk("pce_gisr_mask                 = %u\n", irq->pce_gisr_mask);
+		printk("pce_pisr_mask                 = %u\n", irq->pce_pisr_mask);
+		printk("call_back                 = 0x%p\n", irq->call_back);
 		printk("\n");
+cont:
 		irq = irq->pNext;
 		i++;
 	}
@@ -95,38 +88,24 @@ GSW_return_t  GSW_Debug_PrintPceIrqList(void *cdev)
 	return GSW_statusOk;
 }
 
-static unsigned int PortIrq_Match(gsw_pce_irq *p1,
-				  gsw_pce_irq *p2)
-{
-	if (p1->P_IER_MASK == p2->P_IER_MASK &&
-	    p1->P_ISR_MASK == p2->P_ISR_MASK)
-		return 1;
-	else
-		return 0;
-}
-
-static unsigned int EventIrq_Match(gsw_pce_irq *p1,
-				   gsw_pce_irq *p2)
-{
-	if (p1->E_IER_MASK == p2->E_IER_MASK &&
-	    p1->E_ISR_MASK == p2->E_ISR_MASK)
-		return 1;
-	else
-		return 0;
-}
-
-static GSW_return_t pce_irq_add(void *cdev, gsw_pce_irq pce_irg,
+static GSW_return_t pce_irq_add(void *cdev, gsw_pce_irq *pce_irq,
 				struct pce_irq_linklist *node)
 {
-	gsw_pce_irq	*register_irq = NULL;
+	gsw_pce_irq *reg_irq = NULL;
 	gsw_pce_irq *irq = NULL;
+
 	irq = node->first_ptr;
 
 	while (irq != NULL) {
-		if (PortIrq_Match(&pce_irg, irq) &&
-		    EventIrq_Match(&pce_irg, irq)) {
-			pr_err("ERROR : Invalid operation , IRQ already registered %s:%s:%d\n",
-			       __FILE__, __func__, __LINE__);
+		if (IS_PCE_IER_MATCH(pce_irq, irq) &&
+		    IS_PCE_GIER_MATCH(pce_irq, irq)) {
+			pr_debug("Event & Port already registered\n");
+			return GSW_statusErr;
+		}
+
+		if (IS_PCE_IER_MATCH(pce_irq, irq) &&
+		    IS_PCE_PIER_MATCH(pce_irq, irq)) {
+			pr_debug("Event & PIER already registered\n");
 			return GSW_statusErr;
 		}
 
@@ -134,46 +113,49 @@ static GSW_return_t pce_irq_add(void *cdev, gsw_pce_irq pce_irg,
 	}
 
 #ifdef __KERNEL__
-	register_irq = (gsw_pce_irq *)kmalloc(sizeof(gsw_pce_irq), GFP_KERNEL);
-	memset(register_irq, 0, sizeof(gsw_pce_irq));
+	reg_irq = (gsw_pce_irq *)kmalloc(sizeof(gsw_pce_irq), GFP_KERNEL);
+	memset(reg_irq, 0, sizeof(gsw_pce_irq));
 #else
-	register_irq = (gsw_pce_irq *)malloc(sizeof(gsw_pce_irq));
-	memset(register_irq, 0, sizeof(gsw_pce_irq));
+	reg_irq = (gsw_pce_irq *)malloc(sizeof(gsw_pce_irq));
+	memset(reg_irq, 0, sizeof(gsw_pce_irq));
 #endif
 
-	register_irq->pNext			=	NULL;
-	register_irq->Port_ier_enabled	=	0;
-	register_irq->P_IER_MASK	=	pce_irg.P_IER_MASK;
-	register_irq->Event_ier_enable	=	0;
-	register_irq->E_IER_MASK	=	pce_irg.E_IER_MASK;
-	register_irq->P_ISR_MASK	=	pce_irg.P_ISR_MASK;
-	register_irq->E_ISR_MASK	=	pce_irg.E_ISR_MASK;
-	register_irq->call_back		=	pce_irg.call_back;
-	register_irq->param			=	pce_irg.param;
+	reg_irq->pNext			=	NULL;
+	reg_irq->portId			= 	pce_irq->portId;
+	reg_irq->pce_ier_mask		=	pce_irq->pce_ier_mask;
+	reg_irq->pce_isr_mask		=	pce_irq->pce_isr_mask;
+	reg_irq->pce_gier_mask		=	pce_irq->pce_gier_mask;
+	reg_irq->pce_gisr_mask		=	pce_irq->pce_gisr_mask;
+	reg_irq->pce_pier_mask		=	pce_irq->pce_pier_mask;
+	reg_irq->pce_pisr_mask		=	pce_irq->pce_pisr_mask;
+	reg_irq->call_back		=	pce_irq->call_back;
+	reg_irq->param			=	pce_irq->param;
 
 	if (node->first_ptr != NULL) {
-		node->last_ptr->pNext = register_irq;
-		node->last_ptr = register_irq;
+		node->last_ptr->pNext = reg_irq;
+		node->last_ptr = reg_irq;
 	} else {
-		node->first_ptr = node->last_ptr = register_irq;
+		node->first_ptr = reg_irq;
+		node->last_ptr = reg_irq;
 	}
 
 	return GSW_statusOk;
 }
 
-static GSW_return_t pce_irq_del(void *cdev, gsw_pce_irq pce_irg,
+static GSW_return_t pce_irq_del(void *cdev, gsw_pce_irq *pce_irq,
 				struct pce_irq_linklist *node)
 {
 	gsw_pce_irq *prv_irq = NULL, *delete_irq = NULL;
-	u32 p_ierq = 0;
+	u32 p_ierq = 0, found = 0;
+
 	delete_irq = node->first_ptr;
 
 	while (delete_irq != NULL) {
-		if (PortIrq_Match(&pce_irg, delete_irq) &&
-		    EventIrq_Match(&pce_irg, delete_irq)) {
+		if (IS_PCE_IER_MATCH(pce_irq, delete_irq) &&
+		    IS_PCE_GIER_MATCH(pce_irq, delete_irq)) {
 
 			gsw_r32(cdev, PCE_IER_0_OFFSET,
-				delete_irq->P_IER_MASK,
+				delete_irq->pce_ier_mask,
 				1, &p_ierq);
 
 			/*Check only Port IER*/
@@ -183,6 +165,28 @@ static GSW_return_t pce_irq_del(void *cdev, gsw_pce_irq pce_irg,
 				return -1;
 			}
 
+			found = 1;
+		}
+
+		if (IS_PCE_IER_MATCH(pce_irq, delete_irq) &&
+		    IS_PCE_PIER_MATCH(pce_irq, delete_irq)) {
+
+			gsw_r32(cdev, PCE_IER_0_OFFSET,
+				delete_irq->pce_ier_mask,
+				1, &p_ierq);
+
+			/*Check only Port IER*/
+			if (p_ierq) {
+				pr_err("ERROR : Can not Un-Register IRQ, disable IRQ first %s:%s:%d\n",
+				       __FILE__, __func__, __LINE__);
+				return -1;
+			}
+
+			found = 1;
+		}
+
+
+		if (found) {
 			if (node->first_ptr == delete_irq &&
 			    node->last_ptr == delete_irq) {
 				node->first_ptr = delete_irq->pNext;
@@ -201,133 +205,84 @@ static GSW_return_t pce_irq_del(void *cdev, gsw_pce_irq pce_irg,
 #else
 			free(delete_irq);
 #endif
-			return GSW_statusOk;
 		}
 
 		prv_irq = delete_irq;
 		delete_irq = delete_irq->pNext;
 	}
 
-	pr_err("ERROR : Invalid operation , IRQ not registered %s:%s:%d\n",
-	       __FILE__, __func__, __LINE__);
-	return GSW_statusErr;
+	return GSW_statusOk;
 }
 
-static GSW_return_t pce_irq_enable(void *cdev, gsw_pce_irq pce_irg,
+static GSW_return_t pce_irq_enable(void *cdev, gsw_pce_irq *pce_irq,
 				   struct pce_irq_linklist *node)
 {
-	u32 p_ierq = 0, e_ierq = 0, irq_registered = 0;
 	gsw_pce_irq *irq = NULL;
+	short pce_pier_offset = 0;
+
+	if (!node)
+		return GSW_statusErr;
 
 	irq = node->first_ptr;
 
 	while (irq != NULL) {
-		p_ierq = 0;
-		e_ierq = 0;
 
-		if (PortIrq_Match(&pce_irg, irq))
-			p_ierq = 1;
+		if (IS_PCE_IER_MATCH(pce_irq, irq) &&
+		    IS_PCE_GIER_MATCH(pce_irq, irq)) {
 
-		if (EventIrq_Match(&pce_irg, irq))
-			e_ierq = 1;
-
-		if (p_ierq && e_ierq &&
-		    pce_irg.P_IER_MASK != PCE_INVALID_PORT_IERQ &&
-		    pce_irg.E_IER_MASK != PCE_INVALID_EVENT_IERQ) {
-			/*If both Port IER and Event IER found
-				in the IRQ register list*/
-			irq->Port_ier_enabled = 1;
 			gsw_w32(cdev, PCE_IER_0_OFFSET,
-				irq->P_IER_MASK, 1, 1);
+				irq->pce_ier_mask, 1, 1);
 
-			irq->Event_ier_enable = 1;
 			gsw_w32(cdev, PCE_IER_1_OFFSET,
-				irq->E_IER_MASK, 1, 1);
+				irq->pce_gier_mask, 1, 1);
+		}
 
-			return 1;
-		} else if (pce_irg.P_IER_MASK == PCE_INVALID_PORT_IERQ
-			   && e_ierq) {
-			/*if only Event IER in
-			  the IRQ register list*/
-			irq->Event_ier_enable = 1;
-			gsw_w32(cdev, PCE_IER_1_OFFSET,
-				irq->E_IER_MASK, 1, 1);
-			irq_registered = 1;
-		} else if (pce_irg.E_IER_MASK == PCE_INVALID_EVENT_IERQ
-			   && p_ierq) {
-			/*if only Port IER in
-			  the IRQ register list*/
-			irq->Port_ier_enabled = 1;
+		if (IS_PCE_IER_MATCH(pce_irq, irq) &&
+		    IS_PCE_PIER_MATCH(pce_irq, irq)) {
+
+			pce_pier_offset = PCE_PIER_OFFSET(pce_irq->portId);
+
 			gsw_w32(cdev, PCE_IER_0_OFFSET,
-				irq->P_IER_MASK, 1, 1);
-			irq_registered = 1;
+				irq->pce_ier_mask, 1, 1);
+
+			gsw_w32(cdev, pce_pier_offset,
+				irq->pce_pier_mask, 1, 1);
 		}
 
 		irq = irq->pNext;
-	}
-
-	if (!irq_registered) {
-		pr_err("ERROR : Invalid operation , IRQ not registered %s:%s:%d\n",
-		       __FILE__, __func__, __LINE__);
-		return GSW_statusErr;
 	}
 
 	return GSW_statusOk;
 }
 
-static GSW_return_t pce_irq_disable(void *cdev, gsw_pce_irq pce_irg,
+static GSW_return_t pce_irq_disable(void *cdev, gsw_pce_irq *pce_irq,
 				    struct pce_irq_linklist *node)
 {
-	u32 p_ierq = 0, e_ierq = 0;
 	gsw_pce_irq *irq = NULL;
+	short pce_pier_offset = 0;
+
 	irq = node->first_ptr;
 
-	if (pce_irg.P_IER_MASK == PCE_INVALID_PORT_IERQ) {
-		p_ierq = 1;
-		irq = NULL;
-	} else {
-		irq = node->first_ptr;
-	}
-
 	while (irq != NULL) {
-		if (PortIrq_Match(&pce_irg, irq)) {
-			irq->Port_ier_enabled = 0;
-			gsw_w32(cdev, PCE_IER_0_OFFSET,
-				irq->P_IER_MASK, 1, 0);
-			p_ierq = 1;
+		if (IS_PCE_IER_MATCH(pce_irq, irq) &&
+		    IS_PCE_GIER_MATCH(pce_irq, irq)) {
+			gsw_w32(cdev, PCE_IER_0_OFFSET, irq->pce_ier_mask, 1, 0);
+			gsw_w32(cdev, PCE_IER_1_OFFSET, irq->pce_gier_mask, 1, 0);
 		}
 
 		irq = irq->pNext;
 	}
 
-	if (!p_ierq) {
-		pr_err("ERROR : Invalid operation , PORT not registered %s:%s:%d\n",
-		       __FILE__, __func__, __LINE__);
-		return GSW_statusErr;
-	}
-
-	if (pce_irg.E_IER_MASK == PCE_INVALID_EVENT_IERQ) {
-		e_ierq = 1;
-		irq = NULL;
-	} else {
-		irq = node->first_ptr;
-	}
+	irq = node->first_ptr;
 
 	while (irq != NULL) {
-		if (EventIrq_Match(&pce_irg, irq)) {
-			irq->Event_ier_enable = 0;
-			gsw_w32(cdev, PCE_IER_1_OFFSET,
-				irq->E_IER_MASK, 1, 0);
-			e_ierq = 1;
+		if ((IS_PCE_IER_MATCH(pce_irq, irq)) &&
+		    (IS_PCE_PIER_MATCH(pce_irq, irq))) {
+			pce_pier_offset = PCE_PIER_OFFSET(pce_irq->portId);
+			gsw_w32(cdev, pce_pier_offset, irq->pce_gier_mask, 1, 0);
 		}
 
 		irq = irq->pNext;
-	}
-
-	if (!e_ierq) {
-		pr_err("ERROR : Invalid operation , EVENT not registered %s:%s:%d\n",
-		       __FILE__, __func__, __LINE__);
-		return GSW_statusErr;
 	}
 
 	return GSW_statusOk;
@@ -335,7 +290,7 @@ static GSW_return_t pce_irq_disable(void *cdev, gsw_pce_irq pce_irg,
 
 static GSW_return_t pce_irq_config(void *cdev, GSW_Irq_Op_t *irq, IRQ_TYPE IrqType)
 {
-	gsw_pce_irq pce_irg;
+	gsw_pce_irq pce_irq = {0};
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -343,61 +298,70 @@ static GSW_return_t pce_irq_config(void *cdev, GSW_Irq_Op_t *irq, IRQ_TYPE IrqTy
 		return GSW_statusErr;
 	}
 
-	if (irq->portid > gswdev->tpnum &&
-	    irq->portid != PCE_INVALID_PORT_IERQ) {
+	if (irq->portid > gswdev->tpnum) {
 		pr_err("ERROR : PortId %d is not with in GSWIP capabilty %s:%s:%d\n",
 		       irq->portid, __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
-	} else if (irq->portid == PCE_INVALID_PORT_IERQ) {
-		pce_irg.P_IER_MASK 	= PCE_INVALID_PORT_IERQ;
-	} else {
-		pce_irg.P_IER_MASK 	= PCE_IER_0_PORT_MASK_GET(irq->portid);
-		pce_irg.P_ISR_MASK 	= PCE_ISR_0_PORT_MASK_GET(irq->portid);
 	}
+
+	pce_irq.pce_gier_mask = INVALID;
+	pce_irq.pce_ier_mask  = INVALID;
+	pce_irq.pce_pier_mask = INVALID;
+	pce_irq.pce_gisr_mask = INVALID;
+	pce_irq.pce_isr_mask  = INVALID;
+	pce_irq.pce_pisr_mask = INVALID;
+
+	pce_irq.portId 		= irq->portid;
+	pce_irq.pce_ier_mask 	= PCE_IER_0_PORT_MASK_GET(irq->portid);
+	pce_irq.pce_isr_mask 	= PCE_ISR_0_PORT_MASK_GET(irq->portid);
+
+	pce_irq.pce_ier_mask = pce_irq.pce_ier_mask >> 1;
+	pce_irq.pce_isr_mask = pce_irq.pce_isr_mask >> 1;
 
 	switch (irq->event) {
 	case PCE_MAC_TABLE_CHANGE:
-		pce_irg.E_IER_MASK = PCE_IER_1_CHG_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_CHG_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_CHG_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_CHG_SHIFT;
 		break;
 
 	case PCE_FLOW_TABLE_RULE_MATCHED:
-		pce_irg.E_IER_MASK = PCE_IER_1_FLOWINT_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_FLOWINT_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_FLOWINT_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_FLOWINT_SHIFT;
 		break;
 
 	case PCE_CLASSIFICATION_PHASE_2:
-		pce_irg.E_IER_MASK = PCE_IER_1_CPH2_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_CPH2_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_CPH2_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_CPH2_SHIFT;
 		break;
 
 	case PCE_CLASSIFICATION_PHASE_1:
-		pce_irg.E_IER_MASK = PCE_IER_1_CPH1_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_CPH1_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_CPH1_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_CPH1_SHIFT;
 		break;
 
 	case PCE_CLASSIFICATION_PHASE_0:
-		pce_irg.E_IER_MASK = PCE_IER_1_CPH0_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_CPH0_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_CPH0_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_CPH0_SHIFT;
 		break;
 
 	case PCE_PARSER_READY:
-		pce_irg.E_IER_MASK = PCE_IER_1_PRDY_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_PRDY_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_PRDY_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_PRDY_SHIFT;
 		break;
 
 	case PCE_IGMP_TABLE_FULL:
-		pce_irg.E_IER_MASK = PCE_IER_1_IGTF_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_IGTF_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_IGTF_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_IGTF_SHIFT;
 		break;
 
 	case PCE_MAC_TABLE_FULL:
-		pce_irg.E_IER_MASK = PCE_IER_1_MTF_SHIFT;
-		pce_irg.E_ISR_MASK = PCE_ISR_1_MTF_SHIFT;
+		pce_irq.pce_gier_mask = PCE_IER_1_MTF_SHIFT;
+		pce_irq.pce_gisr_mask = PCE_ISR_1_MTF_SHIFT;
 		break;
 
-	case PCE_INVALID_EVENT_IERQ:
-		pce_irg.E_IER_MASK = PCE_INVALID_EVENT_IERQ;
+	case PCE_METER_EVENT:
+		pce_irq.pce_pier_mask = PCE_PIER_METER_SHIFT;
+		pce_irq.pce_pisr_mask = PCE_PIER_METER_SHIFT;
 		break;
 
 	default:
@@ -406,54 +370,30 @@ static GSW_return_t pce_irq_config(void *cdev, GSW_Irq_Op_t *irq, IRQ_TYPE IrqTy
 		return GSW_statusErr;
 	}
 
-	switch (IrqType)	{
+	switch (IrqType) {
 	case IRQ_REGISTER:
-		if (irq->event == PCE_INVALID_EVENT_IERQ) {
-			pr_err("ERROR : PCE_INVALID_EVENT_IERQ %s:%s:%d\n",
-			       __FILE__, __func__, __LINE__);
-			return GSW_statusErr;
-		}
-
-		if (irq->portid == PCE_INVALID_PORT_IERQ) {
-			pr_err("ERROR : PCE PCE_INVALID_PORT_IERQ %s:%s:%d\n",
-			       __FILE__, __func__, __LINE__);
-			return GSW_statusErr;
-		}
-
 		if (irq->call_back != NULL) {
-			pce_irg.call_back	= irq->call_back;
-			pce_irg.param		= irq->param;
+			pce_irq.call_back	= irq->call_back;
+			pce_irq.param		= irq->param;
 		} else {
 			pr_err("ERROR : callback handle is NULL %s:%s:%d\n",
 			       __FILE__, __func__, __LINE__);
 			return GSW_statusErr;
 		}
 
-		pce_irq_add(cdev, pce_irg, gswdev->PceIrqList);
+		pce_irq_add(cdev, &pce_irq, gswdev->PceIrqList);
 		break;
 
 	case IRQ_UNREGISTER:
-		if (irq->event == PCE_INVALID_EVENT_IERQ) {
-			pr_err("ERROR : PCE_INVALID_EVENT_IERQ %s:%s:%d\n",
-			       __FILE__, __func__, __LINE__);
-			return GSW_statusErr;
-		}
-
-		if (irq->portid == PCE_INVALID_PORT_IERQ) {
-			pr_err("ERROR : PCE PCE_INVALID_PORT_IERQ %s:%s:%d\n",
-			       __FILE__, __func__, __LINE__);
-			return GSW_statusErr;
-		}
-
-		pce_irq_del(cdev, pce_irg, gswdev->PceIrqList);
+		pce_irq_del(cdev, &pce_irq, gswdev->PceIrqList);
 		break;
 
 	case IRQ_ENABLE:
-		pce_irq_enable(cdev, pce_irg, gswdev->PceIrqList);
+		pce_irq_enable(cdev, &pce_irq, gswdev->PceIrqList);
 		break;
 
 	case IRQ_DISABLE:
-		pce_irq_disable(cdev, pce_irg, gswdev->PceIrqList);
+		pce_irq_disable(cdev, &pce_irq, gswdev->PceIrqList);
 		break;
 
 	default:
@@ -501,8 +441,6 @@ static GSW_return_t swcore_irq_config(void *cdev, GSW_Irq_Op_t *irq, IRQ_TYPE Ir
 		break;
 
 	case PCE:
-		printk("Switch Core PCE BLK %s:%s:%d\n"
-		       , __FILE__, __func__, __LINE__);
 		pce_irq_config(cdev, irq, IrqType);
 		break;
 
@@ -523,107 +461,129 @@ UNLOCK_AND_RETURN:
 	return ret;
 }
 
-void GSW_Irq_tasklet(unsigned long prvdata)
+void GSW_Irq_tasklet(unsigned long ops)
 {
 	gsw_pce_irq *pceirq = NULL;
-	gsw_call_back callback;
-	u32 p_isr = 0, e_isr = 0;
-	ethsw_api_dev_t *cdev = (ethsw_api_dev_t *)prvdata;
+	gsw_call_back callback = NULL;
+	u32 p_isr = 0, e_isr = 0, e_pisr = 0;
 	u32 pce_event = 0;
+	short pce_pisr_offset = 0;
+	void *cdev = (void *)ops;
+	ethsw_api_dev_t *gswdev;
 
-	if (cdev) {
+	if (!cdev)
+		return;
 
-		/*PCE IRQ*/
-		/* Read PCE ETHSW_ISR if anything is set ,
-			disable the global PCEINT IER
-			and Service PCE register IRQ list and Enable back
-			global PCEINT IER */
-		/*Global PCE ISR is read only,Hardware Status*/
-		gsw_r32(cdev, ETHSW_ISR_PCEINT_OFFSET,
-			ETHSW_ISR_PCEINT_SHIFT, ETHSW_ISR_PCEINT_SIZE,
-			&pce_event);
+	gswdev = GSW_PDATA_GET(cdev);
 
-		if (pce_event) {
-			/*Disable PCE Global IER*/
-			gsw_w32(cdev, ETHSW_IER_PCEIE_OFFSET,
-				ETHSW_IER_PCEIE_SHIFT, ETHSW_IER_PCEIE_SIZE, 0);
+	gsw_r32(cdev, ETHSW_ISR_PCEINT_OFFSET,
+		ETHSW_ISR_PCEINT_SHIFT, ETHSW_ISR_PCEINT_SIZE,
+		&pce_event);
 
-			/*PCE : Service registered IRQ list*/
-			if (cdev->PceIrqList)
-				pceirq = cdev->PceIrqList->first_ptr;
+	if (pce_event) {
 
-			while (pceirq != NULL) {
-				callback = NULL;
+		/*PCE : Service registered IRQ list*/
+		if (gswdev->PceIrqList)
+			pceirq = gswdev->PceIrqList->first_ptr;
 
-				if (pceirq->Port_ier_enabled &&
-				    pceirq->Event_ier_enable) {
-					/*Check for Pending Interrupt*/
-					gsw_r32(cdev, PCE_ISR_0_OFFSET,
-						pceirq->P_ISR_MASK,
-						1, &p_isr);
-					gsw_r32(cdev, PCE_ISR_1_OFFSET,
-						pceirq->E_ISR_MASK,
-						1, &e_isr);
+		while (pceirq != NULL) {
+			callback = NULL;
 
-					if (p_isr && e_isr) {
-						/*Clear only the Event
-						ISR (lhsc)-> cleared by writting 1.
-						PORT ISR cleared by Hardware (Read Only)*/
-						gsw_w32(cdev, PCE_ISR_1_OFFSET,
-							pceirq->P_ISR_MASK, 1, 1);
-
-						callback = pceirq->call_back;
-
-						/*Call back Service*/
-						if (callback)
-							callback(pceirq->param);
-					}
-				}
-
+			/* Check for Pending Interrupt */
+			if (pceirq->pce_isr_mask == INVALID) {
 				pceirq = pceirq->pNext;
+				continue;
 			}
 
-			/*Enable PCE Global IER*/
-			gsw_w32(cdev, ETHSW_IER_PCEIE_OFFSET,
-				ETHSW_IER_PCEIE_SHIFT, ETHSW_IER_PCEIE_SIZE, 1);
+			if (pceirq->pce_gisr_mask != INVALID) {
+				gsw_r32(cdev, PCE_ISR_0_OFFSET,
+					pceirq->pce_isr_mask,
+					1, &p_isr);
+				gsw_r32(cdev, PCE_ISR_1_OFFSET,
+					pceirq->pce_gisr_mask,
+					1, &e_isr);
+			}
+
+			if (pceirq->pce_pisr_mask != INVALID) {
+
+				pce_pisr_offset = PCE_PISR_OFFSET(pceirq->portId);
+
+				gsw_r32(cdev, PCE_ISR_0_OFFSET,
+					pceirq->pce_isr_mask,
+					1, &p_isr);
+				gsw_r32(cdev, pce_pisr_offset,
+					pceirq->pce_pisr_mask,
+					1, &e_pisr);
+			}
+
+			if (e_isr) {
+				gsw_w32(cdev, PCE_ISR_1_OFFSET,
+					pceirq->pce_isr_mask, 1, 1);
+				callback = pceirq->call_back;
+			}
+
+			if (e_pisr) {
+				gsw_w32(cdev, pce_pisr_offset,
+					pceirq->pce_pisr_mask, 1, 1);
+
+				callback = pceirq->call_back;
+			}
+
+			/*Call back Service*/
+			if (callback)
+				callback(pceirq->param);
+
+			pceirq = pceirq->pNext;
 		}
 
-
-		/*BM : Service registered IRQ list*/
-		/*yet to be done*/
-
-		/*SDMA : Service registered IRQ list*/
-		/*yet to be done*/
-
-		/*FDMA : Service registered IRQ list*/
-		/*yet to be done*/
-
-		/*PMAC : Service registered IRQ list*/
-		/*yet to be done*/
-
+		/*Enable PCE Global IER*/
+		gsw_w32(cdev, ETHSW_IER_PCEIE_OFFSET,
+			ETHSW_IER_PCEIE_SHIFT, ETHSW_IER_PCEIE_SIZE, 1);
 	}
 }
 
-
 #ifdef __KERNEL__
-static irqreturn_t GSW_ISR(int irq, void *dev_id)
+static irqreturn_t GSW_ISR(int irq, void *cdev)
 {
 	struct core_ops *sw_ops;
-	ethsw_api_dev_t *gswdev;
-	u32 dev;
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	u32 dev, maxdev = 0, isr_event;
 
-	for (dev = 0; dev < LTQ_FLOW_DEV_MAX; dev++) {
+	if (gswdev->gipver == LTQ_GSWIP_3_0)
+		maxdev = 2;
+	else if (gswdev->gipver == LTQ_GSWIP_3_1)
+		maxdev = 1;
+
+	for (dev = 0; dev < maxdev; dev++) {
 		sw_ops = NULL;
 		gswdev = NULL;
 		sw_ops = gsw_get_swcore_ops(dev);
+		gsw_r32_raw(sw_ops, ETHSW_ISR_PCEINT_OFFSET, &isr_event);
+
+		if (isr_event == 0)
+			continue;
 
 		if (sw_ops) {
 			gswdev = GSW_PDATA_GET(sw_ops);
 
-			if (gswdev) {
-				printk("\tSwitch IRQ tasklet for device %d\n", dev);
-				tasklet_schedule(&gswdev->gswip_tasklet);
+			if (isr_event & (1 << ETHSW_IER_PCEIE_SHIFT)) {
+				gsw_w32(sw_ops, ETHSW_IER_PCEIE_OFFSET,
+					ETHSW_IER_PCEIE_SHIFT, ETHSW_IER_PCEIE_SIZE, 0);
+			} else if (isr_event & (1 << ETHSW_ISR_BMINT_SHIFT)) {
+				gsw_w32(sw_ops, ETHSW_IER_PCEIE_OFFSET,
+					ETHSW_ISR_BMINT_SHIFT, ETHSW_ISR_BMINT_SIZE, 0);
+			} else if (isr_event & (1 << ETHSW_ISR_MACINT_SHIFT)) {
+				gsw_w32(sw_ops, ETHSW_IER_PCEIE_OFFSET,
+					ETHSW_ISR_MACINT_SHIFT, ETHSW_ISR_MACINT_SIZE, 0);
+			} else if (isr_event & (1 << ETHSW_ISR_SDMAINT_SHIFT)) {
+				gsw_w32(sw_ops, ETHSW_IER_PCEIE_OFFSET,
+					ETHSW_ISR_SDMAINT_SHIFT, ETHSW_ISR_SDMAINT_SIZE, 0);
+			} else if (isr_event & (1 << ETHSW_ISR_FDMAINT_SHIFT)) {
+				gsw_w32(sw_ops, ETHSW_IER_PCEIE_OFFSET,
+					ETHSW_ISR_FDMAINT_SHIFT, ETHSW_ISR_FDMAINT_SIZE, 0);
 			}
+
+			tasklet_schedule(&gswdev->gswip_tasklet);
 		}
 	}
 
@@ -631,10 +591,8 @@ static irqreturn_t GSW_ISR(int irq, void *dev_id)
 }
 #endif
 
-
 GSW_return_t GSW_Irq_init(void *cdev)
 {
-
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	u32 ret;
 
@@ -643,42 +601,34 @@ GSW_return_t GSW_Irq_init(void *cdev)
 		return GSW_statusErr;
 	}
 
+	/*Enable PCE Global IER*/
+	gsw_w32(cdev, ETHSW_IER_PCEIE_OFFSET,
+		ETHSW_IER_PCEIE_SHIFT, ETHSW_IER_PCEIE_SIZE, 1);
+
 	/*GSWIP PCE BLK IRQ Pointer*/
 #ifdef __KERNEL__
 	gswdev->PceIrqList =
 		(struct pce_irq_linklist *)kmalloc(sizeof(struct pce_irq_linklist), GFP_KERNEL);
-#else
-	gswdev->PceIrqList =
-		(struct pce_irq_linklist *)malloc(sizeof(struct pce_irq_linklist));
-#endif
-
-	gswdev->PceIrqList->first_ptr = NULL;
-	gswdev->PceIrqList->last_ptr = NULL;
-
-	/*Enable PCE Global IER*/
-	gsw_w32(cdev, ETHSW_IER_PCEIE_OFFSET,
-		ETHSW_IER_PCEIE_SHIFT, ETHSW_IER_PCEIE_SIZE, 1);
-	/*Enable BM Global IER*/
-	/*yet to be done*/
-	/*Enable SDMA Global IER*/
-	/*yet to be done*/
-	/*Enable FDMA Global IER*/
-	/*yet to be done*/
-	/*Enable PMAC Global IER*/
-	/*yet to be done*/
-
-#ifdef __KERNEL__
-
-	ret = request_irq(gswdev->irq_num, GSW_ISR, 0, "gswip", NULL);
+	ret = request_irq(gswdev->irq_num, GSW_ISR, 0, "gswip", cdev);
 
 	if (ret) {
 		pr_err("Switch irq request error %s:%s:%d", __FILE__, __func__, __LINE__);
 		return ret;
 	}
 
+	gswdev->PceIrqList->first_ptr = NULL;
+	gswdev->PceIrqList->last_ptr = NULL;
+
 	tasklet_init(&gswdev->gswip_tasklet,
 		     GSW_Irq_tasklet,
-		     (unsigned long)gswdev);
+		     (unsigned long)cdev);
+#else
+	gswdev->PceIrqList =
+		(struct pce_irq_linklist *)malloc(sizeof(struct pce_irq_linklist));
+
+	gswdev->PceIrqList->first_ptr = NULL;
+	gswdev->PceIrqList->last_ptr = NULL;
+
 #endif
 
 	return GSW_statusOk;
@@ -686,7 +636,6 @@ GSW_return_t GSW_Irq_init(void *cdev)
 
 GSW_return_t GSW_Irq_deinit(void *cdev)
 {
-
 	gsw_pce_irq *irq = NULL;
 	gsw_pce_irq *free_irq = NULL;
 	ethsw_api_dev_t *gswdev = (ethsw_api_dev_t *)cdev;
@@ -721,8 +670,6 @@ GSW_return_t GSW_Irq_deinit(void *cdev)
 	return GSW_statusOk;
 }
 
-
-
 GSW_return_t GSW_Irq_register(void *cdev, GSW_Irq_Op_t *irq)
 {
 	return swcore_irq_config(cdev, irq, IRQ_REGISTER);
@@ -742,5 +689,3 @@ GSW_return_t GSW_Irq_disable(void *cdev, GSW_Irq_Op_t *irq)
 {
 	return swcore_irq_config(cdev, irq, IRQ_DISABLE);
 }
-
-

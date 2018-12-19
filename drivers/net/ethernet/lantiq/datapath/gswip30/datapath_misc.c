@@ -655,6 +655,9 @@ int register_dp_cap_gswip30(int flag)
 	cap.info.dp_get_port_vap_mib = dp_get_port_vap_mib_30;
 	cap.info.dp_clear_netif_mib = dp_clear_netif_mib_30;
 #endif
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+	cap.info.dp_handle_cpufreq_event = dp_handle_cpufreq_event_30;
+#endif
 	cap.info.cap.tx_hw_chksum = 1;
 	cap.info.cap.rx_hw_chksum = 1;
 	cap.info.cap.hw_tso = 1;
