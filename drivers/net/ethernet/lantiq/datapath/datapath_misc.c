@@ -1229,6 +1229,16 @@ int dp_get_fid_by_brname(struct net_device *dev, int *inst)
 }
 #endif
 
+void dp_subif_reclaim(struct rcu_head *rp)
+{
+	struct dp_subif_cache *dp_subif =
+		container_of(rp, struct dp_subif_cache, rcu);
+
+	if (dp_subif->data)
+		kfree(dp_subif->data);
+	kfree(dp_subif);
+}
+
 u32 dp_subif_hash(struct net_device *dev)
 {
 	unsigned long index;
@@ -1247,25 +1257,6 @@ int dp_subif_list_init(void)
 		INIT_HLIST_HEAD(&dp_subif_list[i]);
 
 	return 0;
-}
-
-struct dp_subif_cache *dp_subif_lookup(struct hlist_head *head,
-				       struct net_device *dev,
-				       void *data)
-{
-	struct dp_subif_cache *item;
-
-	hlist_for_each_entry(item, head, hlist) {
-		if (dev) {
-			if (item->dev == dev)
-				return item;
-		} /*else if ((data == item->subif->alloc_flag) &&
-				((int)data & DP_F_FAST_DSL)) {
-			return item;
-		}
-		*/
-	}
-	return NULL;
 }
 
 struct dp_subif_cache *dp_subif_lookup_safe(struct hlist_head *head,
@@ -1298,27 +1289,18 @@ int32_t dp_del_subif(struct net_device *netif, void *data, dp_subif_t *subif,
 		return -1;
 	}
 	hlist_del_rcu(&dp_subif->hlist);
-	synchronize_rcu_bh();
-	kfree(dp_subif->data);
-	kfree(dp_subif);
+	call_rcu_bh(&dp_subif->rcu, dp_subif_reclaim);
 	return 1;
 }
 
 int32_t dp_update_subif(struct net_device *netif, void *data,
-			dp_subif_t *subif, char *subif_name, u32 flags)
+			dp_subif_t *subif, char *subif_name, u32 flags,
+			dp_get_netif_subifid_fn_t subifid_fn_t)
 {
 	struct dp_subif_cache *dp_subif_new, *dp_subif;
 	u32 idx;
-	int inst, portid;
-	dp_get_netif_subifid_fn_t subifid_fn_t = NULL;
-	struct pmac_port_info *port_info;
 
 	idx = dp_subif_hash(netif);
-	inst = subif->inst;
-	portid = subif->port_id;
-	port_info = &dp_port_info[inst][portid];
-	if (!(flags & DP_F_SUBIF_LOGICAL))
-		subifid_fn_t = port_info->cb.get_subifid_fn;
 	dp_subif = dp_subif_lookup_safe(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) { /*alloc new */
 		dp_subif = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
@@ -1346,8 +1328,7 @@ int32_t dp_update_subif(struct net_device *netif, void *data,
 		dp_subif_new->subif_fn = subifid_fn_t;
 		hlist_replace_rcu(&dp_subif->hlist,
 				  &dp_subif_new->hlist);
-		synchronize_rcu_bh();
-		kfree(dp_subif);
+		call_rcu_bh(&dp_subif->rcu, dp_subif_reclaim);
 		return 0;
 	}
 	return -1;
@@ -1355,7 +1336,46 @@ int32_t dp_update_subif(struct net_device *netif, void *data,
 
 int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			dp_subif_t *subif_id, struct dp_subif_data *data,
-			u32 flags)
+			u32 flags, int *f_subif_up)
+{
+	void *subif_data = NULL;
+	/* Note: workaround to set dummy subif_data via subif_name for DSL case.
+	 *       During dp_get_netif_subifID, subif_data is used to get its PVC
+	 *       information.
+	 * Later VRX518/618 need to provide valid subif_data in order to support
+	 * multiple DSL instances during dp_register_subif_ext
+	 */
+	if (flags & DP_F_FAST_DSL)
+		subif_data = (void *)subif_name;
+	/*check flag for register / deregister to update/del */
+	if (flags & DP_F_DEREGISTER) {
+
+		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
+					      subif_id, 0))
+			*f_subif_up = 0;
+		else
+			*f_subif_up = 1;
+	} else {
+		if (dp_get_netif_subifid_priv(dev, NULL, subif_data,
+					      NULL, subif_id, 0)) {
+			PR_ERR("DP subif synchronization fail\n");
+			return DP_FAILURE;
+		}
+		if (data->ctp_dev) {
+			if (dp_get_netif_subifid_priv(data->ctp_dev, NULL,
+						      subif_data, NULL,
+						      subif_id, 0))
+				return DP_FAILURE;
+		}
+		*f_subif_up = 1;
+	}
+	return 0;
+}
+
+int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
+			     dp_subif_t *subif_id, struct dp_subif_data *data,
+			     u32 flags, dp_get_netif_subifid_fn_t subifid_fn,
+			     int *f_subif_up)
 {
 	void *subif_data = NULL;
 
@@ -1373,27 +1393,19 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			dp_del_subif(data->ctp_dev, subif_data, subif_id,
 				     NULL, flags);
 
-		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
-					      subif_id, 0))
+		if (*f_subif_up == 0)
 			dp_del_subif(dev, subif_data, subif_id, subif_name,
 				     flags);
-		else
+		else if (*f_subif_up == 1)
 			dp_update_subif(dev, subif_data, subif_id, subif_name,
-					flags);
+					flags, subifid_fn);
 	} else {
-		if (dp_get_netif_subifid_priv(dev, NULL, subif_data,
-					      NULL, subif_id, 0)) {
-			PR_ERR("DP subif synchronization fail\n");
-			return DP_FAILURE;
-		}
-		dp_update_subif(dev, subif_data, subif_id, subif_name, flags);
-		if (data->ctp_dev) {
-			if (dp_get_netif_subifid_priv(data->ctp_dev, NULL,
-						      subif_data, NULL,
-						      subif_id, 0))
-				return DP_FAILURE;
+		if (*f_subif_up == 1) {
+			dp_update_subif(dev, subif_data, subif_id, subif_name,
+					flags, subifid_fn);
+		if (data->ctp_dev)
 			dp_update_subif(data->ctp_dev, subif_data, subif_id,
-					NULL, flags);
+					NULL, flags, subifid_fn);
 		}
 	}
 	return 0;

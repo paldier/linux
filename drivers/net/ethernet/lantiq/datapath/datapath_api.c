@@ -920,9 +920,10 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 			      struct dp_subif_data *data, uint32_t flags)
 {
 	int res = DP_FAILURE;
-	int port_id;
+	int port_id, f_subif = -1;
 	struct pmac_port_info *port_info;
 	struct dp_subif_data tmp_data = {0};
+	dp_get_netif_subifid_fn_t subifid_fn_t = NULL;
 
 	if (unlikely(!dp_init_ok)) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
@@ -996,9 +997,13 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 		dp_register_subif_private(inst, owner, dev,
 					  subif_name,
 					  subif_id, data, flags);
-	if (!res)
-		dp_sync_subifid(dev, subif_name, subif_id, data, flags);
+	if (!(flags & DP_F_SUBIF_LOGICAL))
+		subifid_fn_t = port_info->cb.get_subifid_fn;
+	dp_sync_subifid(dev, subif_name, subif_id, data, flags, &f_subif);
 	DP_LIB_UNLOCK(&dp_lock);
+	if (!res)
+		dp_sync_subifid_priv(dev, subif_name, subif_id, data, flags,
+				     subifid_fn_t, &f_subif);
 
 	return res;
 }
@@ -1050,7 +1055,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	idx = dp_subif_hash(netif);
 	//TODO handle DSL case in future
 	rcu_read_lock_bh();
-	dp_subif = dp_subif_lookup(&dp_subif_list[idx], netif, subif_data);
+	dp_subif = dp_subif_lookup_safe(&dp_subif_list[idx], netif, subif_data);
 	if (!dp_subif) {
 		PR_ERR("Failed dp_subif_lookup: %s\n",
 		       netif ? netif->name : "NULL");
@@ -1060,7 +1065,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	memcpy(subif, &dp_subif->subif, sizeof(*subif));
 	subifid_fn_t = dp_subif->subif_fn;
 	rcu_read_unlock_bh();
-	if (subifid_fn_t) {
+	if (subifid_fn_t && !(flags & DP_F_SUBIF_LOGICAL)) {
 		/*subif->subif will be set by callback api itself */
 		res =
 		    subifid_fn_t(netif, skb, subif_data, dst_mac, subif,

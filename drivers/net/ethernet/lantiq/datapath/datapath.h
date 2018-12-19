@@ -768,14 +768,19 @@ extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle,
 extern struct hlist_head dp_subif_list[DP_SUBIF_LIST_HASH_SIZE];
 int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			dp_subif_t *subif_id, struct dp_subif_data *data,
-			u32 flags);
+			u32 flags, int *f_subif_up);
+int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
+			     dp_subif_t *subif_id, struct dp_subif_data *data,
+			     u32 flags, dp_get_netif_subifid_fn_t subifid_fn,
+			     int *f_subif_up);
 int32_t	dp_update_subif(struct net_device *netif, void *data, dp_subif_t *subif,
-			char *subif_name, u32 flags);
+			char *subif_name, u32 flags,
+			dp_get_netif_subifid_fn_t subifid_fn);
 int32_t	dp_del_subif(struct net_device *netif, void *data, dp_subif_t *subif,
 		     char *subif_name, u32 flags);
-struct dp_subif_cache *dp_subif_lookup(struct hlist_head *head,
-				       struct net_device *dev,
-				       void *data);
+struct dp_subif_cache *dp_subif_lookup_safe(struct hlist_head *head,
+					    struct net_device *dev,
+					    void *data);
 int dp_subif_list_init(void);
 u32 dp_subif_hash(struct net_device *dev);
 int32_t dp_get_netif_subifid_priv(struct net_device *netif,

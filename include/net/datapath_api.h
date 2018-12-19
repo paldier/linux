@@ -652,6 +652,7 @@ struct dp_subif_cache {
 					      * of netif/netdevice
 					      */
 	void *data;
+	struct rcu_head rcu;
 };
 
 /*! @brief struct dp_subif_data */
