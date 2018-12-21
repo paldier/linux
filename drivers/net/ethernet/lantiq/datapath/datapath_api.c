@@ -1065,7 +1065,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	memcpy(subif, &dp_subif->subif, sizeof(*subif));
 	subifid_fn_t = dp_subif->subif_fn;
 	rcu_read_unlock_bh();
-	if (subifid_fn_t && !(flags & DP_F_SUBIF_LOGICAL)) {
+	if (subifid_fn_t) {
 		/*subif->subif will be set by callback api itself */
 		res =
 		    subifid_fn_t(netif, skb, subif_data, dst_mac, subif,
