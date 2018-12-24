@@ -1,7 +1,7 @@
 #
 # Central Buffer Manager(CBM) configuration
 #
-menu "CQM_FALCONMX"
+menu "CQM_PRX300"
 config CBM_LS_ENABLE
 	tristate "CBM loadspreader"
 	depends on LTQ_CBM

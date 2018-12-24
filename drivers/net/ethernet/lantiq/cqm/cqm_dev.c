@@ -4,7 +4,7 @@
 #define MAX_NUM_BASE_ADDR 16
 #define MAX_NUM_INTR 8
 static struct dt_node_inst dev_node_name[CQM_NUM_DEV_SUPP] = {
-	{FALCON_DEV_NAME, "cqm", 0},
+	{PRX300_DEV_NAME, "cqm", 0},
 	{GRX500_DEV_NAME, "cbm", 1}
 };
 

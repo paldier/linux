@@ -15,7 +15,7 @@
 #include <linux/atmdev.h>
 
 #ifndef DATAPATH_HAL_LAYER
-#if IS_ENABLED(CONFIG_FALCONMX_CQM) || \
+#if IS_ENABLED(CONFIG_PRX300_CQM) || \
 	IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31) /*testing only */
 #include <net/datapath_api_gswip31.h>
 #else /*GRX500 GSWIP30*/

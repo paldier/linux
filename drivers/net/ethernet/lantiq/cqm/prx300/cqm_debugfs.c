@@ -1,5 +1,5 @@
 #include <linux/klogging.h>
-#include "cqm_proc.h"
+#include "cqm_debugfs.h"
 #include <net/datapath_proc_api.h>
 #include <net/lantiq_cbm_api.h>
 #include "cqm.h"

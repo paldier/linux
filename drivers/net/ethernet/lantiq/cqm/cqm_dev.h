@@ -20,7 +20,7 @@
 #include <lantiq_soc.h>
 #include "cqm_common.h"
 
-#define FALCON_DEV_NAME "falcon-cqm"
+#define PRX300_DEV_NAME "prx300-cqm"
 #define GRX500_DEV_NAME "grx500-cbm"
 #define MAX_NUM_POOLS 16
 #define MAX_CPU_DQ_PORT_ARGS		2

@@ -2,7 +2,7 @@
 #include <net/lantiq_cbm_api.h>
 #include "cqm_config.h"
 
-struct cqm_bm_pool_config bm_pool_conf[CQM_FMX_NUM_POOLS] = {
+struct cqm_bm_pool_config bm_pool_conf[CQM_PRX300_NUM_POOLS] = {
 	{
 	.buf_type = REQ_SIZE0_BUF,
 	.segment_mask = 0xFFFFF800,
@@ -47,7 +47,7 @@ struct cqm_bm_pool_config bm_pool_conf[CQM_FMX_NUM_POOLS] = {
 	},
 };
 
-const struct cqm_config falcon_cqm_config[] = {
+const struct cqm_config prx300_cqm_config[] = {
 	{
 	.type = DQM_CPU_TYPE,
 	.data.dqm_cpu.port = 0,
@@ -182,13 +182,13 @@ const struct cqm_config falcon_cqm_config[] = {
 	}
 };
 
-struct cqm_ctrl g_fmx_ctrl = {
+struct cqm_ctrl g_prx300_ctrl = {
 	.num_dqm_ports = CQM_DEQ_PORT_MAX,
 	.num_eqm_ports = CQM_ENQ_PORT_MAX,
 	.max_queues = 256,
-	.num_pools = CQM_FMX_NUM_POOLS,
+	.num_pools = CQM_PRX300_NUM_POOLS,
 	.num_intrs = 5,
-	.cqm_cfg = falcon_cqm_config,
+	.cqm_cfg = prx300_cqm_config,
 	.ifmux_reg_offset = 0x120,
 	.max_mem_alloc = 0,
 	.bm_buf_base[0] = NULL,

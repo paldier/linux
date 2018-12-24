@@ -40,8 +40,8 @@
 #define FLAG_PIB_BYPASS		BIT(5)
 #define FLAG_PIB_DELAY		BIT(6)
 #define DMA_PORT_FOR_FLUSH 25
-#define FMX_CQM_DROP_Q		0x0
-#define FMX_CQM_Q_MASK		0xff
+#define PRX300_CQM_DROP_Q	0x0
+#define PRX300_CQM_Q_MASK	0xff
 
 /***********************
  * ENUM
@@ -252,7 +252,7 @@ enum CQM_QOS_LINK_MODE {
 #define CQM_MAX_POOL_NUM (CQM_FSQM_POOL + 1)
 #define CQM_MAX_POLICY_NUM (CQM_FSQM_POLICY + 1)
 
-#define TOT_DMA_HNDL (CQM_FMX_NUM_BM_POOLS + 1)
+#define TOT_DMA_HNDL (CQM_PRX300_NUM_BM_POOLS + 1)
 /*************************
  * Structure definition
  *************************/
@@ -515,7 +515,7 @@ struct cqm_pmac_port_map {
 	struct net_device *dev;
 	u32 dev_port;
 	u32 pmac;
-	u32 egp_port_map[FMX_MAX_PORT_MAP];/*bit map to egp port*/
+	u32 egp_port_map[PRX300_MAX_PORT_MAP];/*bit map to egp port*/
 	u32 qid_num;/*queue numbers allocated to that pmac port*/
 	u32 qids[16];/*qid array*/
 	/* e.g. DP_F_FAST_ETH_LAN/DP_F_FAST_ETH_WAN/DP_F_DIRECT/
@@ -561,8 +561,8 @@ struct cqm_ctrl {
 	int num_intrs;
 	const struct cqm_config *cqm_cfg;
 	struct clk *cbm_clk;
-	u32 cbm_irq[FMX_MAX_INTR_LINE];
-	u32 cbm_line[FMX_MAX_INTR_LINE];
+	u32 cbm_irq[PRX300_MAX_INTR_LINE];
+	u32 cbm_line[PRX300_MAX_INTR_LINE];
 	u32 cpu_port_alloc;
 	struct tasklet_struct cqm_tasklet[NR_CPUS];
 #ifdef CPU_POOL_ALLOWED
@@ -575,7 +575,7 @@ struct cqm_ctrl {
 #endif
 	const struct cbm_ops *cqm_ops;
 	void *cqm_qmgr_buf_base;
-	void *bm_buf_base[CQM_FMX_NUM_BM_POOLS];
+	void *bm_buf_base[CQM_PRX300_NUM_BM_POOLS];
 	u32 ifmux_reg_offset;
 	struct regmap *syscfg;
 	bool force_xpcs;
@@ -596,8 +596,8 @@ struct cqm_ctrl {
 	dma_addr_t dma_hndl_p[TOT_DMA_HNDL];
 	struct dentry *debugfs;
 	const char *name;
-	u32 fmx_pool_ptrs[CQM_FMX_NUM_BM_POOLS];
-	u32 fmx_pool_size[CQM_FMX_NUM_BM_POOLS];
+	u32 prx300_pool_ptrs[CQM_PRX300_NUM_BM_POOLS];
+	u32 prx300_pool_size[CQM_PRX300_NUM_BM_POOLS];
 };
 
 struct cqm_buf_dbg_cnt {

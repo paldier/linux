@@ -69,7 +69,7 @@ config XRX500_PHY_FW
 
 config INTEL_UMT_CQEM_MODE
         bool "Intel UMT in CQEM mode"
-        depends on FALCONMX_CQM
+        depends on PRX300_CQM
         help
           In cqem mode, UMT (User Message Transfer) HW
           is able to support max three UMT port.

@@ -18,7 +18,7 @@
 #include "datapath_instance.h"
 #include "datapath_swdev_api.h"
 
-#ifdef CONFIG_FALCONMX_CQM
+#ifdef CONFIG_PRX300_CQM
 #define LTQ_DATAPATH_SOC_FALCON_MX
 #endif
 
@@ -26,7 +26,7 @@ int request_dp(u32 flag)
 {
 	struct dp_inst_info info;
 
-#if IS_ENABLED(CONFIG_FALCONMX_CQM) || \
+#if IS_ENABLED(CONFIG_PRX300_CQM) || \
 	IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31) /*testing only */
 	info.type = GSWIP31_TYPE;
 	info.ver = GSWIP31_VER;

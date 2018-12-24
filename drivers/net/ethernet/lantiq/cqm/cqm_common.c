@@ -3,7 +3,7 @@
 #ifdef CONFIG_SOC_GRX500
 #include "grx500/reg/cbm_ls.h"
 #else
-#include "falconmx/reg/cbm_ls.h"
+#include "prx300/reg/cbm_ls.h"
 #endif
 
 static void __iomem *cqm_ls_addr_base;

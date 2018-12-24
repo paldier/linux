@@ -15,12 +15,12 @@ choice
 	prompt "SoC platform selection"
 	depends on LTQ_CBM
 
-config FALCONMX_CQM
-	bool "FALCONMX"
+config PRX300_CQM
+	bool "PRX300"
 	help
-	  CQM driver for FALCONMX platform.
-if FALCONMX_CQM
-source "drivers/net/ethernet/lantiq/cqm/falconmx/Kconfig"
+	  CQM driver for PRX300 platform.
+if PRX300_CQM
+source "drivers/net/ethernet/lantiq/cqm/prx300/Kconfig"
 endif
 
 config GRX500_CBM

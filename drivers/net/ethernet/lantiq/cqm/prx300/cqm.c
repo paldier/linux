@@ -1,5 +1,5 @@
 #include "cqm.h"
-#include "cqm_proc.h"
+#include "cqm_debugfs.h"
 #include "../cqm_dev.h"
 #include <net/datapath_proc_api.h>
 #include <net/switch_api/gsw_flow_ops.h>
@@ -7,16 +7,16 @@
 
 #define OWN_BIT  BIT(31)
 #define COMPLETE_BIT  BIT(30)
-#define FMX_CQM_DROP_INIT ((FMX_CQM_DROP_Q << 24) | \
-			   (FMX_CQM_DROP_Q << 16) | \
-			   (FMX_CQM_DROP_Q << 8) | \
-			   FMX_CQM_DROP_Q)
+#define PRX300_CQM_DROP_INIT ((PRX300_CQM_DROP_Q << 24) | \
+			   (PRX300_CQM_DROP_Q << 16) | \
+			   (PRX300_CQM_DROP_Q << 8) | \
+			   PRX300_CQM_DROP_Q)
 #define IS_CPU_PORT_TYPE(TYPE)((TYPE == DP_F_DEQ_CPU) ||\
 			   (TYPE == DP_F_DEQ_CPU1) ||\
 			   (TYPE == DP_F_DEQ_MPE) ||\
 			   (TYPE == DP_F_DEQ_DL))
 static const char cqm_name[] = "cqm";
-static void __iomem *bufreq[CQM_FMX_NUM_POOLS];
+static void __iomem *bufreq[CQM_PRX300_NUM_POOLS];
 static void __iomem *eqmdesc[4];
 static struct cbm_cntr_mode cbm_cntr_func[2];
 static struct cqm_dqm_port_info dqm_port_info[CQM_PORT_MAX] = { {0} };
@@ -32,7 +32,7 @@ static struct cbm_q_info  cbm_qtable[MAX_QOS_QUEUES] = { {0} };
 static spinlock_t cqm_qidt_lock;
 static spinlock_t cqm_port_map;
 static spinlock_t cpu_pool_enq;
-static struct bmgr_policy_params p_param[CQM_FMX_MAX_BM_POLICY];
+static struct bmgr_policy_params p_param[CQM_PRX300_MAX_BM_POLICY];
 
 LIST_HEAD(pmac_mapping_list);
 static struct cqm_ctrl *cqm_ctrl;
@@ -66,7 +66,7 @@ static int get_buff_resv_bytes(int cbm_inst, int size)
 	dev_info(cqm_ctrl->dev, "BSL thres %d size %d\n", BSL_THRES, size);
 
 	if (size < cqm_ctrl->num_pools)
-		bsl_thr_val = cqm_ctrl->fmx_pool_size[size] - BSL_THRES;
+		bsl_thr_val = cqm_ctrl->prx300_pool_size[size] - BSL_THRES;
 	else
 		dev_dbg(cqm_ctrl->dev, "%s: unsupported size %d\n", __func__,
 			size);
@@ -144,7 +144,7 @@ static struct cqm_pmac_port_map *is_cbm_allocated(s32 cbm, u32 flags)
 			spin_unlock_irqrestore(&cqm_port_map, lock_flags);
 			return ptr;
 		}
-		if ((flags == DP_F_DONTCARE) && (j < FMX_MAX_PORT_MAP)) {
+		if ((flags == DP_F_DONTCARE) && (j < PRX300_MAX_PORT_MAP)) {
 			num_deq_ports = hweight_long(ptr->egp_port_map[j]);
 			port_map = ptr->egp_port_map[j];
 			skip = is_excluded(ptr->egp_type, exclude_flags);
@@ -205,13 +205,13 @@ static u32 get_matching_pmac(u32 *ep, u32 flags, u32 *cbm_port, int pmac,
 {
 	int i, j = 0, result = CBM_NOTFOUND;
 
-	for (i = 0; i < FMX_MAX_PORT_PER_EP; i++) {
+	for (i = 0; i < PRX300_MAX_PORT_PER_EP; i++) {
 		ep[i] = CBM_PORT_INVALID;
 		cbm_port[i] = CBM_PORT_INVALID;
 	}
 	for (i = 0; i < ARRAY_SIZE(epg_lookup_table); i++) {
 		if (epg_lookup_table[i].port_type & flags) {
-			if (j < FMX_MAX_PORT_PER_EP) {
+			if (j < PRX300_MAX_PORT_PER_EP) {
 				if (pmac_present &&
 				    (epg_lookup_table[i].pmac == pmac)) {
 					ep[j] = epg_lookup_table[i].pmac;
@@ -247,7 +247,7 @@ static inline int get_intr_to_line(int intr, int *line)
 {
 	int i;
 
-	for (i = 0; i < FMX_MAX_INTR_LINE; i++) {
+	for (i = 0; i < PRX300_MAX_INTR_LINE; i++) {
 		if (cqm_ctrl->cbm_irq[i] == intr) {
 			*line = cqm_ctrl->cbm_line[i];
 			return CBM_SUCCESS;
@@ -304,7 +304,7 @@ static struct cqm_pmac_port_map *cqm_add_to_list(struct cqm_pmac_port_map
 		return NULL;
 	dev_dbg(cqm_ctrl->dev, "\n %s : 1\n", __func__);
 	ptr->pmac = val->pmac;
-	for (i = 0; i < FMX_MAX_PORT_MAP; i++)
+	for (i = 0; i < PRX300_MAX_PORT_MAP; i++)
 		ptr->egp_port_map[i] = val->egp_port_map[i];
 	ptr->egp_type = val->egp_type;
 	ptr->owner = 0;
@@ -355,16 +355,16 @@ static s32 dp_port_resources_get(u32 *dp_port, u32 *num_cbm_ports,
 	*num_cbm_ports = 0;
 	if (!local_entry)
 		return CBM_FAILURE;
-	for (i = 0; i < FMX_MAX_PORT_MAP; i++)
+	for (i = 0; i < PRX300_MAX_PORT_MAP; i++)
 		*num_cbm_ports += hweight_long(local_entry->egp_port_map[i]);
-	if ((*num_cbm_ports > FMX_MAX_PON_PORTS) || (*num_cbm_ports == 0))
+	if ((*num_cbm_ports > PRX300_MAX_PON_PORTS) || (*num_cbm_ports == 0))
 		return CBM_FAILURE;
 	res = devm_kzalloc(cqm_ctrl->dev, sizeof(*res) * (*num_cbm_ports),
 			   GFP_ATOMIC);
 	if (!res)
 		return CBM_FAILURE;
 	*res_pp = res;
-	for (i = 0; i < FMX_MAX_PORT_MAP; i++) {
+	for (i = 0; i < PRX300_MAX_PORT_MAP; i++) {
 		port_map = local_entry->egp_port_map[i];
 		while ((port_map) && (j < *num_cbm_ports)) {
 			res[j].cqm_deq_port = get_is_bit_set(port_map);
@@ -402,7 +402,7 @@ static int get_buffer_base_index(u32 v_buf, u32 *buff_base,
 	int i = 0, var_offset;
 	u32 temp_buf_start, temp_buf_end;
 
-	while (i < CQM_FMX_NUM_POOLS) {
+	while (i < CQM_PRX300_NUM_POOLS) {
 		temp_buf_start = bm_pool_conf[i].pool_start_low;
 		temp_buf_end = bm_pool_conf[i].pool_end_low;
 		dev_dbg(cqm_ctrl->dev, "0x%x 0x%x 0x%x\n",
@@ -529,7 +529,7 @@ static s32 pib_port_enable(u32 deq_port, int enable)
 
 static s32 pon_deq_cntr_get(int port, u32 *count)
 {
-	if (port < FMX_MAX_PON_PORTS) {
+	if (port < PRX300_MAX_PON_PORTS) {
 		cbm_r32((cqm_ctrl->pon_dqm_cntr + (port * 4)));
 		return CBM_SUCCESS;
 	} else {
@@ -544,7 +544,7 @@ static s32 pib_program_overshoot(u32 overshoot_bytes)
 	return CBM_SUCCESS;
 }
 
-static void set_lookup_qid_via_index_fmx(u32 index, u32 qid)
+static void set_lookup_qid_via_index_prx300(u32 index, u32 qid)
 {
 	u32 offset = (index / 4) * 4;
 	u32 shift = (index % 4) * 8;
@@ -554,12 +554,12 @@ static void set_lookup_qid_via_index_fmx(u32 index, u32 qid)
 
 	spin_lock_irqsave(&cqm_qidt_lock, sys_flag);
 	tmp = cbm_r32(qidt + offset);
-	tmp = (tmp & (~(FMX_CQM_Q_MASK << shift))) | (qid << shift);
+	tmp = (tmp & (~(PRX300_CQM_Q_MASK << shift))) | (qid << shift);
 	cbm_w32(qidt + offset, tmp);
 	spin_unlock_irqrestore(&cqm_qidt_lock, sys_flag);
 }
 
-static u8 get_lookup_qid_via_idx_fmx(u32 index)
+static u8 get_lookup_qid_via_idx_prx300(u32 index)
 {
 	u32 offset = (index / 4) * 4;
 	u32 shift = (index % 4) * 8;
@@ -568,7 +568,7 @@ static u8 get_lookup_qid_via_idx_fmx(u32 index)
 	void *qidt = cqm_ctrl->qidt;
 
 	spin_lock_irqsave(&cqm_qidt_lock, sys_flag);
-	value = ((cbm_r32(qidt + offset)) >> shift) & FMX_CQM_Q_MASK;
+	value = ((cbm_r32(qidt + offset)) >> shift) & PRX300_CQM_Q_MASK;
 	spin_unlock_irqrestore(&cqm_qidt_lock, sys_flag);
 	return value;
 }
@@ -676,32 +676,34 @@ static void cqm_qid_reg_set(struct cqm_qidt_elm *qidt_elm, u8 qid_val,
 	u8 prev_qid;
 	void *qidt_base = cqm_ctrl->qidt;
 
-	qidt = ((((sel_field & 0xf0) >> 0x4) << FMX_SEL7TO4_POS)
-		| ((qidt_elm->mpe2 & 0x1) << FMX_MPE2_POS)
-		| ((qidt_elm->mpe1 & 0x1) << FMX_MPE1_POS)
-		| ((qidt_elm->ep & 0xf) << FMX_EP_POS)
-		| ((sel_field & 0x0f) << FMX_SEL3TO0_POS));
+	qidt = ((((sel_field & 0xf0) >> 0x4) << PRX300_SEL7TO4_POS)
+		| ((qidt_elm->mpe2 & 0x1) << PRX300_MPE2_POS)
+		| ((qidt_elm->mpe1 & 0x1) << PRX300_MPE1_POS)
+		| ((qidt_elm->ep & 0xf) << PRX300_EP_POS)
+		| ((sel_field & 0x0f) << PRX300_SEL3TO0_POS));
 	qidt_idx = qidt >> 2;
 	qidt_offset = qidt % 4;
 	offset_factor = qidt_offset << 3;
-	value_mask = FMX_CQM_Q_MASK << offset_factor;
+	value_mask = PRX300_CQM_Q_MASK << offset_factor;
 
 	prev_qid = (g_cbm_qidt_mirror[qidt_idx].qidt_shadow & value_mask) >>
 		    offset_factor;
 	shadow = g_cbm_qidt_mirror[qidt_idx].qidt_shadow;
-	if (qid_val == FMX_CQM_DROP_Q) {
-		if (cbm_qtable[prev_qid].refcnt && (prev_qid != FMX_CQM_DROP_Q))
+	if (qid_val == PRX300_CQM_DROP_Q) {
+		if (cbm_qtable[prev_qid].refcnt &&
+		    (prev_qid != PRX300_CQM_DROP_Q))
 			cbm_qtable[prev_qid].refcnt--;
 	} else {
-		if (cbm_qtable[prev_qid].refcnt && (prev_qid != FMX_CQM_DROP_Q))
+		if (cbm_qtable[prev_qid].refcnt &&
+		    (prev_qid != PRX300_CQM_DROP_Q))
 			cbm_qtable[prev_qid].refcnt--;
 			g_cbm_qidt_mirror[qidt_idx].qidt_shadow = (shadow &
 			~value_mask) |
-			((qid_val & FMX_CQM_Q_MASK) << ((qidt_offset) * 8));
+			((qid_val & PRX300_CQM_Q_MASK) << ((qidt_offset) * 8));
 		cbm_qtable[qid_val].refcnt++;
 	}
 	value = (cbm_r32(qidt_base + qidt_idx * 4) & ~value_mask) |
-		((qid_val & FMX_CQM_Q_MASK) << offset_factor);
+		((qid_val & PRX300_CQM_Q_MASK) << offset_factor);
 	cbm_w32((qidt_base + qidt_idx * 4), value);
 }
 
@@ -1077,9 +1079,9 @@ static s32 queue_map_get(int cbm_inst, s32 queue_id, s32 *num_entries,
 		offset = (g_qidt_help[i] % 4);
 		index = index + 3 - offset;
 		temp_entry[i].regval = 0;
-		temp_entry[i].mpe1 = (index & 0x100) >> FMX_MPE1_POS;
-		temp_entry[i].mpe2 = (index & 0x200) >> FMX_MPE2_POS;
-		temp_entry[i].ep = (index & 0xF0) >> FMX_EP_POS;
+		temp_entry[i].mpe1 = (index & 0x100) >> PRX300_MPE1_POS;
+		temp_entry[i].mpe2 = (index & 0x200) >> PRX300_MPE2_POS;
+		temp_entry[i].ep = (index & 0xF0) >> PRX300_EP_POS;
 		offset_1 = (temp_entry[i].mpe1 & 0x1) |
 		((temp_entry[i].mpe2 & 0x1) << 1);
 		mode = cbm_r32(c_base + CBM_QID_MODE_SEL_REG_0 +
@@ -1355,12 +1357,12 @@ static int cqm_cpu_enqueue(u32 pid, struct cbm_desc *desc)
 /*return 1: pointer is valid
  *0: pointer is invalid
  */
-static inline int check_ptr_validation_falconmx(u32 v_buf)
+static inline int check_ptr_validation_prx300(u32 v_buf)
 {
 	int i = 0;
 	u32 temp_buf_start, temp_buf_end;
 
-	while (i < CQM_FMX_NUM_POOLS) {
+	while (i < CQM_PRX300_NUM_POOLS) {
 		temp_buf_start = bm_pool_conf[i].pool_start_low;
 		temp_buf_end = bm_pool_conf[i].pool_end_low;
 		if ((v_buf >= temp_buf_start) && (v_buf <= temp_buf_end))
@@ -1387,14 +1389,14 @@ static void *cqm_fsqm_buff_alloc(u32 pid, u32 policy)
 		dev_err(cqm_ctrl->dev, "illegal pid: %d\n", pid);
 		return NULL;
 	}
-	while (j < CQM_FMX_NUM_POOLS) {
+	while (j < CQM_PRX300_NUM_POOLS) {
 		if (policy == bm_pool_conf[j].policy) {
 			segment_mask = bm_pool_conf[j].segment_mask;
 			break;
 		}
 		j++;
 	}
-	if (j >= CQM_FMX_NUM_POOLS) {
+	if (j >= CQM_PRX300_NUM_POOLS) {
 		dev_err(cqm_ctrl->dev, "No matching policy is available\n");
 		return NULL;
 	}
@@ -1420,7 +1422,7 @@ static void *cqm_fsqm_buff_alloc(u32 pid, u32 policy)
 	return (void *)buf_addr;
 }
 
-static void *cqm_buff_alloc_by_policy_fmx(u32 pid, u32 flag, u32 policy)
+static void *cqm_buff_alloc_by_policy_prx300(u32 pid, u32 flag, u32 policy)
 {
 	u32 buf_addr = 0;
 	u32 i = 0, j = 0;
@@ -1435,14 +1437,14 @@ static void *cqm_buff_alloc_by_policy_fmx(u32 pid, u32 flag, u32 policy)
 		dev_err(cqm_ctrl->dev, "illegal pid: %d\n", pid);
 		return NULL;
 	}
-	while (j < CQM_FMX_NUM_POOLS) {
+	while (j < CQM_PRX300_NUM_POOLS) {
 		if (policy == bm_pool_conf[j].policy) {
 			segment_mask = bm_pool_conf[j].segment_mask;
 			break;
 		}
 		j++;
 	}
-	if (j >= CQM_FMX_NUM_POOLS) {
+	if (j >= CQM_PRX300_NUM_POOLS) {
 		dev_err(cqm_ctrl->dev, "No matching policy is available\n");
 		return NULL;
 	}
@@ -1464,10 +1466,10 @@ static void *cqm_buff_alloc_by_policy_fmx(u32 pid, u32 flag, u32 policy)
 	}
 	local_irq_restore(sys_flag);
 	v_buf = __va(buf_addr);
-	get_buffer_base_index(v_buf, &buff_base, &buff_size, &index);
+	get_buffer_base_index((u32)v_buf, &buff_base, &buff_size, &index);
 	pool_t = bm_pool_conf[j].pool;
 	policy_t = bm_pool_conf[j].policy;
-	add_metadata(buff_base, pool_t, policy_t);
+	add_metadata((u8 *)buff_base, pool_t, policy_t);
 	UP_STATS(cqm_dbg_cntrs[policy_t][pool_t].alloc_cnt);
 	return (void *)buff_base + CQM_POOL_METADATA;
 }
@@ -1526,8 +1528,8 @@ static void *cqm_buffer_alloc(u32 pid, u32 flag, u32 size, u32 *buf_size)
 	UP_STATS(cqm_dbg_cntrs[policy_t][pool_t].alloc_cnt);
 	local_irq_restore(sys_flag);
 	v_buf_addr = (uint8_t *)__va(buf_addr);
-	get_buffer_base_index(v_buf_addr, &buff_base, &buff_size, &index);
-	add_metadata(buff_base, pool_t, policy_t);
+	get_buffer_base_index((u32)v_buf_addr, &buff_base, &buff_size, &index);
+	add_metadata((u8 *)buff_base, pool_t, policy_t);
 	return (void *)buff_base + CQM_POOL_METADATA;
 }
 
@@ -1580,7 +1582,7 @@ static int cqm_buffer_free(u32 pid, void *v_buf_free, u32 flag)
 		}
 
 		/*clear metadata*/
-		memset((u8 *)pointer_to_wb, 0, CQM_FMX_POOL_POL_HDR_SIZE);
+		memset((u8 *)pointer_to_wb, 0, CQM_PRX300_POOL_POL_HDR_SIZE);
 		dev_dbg(cqm_ctrl->dev, "Erased 0x%x 0x%x\n", pointer_to_wb,
 			size_to_wb);
 		buf = dma_map_single(cqm_ctrl->dev, (void *)pointer_to_wb,
@@ -1684,7 +1686,7 @@ static s32 cqm_cpu_pkt_tx(struct sk_buff *skb, struct cbm_tx_data *data,
 	tot_len = skb->len;
 	clone_f = skb_cloned(skb);
 	shared_f = skb_shared(skb);
-	cpu_buf = !check_ptr_validation_falconmx((u32)(skb->head));
+	cpu_buf = !check_ptr_validation_prx300((u32)(skb->head));
 
 	if (data && data->pmac) {
 		no_hdr_room_f = skb_headroom(skb) < data->pmac_len ? 1 : 0;
@@ -1865,10 +1867,10 @@ static void set_ifmux(int mode)
 	}
 
 	regmap_read(cqm_ctrl->syscfg, cqm_ctrl->ifmux_reg_offset, &val);
-	if (mode == FMX_WAN_AON_MODE)
-		val |= FMX_WAN_AON_MODE;
+	if (mode == PRX300_WAN_AON_MODE)
+		val |= PRX300_WAN_AON_MODE;
 	else
-		val &= ~FMX_WAN_AON_MODE;
+		val &= ~PRX300_WAN_AON_MODE;
 	regmap_write(cqm_ctrl->syscfg, cqm_ctrl->ifmux_reg_offset, val);
 	regmap_read(cqm_ctrl->syscfg, cqm_ctrl->ifmux_reg_offset, &val);
 	dev_dbg(cqm_ctrl->dev, "wan mode ifmux_cfg 0x%08x\n", val);
@@ -1897,7 +1899,7 @@ static s32 do_port_setting(u32 *pmac, u32 flags, u32 *cbm_port,
 		ctrl.pib_bypass = 1;
 		ctrl.pib_en = 1;
 		config_pib_ctrl(&ctrl, FLAG_PIB_BYPASS | FLAG_PIB_ENABLE);
-		set_ifmux(FMX_WAN_AON_MODE);
+		set_ifmux(PRX300_WAN_AON_MODE);
 	break;
 	case DP_F_GPON:
 	case DP_F_EPON:
@@ -1910,9 +1912,9 @@ static s32 do_port_setting(u32 *pmac, u32 flags, u32 *cbm_port,
 				FLAG_PIB_ENABLE |
 				FLAG_PIB_WAKEUP_INTR);
 		if (cqm_ctrl->force_xpcs)
-			set_ifmux(FMX_WAN_AON_MODE);
+			set_ifmux(PRX300_WAN_AON_MODE);
 		else
-			set_ifmux(FMX_WAN_PON_MODE);
+			set_ifmux(PRX300_WAN_PON_MODE);
 	break;
 	case DP_F_FAST_WLAN:
 		populate = 0;
@@ -1977,8 +1979,8 @@ dp_port_alloc(struct module *owner, struct net_device *dev, u32 dev_port,
 	u32 port_end;
 	int i, result, cnt;
 	int param_pmac = 0, pmac_present = 0, pmac_found = 0;
-	u32 cbm_port[FMX_MAX_PORT_PER_EP],
-	pmac[FMX_MAX_PORT_PER_EP];
+	u32 cbm_port[PRX300_MAX_PORT_PER_EP],
+	pmac[PRX300_MAX_PORT_PER_EP];
 	struct cqm_pmac_port_map local_entry = {0};
 	struct cqm_pmac_port_map *dp_local_entry = NULL;
 
@@ -2048,7 +2050,7 @@ ALLOC_OK:
 		local_entry.dev = dev;
 		local_entry.dev_port = dev_port;
 		local_entry.flags = P_ALLOCATED;
-		for (i = 0; i < FMX_MAX_PORT_PER_EP; i++) {
+		for (i = 0; i < PRX300_MAX_PORT_PER_EP; i++) {
 			if (pmac[i] == CBM_PORT_INVALID)
 				continue;
 			cnt = i;
@@ -2414,7 +2416,7 @@ static inline int is_bm(u32 desc2)
 {
 	int i = 0;
 
-	for (i = 0; i < CQM_FMX_NUM_BM_POOLS; i++) {
+	for (i = 0; i < CQM_PRX300_NUM_BM_POOLS; i++) {
 		if ((desc2 >= bm_pool_conf[i].pool_start_low) &&
 		    (desc2 <= bm_pool_conf[i].pool_end_low))
 			return 1;
@@ -2742,7 +2744,7 @@ static void dump_cqem_basic_regs(u32 flag)
 	void *c_base = cqm_ctrl->cqm;
 
 	dev_dbg(cqm_ctrl->dev, "dump cqem basic registers\n");
-	for (i = 0; i < FMX_MAX_INTR_LINE; i++) {
+	for (i = 0; i < PRX300_MAX_INTR_LINE; i++) {
 		print_reg("CBM_IRNCR\n", c_base + CQM_INT_LINE(i, cbm_irncr));
 		print_reg("CBM_IRNEN\n", c_base + CQM_INT_LINE(i, cbm_irnen));
 		print_reg("IGP_IRNCR\n", c_base + CQM_INT_LINE(i, igp_irncr));
@@ -2925,8 +2927,8 @@ static int bm_init(struct platform_device *pdev)
 	u32 start_low;
 
 	for (i = 0; i < cqm_ctrl->num_pools; i++) {
-		result = pool_config(pdev, i, cqm_ctrl->fmx_pool_size[i],
-				     cqm_ctrl->fmx_pool_ptrs[i]);
+		result = pool_config(pdev, i, cqm_ctrl->prx300_pool_size[i],
+				     cqm_ctrl->prx300_pool_ptrs[i]);
 		if (result)
 			panic("pool %d allocation failed\n", i);
 	}
@@ -2952,7 +2954,7 @@ static int bm_init(struct platform_device *pdev)
 		bmgr_pool_configure(&p_params, &i);
 	}
 
-	for (j = 0; j < CQM_FMX_NUM_BM_POLICY; j++)
+	for (j = 0; j < CQM_PRX300_NUM_BM_POLICY; j++)
 		bmgr_policy_configure(&p_param[j], &i);
 
 	return CBM_SUCCESS;
@@ -2989,7 +2991,7 @@ static int setup_enq_dma_desc(int pid, u32 desc_num, s32 type,
 			buf = (u32)cqm_fsqm_buff_alloc(cpu, CQM_FSQM_POLICY);
 			data_offset = 0;
 		} else {
-			buf = (u32)cqm_buff_alloc_by_policy_fmx(cpu, type,
+			buf = (u32)cqm_buff_alloc_by_policy_prx300(cpu, type,
 								tmp_bm.policy);
 			if (!buf) {
 				dev_err(cqm_ctrl->dev, "Cannot alloc buffer from CBM!!!\n");
@@ -3494,10 +3496,10 @@ static const struct cbm_ops cqm_ops = {
 	.cbm_igp_delay_set = cqm_igp_delay_set,
 	.cbm_igp_delay_get = cqm_igp_delay_get,
 	.cbm_buffer_alloc = cqm_buffer_alloc_by_size,
-	.cqm_buffer_alloc_by_policy = cqm_buff_alloc_by_policy_fmx,
+	.cqm_buffer_alloc_by_policy = cqm_buff_alloc_by_policy_prx300,
 	.cbm_buffer_free = cqm_buffer_free,
 	.cbm_cpu_pkt_tx = cqm_cpu_pkt_tx,
-	.check_ptr_validation = check_ptr_validation_falconmx,
+	.check_ptr_validation = check_ptr_validation_prx300,
 	.cbm_build_skb = build_skb_cqm,
 	.cbm_queue_map_get = queue_map_get,
 	.cbm_queue_map_set = queue_map_set,
@@ -3516,12 +3518,12 @@ static const struct cbm_ops cqm_ops = {
 	.pib_ovflw_cmd_get = pib_ovflw_cmd_get,
 	.pib_illegal_cmd_get = pib_illegal_cmd_get,
 	.pon_deq_cntr_get = pon_deq_cntr_get,
-	.set_lookup_qid_via_index = set_lookup_qid_via_index_fmx,
-	.get_lookup_qid_via_index = get_lookup_qid_via_idx_fmx,
+	.set_lookup_qid_via_index = set_lookup_qid_via_index_prx300,
+	.get_lookup_qid_via_index = get_lookup_qid_via_idx_prx300,
 };
 
-static const struct of_device_id cqm_falconmx_match[] = {
-	{ .compatible = "intel,falconmx-cqm", .data = &g_fmx_ctrl},
+static const struct of_device_id cqm_prx300_match[] = {
+	{ .compatible = "intel,prx300-cqm", .data = &g_prx300_ctrl},
 	{},
 };
 
@@ -3548,10 +3550,10 @@ static int conf_bm(struct cqm_data *pdata)
 	int i, j, result = CBM_FAILURE;
 
 	/* copy BM pool and policy from dts*/
-	memcpy(cqm_ctrl->fmx_pool_ptrs, pdata->pool_ptrs
-		, sizeof(cqm_ctrl->fmx_pool_ptrs));
-	memcpy(cqm_ctrl->fmx_pool_size, pdata->pool_size
-		, sizeof(cqm_ctrl->fmx_pool_size));
+	memcpy(cqm_ctrl->prx300_pool_ptrs, pdata->pool_ptrs
+		, sizeof(cqm_ctrl->prx300_pool_ptrs));
+	memcpy(cqm_ctrl->prx300_pool_size, pdata->pool_size
+		, sizeof(cqm_ctrl->prx300_pool_size));
 	cqm_ctrl->num_pools = pdata->num_pools;
 	/* Pool Index loop*/
 	for (i = 0; i < pdata->num_pools; i++) {
@@ -3566,21 +3568,21 @@ static int conf_bm(struct cqm_data *pdata)
 		/* Config pool size */
 		switch (i) {
 		case CQM_SIZE0_BUF_SIZE:
-			p_param[i].max_allowed = cqm_ctrl->fmx_pool_ptrs[i];
+			p_param[i].max_allowed = cqm_ctrl->prx300_pool_ptrs[i];
 			p_param[i].min_guaranteed = 0x40;
 			break;
 		case CQM_SIZE1_BUF_SIZE:
-			p_param[i].max_allowed = (cqm_ctrl->fmx_pool_ptrs[i]
+			p_param[i].max_allowed = (cqm_ctrl->prx300_pool_ptrs[i]
 						  * 4) / 5;
 			p_param[i].min_guaranteed = 0x100;
 			break;
 		case CQM_SIZE2_BUF_SIZE:
-			p_param[i].max_allowed = (cqm_ctrl->fmx_pool_ptrs[i]
+			p_param[i].max_allowed = (cqm_ctrl->prx300_pool_ptrs[i]
 						  * 4) / 5;
 			p_param[i].min_guaranteed = 0x80;
 			break;
 		case CQM_SIZE3_BUF_SIZE:
-			p_param[i].max_allowed = (cqm_ctrl->fmx_pool_ptrs[i]
+			p_param[i].max_allowed = (cqm_ctrl->prx300_pool_ptrs[i]
 						  * 4) / 5;
 			p_param[i].min_guaranteed = 0x40;
 			break;
@@ -3596,15 +3598,15 @@ static int conf_bm(struct cqm_data *pdata)
 		for (j = 0; j < p_param[i].num_pools_in_policy; j++) {
 			p_param[i].pools_in_policy[j].pool_id = (i + j);
 			p_param[i].pools_in_policy[j].max_allowed =
-			cqm_ctrl->fmx_pool_ptrs[i + j];
+			cqm_ctrl->prx300_pool_ptrs[i + j];
 		}
 	}
 	return CBM_SUCCESS;
 }
 
-static int cqm_falconmx_probe(struct platform_device *pdev)
+static int cqm_prx300_probe(struct platform_device *pdev)
 {
-	struct resource *res[FMX_MAX_RESOURCE] = {NULL};
+	struct resource *res[PRX300_MAX_RESOURCE] = {NULL};
 	int i;
 	unsigned long sys_flag;
 	struct cqm_data *pdata = NULL;
@@ -3615,7 +3617,7 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 
 	memset(&cqm_dbg_cntrs, 0, sizeof(cqm_dbg_cntrs));
 	pdata = platform_get_drvdata(pdev);
-	match = of_match_device(cqm_falconmx_match, &pdev->dev);
+	match = of_match_device(cqm_prx300_match, &pdev->dev);
 	if (!match) {
 		dev_err(&pdev->dev, "Error: No matching device found\n");
 		return -ENODEV;
@@ -3687,9 +3689,9 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	cqm_ctrl->syscfg = pdata->syscfg;
 	cqm_ctrl->force_xpcs = pdata->force_xpcs;
 
-	/* check fmx pool and policy */
-	if (pdata->num_pools > CQM_FMX_NUM_BM_POOLS) {
-		pr_err("fmx pools %u\n", pdata->num_pools);
+	/* check prx300 pool and policy */
+	if (pdata->num_pools > CQM_PRX300_NUM_BM_POOLS) {
+		pr_err("prx300 pools %u\n", pdata->num_pools);
 		return CBM_FAILURE;
 	}
 
@@ -3700,12 +3702,12 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 
 	spin_lock_irqsave(&cqm_qidt_lock, sys_flag);
 	for (i = 0; i < CQM_QIDT_DW_NUM; i++) {
-		g_cbm_qidt_mirror[i].qidt_shadow = FMX_CQM_DROP_INIT;
-		cbm_w32((cqm_ctrl->qidt + i * 4), FMX_CQM_DROP_INIT);
+		g_cbm_qidt_mirror[i].qidt_shadow = PRX300_CQM_DROP_INIT;
+		cbm_w32((cqm_ctrl->qidt + i * 4), PRX300_CQM_DROP_INIT);
 	}
 	for (i = 0; i < CQM_QID2EP_DW_NUM; i++)
 		cbm_w32((cqm_ctrl->qid2ep + i * 4), 0x0);
-	for (i = 0; i < FMX_MAX_PON_PORTS; i++)
+	for (i = 0; i < PRX300_MAX_PON_PORTS; i++)
 		cbm_w32((cqm_ctrl->pon_dqm_cntr + i * 4), 0x0);
 	spin_unlock_irqrestore(&cqm_qidt_lock, sys_flag);
 	bm_init(pdev);
@@ -3815,23 +3817,23 @@ static int cqm_falconmx_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int cqm_falconmx_release(struct platform_device *pdev)
+static int cqm_prx300_release(struct platform_device *pdev)
 {
 	return 0;
 }
 
-static struct platform_driver cqm_falconmx_driver = {
-	.probe = cqm_falconmx_probe,
-	.remove = cqm_falconmx_release,
+static struct platform_driver cqm_prx300_driver = {
+	.probe = cqm_prx300_probe,
+	.remove = cqm_prx300_release,
 	.driver = {
-		.name = FALCON_DEV_NAME,
+		.name = PRX300_DEV_NAME,
 		.owner = THIS_MODULE,
 	},
 };
 
-int __init cqm_falconmx_init(void)
+int __init cqm_prx300_init(void)
 {
-	return platform_driver_register(&cqm_falconmx_driver);
+	return platform_driver_register(&cqm_prx300_driver);
 }
 
-arch_initcall(cqm_falconmx_init);
+arch_initcall(cqm_prx300_init);
