@@ -245,6 +245,13 @@ prx300_pll_set_params(struct intel_clk_pll *pll, unsigned int mult,
 	intel_set_clk_val(pll->map, pll->reg + 0x8, 18, 6, div);
 	intel_set_clk_val(pll->map, pll->reg, 2, 24, frac);
 	intel_set_clk_val(pll->map, pll->reg, 28, 1, !!frac);
+
+	if (pll->type == TYPE_LJPLL) {
+		intel_set_clk_val(pll->map, pll->reg, 31, 1, 1);
+		udelay(1);
+		intel_set_clk_val(pll->map, pll->reg, 31, 1, 0);
+	}
+
 	return intel_pll_wait_for_lock(pll);
 }
 
