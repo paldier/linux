@@ -62,7 +62,7 @@ int cbm_linearise_buf(struct sk_buff *skb, struct cbm_tx_data *data,
 			frag = &skb_shinfo(skb)->frags[i];
 			len = skb_frag_size(frag);
 			frag_addr = skb_frag_address(frag);
-			if (len < (buf_size - copy_len)) {
+			if (len <= (buf_size - copy_len)) {
 				memcpy((u8 *)tmp_buf, (u8 *)frag_addr, len);
 				tmp_buf += len;
 				copy_len += len;

@@ -1749,6 +1749,7 @@ cbm_cpu_pkt_tx_grx500(
 		tot_len = skb->len + data->pmac_len;
 	}
 	if (!check_ptr_validation_grx500((u32)(skb->head)) || clone_f || no_hdr_room_f) {
+		tot_len += CBM_FIXED_RX_OFFSET;
 		if (tot_len <= CBM_STD_BUF_SIZE) {
 			new_buf = (u32)cbm_buffer_alloc_grx500(smp_processor_id(), CBM_PORT_F_STANDARD_BUF);
 			buf_size = CBM_STD_BUF_SIZE;

@@ -597,7 +597,7 @@ static int ltq_enable_gsw_l_jumbo(struct net_device *dev)
 	pr_info("doing the PMAC configuration for jumbo at GSW-L\n");
 	gsw_reg_set_bit(ops, 0xd05, 0x8);
 
-	/* Set the frame length */
+	/* Set the jumbo frame length threshold */
 	gsw_reg_set_val(ops, 0xd06, 9216);
 
 	return 0;
@@ -619,7 +619,7 @@ static int ltq_disable_gsw_l_jumbo(struct net_device *dev)
 		return -EIO;
 	}
 
-	/* Set the MAC control register 2 to enable Jumbo frames */
+	/* Set the MAC control register 2 to disable Jumbo frames */
 	gsw_reg_clr_bit(ops, (0x8f9 + (0xc * (priv->id + 1))), 0x8);
 
 	return 0;
@@ -639,8 +639,8 @@ static int ltq_enable_gsw_r_pmac_jumbo(struct net_device *dev)
 	pr_info("doing the PMAC configuration for jumbo at GSW-R\n");
 	gsw_reg_set_bit(ops, 0xd05, 0x8);
 
-	/* Set the frame length */
-	gsw_reg_set_val(ops, 0xd06, 1630);
+	/* Set the jumbo frame length threshold */
+	gsw_reg_set_val(ops, 0xd06, 1694);
 
 	return 0;
 }
@@ -711,7 +711,7 @@ static int ltq_change_mtu(struct net_device *dev, int new_mtu)
 
 			ltq_enable_gsw_r_pmac_jumbo(dev);
 			priv->jumbo_enabled = 1;
-		} else if (priv->jumbo_enabled) {
+		} else if (new_mtu <= ETH_DATA_LEN && priv->jumbo_enabled) {
 			if (priv->wan)
 				ltq_disable_gsw_r_jumbo(dev);
 			else
