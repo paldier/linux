@@ -179,6 +179,9 @@ static int grx500wdt_set_timeout(struct watchdog_device *wdt_dev,
 {
 	struct watchdog_device *grx500_wdt;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	/* grx500_wdt = &per_cpu(grx500wdt, smp_processor_id()); */
 	grx500_wdt = wdt_dev;
 

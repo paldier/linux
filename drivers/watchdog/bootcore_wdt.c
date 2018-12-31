@@ -163,6 +163,9 @@ static long bootcorewdt_ioctl (struct watchdog_device *wdd , unsigned int cmd, u
 
 	switch (cmd) {
 	case WDIOC_SETPRETIMEOUT:
+
+		if (!capable(CAP_SYS_ADMIN))
+			return -EPERM;
 		if (get_user(pval, p))
 			return -EFAULT;
 
