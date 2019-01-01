@@ -37,6 +37,7 @@
 #include <linux/delay.h>
 #include <linux/time.h>
 #include <linux/dma-mapping.h>
+#include <linux/clk.h>
 
 #include "pp_bm_drv.h"
 #include "pp_bm_drv_internal.h"
@@ -234,6 +235,8 @@ static int buffer_manager_probe(struct platform_device *pdev)
 	u32				val;
 	struct device_node		*node;
 	int				err;
+	struct clk			*ppv4_freq_clk;
+	struct clk			*ppv4_gate_clk;
 
 	dev_dbg(&pdev->dev, "BM probe...\n");
 
@@ -254,9 +257,15 @@ static int buffer_manager_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	bm_config_addr_base = get_resource_mapped_addr(pdev, "reg-config", 0x10000);
-	bm_policy_mngr_addr_base = get_resource_mapped_addr(pdev, "ram-config", 0x10000);
-	uc_mcdma0_config_addr_base = get_resource_mapped_addr(pdev, "uc-mcdma0", 0x200);
+	bm_config_addr_base = get_resource_mapped_addr(pdev,
+						       "reg-config",
+						       0x10000);
+	bm_policy_mngr_addr_base = get_resource_mapped_addr(pdev,
+							    "ram-config",
+							    0x10000);
+	uc_mcdma0_config_addr_base = get_resource_mapped_addr(pdev,
+							      "uc-mcdma0",
+							      0x200);
 
 	if (!bm_config_addr_base ||
 	    !bm_policy_mngr_addr_base ||
@@ -312,6 +321,23 @@ static int buffer_manager_probe(struct platform_device *pdev)
 			this->driver_db.max_pools, PP_BMGR_MAX_POOLS);
 		return -ENODEV;
 	}
+
+	ppv4_freq_clk = devm_clk_get(&pdev->dev, "freq");
+	if (IS_ERR(ppv4_freq_clk)) {
+		ret = PTR_ERR(ppv4_freq_clk);
+		dev_err(&pdev->dev, "failed to get ppv4_freq_clk:%d\n", ret);
+		return ret;
+	}
+
+	ppv4_gate_clk = devm_clk_get(&pdev->dev, "ppv4");
+	if (IS_ERR(ppv4_gate_clk)) {
+		ret = PTR_ERR(ppv4_gate_clk);
+		dev_err(&pdev->dev, "failed to get ppv4_gate_clk:%d\n", ret);
+		return ret;
+	}
+
+	clk_prepare_enable(ppv4_gate_clk);
+	clk_prepare_enable(ppv4_freq_clk);
 
 	bm_dbg_dev_init(pdev);
 
