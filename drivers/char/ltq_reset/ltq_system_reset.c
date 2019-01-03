@@ -1148,6 +1148,9 @@ static ssize_t proc_write_reset_seq_write(struct file *file,
 	if (!*p)
 		return count;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	if (strincmp(p, "reset", 5) == 0) {
 		p += 5;
 		len -= 5;
@@ -1301,6 +1304,9 @@ static ssize_t proc_write_sysrst_dbg_seq(struct file *file,
 		;
 	if (!*p)
 		return count;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	if (strincmp(p, "enable", 6) == 0) {
 		p += 6;
@@ -1461,6 +1467,10 @@ static int sysrst_release(struct inode *inode, struct file *filelp)
 static long sysrst_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	int ret;
+
+	/* check permission */
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	/* check magic number */
 	if (_IOC_TYPE(cmd) != SYSRST_IOC_MAGIC)
