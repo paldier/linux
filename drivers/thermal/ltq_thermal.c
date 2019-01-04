@@ -89,7 +89,7 @@ struct ltq_thermal {
 
 #define TS_REG_OFF			0x10U
 #define INT_LVL_POS			16
-#define FALCONMX_TS_CODE	0x3FFu
+#define PRX300_TS_CODE		0x3FFu
 #define VSAMPLE_MASK		0x4
 #define VSAMPLE_V			0x4
 #define VSMPLE_NV			0x0
@@ -98,14 +98,14 @@ struct ltq_thermal {
 #define TIMEOUT				1000
 #define ETEMPINVAL			-255
 
-void ltq_falconmx_init(struct ltq_thermal_sensor *sensor)
+void ltq_prx300_init(struct ltq_thermal_sensor *sensor)
 {
 	struct ltq_thermal *priv = sensor->drvdata;
 
 	regmap_write(priv->chiptop, CTRL_REG_ID(sensor->id), SOC_MASK);
 }
 
-static int ltq_falconmx_get_temp(struct ltq_thermal_sensor *sensor)
+static int ltq_prx300_get_temp(struct ltq_thermal_sensor *sensor)
 {
 	struct ltq_thermal *priv = sensor->drvdata;
 	u32 val;
@@ -142,7 +142,7 @@ static int ltq_falconmx_get_temp(struct ltq_thermal_sensor *sensor)
 	/* Read ts code */
 	val = 0;
 	regmap_read(priv->chiptop, DATA_REG_ID(sensor->id), &val);
-	val &= FALCONMX_TS_CODE;
+	val &= PRX300_TS_CODE;
 
 	/* Temperature interpolation */
 	ts_val = (int)(a0 * 1000000 + (185858 * (val - v1)) +
@@ -224,9 +224,9 @@ static struct ltq_thermal_sensor_ops ltq_grx500_ops = {
 	.get_temp	= ltq_grx500_get_temp,
 };
 
-static struct ltq_thermal_sensor_ops ltq_falconmx_ops = {
-	.init		 = ltq_falconmx_init,
-	.get_temp = ltq_falconmx_get_temp,
+static struct ltq_thermal_sensor_ops ltq_prx300_ops = {
+	.init		 = ltq_prx300_init,
+	.get_temp = ltq_prx300_get_temp,
 };
 
 static int ltq_thermal_get_temp(void *data, int *temp)
@@ -304,8 +304,8 @@ static const struct of_device_id ltq_thermal_match[] = {
 		.data       = &ltq_grx500_ops,
 	},
 	{
-		.compatible = "intel,ts-falconmx",
-		.data       = &ltq_falconmx_ops,
+		.compatible = "intel,ts-prx300",
+		.data       = &ltq_prx300_ops,
 	},
 	{ /* sentinel */ },
 };
