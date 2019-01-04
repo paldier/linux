@@ -28,7 +28,6 @@
 #include "reg/cqem_pon_ip_if.h"
 #include "cqm_config.h"
 
-#define CPU_POOL_ALLOWED 0
 #define FREE_BUDGET 30
 /*#define CBM_DEBUG 1*/
 /*#define CBM_DEBUG_LVL_1 1*/
@@ -608,6 +607,11 @@ struct cqm_buf_dbg_cnt {
 	atomic_t isr_free_cnt;
 };
 
+struct fsq {
+	u16 head;
+	u16 tail;
+};
+
 extern
 struct cqm_buf_dbg_cnt cqm_dbg_cntrs[CQM_MAX_POLICY_NUM][CQM_MAX_POOL_NUM];
 
@@ -617,6 +621,7 @@ struct cqm_buf_dbg_cnt cqm_dbg_cntrs[CQM_MAX_POLICY_NUM][CQM_MAX_POOL_NUM];
 void cqm_read_dma_desc_prep(int port, void **base_addr, int *num_desc);
 void cqm_read_dma_desc_end(int port);
 int get_fsqm_ofsc(void);
+bool fsqm_check(uint16_t len);
 void *cqm_get_enq_base(void);
 void *cqm_get_deq_base(void);
 void *cqm_get_dma_desc_base(void);

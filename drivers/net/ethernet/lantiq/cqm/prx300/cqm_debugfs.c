@@ -1655,6 +1655,24 @@ static const struct file_operations cqm_ofsc_fops = {
 	.release = single_release,
 };
 
+static int cqm_ofsq_read(struct seq_file *s, void *v)
+{
+	seq_printf(s, "0x%08x\n", fsqm_check(0));
+	return 0;
+}
+
+static int cqm_ofsq_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, cqm_ofsq_read, inode->i_private);
+}
+
+static const struct file_operations cqm_ofsq_fops = {
+	.open = cqm_ofsq_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 int cqm_debugfs_init(struct cqm_ctrl *pctrl)
 {
 	char cqm_dir[64] = {0};
@@ -1700,6 +1718,10 @@ int cqm_debugfs_init(struct cqm_ctrl *pctrl)
 
 	file = debugfs_create_file("ofsc", 0644, pctrl->debugfs,
 				   pctrl, &cqm_ofsc_fops);
+	if (!file)
+		goto err;
+	file = debugfs_create_file("check_fsqm", 0644, pctrl->debugfs,
+				   pctrl, &cqm_ofsq_fops);
 	if (!file)
 		goto err;
 	file = debugfs_create_file("pkt_count", 0644, pctrl->debugfs,
