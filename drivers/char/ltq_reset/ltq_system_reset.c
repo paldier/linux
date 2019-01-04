@@ -2521,7 +2521,7 @@ static int sysrst_remove(struct platform_device *pdev)
 
 static const struct of_device_id sysrst_match[] = {
 	{ .compatible = "intel,sysrst-xrx500" },
-	{ .compatible = "intel,sysrst-falconmx" },
+	{ .compatible = "intel,sysrst-prx300" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, sysrst_match);
