@@ -319,6 +319,7 @@ static int prx300_gphy_boot(struct xway_gphy_data *priv)
 			   priv->dma_addr);
 
 	pin_strap_lo = 0x4000; /* base freq deviation */
+	pin_strap_lo |= 0xd << 16; /* chip id */
 	pin_strap_lo |= 0x1f << 24; /* MDIO address */
 	pin_strap_lo |= 0x1 << 29; /* interrupt polarity */
 	pin_strap_hi = prx300_gphy_config_rcal_rcm(priv);
