@@ -2072,7 +2072,7 @@ static const struct ltq_net_soc_data xrx500_net_data = {
 	.phy_connect_func = &xrx500_mdio_probe,
 };
 
-static const struct ltq_net_soc_data falconmx_net_data = {
+static const struct ltq_net_soc_data prx300_net_data = {
 	.need_defer = false,
 	.hw_checksum = false,
 	.queue_num = 8,
@@ -2081,7 +2081,7 @@ static const struct ltq_net_soc_data falconmx_net_data = {
 
 static const struct of_device_id ltq_eth_drv_match[] = {
 	{ .compatible = "lantiq,xrx500-eth", .data = &xrx500_net_data},
-	{ .compatible = "lantiq,falconmx-eth", .data = &falconmx_net_data},
+	{ .compatible = "lantiq,prx300-eth", .data = &prx300_net_data},
 	{},
 };
 MODULE_DEVICE_TABLE(of, ltq_eth_drv_match);
