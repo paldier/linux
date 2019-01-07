@@ -121,6 +121,9 @@ static uint32_t cbm_eqm_addr_base_d = KSEG1ADDR(CBM_EQM_MODULE_BASE);
 
 void cbm_enqueue_dump(struct seq_file *s)
 {
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	seq_printf(s, "CBM_ENQ_BASEe=0x%x\n", CBM_ENQ_BASE_D);
 
 	seq_printf(s, "%8s,%8s,%8s,%8s,%8s,%8s\n", "portno :", "pocc", "eqpc",
@@ -243,6 +246,8 @@ static uint32_t cbm_deqm_addr_base_d = KSEG1ADDR(CBM_DQM_MODULE_BASE);
 
 void cbm_dequeue_dump(struct seq_file *s)
 {
+	if (!capable(CAP_SYS_ADMIN))
+		return;
 
 	seq_printf(s, "CBM_DEQ_BASEe=0x%x\n", CBM_DEQ_BASE_D);
 
@@ -341,6 +346,9 @@ void cbm_ls_dump(struct seq_file *s)
 	unsigned int q_len2 = 0, q_full2 = 0, q_empty2 = 0, q_cnt2 =
 	0, q_len3 = 0, q_full3 = 0, q_empty3 = 0, q_cnt3 = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	seq_printf(s, "%8s,%8s,%8s,%8s,%8s\n", "portno:", "qlen", "qfull",
 	"qempty", "cntval");
 	reg_r_data = 0;
@@ -426,6 +434,9 @@ void cbm_sba_jba_dump(struct seq_file *s)
 {
 	unsigned int sba0 = 0, sba1 = 0, jba0 = 0, jba1 = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	sba0 = REG32(CBM_SBA0_D);
 	sba1 = REG32(CBM_SBA1_D);
 	jba0 = REG32(CBM_JBA0_D);
@@ -442,6 +453,10 @@ static uint32_t cbm_status_base_d = KSEG1ADDR(CBM_CBM_STAT);
 void cbm_status_reg_dump(struct seq_file *s)
 {
 	unsigned int reg_r_data, act_stat = 0, lsbyp = 0, jsel = 0;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	reg_r_data = 0;
 	reg_r_data = REG32(CBM_STAT_D);
 	act_stat = get_val(reg_r_data, CBM_STAT_ACT_MASK, CBM_STAT_ACT_POS);
@@ -471,6 +486,9 @@ ssize_t cbm_enq_ovh_bytes_write(struct file *file, const char *buf,
 	char *p = (char *)str;
 	char *param_list[5] = { 0 };
 	int num = 0;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
@@ -509,6 +527,9 @@ void  cbm_enq_ovh_bytes_read(struct seq_file *s)
 	int i;
 	int8_t ovh_bytes;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	for (i = 0; i <= 15; i++) {
 		cbm_enqueue_port_overhead_get(i, &ovh_bytes);
 		LOGF_KLOG_CONT("%d \t", ovh_bytes);
@@ -519,6 +540,10 @@ void  cbm_enq_ovh_bytes_read(struct seq_file *s)
 void  cbm_q_thres_get_proc(struct seq_file *s)
 {
 	uint32_t length;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	cbm_q_thres_get(&length);
 	LOGF_KLOG_CONT("EQM QUEUE THRESHOLD %d\n", length);
 }
@@ -531,6 +556,10 @@ ssize_t cbm_q_thres_set_proc(struct file *file, const char *buf,
 	char *p = (char *)str;
 	char *param_list[1] = { 0 };
 	int num = 0;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -565,6 +594,10 @@ ssize_t cbm_eqm_delay_set_proc(struct file *file, const char *buf,
 	char *p = (char *)str;
 	char *param_list[3] = { 0 };
 	int num = 0;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -604,6 +637,10 @@ ssize_t cbm_eqm_delay_set_proc(struct file *file, const char *buf,
 void  cbm_counter_mode_get_proc(struct seq_file *s)
 {
 	int mode;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	cbm_counter_mode_get(0, &mode);
 	LOGF_KLOG_CONT("EQM MSEL %s\n", (mode > 0) ? "BYTE" : "PKT");
 	cbm_counter_mode_get(1, &mode);
@@ -620,6 +657,9 @@ ssize_t cbm_counter_mode_set_proc(struct file *file, const char *buf,
 	char *p = (char *)str;
 	char *param_list[2] = { 0 };
 	int num = 0;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
@@ -758,6 +798,9 @@ ssize_t cbm_qocc_test_steps(struct file *file, const char *buf,
 		| CBM_QUEUE_MAP_F_EN_DONTCARE
 		| CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE
 		| CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	temp_qmap = qmap_flags;
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
@@ -1021,6 +1064,9 @@ ssize_t fsqm_freesegment_read(struct file *file, const char *buf,
 	char *param_list[5] = { 0 };
 	int num = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -1129,6 +1175,9 @@ static uint32_t cbm_desc64_base_d = KSEG1ADDR(CBM_DESC64B_MODULE_BASE);
 
 void cbm_des64_ingress_dump(struct seq_file *s)
 {
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	print_reg64("SDESC0_0_IGP_5:	", CBM_DES64_D + SDESC0_0_IGP_5);
 	print_reg64("SDESC1_0_IGP_5:	", CBM_DES64_D + SDESC1_0_IGP_5);
 	LOGF_KLOG_CONT("\n");
@@ -1253,6 +1302,9 @@ void cbm_des64_ingress_dump(struct seq_file *s)
 
 void cbm_des64_egress_dump(struct seq_file *s)
 {
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
 	print_reg64("DESC0_0_EGP_5:	", CBM_DES64_D + DESC0_0_EGP_5);
 	print_reg64("DESC1_0_EGP_5:	", CBM_DES64_D + DESC1_0_EGP_5);
 	LOGF_KLOG_CONT("\n");

@@ -17,6 +17,9 @@ static ssize_t print_cqm_dbg_cntrs_write(struct file *file,
 	char *param_list[5] = { 0 };
 	int num = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -44,6 +47,9 @@ static int print_cqm_dbg_cntrs(struct seq_file *s, void *v)
 	u32 free_cnt_t = 0;
 	u32 alloc_cnt_t = 0;
 	u32 isr_free_cnt_t = 0;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	seq_puts(s, "Print CQEM debug counters:\n");
 	seq_puts(s, "\t\t\trx\t\ttx\t\tfree\t\talloc\t\tdelta (rx+alloc-tx-free)\n");
@@ -154,6 +160,9 @@ static ssize_t cqm_ls_write(struct file *file, const char __user *buf,
 	char *param_list[5] = { 0 };
 	int num = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -171,6 +180,9 @@ static int cqm_ls_seq_read(struct seq_file *s, void *v)
 {
 	void *ls_base = cqm_get_ls_base();
 	unsigned int reg_r_data, q_len = 0, q_full = 0, q_empty = 0, q_cnt = 0;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	seq_printf(s, "\n%8s%8s,%8s,%8s,%8s\n",
 		   "portno:", "qlen", "qfull", "qempty", "cntval");
@@ -240,6 +252,9 @@ static const struct file_operations cqm_ls_fops = {
 
 static int cqm_dma_desc_read(struct seq_file *s, void *v)
 {
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	seq_puts(s, "echo help > /sys/kernel/debug/cqm/cqm_dmadesc for usage\n");
 	return 0;
 }
@@ -260,6 +275,9 @@ static ssize_t cqm_dma_desc_write(struct file *file, const char __user *buf,
 	int num_desc;
 	void *baseaddr;
 	void *addr, *addr1;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
@@ -390,6 +408,9 @@ static ssize_t cqm_ctrl_write(struct file *file, const char __user *buf,
 	char *param_list[5] = { 0 };
 	int num = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -407,6 +428,9 @@ static int cqm_ctrl_seq_read(struct seq_file *s, void *v)
 {
 	void *ctrl_base = cqm_get_ctrl_base();
 	u32 i;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	seq_puts(s, "\n");
 	for (i = 0; i < 8; i++) {
@@ -533,6 +557,9 @@ static inline void disp_deq_pon_reg(void *deq_base, u32 j)
 	unsigned long tmp4;
 	unsigned long desc0 = DESC0_0_CPU_EGP_0;
 	int i;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	PRINTK("Name: CFG_PON_EGP_%02d\n", j);
 	PRINTK("Addr: 0x%8p\n",
@@ -816,6 +843,9 @@ static ssize_t cqm_deq_write(struct file *file, const char __user *buf,
 	void *deq_base = cqm_get_deq_base();
 	u32 j, m, n;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -861,6 +891,9 @@ static ssize_t cqm_deq_write(struct file *file, const char __user *buf,
 static int cqm_deq_seq_read(struct seq_file *s, void *v)
 {
 	void *deq_base = cqm_get_deq_base();
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	seq_puts(s, "Name: CBM_DQM_CTRL\n");
 	seq_printf(s, "Addr: 0x%8p\n", deq_base + CBM_DQM_CTRL);
@@ -1405,6 +1438,9 @@ static ssize_t cqm_enq_write(struct file *file, const char __user *buf,
 	int num = 0;
 	void *enq_base = cqm_get_enq_base();
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -1457,6 +1493,9 @@ static int cqm_enq_seq_read(struct seq_file *s, void *v)
 {
 	void *enq_base = cqm_get_enq_base();
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	seq_puts(s, "Name: CBM_EQM_CTRL\n");
 	seq_printf(s, "Addr: 0x%8p\n", enq_base + CBM_EQM_CTRL);
 	seq_printf(s, "Val:  0x%08x\n", cbm_r32(enq_base + CBM_EQM_CTRL));
@@ -1485,6 +1524,9 @@ static ssize_t cqm_dqpc_write(struct file *file, const char __user *buf,
 	char *param_list[5] = { 0 };
 	int num = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -1502,6 +1544,9 @@ static int cqm_dqpc_seq_read(struct seq_file *s, void *v)
 {
 	void *deq_base = cqm_get_deq_base();
 	u32 j;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	deq_base += DQPC_CPU_EGP_0;
 	for (j = 0; j < 3; j++) {
@@ -1556,6 +1601,9 @@ static ssize_t cqm_eqpc_write(struct file *file, const char __user *buf,
 	char *param_list[5] = { 0 };
 	int num = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -1573,6 +1621,9 @@ static int cqm_eqpc_seq_read(struct seq_file *s, void *v)
 {
 	void *enq_base = cqm_get_enq_base();
 	u32 j;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
 
 	enq_base += EQPC_CPU_IGP_0;
 	for (j = 0; j < 2; j++) {
@@ -1620,6 +1671,9 @@ static ssize_t cqm_ofsc_write(struct file *file, const char __user *buf,
 	char *param_list[5] = { 0 };
 	int num = 0;
 
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -1637,6 +1691,9 @@ static ssize_t cqm_ofsc_write(struct file *file, const char __user *buf,
 
 static int cqm_ofsc_read(struct seq_file *s, void *v)
 {
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	seq_printf(s, "%8s\n", "FSC");
 	seq_printf(s, "0x%08x\n", get_fsqm_ofsc());
 	return 0;
@@ -1657,6 +1714,9 @@ static const struct file_operations cqm_ofsc_fops = {
 
 static int cqm_ofsq_read(struct seq_file *s, void *v)
 {
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
 	seq_printf(s, "0x%08x\n", fsqm_check(0));
 	return 0;
 }
