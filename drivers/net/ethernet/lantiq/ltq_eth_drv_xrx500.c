@@ -628,25 +628,35 @@ static int ltq_change_mtu(struct net_device *dev, int new_mtu)
 	if (new_mtu < ETH_ZLEN || new_mtu > LTQ_ETH_MAX_DATA_LEN)
 		return -EINVAL;
 
-	/* if the MTU > 1500, do the jumbo config in switch */
-	if (new_mtu > ETH_DATA_LEN && !(priv->jumbo_enabled)) {
-		if (priv->wan) {
-			if (ltq_enable_gsw_r_jumbo(dev) < 0)
-				return -EIO;
-		} else {
-			if (ltq_enable_gsw_l_jumbo(dev) < 0)
-				return -EIO;
+	if (g_eth_switch_mode == 0) {
+		if (priv->xgmac_id >= 0) {
+			struct mac_ops *ops;
+
+			ops = gsw_get_mac_ops(0, priv->xgmac_id);
+			if (ops)
+				ops->set_mtu(ops, new_mtu);
 		}
+	} else {
+		/* if the MTU > 1500, do the jumbo config in switch */
+		if (new_mtu > ETH_DATA_LEN && !(priv->jumbo_enabled)) {
+			if (priv->wan) {
+				if (ltq_enable_gsw_r_jumbo(dev) < 0)
+					return -EIO;
+			} else {
+				if (ltq_enable_gsw_l_jumbo(dev) < 0)
+					return -EIO;
+			}
 
-		ltq_enable_gsw_r_pmac_jumbo(dev);
-		priv->jumbo_enabled = 1;
-	} else if (priv->jumbo_enabled) {
-		if (priv->wan)
-			ltq_disable_gsw_r_jumbo(dev);
-		else
-			ltq_disable_gsw_l_jumbo(dev);
+			ltq_enable_gsw_r_pmac_jumbo(dev);
+			priv->jumbo_enabled = 1;
+		} else if (priv->jumbo_enabled) {
+			if (priv->wan)
+				ltq_disable_gsw_r_jumbo(dev);
+			else
+				ltq_disable_gsw_l_jumbo(dev);
 
-		priv->jumbo_enabled = 0;
+			priv->jumbo_enabled = 0;
+		}
 	}
 
 	dev->mtu = new_mtu;
