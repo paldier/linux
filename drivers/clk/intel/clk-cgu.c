@@ -540,10 +540,17 @@ static long
 intel_clk_ddiv_round_rate(struct clk_hw *hw, unsigned long rate,
 			  unsigned long *prate)
 {
+	struct intel_clk_ddiv *ddiv = to_intel_clk_ddiv(hw);
 	u32 div, ddiv1, ddiv2;
 	u64 rate64 = rate;
 
 	div = DIV_ROUND_CLOSEST_ULL((u64)*prate, rate);
+
+	/* if predivide bit is enabled, modify div by factor of 2.5 */
+	if (intel_get_clk_val(ddiv->map, ddiv->reg, ddiv->shift2, 1)) {
+		div = div * 2;
+		div = DIV_ROUND_CLOSEST_ULL((u64)div, 5);
+	}
 
 	if (div <= 0)
 		return *prate;
@@ -556,6 +563,12 @@ intel_clk_ddiv_round_rate(struct clk_hw *hw, unsigned long rate,
 	rate64 = *prate;
 	do_div(rate64, ddiv1);
 	do_div(rate64, ddiv2);
+
+	/* if predivide bit is enabled, modify rounded rate by factor of 2.5 */
+	if (intel_get_clk_val(ddiv->map, ddiv->reg, ddiv->shift2, 1)) {
+		rate64 = rate64 * 2;
+		rate64 = DIV_ROUND_CLOSEST_ULL(rate64, 5);
+	}
 
 	return (unsigned long)rate64;
 }
