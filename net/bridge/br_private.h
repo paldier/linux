@@ -1106,6 +1106,7 @@ extern int br_mg_add_entry(struct net_bridge_port *port, ipaddr_t *gaddr, u8 fil
 extern int br_selective_flood(struct net_bridge_port *p, struct sk_buff *skb);
 extern int bridge_igmp_snooping;
 extern int bridge_mld_snooping;
+extern int bridge_lanserver_hook;
 extern void br_mcast_snoop_init(void);
 extern void br_mcast_snoop_deinit(void);
 #endif

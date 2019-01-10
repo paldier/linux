@@ -23,7 +23,9 @@
 
 #if IS_ENABLED(CONFIG_MCAST_HELPER)
 void (*five_tuple_br_info_ptr)(struct sk_buff *skb) = NULL;
+void (*five_tuple_br_info_hook)(struct sk_buff *skb) = NULL;
 EXPORT_SYMBOL(five_tuple_br_info_ptr);
+EXPORT_SYMBOL(five_tuple_br_info_hook);
 int mch_br_capture_pkt = 0;
 EXPORT_SYMBOL(mch_br_capture_pkt);
 #endif
@@ -127,6 +129,7 @@ static int deliver_clone(const struct net_bridge_port *prev,
 			 struct sk_buff *skb, bool local_orig)
 {
 	struct net_device *dev = BR_INPUT_SKB_CB(skb)->brdev;
+	const unsigned char *dest = eth_hdr(skb)->h_dest;
 
 	skb = skb_clone(skb, GFP_ATOMIC);
 	if (!skb) {
@@ -137,10 +140,19 @@ static int deliver_clone(const struct net_bridge_port *prev,
 #ifdef CONFIG_MCAST_HELPER
 	/* Send five tuple info to mcast helper */
 	if (mch_br_capture_pkt == 1) {
-		if (ip_hdr(skb)->protocol == 17) {
+		if ((ip_hdr(skb)->protocol == IPPROTO_UDP) || (ipv6_hdr(skb)->nexthdr == IPPROTO_UDP)) {
 			if (five_tuple_br_info_ptr != NULL) {
 				five_tuple_br_info_ptr(skb);
 			}
+		}
+	}
+
+	/* hook the UDP multicast to mcast helper */
+	if (bridge_lanserver_hook == 1) {
+		if (!is_broadcast_ether_addr(dest) && is_multicast_ether_addr(dest) && ((ip_hdr(skb)->protocol == IPPROTO_UDP) || (ipv6_hdr(skb)->nexthdr == IPPROTO_UDP))) {
+			if (five_tuple_br_info_hook != NULL) {
+					five_tuple_br_info_hook(skb);
+				}
 		}
 	}
 #endif

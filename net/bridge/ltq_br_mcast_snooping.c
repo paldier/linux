@@ -32,6 +32,7 @@
 int bridge_igmp_snooping = 0;
 int bridge_mld_snooping = 0;
 int bridge_igmp_snooping_dbg = 0;
+int bridge_lanserver_hook = 0;
 
 #ifdef CONFIG_SYSCTL
 static struct ctl_table_header *br_mcast_sysctl_header;
@@ -66,8 +67,15 @@ static struct ctl_table br_mcast_table[] = {
 		.mode		= 0644,
 		.proc_handler	= br_mcast_sysctl_call_tables,
 	},
-	{ }
-
+	{
+		.procname	= "bridge_lanserver_hook",
+		.data		= &bridge_lanserver_hook,
+		.maxlen 	= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= br_mcast_sysctl_call_tables,
+	},
+	{
+	}
 };
 
 #endif
@@ -471,8 +479,13 @@ static int br_snoop_multicast_data(struct net_bridge_port *port, ipaddr_t *gaddr
 	int i, found = 0, filter_mode = 1, ret = 1;
 
 	if (NULL == (entry = br_mg_get_entry(port, gaddr))) {
-		/* no matching group found */
-		return 0;
+		if (bridge_lanserver_hook) {
+			return 1;
+		}
+		else {
+			/* no matching group found */
+			return 0;
+		}
 	}
 
 	rcu_read_lock();	// XXX: needed ???
