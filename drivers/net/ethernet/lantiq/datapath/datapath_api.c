@@ -1634,9 +1634,9 @@ int dp_set_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 	}
 	/* get the subif from the dev */
 	ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
-	if ((ret == DP_FAILURE) || (subif.flag_bp == 0)) {
-		PR_ERR("Fail to get the subif:dev=%s ret=%d flag_bp=%d bp=%d\n",
-		       dev->name, ret, subif.flag_bp, subif.bport);
+	if ((ret == DP_FAILURE) || (subif.flag_pmapper == 0)) {
+		PR_ERR("Fail to get subif:dev=%s ret=%d flag_pmap=%d bp=%d\n",
+		       dev->name, ret, subif.flag_pmapper, subif.bport);
 		return DP_FAILURE;
 	}
 	inst = subif.inst;
@@ -1720,7 +1720,7 @@ int dp_get_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 
 	/*get the subif from the dev*/
 	ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
-	if (ret == DP_FAILURE || subif.flag_bp == 0) {
+	if (ret == DP_FAILURE || subif.flag_pmapper == 0) {
 		PR_ERR("Can not get the subif from the dev\n");
 		return DP_FAILURE;
 	}
