@@ -419,8 +419,6 @@ static int intel_phy_power_off(struct phy_ctx *iphy)
 		return ret;
 	}
 
-	//intel_phy_gate_clk_disable(iphy);
-	//intel_phy_freq_clk_disable(iphy);
 	iphy->power_en = false;
 
 	return 0;

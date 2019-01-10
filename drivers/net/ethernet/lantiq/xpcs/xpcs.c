@@ -992,7 +992,7 @@ int xpcs_ethtool_ksettings_set(struct device *dev,
 		pr_err("XPCS %s is not initialized\n",pdata->name);
 		return -1;
 	}
-	
+
 	if (speed != SPEED_10000 &&
 	    speed != SPEED_1000)
 		return -EINVAL;
