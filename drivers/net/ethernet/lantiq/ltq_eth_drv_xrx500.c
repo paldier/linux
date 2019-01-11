@@ -266,14 +266,17 @@ int serdes_ethtool_get_link_ksettings(struct net_device *dev,
 	if (!priv->xpcs_node)
 		return -1;
 
-	pdev = of_find_device_by_node(priv->xpcs_node);
-	if (pdev) {
-		/* Speed Get in Ethtool */
-		xpcs_ethtool_ksettings_get(&pdev->dev, cmd);
-	} else {
-		pr_err("Cannot get Xpcs pdev for %s\n",dev->name);
-		ret = -1;
-	}
+        /* g_eth_switch_mode will be 0 for Fmx and Lgm */
+        if (g_eth_switch_mode == 0) {
+            pdev = of_find_device_by_node(priv->xpcs_node);
+            if (pdev) {
+                /* Speed Get in Ethtool */
+                xpcs_ethtool_ksettings_get(&pdev->dev, cmd);
+            } else {
+                pr_err("Cannot get Xpcs pdev for %s\n",dev->name);
+                ret = -1;
+            }
+        }
 
 	return ret;
 }
@@ -288,16 +291,18 @@ int serdes_ethtool_set_link_ksettings(struct net_device *dev,
 	if (!priv->xpcs_node)
 		return -1;
 
-	/* Speed Set in Ethtool */
-	pdev = of_find_device_by_node(priv->xpcs_node);
-	if (pdev) {
-		/* Speed Get in Ethtool */
-		ret = xpcs_ethtool_ksettings_set(&pdev->dev, cmd);
-	} else {
-		pr_err("Cannot get Xpcs pdev for %s\n",dev->name);
-		ret = -1;
-	}
-
+        /* g_eth_switch_mode will be 0 for Fmx and Lgm */
+        if (g_eth_switch_mode == 0) {
+            /* Speed Set in Ethtool */
+            pdev = of_find_device_by_node(priv->xpcs_node);
+            if (pdev) {
+                /* Speed Get in Ethtool */
+                ret = xpcs_ethtool_ksettings_set(&pdev->dev, cmd);
+            } else {
+                pr_err("Cannot get Xpcs pdev for %s\n",dev->name);
+                ret = -1;
+            }
+        }
 	return ret;
 }
 
