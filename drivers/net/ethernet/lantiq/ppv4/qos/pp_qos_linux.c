@@ -90,11 +90,7 @@ int load_firmware(struct pp_qos_dev *qdev, const char *name)
 
 	fw.size = firmware->size;
 	fw.data = firmware->data;
-	err = do_load_firmware(qdev,
-			&fw,
-			pdata->ddr - pdata->ddr_phy_start,
-			pdata->ivt - PPV4_QOS_IVT_START,
-			pdata);
+	err = do_load_firmware(qdev, &fw, pdata);
 
 	release_firmware(firmware);
 	return err;
@@ -158,11 +154,7 @@ static void *map_mem_resource(
 
 	dev = &pdev->dev;
 
-	r = get_resource(
-			pdev,
-			name,
-			type,
-			size);
+	r = get_resource(pdev, name, type, size);
 	if (!r)
 		return NULL;
 
@@ -190,12 +182,7 @@ static void __iomem *map_reg_resource(
 	struct resource *r;
 	void __iomem *addr;
 
-	r = get_resource(
-			pdev,
-			name,
-			type,
-			size);
-
+	r = get_resource(pdev, name, type, size);
 	if (!r)
 		return NULL;
 
@@ -320,11 +307,12 @@ static int pp_qos_config_from_of_node(
 {
 	int err;
 	uint32_t val;
-	struct resource r;
 	struct device_node *node;
 	struct device *dev;
 	void *addr;
 	dma_addr_t dma;
+	struct property *prop;
+	const __be32 *p;
 
 	dev = &pdev->dev;
 	node = pdev->dev.of_node;
@@ -345,10 +333,7 @@ static int pp_qos_config_from_of_node(
 	}
 	pdata->max_port = val;
 
-	err = of_property_read_u32(
-			node,
-			"intel,wred-prioritize",
-			&val);
+	err = of_property_read_u32(node, "intel,wred-prioritize", &val);
 	if (err) {
 		dev_err(dev,
 			"Could not get wred pop prioritize from DT, error is %d\n",
@@ -357,9 +342,7 @@ static int pp_qos_config_from_of_node(
 	}
 	pdata->wred_prioritize_pop = val;
 
-	err = of_property_read_u32(node,
-				   "intel,clock-frequency-mhz",
-				   &val);
+	err = of_property_read_u32(node, "intel,clock-frequency-mhz", &val);
 	if (err) {
 		dev_err(dev,
 			"Could not get qos clock from DT, error is %d\n",
@@ -368,31 +351,16 @@ static int pp_qos_config_from_of_node(
 	}
 	pdata->qos_clock = val;
 
-	/* Get reserved memory region */
-	node = of_parse_phandle(node, "memory-region", 0);
-	if (!node) {
-		dev_err(dev, "No memory-region specified\n");
+	if (of_property_count_u32_elems(node, "intel,fw-sec-data-stack") != 3) {
+		dev_err(dev, "intel,fw-sec-data-stack num fields must be 3\n");
 		return -ENODEV;
 	}
-	err = of_address_to_resource(node, 0, &r);
-	if (err) {
-		dev_err(dev, "No memory address assigned to the region\n");
-		return err;
-	}
 
-	print_resource(dev, "ddr", &r);
-	pdrvdata->ddr_phy_start = r.start;
-	pdrvdata->ddr = devm_memremap(
-			dev,
-			r.start,
-			resource_size(&r),
-			MEMREMAP_WT);
-	if (IS_ERR_OR_NULL(pdrvdata->ddr)) {
-		err = (int) PTR_ERR(pdrvdata->ddr);
-		dev_err(dev, "devm_memremap failed mapping ddr with %d\n", err);
-		return err;
-	}
-	dev_dbg(dev, "DDR memory mapped to %p\n", pdrvdata->ddr);
+	prop = of_find_property(node, "intel,fw-sec-data-stack", NULL);
+	p = of_prop_next_u32(prop, NULL,
+			     &pdrvdata->fw_sec_data_stack.is_in_dccm);
+	p = of_prop_next_u32(prop, p, &pdrvdata->fw_sec_data_stack.dccm_offset);
+	p = of_prop_next_u32(prop, p, &pdrvdata->fw_sec_data_stack.max_size);
 
 	addr = dmam_alloc_coherent(
 			dev,
@@ -400,9 +368,8 @@ static int pp_qos_config_from_of_node(
 			&dma,
 			GFP_KERNEL);
 	if (addr == NULL) {
-		dev_err(dev,
-				"Could not allocate %u bytes for logger buffer\n",
-				PPV4_QOS_LOGGER_BUF_SIZE);
+		dev_err(dev, "Could not allocate %u bytes for logger buffer\n",
+			PPV4_QOS_LOGGER_BUF_SIZE);
 		return -ENOMEM;
 	}
 	pdata->fw_logger_start = (unsigned int)(dma);

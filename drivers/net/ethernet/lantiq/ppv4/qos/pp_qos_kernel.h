@@ -42,6 +42,12 @@ struct pp_qos_dbg_data {
 	void		*fw_logger_addr;
 };
 
+struct fw_sec_info {
+	u32	is_in_dccm;
+	u32	dccm_offset;
+	u32	max_size;
+};
+
 struct pp_qos_drv_data {
 	int	id;
 	struct pp_qos_dev *qdev;
@@ -51,7 +57,7 @@ struct pp_qos_drv_data {
 	void *ivt;
 	void __iomem *wakeuc;
 	resource_size_t ddr_phy_start;
-
+	struct fw_sec_info fw_sec_data_stack;
 };
 
 #ifndef __BIG_ENDIAN

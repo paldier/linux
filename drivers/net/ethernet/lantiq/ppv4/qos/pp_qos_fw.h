@@ -30,6 +30,7 @@
 #include "pp_qos_utils.h"
 #include "pp_qos_common.h"
 #include "pp_qos_uc_wrapper.h"
+#include "pp_qos_kernel.h"
 
 struct ppv4_qos_fw {
 	size_t size;
@@ -98,9 +99,7 @@ void create_flush_queue_cmd(struct pp_qos_dev *qdev, unsigned int rlm);
 int do_load_firmware(
 		struct pp_qos_dev *qdev,
 		const struct ppv4_qos_fw *fw,
-		void *ddr_base,
-		void *ivt_base,
-		void *data);
+		struct pp_qos_drv_data *pdata);
 
 void add_suspend_port(struct pp_qos_dev *qdev, unsigned int port);
 void signal_uc(struct pp_qos_dev *qdev);

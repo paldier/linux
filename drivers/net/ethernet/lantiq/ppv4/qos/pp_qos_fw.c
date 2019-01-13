@@ -24,11 +24,15 @@
  *  2200 Mission College Blvd.
  *  Santa Clara, CA  97052
  */
+
 #include "pp_qos_common.h"
 #include "pp_qos_utils.h"
 #include "pp_qos_uc_wrapper.h"
 #include "pp_qos_fw.h"
-
+#include "pp_qos_elf.h"
+#include <linux/dma-mapping.h>
+#include <linux/platform_device.h>
+#include <linux/slab.h>
 
 #ifdef __LP64__
 #define GET_ADDRESS_HIGH(addr) ((((uintptr_t)(addr)) >> 32) & 0xFFFFFFFF)
@@ -89,115 +93,208 @@ struct ppv4_qos_fw_hdr {
 	uint32_t build;
 };
 
-struct ppv4_qos_fw_sec {
-	uint32_t dst;
-	uint32_t size;
-};
-
-#define FW_OK_SIGN (0xCAFECAFEU)
-#define FW_DDR_LOWEST (0x400000U)
+#define FW_OK_SIGN			(0xCAFECAFEU)
+#define QOS_ELF_MAX_SECS		(64)
+#define FW_DCCM_START			(0xF0000000)
+#define FW_CMD_BUFFER_DCCM_START	(FW_DCCM_START + 0x6000)
 
 static void copy_section(void *_dst, const void *_src, unsigned int size)
 {
-	unsigned int i;
-	const uint32_t *src;
-	uint32_t *dst;
+	unsigned int i = size;
+	const u8 *src;
+	u8 *dst;
 
-	src = (uint32_t *)_src;
-	dst = (uint32_t *)_dst;
+	src = (uint8_t *)_src;
+	dst = (uint8_t *)_dst;
 
-	for (i = size; i > 0; i -= 4)
-		*dst++ = cpu_to_le32(*src++);
+	for (i = size; i > 3; i -= 4) {
+		*(uint32_t *)dst = cpu_to_le32(*(uint32_t *)src);
+		src += 4;
+		dst += 4;
+	}
+
+	/* Section size must be aligned to 2 */
+	if (i == 1 || i == 3)
+		QOS_LOG_ERR("Size %u not aligned to 2 (i=%u)\n", size, i);
+
+	/* Copy last u16 if exists */
+	if (i == 2)
+		*(uint32_t *)dst = (uint32_t)cpu_to_le16(*(uint16_t *)src);
+}
+
+static void calc_elf_sections_sizes(struct elf_sec secs[], u16 num_secs,
+				    u32 *total_sz, u32 *data_sz, u32 *stack_sz)
+{
+	u16 ind;
+
+	for (ind = 0; ind < num_secs; ind++) {
+		if (secs[ind].need_copy)
+			*total_sz += secs[ind].size;
+
+		if (!strncmp(secs[ind].name, ".data", 5))
+			*data_sz = secs[ind].size;
+		else if (!strncmp(secs[ind].name, ".stack", 6))
+			*stack_sz = secs[ind].size;
+	}
+}
+
+static void copy_sections(struct elf_sec secs[], u16 num_secs, void *virt_txt,
+			  void *virt_data, dma_addr_t phys_txt,
+			  dma_addr_t phys_data,
+			  dma_addr_t phys_stack, void *ivt)
+{
+	u16 ind;
+	void *src;
+	void *dst;
+	u32 ivt_tbl[3] = {0};
+
+	for (ind = 0; ind < num_secs; ind++) {
+		if (!secs[ind].need_copy)
+			continue;
+
+		src = secs[ind].data;
+
+		if (!strncmp(secs[ind].name, ".data", 5)) {
+			dst = virt_data;
+		} else {
+			dst = (void *)((unsigned long)(virt_txt) +
+					(unsigned long)(secs[ind].addr));
+		}
+
+		if (!strncmp(secs[ind].name, ".vectors", 8)) {
+			ivt_tbl[0] = le32_to_cpu(*(u32 *)src) + phys_txt;
+			ivt_tbl[1] = phys_stack;
+			ivt_tbl[2] = phys_data;
+			/* Copy to QoS */
+			memcpy(ivt, ivt_tbl, 12);
+		}
+
+		QOS_LOG_DEBUG("Section %s: COPY %llu bytes from %#lx[%#x %#x..] to %#lx\n",
+			      secs[ind].name, secs[ind].size,
+			      (unsigned long)src, *(u32 *)src,
+			      *(u32 *)(src + 4), (unsigned long)dst);
+
+		copy_section(dst, src, secs[ind].size);
+	}
 }
 
 /*
  * This function loads the firmware.
- * The firmware is built from a header which holds the major, minor
- * and build numbers.
- * Following the header are sections. Each section is composed of
- * header which holds the memory destination where this section's
- * data should be copied and the size of this section in bytes.
- * After the header comes section's data which is a stream of uint32
- * words.
- * The memory destination on section header designates offset relative
- * to either ddr (a.k.a external) or qos (a.k.a) spaces. Offsets higher
- * than FW_DDR_LOWEST refer to ddr space.
+ * The firmware binary is saved in ELF format
+ * Text section is copyied to the DDR (Dynamically allocated).
+ * The data and stack can be located in the DDR or in the DCCM. This is
+ * configurable from the DTS.
  *
  * Firmware is little endian.
  *
- * When firmware runs it writes 0xCAFECAFE to offset FW_OK_OFFSET of ddr
- * space.
+ * When firmware runs it writes FW_OK_SIGN to FW_CMD_BUFFER_DCCM_START.
  */
-int do_load_firmware(
-		struct pp_qos_dev *qdev,
-		const struct ppv4_qos_fw *fw,
-		void *ddr_base,
-		void *qos_base,
-		void *data)
+int do_load_firmware(struct pp_qos_dev *qdev, const struct ppv4_qos_fw *fw,
+		     struct pp_qos_drv_data *pdata)
 {
-	size_t size;
-	struct ppv4_qos_fw_hdr *hdr;
-	const uint8_t *cur;
-	const uint8_t *last;
-	void *dst;
-	struct ppv4_qos_fw_sec *sec;
-	uint32_t val;
+	u32 val;
+	u8 poll = 0;
+	struct device *dev = &((struct platform_device *)qdev->pdev)->dev;
+	u32 alloc_size;
+	u32 align = 4;
+	struct elf_sec *secs;
+	u16 num_secs;
+	u32 total_sz = 0;
+	u32 data_sz = 0;
+	u32 stack_sz = 0;
+	void *virt_txt;
+	void *virt_data;
+	void *virt_stack;
+	dma_addr_t phys_txt;
+	dma_addr_t phys_data;
+	dma_addr_t phys_stack; /* End of stack! */
 
-	size = fw->size;
-	hdr = (struct ppv4_qos_fw_hdr *)(fw->data);
-	hdr->major = le32_to_cpu(hdr->major);
-	hdr->minor = le32_to_cpu(hdr->minor);
-	hdr->build = le32_to_cpu(hdr->build);
-	QOS_LOG_DEBUG("Firmware size(%zu) major(%u) minor(%u) build(%u)\n",
-			size,
-			hdr->major,
-			hdr->minor,
-			hdr->build);
+	secs = kmalloc_array(QOS_ELF_MAX_SECS, sizeof(struct elf_sec),
+			     GFP_KERNEL);
+	if (!secs)
+		return -ENOMEM;
 
-	if (hdr->major != UC_VERSION_MAJOR || hdr->minor != UC_VERSION_MINOR) {
-		QOS_LOG_ERR("mismatch major %u or minor %u\n",
-				UC_VERSION_MAJOR, UC_VERSION_MINOR);
-		return -EINVAL;
+	if (elf_parse(fw->data, fw->size, secs, QOS_ELF_MAX_SECS, &num_secs)) {
+		QOS_LOG_ERR("ELF parse error!\n");
+		kfree(secs);
+		return -ENOEXEC;
 	}
 
-	qdev->fwver.major = hdr->major;
-	qdev->fwver.minor = hdr->minor;
-	qdev->fwver.build = hdr->build;
+	calc_elf_sections_sizes(secs, num_secs, &total_sz, &data_sz, &stack_sz);
 
-	last = fw->data + size - 1;
-	cur = (uint8_t *)(hdr + 1);
-	while (cur < last) {
-		sec = (struct ppv4_qos_fw_sec *)cur;
-		sec->dst = le32_to_cpu(sec->dst);
-		sec->size = le32_to_cpu(sec->size);
-		cur = (uint8_t *)(sec + 1);
-
-		if (sec->dst >= FW_DDR_LOWEST)
-			dst = ddr_base + sec->dst;
-		else
-			dst = qos_base + sec->dst;
-
-		QOS_LOG_DEBUG("Copying %u bytes (0x%08X) <-- (0x%08X)\n",
-				sec->size,
-				(unsigned int)(uintptr_t)(dst),
-				(unsigned int)(uintptr_t)(cur));
-
-		copy_section(dst, cur, sec->size);
-		cur += sec->size;
+	/* No room for data and stack as defined from DTS */
+	if ((data_sz + stack_sz) > pdata->fw_sec_data_stack.max_size) {
+		QOS_LOG_ERR("Need to alloc %u bytes while dts limits to %u\n",
+			    (data_sz + stack_sz),
+			    pdata->fw_sec_data_stack.max_size);
+		kfree(secs);
+		return -ENOMEM;
 	}
 
-	wake_uc(data);
+	QOS_LOG_INFO("=====> fw_data_stack_off %d, %d, %d\n",
+		     pdata->fw_sec_data_stack.is_in_dccm,
+		     pdata->fw_sec_data_stack.dccm_offset,
+		     pdata->fw_sec_data_stack.max_size);
+
+	/* Is data stack sections in DCCM */
+	if (pdata->fw_sec_data_stack.is_in_dccm) {
+		alloc_size = ALIGN(total_sz, align);
+	} else { /* DDR */
+		alloc_size = ALIGN(total_sz, align) +
+			     ALIGN(data_sz, align) +
+			     ALIGN(stack_sz, align);
+	}
+
+	virt_txt = dmam_alloc_coherent(dev, alloc_size, &phys_txt, GFP_KERNEL);
+	if (!virt_txt) {
+		QOS_LOG_ERR("Could not allocate %u bytes for fw\n", alloc_size);
+		kfree(secs);
+		return -ENOMEM;
+	}
+
+	/* Is data stack sections in DCCM */
+	if (pdata->fw_sec_data_stack.is_in_dccm) {
+		phys_data = FW_DCCM_START +
+			    pdata->fw_sec_data_stack.dccm_offset;
+		virt_data = pdata->dccm + pdata->fw_sec_data_stack.dccm_offset;
+	} else { /* DDR */
+		phys_data = phys_txt + ALIGN(total_sz, align);
+		virt_data = virt_txt + ALIGN(total_sz, align);
+	}
+
+	phys_stack = phys_data + ALIGN(data_sz, align) +
+		     ALIGN(stack_sz, align) - 4;
+	virt_stack = virt_data + ALIGN(data_sz, align) +
+		     ALIGN(stack_sz, align) - 4;
+
+	QOS_LOG_DEBUG("Text %#x [%#lx] (%d), Data %#x (%d), Stack %#x (%d)\n",
+		      phys_txt,
+		      (unsigned long)(virt_txt),
+		      total_sz,
+		      phys_data, data_sz,
+		      phys_stack, stack_sz);
+
+	copy_sections(secs, num_secs, virt_txt, virt_data, phys_txt,
+		      phys_data, phys_stack, pdata->ivt);
+
+	kfree(secs);
+
+	wake_uc((void *)pdata);
 	QOS_LOG_DEBUG("waked fw\n");
-	qos_sleep(10);
-	val = *((uint32_t *)(qdev->fwcom.cmdbuf));
-	if (val != FW_OK_SIGN) {
-		QOS_LOG_ERR("FW OK value is 0x%08X, instead got 0x%08X\n",
-				FW_OK_SIGN, val);
-		return  -ENODEV;
-	}
 
-	QOS_LOG_INFO("QoS FW ver %d.%d.%d was loaded\n", qdev->fwver.major,
-		     qdev->fwver.minor, qdev->fwver.build);
+	do {
+		poll++;
+		qos_sleep(10);
+		val = *((uint32_t *)(qdev->fwcom.cmdbuf));
+		if (poll == 3) {
+			QOS_LOG_ERR("FW OK value is 0x%08X, got 0x%08X\n",
+				    FW_OK_SIGN, val);
+			return -ENODEV;
+		}
+	} while (val != FW_OK_SIGN);
+
+	QOS_LOG_INFO("PPV4 QoS FW is running (%d polls) :)\n", poll);
+
 	*((uint32_t *)(qdev->fwcom.cmdbuf)) = 0;
 	return 0;
 }
@@ -600,7 +697,7 @@ void create_remove_node_cmd(
 	}
 		break;
 	case TYPE_UNKNOWN:
-		QOS_ASSERT(0, "Unexpected unknow type\n");
+		QOS_ASSERT(0, "Unexpected unknown type\n");
 		ctype = CMD_TYPE_REMOVE_NODE;
 		break;
 	default:
@@ -1838,7 +1935,7 @@ static void set_child(
 		child->bw_share = conf->bandwidth_share;
 	}
 
-	// Should be changed. Currently both are using bw_share variable
+	/* Should be changed. Currently both are using bw_share variable */
 	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_SHARED_GROUP_ID)) {
 		QOS_BITS_SET(valid, TSCD_NODE_CONF_SHARED_BWL_GROUP);
 		child->bw_share = conf->bandwidth_share;
@@ -2474,7 +2571,7 @@ static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
  * Go over all commands on pending queue until cmd id
  * is changed or queue is empty
  * (refer to driver design document to learn more about cmd id).
- * On current implmentation it is expected that pending queue contain
+ * On current implementation it is expected that pending queue contain
  * firmware commands for a single client command, therfore queue should
  * become empty before cmd id is changed.
  *
@@ -2554,9 +2651,6 @@ void check_completion(struct pp_qos_dev *qdev)
 	internals->pushed = 0;
 	qdev->drvcmds.cmd_fw_id = 0;
 }
-
-#define FW_CMD_BUFFER_DCCM_START 0xF0006000
-
 
 /*
  * Take all commands from driver cmd queue, translate them to
