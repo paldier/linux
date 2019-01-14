@@ -593,6 +593,9 @@ static int ltq_spi_setup(struct spi_device *spi)
 	if (spi->bits_per_word > 32)
 		return -EINVAL;
 
+	/* Set the Polarity */
+	ltq_spi_clockmode_set(spi);
+
 	/* GPIOs are used for CS */
 	if (gpio_is_valid(spi->cs_gpio))
 		return 0;
