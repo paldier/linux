@@ -6,8 +6,8 @@
  * under the terms of the GNU General Public License version 2 as published
  * by the Free Software Foundation.
  */
-#ifndef DATAPATH_API_FALCONMX_H
-#define DATAPATH_API_FALCONMX_H
+#ifndef DATAPATH_API_PRX300_H
+#define DATAPATH_API_PRX300_H
 
 #ifdef CONFIG_LITTLE_ENDIAN
 struct dma_rx_desc_0 {
@@ -316,4 +316,4 @@ struct pmac_tx_hdr { /*Ingress PMAC header*/
 } __packed;
 #endif
 
-#endif /*DATAPATH_API_FALCONMX_H*/
+#endif /*DATAPATH_API_PRX300_H*/

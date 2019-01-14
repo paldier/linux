@@ -754,7 +754,6 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag);
 int register_dp_cap(u32 flag);
 int print_symbol_name(unsigned long addr);
 typedef GSW_return_t(*dp_gsw_cb)(void *, void *);
-void falcon_test(void); /*defined in Pp qos driver */
 int bp_pmapper_dev_get(int inst, struct net_device *dev);
 
 extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle,

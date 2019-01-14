@@ -916,7 +916,7 @@ struct dp_dequeue_res {
 			    *    Normally this value should be 1.
 			    *    For GPON case, if cqm_deq_port ==
 			    *        DEQ_PORT_OFFSET_ALL, then it will be the
-			    *    max number of dequeue port. In falcon-mx, it is
+			    *    max number of dequeue port. In PRX300, it is
 			    *    64.</PRE>
 			    */
 	int num_q; /*!< output: the number of queues*/

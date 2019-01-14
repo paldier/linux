@@ -19,7 +19,7 @@
 #include "datapath_swdev_api.h"
 
 #ifdef CONFIG_PRX300_CQM
-#define LTQ_DATAPATH_SOC_FALCON_MX
+#define LTQ_DATAPATH_SOC_PRX300
 #endif
 
 int request_dp(u32 flag)

@@ -134,7 +134,7 @@ enum DP_F_FLAG {
 						*! For GRX350, seems need this
 						*flag becase of VLAN talbe
 						*handling inside PPA.
-						*! For Falcon-MX, normally no
+						*! For PRX300, normally no
 						*need this flag.
 						*Used by dp_register_subif
 						*/
@@ -257,7 +257,7 @@ typedef struct dp_subif {
 	union {
 		s32 subif; /*!< Sub-interface Id as HW defined
 			    * in full length
-			    * In GRX500/Falcon-MX, it is 15 bits
+			    * In GRX500/PRX300, it is 15 bits
 			    */
 		s32 subif_list[DP_MAX_CTP_PER_DEV]; /*!< subif list */
 	};
@@ -733,7 +733,7 @@ struct dp_port_data {
 /*! @brief typedef struct dp_dev_data */
 struct dp_dev_data {
 #define DP_RXOUT_RING_NUM 2  /*!< maximum number of ACA TXOUT ring support
-			      *   For GRX500/Falcon_mx, only support 1 ring
+			      *   For GRX500/PRX300, only support 1 ring
 			      *   For LGM, maximum up to 2 rings
 			      */
 	int rxout_ring_size[DP_RXOUT_RING_NUM]; /*!< [in/out]
@@ -742,12 +742,12 @@ struct dp_dev_data {
 						 *   otherwise try to set as
 						 *   requested. Only allowed to
 						 *   tune down.
-						 *   GRX350/Falcon_MX: 1 ring
+						 *   GRX350/PRX300: 1 ring
 						 *   LGM: up to 2 rings
 						 */
 	void *rxout_phy_addr[DP_RXOUT_RING_NUM]; /*!< [out] rxout ring buf
 						  *   physical address
-						  *   GRX350/Falcon_MX: 1 ring
+						  *   GRX350/PRX300: 1 ring
 						  *   LGM: up to 2 rings
 						  *   If NULL, it means no
 						  *   valid
@@ -774,12 +774,12 @@ struct dp_dev_data {
 						*   otherwise try to set as
 						*   requested. Only allowed to
 						*   tune down.
-						*   GRX350/Falcon_MX: 1 ring
+						*   GRX350/PRX300: 1 ring
 						*   LGM: up to 2 rings
 						*/
 	void *rxin_phy_addr[DP_RXOUT_RING_NUM]; /*!< [out] rxin ring buf
 						 *  physical address
-						 *  GRX350/Falcon_MX: 1 ring
+						 *  GRX350/PRX300: 1 ring
 						 *  LGM: up to 2 rings
 						 *  If NULL, it means no
 						 *  valid
@@ -837,7 +837,7 @@ struct dp_dev_data {
 	void *txout_ring_base_phy_addr; /*!< [out] ACA TXOUT(Free) base register
 					 *   physical address
 					 */
-	int txout_policy_base; /*!< [out] For falcon_mx: For legacy ACA to free
+	int txout_policy_base; /*!< [out] For PRX300: For legacy ACA to free
 				*   BM buffer
 				*         for LGM, it is base policy.
 				*   Note: For LGM, each ACA device needs to
@@ -845,14 +845,14 @@ struct dp_dev_data {
 				*   the buffer since its information may lost
 				*/
 	int txout_poolid; /*!< [out] For legacy ACA to free BM buffer in
-			   *   in falcon_mx
+			   *   in PRX300
 			   */
 	u16 max_ctp;    /*!< [in] maximum subif required which will be mapped to
 			 * GSWIP continuous CTP block.
 			 * Since very limited CTP in GSWIP and it is already
 			 * out of range, some drivers have to specify this
 			 * parameter to save the system resource, for example
-			 * of G.INIT in falcon_mx:
+			 * of G.INIT in PRX300:
 			 * 1) single LAN port only: it is value should be 16
 			 * 2) two Lan Ports:
 			 *      a) 1st lan port: 8 CPT with 8 subif only

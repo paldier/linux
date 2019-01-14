@@ -500,7 +500,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			if (!(flags & DP_F_ALLOC_EXPLICIT_SUBIFID)) {
 				/*Share same subif with its base device
 				 *For GRX350: nothing need except save it
-				 *For Falcon_Mx: it need to allocate BP for it
+				 *For PRX300: it need to allocate BP for it
 				 */
 				res = add_logic_dev(inst, port_id, dev,
 						    subif_id, flags);
@@ -716,7 +716,7 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 			 port_id, i, cqm_port);
 	}
 	/* for pmapper and non-pmapper both
-	 *  1)for falcon_mx, dev is managed at its HAL level
+	 *  1)for PRX300, dev is managed at its HAL level
 	 *  2)for GRX350, bp/dev should be always zero/NULL at present
 	 *        before adapting to new datapath framework
 	 */
@@ -2751,12 +2751,9 @@ int dp_basic_proc(void)
 	if (dp_init_ok) /*alredy init */
 		return 0;
 	register_notifier(0);
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS_VIA_FALCON_TEST
-	PR_INFO("\n\n--Falcon_test to simulate SLIM QOS drv---\n\n\n");
-	falcon_test();  /*Must put before register_dp_cap
-			 *since it needs to do CPU path cfg
-			 */
-#endif /*CONFIG_LTQ_DATAPATH_DUMMY_QOS_VIA_FALCON_TEST*/
+#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST
+	PR_INFO("\n\n--prx300_test to simulate SLIM QOS drv---\n\n\n");
+#endif /*CONFIG_LTQ_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST*/
 	register_dp_cap(0);
 	if (request_dp(0)) /*register 1st dp instance */ {
 		PR_ERR("register_dp instance fail\n");

@@ -130,11 +130,11 @@ config LTQ_DATAPATH_PTP1588_SW_WORKAROUND
           PTP1588 Software Workaround
 
 config LTQ_DATAPATH_DDR_SIMULATE_GSWIP31
-	bool "Force FALCON-MX SOC"
+	bool "Force PRX300 SOC"
 	default n
 	depends on LTQ_DATAPATH
 	---help---
-	  test falcon-mx HAL in GRX350 boards
+	  test prx300 HAL in GRX350 boards
 source "drivers/net/ethernet/lantiq/datapath/gswip31/Kconfig"
 source "drivers/net/ethernet/lantiq/datapath/gswip30/Kconfig"
 endif
