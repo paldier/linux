@@ -64,7 +64,7 @@ static int buffer_manager_remove(struct platform_device *pdev);
 #define RC_SUCCESS	(0)
 
 static const struct of_device_id bm_match[] = {
-	{ .compatible = "intel,falconmx-bm" },
+	{ .compatible = "intel,prx300-bm" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, bm_match);

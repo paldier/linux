@@ -97,7 +97,7 @@ int load_firmware(struct pp_qos_dev *qdev, const char *name)
 }
 
 static const struct of_device_id pp_qos_match[] = {
-	{ .compatible = "intel,falconmx-ppv4qos" },
+	{ .compatible = "intel,prx300-ppv4qos" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, pp_qos_match);
