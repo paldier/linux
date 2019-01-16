@@ -348,6 +348,8 @@ static int ltq_eth_open(struct net_device *dev)
 		return -1;
 	}
 
+	if (g_soc_data.mtu_limit)
+		ltq_change_mtu(dev, g_soc_data.mtu_limit);
 	return 0;
 }
 
@@ -682,8 +684,11 @@ static int ltq_change_mtu(struct net_device *dev, int new_mtu)
 {
 	struct ltq_eth_priv *priv = netdev_priv(dev);
 
-	if (new_mtu < ETH_ZLEN || new_mtu > LTQ_ETH_MAX_DATA_LEN)
+	if ((new_mtu < ETH_ZLEN || new_mtu > LTQ_ETH_MAX_DATA_LEN) ||
+	    ((g_soc_data.mtu_limit) && (new_mtu > g_soc_data.mtu_limit))) {
+		pr_err("%s: Invalid MTU size %u\n", __func__, new_mtu);
 		return -EINVAL;
+	}
 
 	if (g_eth_switch_mode == 0) {
 		if (priv->xgmac_id >= 0) {
@@ -2356,7 +2361,15 @@ static const struct ltq_net_soc_data xrx500_net_data = {
 	.phy_connect_func = &xrx500_mdio_probe,
 };
 
-static const struct ltq_net_soc_data prx300_net_data = {
+static const struct ltq_net_soc_data prx300_net_data_a = {
+	.need_defer = false,
+	.hw_checksum = false,
+	.queue_num = 8,
+	.mtu_limit = 1600,
+	.phy_connect_func = &prx300_phy_connect,
+};
+
+static const struct ltq_net_soc_data prx300_net_data_b = {
 	.need_defer = false,
 	.hw_checksum = false,
 	.queue_num = 8,
@@ -2365,7 +2378,8 @@ static const struct ltq_net_soc_data prx300_net_data = {
 
 static const struct of_device_id ltq_eth_drv_match[] = {
 	{ .compatible = "lantiq,xrx500-eth", .data = &xrx500_net_data},
-	{ .compatible = "lantiq,prx300-eth", .data = &prx300_net_data},
+	{ .compatible = "lantiq,prx300-eth-a", .data = &prx300_net_data_a},
+	{ .compatible = "lantiq,prx300-eth-b", .data = &prx300_net_data_b},
 	{},
 };
 MODULE_DEVICE_TABLE(of, ltq_eth_drv_match);
