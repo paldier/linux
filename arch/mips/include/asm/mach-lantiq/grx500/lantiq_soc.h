@@ -32,16 +32,16 @@
 
 /* SoC Types */
 #define SOC_TYPE_GRX500		0x09
-#define SOC_TYPE_FALCONMX	0x0a
+#define SOC_TYPE_PRX300		0x0a
 
 static inline int ltq_is_grx500(void)
 {
 	return (ltq_get_soc_type() == SOC_TYPE_GRX500);
 }
 
-static inline int ltq_is_falconmx(void)
+static inline int ltq_is_prx300(void)
 {
-	return (ltq_get_soc_type() == SOC_TYPE_FALCONMX);
+	return (ltq_get_soc_type() == SOC_TYPE_PRX300);
 }
 
 /* BOOT_SEL - find what boot media we have */

@@ -198,7 +198,7 @@ static int intel_wan_xpcs_phy_probe(struct platform_device *pdev)
 }
 
 static const struct of_device_id of_intel_wan_xpcs_phy_match[] = {
-	{ .compatible = "intel,wanxpcsphy-falconmx" },
+	{ .compatible = "intel,wanxpcsphy-prx300" },
 	{}
 };
 MODULE_DEVICE_TABLE(of, of_intel_wan_xpcs_phy_match);

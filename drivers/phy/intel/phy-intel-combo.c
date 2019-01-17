@@ -1109,7 +1109,7 @@ static void twh_combo_phy_mode_set(struct intel_combo_phy *priv)
 }
 
 /* Falconmx platform data */
-static unsigned long falconmx_get_clk_rate(enum intel_phy_mode mode)
+static unsigned long prx300_get_clk_rate(enum intel_phy_mode mode)
 {
 	if (mode == PHY_PCIE_MODE) {
 		return CLK_100MHZ;
@@ -1121,7 +1121,7 @@ static unsigned long falconmx_get_clk_rate(enum intel_phy_mode mode)
 	return 0;  /* Other mode No support */
 }
 
-static u32 falconmx_get_phy_cap(unsigned int id)
+static u32 prx300_get_phy_cap(unsigned int id)
 {
 	const unsigned int phy_num = 1;
 
@@ -1131,7 +1131,7 @@ static u32 falconmx_get_phy_cap(unsigned int id)
 		return 0;
 }
 
-static void falconmx_combo_phy_mode_set(struct intel_combo_phy *priv)
+static void prx300_combo_phy_mode_set(struct intel_combo_phy *priv)
 {
 	const int reg_off = 0x120;
 	const int bit_off = 2;
@@ -1160,16 +1160,16 @@ static const struct intel_cbphy_soc_data twh_phy_data = {
 	.combo_phy_mode_set = twh_combo_phy_mode_set,
 };
 
-static const struct intel_cbphy_soc_data falconmx_phy_data = {
-	.name = "Falcon MX",
-	.get_clk_rate = falconmx_get_clk_rate,
-	.get_phy_cap = falconmx_get_phy_cap,
-	.combo_phy_mode_set = falconmx_combo_phy_mode_set,
+static const struct intel_cbphy_soc_data prx300_phy_data = {
+	.name = "PRX300",
+	.get_clk_rate = prx300_get_clk_rate,
+	.get_phy_cap = prx300_get_phy_cap,
+	.combo_phy_mode_set = prx300_combo_phy_mode_set,
 };
 
 static const struct of_device_id of_intel_combo_phy_match[] = {
 	{ .compatible = "intel,combophy-twh", .data = &twh_phy_data },
-	{ .compatible = "intel,combophy-falconmx", .data = &falconmx_phy_data },
+	{ .compatible = "intel,combophy-prx300", .data = &prx300_phy_data },
 	{}
 };
 MODULE_DEVICE_TABLE(of, of_intel_combo_phy_match);

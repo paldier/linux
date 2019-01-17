@@ -24,10 +24,10 @@
 
 #define SOC_GRX500		"GRX500"
 #define SOC_GRX350		"GRX350"
-#define SOC_FALCONMX		"FALCONMX"
+#define SOC_PRX300		"PRX300"
 
 #define COMP_GRX500		"lantiq,grx500"
-#define COMP_FALCONMX		"intel,falconmx"
+#define COMP_PRX300		"intel,prx300"
 
 #define PART_SHIFT		12
 #define PART_MASK		0x0FFFFFFF
@@ -236,9 +236,9 @@ static void __init ltq_soc_detect(struct ltq_soc_info *i)
 	case SOC_ID_FMX_SFP:
 	case SOC_ID_FMX_SFU:
 	case SOC_ID_FMX_DPU:
-		i->name = SOC_FALCONMX;
-		i->type = SOC_TYPE_FALCONMX;
-		i->compatible = COMP_FALCONMX;
+		i->name = SOC_PRX300;
+		i->type = SOC_TYPE_PRX300;
+		i->compatible = COMP_PRX300;
 		break;
 	default:
 		unreachable();
