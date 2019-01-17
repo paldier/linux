@@ -20,6 +20,7 @@
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/pm_opp.h>
+#include <linux/cpufreq.h>
 #include <lantiq_soc.h>
 
 #define VERSIONS_COUNT 1
@@ -34,6 +35,46 @@
 #define SOC_HW_ID_GRX3506	0x40
 #define SOC_HW_ID_GRX3508	0x80
 #define SOC_HW_ID_IRX200	0x100
+
+extern unsigned long loops_per_jiffy;
+static int xrx500_cpufreq_transition_notifier(struct notifier_block *nb,
+					unsigned long val, void *data);
+
+/* MIPS cpu_data[] structure has no per_cpu jiffiy variable like arm.
+   Therefore we just have one global loops_per_jiffy. The adjust_jiffies()
+   function in the core cpufreq.c module is active only for none SMP systems.
+   xrx500 has CONFIG_SMP set, therefore we need this implementation here.
+   CPUFREQ_TRANSITION_NOTIFIER is called for every CPU running Linux.
+   That means we have to consider that loops_per_jiffy is changed only once
+   during one frequency transition.
+*/
+static int one_trans = 0;
+static struct notifier_block xrx500_cpufreq_transition_notifier_block = {
+	.notifier_call = xrx500_cpufreq_transition_notifier
+};
+
+static int xrx500_cpufreq_transition_notifier(struct notifier_block *nb,
+					unsigned long val, void *data)
+{
+	struct cpufreq_freqs *freq = data;
+
+	if (val == CPUFREQ_PRECHANGE) {
+		one_trans = 1;
+	}
+
+	if (val == CPUFREQ_POSTCHANGE) {
+		if (one_trans) {
+			loops_per_jiffy = cpufreq_scale(loops_per_jiffy,
+							freq->old,
+							freq->new);
+			one_trans = 0;
+		}
+		/* adjust udelay for each cpu */
+		cpu_data[freq->cpu].udelay_val = loops_per_jiffy;
+
+	}
+	return NOTIFY_OK;
+}
 
 static unsigned int xrx500_pnum2version(struct device *dev, unsigned int id)
 {
@@ -102,6 +143,13 @@ static int xrx500_cpufreq_driver_init(void)
 	ret = xrx500_opp_set_supported_hw(cpu_dev);
 	if (ret)
 		return ret;
+
+	if (cpufreq_register_notifier(
+				&xrx500_cpufreq_transition_notifier_block,
+				CPUFREQ_TRANSITION_NOTIFIER)) {
+		pr_err("Fail in registering xrx500-cpufreq to CPUFreq\n");
+		return -ENODEV;
+	}
 
 	/* Instantiate cpufreq-dt */
 	platform_device_register_full(&devinfo);
