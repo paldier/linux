@@ -22,13 +22,6 @@
 
 #include "prom.h"
 
-#define SOC_GRX500		"GRX500"
-#define SOC_GRX350		"GRX350"
-#define SOC_PRX300		"PRX300"
-
-#define COMP_GRX500		"lantiq,grx500"
-#define COMP_PRX300		"intel,prx300"
-
 #define PART_SHIFT		12
 #define PART_MASK		0x0FFFFFFF
 #define REV_SHIFT		28

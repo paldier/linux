@@ -24,7 +24,7 @@
 #define SOC_ID_GRX3508		0x028
 #define SOC_ID_IRX200		0x02F
 
-/* FalconMX family chipid */
+/* PRX300 family chipid */
 #define SOC_ID_FMX_FIBERPHY	0x002 /* HGU */
 #define SOC_ID_FMX_SFU		0x003
 #define SOC_ID_FMX_SFP		0x004
@@ -33,6 +33,15 @@
 /* SoC Types */
 #define SOC_TYPE_GRX500		0x09
 #define SOC_TYPE_PRX300		0x0a
+
+/* SoC Name */
+#define SOC_GRX500		"GRX500"
+#define SOC_GRX350		"GRX350"
+#define SOC_PRX300		"PRX300"
+
+/* SoC compatible */
+#define COMP_GRX500		"lantiq,grx500"
+#define COMP_PRX300		"intel,prx300"
 
 static inline int ltq_is_grx500(void)
 {

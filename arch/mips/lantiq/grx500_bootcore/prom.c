@@ -23,13 +23,6 @@
 #include "clk.h"
 
 
-#define SOC_GRX500      "GRX500"
-#define SOC_GRX350      "GRX350"
-#define SOC_FALCONMX    "FALCONMX"
-
-#define COMP_GRX500     "lantiq,grx500"
-#define COMP_FALCONMX   "intel,falconmx"
-
 #ifdef CONFIG_USE_EMULATOR
 #define SOC_ID_PD 0
 #endif
@@ -178,9 +171,9 @@ void __init ltq_soc_detect(struct ltq_soc_info *i)
         case SOC_ID_FMX_SFP:
         case SOC_ID_FMX_SFU:
         case SOC_ID_FMX_DPU:
-                i->name = SOC_FALCONMX;
-                i->type = SOC_TYPE_FALCONMX;
-                i->compatible = COMP_FALCONMX;
+                i->name = SOC_PRX300;
+                i->type = SOC_TYPE_PRX300;
+                i->compatible = COMP_PRX300;
                 break;
 
 #ifdef CONFIG_USE_EMULATOR
