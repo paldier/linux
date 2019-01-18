@@ -1527,7 +1527,7 @@ xrx500_of_port(struct net_device *dev, struct device_node *port)
 		if (of_irq_to_resource_table(port, &irqres, 1) == 1)
 			p->irq_num = irqres.start;
 		else
-			pr_info("couldn't get irq number for gphy !!\n");
+			pr_debug("couldn't get irq number for gphy !!\n");
 	}
 
 	p->num = *id;
