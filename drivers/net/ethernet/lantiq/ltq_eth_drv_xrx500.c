@@ -778,11 +778,11 @@ static int ltq_eth_init(struct net_device *dev)
 			pr_warn("connect phy of port %d failed\n",
 				priv->port[i].num);
 
-		dev->ethtool_ops = &ethtool_ops;
-	}
-
-	if (!priv->port[i].phy_node) {
-		dev->ethtool_ops = &serdes_ethtool_ops;
+		if (priv->port[i].phy_node)
+			dev->ethtool_ops = &ethtool_ops;
+		else if (IS_ENABLED(CONFIG_INTEL_XPCS))
+			/* without xpcs node the num_port would be 0 */
+			dev->ethtool_ops = &serdes_ethtool_ops;
 	}
 
 	if (priv->lct_en == 1) {
@@ -1510,6 +1510,9 @@ xrx500_of_port(struct net_device *dev, struct device_node *port)
 				pr_err("can not get phy dev for fixed link\n");
 			p->phydev = phy;
 			netif_carrier_on(dev);
+		} else if (priv->xpcs_node) {
+			pr_debug("no PHY but connected to xpcs: %s\n",
+				of_node_full_name(priv->xpcs_node));
 		} else {
 			pr_info("no interface attached to this interface!\n");
 			return;
@@ -2039,6 +2042,9 @@ static int prx300_phy_connect(struct net_device *dev, struct xrx500_port *port)
 	struct phy_device *phydev = NULL;
 	struct ltq_eth_priv *priv = NULL;
 	struct mac_ops *ops;
+
+	if (!port->phy_node)
+		return 0;
 
 	priv = netdev_priv(dev);
 
