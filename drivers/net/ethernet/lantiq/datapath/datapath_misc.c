@@ -1351,20 +1351,20 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 	if (flags & DP_F_DEREGISTER) {
 
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
-					      subif_id, 0))
+					      &subif_id[0], 0))
 			*f_subif_up = 0;
 		else
 			*f_subif_up = 1;
 	} else {
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data,
-					      NULL, subif_id, 0)) {
+					      NULL, &subif_id[0], 0)) {
 			PR_ERR("DP subif synchronization fail\n");
 			return DP_FAILURE;
 		}
 		if (data->ctp_dev) {
 			if (dp_get_netif_subifid_priv(data->ctp_dev, NULL,
 						      subif_data, NULL,
-						      subif_id, 0))
+						      &subif_id[1], 0))
 				return DP_FAILURE;
 		}
 		*f_subif_up = 1;
@@ -1390,21 +1390,21 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 	/*check flag for register / deregister to update/del */
 	if (flags & DP_F_DEREGISTER) {
 		if (data->ctp_dev)
-			dp_del_subif(data->ctp_dev, subif_data, subif_id,
+			dp_del_subif(data->ctp_dev, subif_data, &subif_id[1],
 				     NULL, flags);
 
 		if (*f_subif_up == 0)
-			dp_del_subif(dev, subif_data, subif_id, subif_name,
+			dp_del_subif(dev, subif_data, &subif_id[0], subif_name,
 				     flags);
 		else if (*f_subif_up == 1)
-			dp_update_subif(dev, subif_data, subif_id, subif_name,
-					flags, subifid_fn);
+			dp_update_subif(dev, subif_data, &subif_id[0],
+					subif_name, flags, subifid_fn);
 	} else {
 		if (*f_subif_up == 1) {
-			dp_update_subif(dev, subif_data, subif_id, subif_name,
-					flags, subifid_fn);
+			dp_update_subif(dev, subif_data, &subif_id[0],
+					subif_name, flags, subifid_fn);
 		if (data->ctp_dev)
-			dp_update_subif(data->ctp_dev, subif_data, subif_id,
+			dp_update_subif(data->ctp_dev, subif_data, &subif_id[1],
 					NULL, flags, subifid_fn);
 		}
 	}

@@ -923,6 +923,7 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 	int port_id, f_subif = -1;
 	struct pmac_port_info *port_info;
 	struct dp_subif_data tmp_data = {0};
+	dp_subif_t *subif_id_sync;
 	dp_get_netif_subifid_fn_t subifid_fn_t = NULL;
 
 	if (unlikely(!dp_init_ok)) {
@@ -999,12 +1000,21 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 					  subif_id, data, flags);
 	if (!(flags & DP_F_SUBIF_LOGICAL))
 		subifid_fn_t = port_info->cb.get_subifid_fn;
-	dp_sync_subifid(dev, subif_name, subif_id, data, flags, &f_subif);
+	
+	subif_id_sync = kmalloc(sizeof(*subif_id_sync) * 2, GFP_KERNEL);
+	if (!subif_id_sync) {
+		PR_ERR("Failed to alloc %d bytes\n",
+		       sizeof(*subif_id_sync) * 2);
+		return DP_FAILURE;
+	}
+	memcpy(&subif_id_sync[0], subif_id, sizeof(dp_subif_t));
+	memcpy(&subif_id_sync[1], subif_id, sizeof(dp_subif_t));
+	dp_sync_subifid(dev, subif_name, subif_id_sync, data, flags, &f_subif);
 	DP_LIB_UNLOCK(&dp_lock);
 	if (!res)
-		dp_sync_subifid_priv(dev, subif_name, subif_id, data, flags,
-				     subifid_fn_t, &f_subif);
-
+		dp_sync_subifid_priv(dev, subif_name, subif_id_sync, data,
+				     flags, subifid_fn_t, &f_subif);
+	kfree(subif_id_sync);
 	return res;
 }
 EXPORT_SYMBOL(dp_register_subif_ext);
@@ -1198,8 +1208,9 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif_flag[num] = PORT_SUBIF(inst, k, i,
 								subif_flag);
 					if (dp_port_info[inst][k].subif_info[i].
-						ctp_dev)
+						ctp_dev) {
 						subif->flag_pmapper = 1;
+					}
 					bport = PORT_SUBIF(inst, k, i, bp);
 					if (num &&
 					    (bport != dp_port_info[inst][k].
