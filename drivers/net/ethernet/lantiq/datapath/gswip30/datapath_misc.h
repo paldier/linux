@@ -62,10 +62,8 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg);
 static inline GSW_return_t gsw_core_api(dp_gsw_cb func,
 					void *ops, void *param)
 {
-	#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
-		if (dp_dbg_flag & DP_DBG_FLAG_GSWIP_API)
-			print_symbol_name((unsigned long)func);
-	#endif
+	if (!func)
+		return DP_FAILURE;
 	return func(ops, param);
 }
 

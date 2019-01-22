@@ -1016,32 +1016,6 @@ int inet_pton6(const char *src, u_char *dst)
 	return 1;
 }
 
-int mac_stob(const char *mac, u8 bytes[6])
-{
-	unsigned int values[6];
-	int i;
-	int f = 0;
-
-	if (!mac || !bytes)
-		return -1;
-
-	if (6 ==
-	    sscanf(mac, "%x:%x:%x:%x:%x:%x", &values[0], &values[1],
-		   &values[2], &values[3], &values[4], &values[5]))
-		f = 1;
-	else if (6 ==
-		 sscanf(mac, "%x-%x-%x-%x-%x-%x", &values[0], &values[1],
-			&values[2], &values[3], &values[4], &values[5]))
-		f = 1;
-
-	if (f) {		/* convert to uint8_t */
-		for (i = 0; i < 6; ++i)
-			bytes[i] = (u8)values[i];
-		return 0;
-	}
-	return -1;
-}
-
 int low_10dec(u64 x)
 {
 	char buf[26];
@@ -1114,23 +1088,6 @@ int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo)
 		PR_ERR("Not a VLAN device\n");
 		return -1;
 	}
-	return 0;
-}
-
-/*Print call callback orginal function name */
-int print_symbol_name(unsigned long addr)
-{
-	unsigned long size;
-	unsigned long offset;
-	char *modname;
-	char namebuf[KSYM_NAME_LEN];
-	char *sym_name;
-
-	namebuf[0] = 0;
-	sym_name = (char *)kallsyms_lookup(addr, &size, &offset, &modname,
-		namebuf);
-	PR_ERR("call API:%s @0x%lx\n", sym_name ? sym_name : "Unknown",
-	       (unsigned long)addr);
 	return 0;
 }
 

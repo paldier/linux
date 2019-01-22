@@ -176,6 +176,23 @@ static inline int parser_enabled(int ep, struct dma_rx_desc_1 *desc_1)
 	return 0;
 }
 
+struct inst_property *get_dp_port_prop(int inst)
+{
+	if (!((inst < 0) || (inst >= DP_MAX_INST)))
+		return &dp_port_prop[inst];
+	return NULL;
+}
+EXPORT_SYMBOL(get_dp_port_prop);
+
+struct pmac_port_info *get_dp_port_info(int inst, int index)
+{
+	if (!((inst < 0) || (inst >= DP_MAX_INST)) &&
+	    (index < dp_port_prop[inst].info.cap.max_num_dp_ports))
+		return &dp_port_info[inst][index];
+	return NULL;
+}
+EXPORT_SYMBOL(get_dp_port_info);
+
 struct pmac_port_info *get_port_info(int inst, int index)
 {
 	if (index < dp_port_prop[inst].info.cap.max_num_dp_ports)
@@ -205,7 +222,7 @@ struct pmac_port_info *get_port_info_via_dp_port(int inst, int dp_port)
 	return NULL;
 }
 
-struct pmac_port_info *get_port_info_via_dp_name(struct net_device *dev)
+struct pmac_port_info *get_port_info_via_dev(struct net_device *dev)
 {
 	int i;
 	int inst = dp_get_inst_via_dev(dev, NULL, 0);

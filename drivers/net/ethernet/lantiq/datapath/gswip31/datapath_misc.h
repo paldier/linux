@@ -179,11 +179,6 @@ GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param);
 
 static inline GSW_return_t gsw_core_api(dp_gsw_cb func, void *ops, void *param)
 {
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
-	if (dp_dbg_flag & DP_DBG_FLAG_GSWIP_API)
-		print_symbol_name((unsigned long)func);
-#endif /*CONFIG_LTQ_DATAPATH_DBG*/
-
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
 	{
 		GSW_return_t res;
@@ -193,6 +188,8 @@ static inline GSW_return_t gsw_core_api(dp_gsw_cb func, void *ops, void *param)
 			return res;
 	}
 #endif /*CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31*/
+	if (!func)
+		return DP_FAILURE;
 	return func(ops, param);
 }
 

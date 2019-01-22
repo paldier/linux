@@ -62,6 +62,13 @@ u16 dp_swdev_cal_hash(unsigned char *name)
 	return (u16)(hash & 0x3F);
 }
 
+struct hlist_head *get_dp_g_bridge_id_entry_hash_table_info(int instance,
+							    int index)
+{
+	return &g_bridge_id_entry_hash_table[instance][index];
+}
+EXPORT_SYMBOL(get_dp_g_bridge_id_entry_hash_table_info);
+
 int dp_get_fid_by_brname(struct net_device *dev, int *inst)
 {
 	struct br_info *br_info;

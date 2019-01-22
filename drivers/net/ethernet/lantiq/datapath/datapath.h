@@ -669,7 +669,7 @@ ssize_t proc_print_mode_write(struct file *file, const char *buf,
 			      size_t count, loff_t *ppos);
 void proc_print_mode_read(struct seq_file *s);
 int parser_size_via_index(u8 index);
-struct pmac_port_info *get_port_info_via_dp_name(struct net_device *dev);
+struct pmac_port_info *get_port_info_via_dev(struct net_device *dev);
 void dp_clear_mib(dp_subif_t *subif, uint32_t flag);
 extern u32 dp_drop_all_tcp_err;
 extern u32 dp_pkt_size_check;
@@ -724,13 +724,14 @@ int inet_pton6(const char *src, u_char *dst);
 int low_10dec(u64 x);
 int high_10dec(u64 x);
 int dp_atoi(unsigned char *str);
-int mac_stob(const char *mac, u8 bytes[6]);
 int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 			    u32 *tcp_h_offset,
 			    u32 *tcp_type);
 int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo);
 int dp_basic_proc(void);
 
+struct inst_property *get_dp_port_prop(int inst);
+struct pmac_port_info *get_dp_port_info(int inst, int index);
 struct pmac_port_info *get_port_info(int inst, int index);
 struct pmac_port_info *get_port_info_via_dp_port(int inst, int dp_port);
 
@@ -761,7 +762,6 @@ char *get_dp_port_type_str(int k);
 u32 *get_port_flag(int inst, int index);
 int dp_request_inst(struct dp_inst_info *info, u32 flag);
 int register_dp_cap(u32 flag);
-int print_symbol_name(unsigned long addr);
 typedef GSW_return_t(*dp_gsw_cb)(void *, void *);
 int bp_pmapper_dev_get(int inst, struct net_device *dev);
 
@@ -795,5 +795,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif,
 				  struct sk_buff *skb, void *subif_data,
 				  u8 dst_mac[DP_MAX_ETH_ALEN],
 				  dp_subif_t *subif, uint32_t flags);
+struct hlist_head *get_dp_g_bridge_id_entry_hash_table_info(int instance,
+							    int index);
 #endif /*DATAPATH_H */
 

@@ -45,6 +45,12 @@ struct hlist_head dp_dev_list_free[DP_DEV_HASH_SIZE];
 /*Module hash list */
 struct hlist_head dp_mod_list[DP_MOD_HASH_SIZE];
 
+struct hlist_head *get_dp_dev_list(void)
+{
+	return dp_dev_list;
+}
+EXPORT_SYMBOL(get_dp_dev_list);
+
 int register_dp_hw_cap(struct dp_hw_cap *info, u32 flag)
 {
 	int i;

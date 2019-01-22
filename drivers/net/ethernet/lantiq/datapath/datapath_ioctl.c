@@ -73,7 +73,7 @@ static int dp_ndo_ptp_ioctl(struct net_device *dev,
 	int inst = 0;
 	struct pmac_port_info *port;
 
-	port = get_port_info_via_dp_name(dev);
+	port = get_port_info_via_dev(dev);
 	if (!port)
 		return -EFAULT;
 
