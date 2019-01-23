@@ -8,6 +8,7 @@
 #include <linux/clk.h>
 #include <linux/clockchips.h>
 #include <linux/cpu.h>
+#include <linux/cpufreq.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/irqchip/mips-gic.h>
@@ -16,6 +17,7 @@
 #include <linux/percpu.h>
 #include <linux/smp.h>
 #include <linux/time.h>
+#include <linux/timekeeping.h>
 #include <linux/sched_clock.h>
 
 static DEFINE_PER_CPU(struct clock_event_device, gic_clockevent_device);
@@ -223,3 +225,31 @@ static int __init gic_clocksource_of_init(struct device_node *node)
 }
 CLOCKSOURCE_OF_DECLARE(mips_gic_timer, "mti,gic-timer",
 		       gic_clocksource_of_init);
+static int
+gic_cpufreq_notifier(struct notifier_block *nb, unsigned long event, void *data)
+{
+	struct cpufreq_freqs *freq = data;
+
+	if (event == CPUFREQ_POSTCHANGE) {
+		if (gic_frequency == freq->new * 1000)
+			return 0;
+
+		gic_frequency = freq->new * 1000;
+		__clocksource_update_freq_hz(&gic_clocksource, gic_frequency);
+		on_each_cpu(gic_update_frequency, (void *)gic_frequency, 1);
+		timekeeping_notify(&gic_clocksource);
+	}
+
+	return 0;
+}
+
+static struct notifier_block gic_cpufreq_nb = {
+	.notifier_call = gic_cpufreq_notifier,
+};
+
+static int __init cpufreq_register_gic_scaling(void)
+{
+	cpufreq_register_notifier(&gic_cpufreq_nb, CPUFREQ_TRANSITION_NOTIFIER);
+	return 0;
+}
+device_initcall(cpufreq_register_gic_scaling);

@@ -1368,7 +1368,9 @@ int timekeeping_notify(struct clocksource *clock)
 {
 	struct timekeeper *tk = &tk_core.timekeeper;
 
-	if (tk->tkr_mono.clock == clock)
+	if (tk->tkr_mono.clock == clock &&
+		tk->tkr_mono.mult == clock->mult &&
+		tk->tkr_mono.shift == clock->shift)
 		return 0;
 	stop_machine(change_clocksource, clock, NULL);
 	tick_clock_notify();
