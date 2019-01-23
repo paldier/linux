@@ -272,10 +272,14 @@ static int ltq_thermal_get_trend(void *data, int trip,
 
 	if (temp > last_temp)
 		*trend = THERMAL_TREND_RAISING;
+	else if (temp < last_temp && temp <= (trip_temp - trip_hyst))
+		*trend = THERMAL_TREND_DROPPING;
+/*
 	else if (temp < last_temp && temp > (trip_temp - trip_hyst))
 		*trend = THERMAL_TREND_DROPPING;
 	else if (temp < last_temp && temp <= (trip_temp - trip_hyst))
 		*trend = THERMAL_TREND_DROP_FULL;
+*/		
 	else
 		*trend = THERMAL_TREND_STABLE;
 
