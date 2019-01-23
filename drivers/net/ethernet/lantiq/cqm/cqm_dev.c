@@ -25,7 +25,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	struct property *prop;
 	const __be32 *p;
 	unsigned int buf_num;
-	unsigned int *pool_size;
+	unsigned int pool_size = 0;
 	u8 count = 0;
 
 	pr_info("[%s] .. [%d]\n", __func__, __LINE__);
@@ -78,14 +78,16 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	}
 	cqm_pdata->force_xpcs = of_property_read_bool(node, "intel,force-xpcs");
 	of_property_for_each_u32(node, "intel,bm-buff-num", prop, p, buf_num) {
-		cqm_pdata->pool_ptrs[cqm_pdata->num_pools] = buf_num;
-		cqm_pdata->num_pools++;
+		cqm_pdata->pool_ptrs[cqm_pdata->num_pools++] = buf_num;
 	}
 
-	pool_size = cqm_pdata->pool_size;
 	of_property_for_each_u32(node, "intel,bm-buff-size", prop, p, buf_num) {
-		*pool_size = buf_num;
-		pool_size++;
+		cqm_pdata->pool_size[pool_size++] = buf_num;
+	}
+
+	if (cqm_pdata->num_pools != pool_size) {
+		pr_err("buff num and buff size mismatch\n");
+		return NULL;
 	}
 
 	for_each_available_child_of_node(node, cpu_deq_port) {

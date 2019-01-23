@@ -33,7 +33,7 @@ static struct cbm_q_info  cbm_qtable[MAX_QOS_QUEUES] = { {0} };
 static spinlock_t cqm_qidt_lock;
 static spinlock_t cqm_port_map;
 static spinlock_t cpu_pool_enq;
-static struct bmgr_policy_params p_param[CQM_PRX300_MAX_BM_POLICY];
+static struct bmgr_policy_params p_param[CQM_PRX300_NUM_BM_POOLS];
 
 LIST_HEAD(pmac_mapping_list);
 static struct cqm_ctrl *cqm_ctrl;
@@ -3017,7 +3017,7 @@ static int bm_init(struct platform_device *pdev)
 		bmgr_pool_configure(&p_params, &i);
 	}
 
-	for (j = 0; j < CQM_PRX300_NUM_BM_POLICY; j++)
+	for (j = 0; j < cqm_ctrl->num_pools; j++)
 		bmgr_policy_configure(&p_param[j], &i);
 
 	return CBM_SUCCESS;
