@@ -142,6 +142,8 @@ extern int pc_uart_datawrite_32(u32 Offset, u32 value);
 		   reg##_##field##_POS, 			\
 		   reg##_##field##_WIDTH, (val))
 
+#define N_EXT_TS 2
+
 #if defined(PC_UTILITY) && PC_UTILITY
 
 /* UART inetrface suppot function */
@@ -585,8 +587,7 @@ struct mac_prv_data {
 	struct tasklet_struct mac_tasklet;
 	struct clk *ker_ptp_clk;
 #endif
-	u32 exts0_enabled;
-	u32 exts1_enabled;
+	u32 exts_enabled[N_EXT_TS];
 	u32 snaptype;
 	u32 tsmstrena;
 	u32 tsevntena;

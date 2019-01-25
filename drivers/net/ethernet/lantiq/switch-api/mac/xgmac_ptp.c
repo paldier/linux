@@ -45,7 +45,6 @@
 
 #define AUX_TRIG_0 1
 #define AUX_TRIG_1 2
-#define N_EXT_TS 2
 
 static int xgmac_adj_freq(struct ptp_clock_info *ptp, s32 ppb);
 static int xgmac_adj_time(struct ptp_clock_info *ptp, s64 delta);
@@ -574,29 +573,27 @@ static int xgmac_extts_enable(struct ptp_clock_info *ptp,
 {
 	struct mac_prv_data *pdata =
 		container_of(ptp, struct mac_prv_data, ptp_clk_info);
+	int i;
+	u32 aux_ctrl;
 
 	switch (rq->type) {
 	case PTP_CLK_REQ_EXTTS:
-		switch (rq->extts.index) {
-		case 0:
-			mac_dbg("ATSEN0 enabled\n");
-			pdata->exts0_enabled = on ? 1 : 0;
-			XGMAC_RGWR_BITS(pdata, MAC_AUX_CTRL, ATSEN0, 1);
-			break;
+		i = rq->extts.index;
+		if (i < N_EXT_TS) {
+			mac_dbg("ATSEN%d enabled %u\n", i, on);
+			pdata->exts_enabled[i] = on ? 1 : 0;
 
-		case 1:
-			mac_dbg("ATSEN1 enabled\n");
-			pdata->exts1_enabled = on ? 1 : 0;
-			XGMAC_RGWR_BITS(pdata, MAC_AUX_CTRL, ATSEN1, 1);
-			break;
-
-		default:
+			aux_ctrl = XGMAC_RGRD(pdata, MAC_AUX_CTRL);
+			SET_N_BITS(aux_ctrl,
+				   MAC_AUX_CTRL_ATSEN0_POS + i,
+				   1,
+				   on ? 1 : 0);
+			XGMAC_RGWR(pdata, MAC_AUX_CTRL, aux_ctrl);
+		} else {
 			mac_dbg("Invalid request\n");
 			return -EINVAL;
 		}
-
 		return 0;
-
 	default:
 		break;
 	}
@@ -621,29 +618,33 @@ static u64 xgmac_get_auxtimestamp(struct mac_prv_data *pdata)
 static void xgmac_extts_isr_handler(struct mac_prv_data *pdata,
 				    u32 tstamp_sts)
 {
-	u8 val = MAC_GET_VAL(tstamp_sts, MAC_TSTAMP_STSR, ATSSTN);
 #ifdef CONFIG_PTP_1588_CLOCK
+	u8 val, i;
 	struct ptp_clock_event event;
+	u64 ts[N_EXT_TS];
+	u8 ts_valid[N_EXT_TS] = {0};
+	u8 cnt = MAC_GET_VAL(tstamp_sts, MAC_TSTAMP_STSR, ATSNS);
 
-	if (val)
-		event.timestamp = xgmac_get_auxtimestamp(pdata);
-
-	if (val & AUX_TRIG_0) {
-		if (pdata->exts0_enabled) {
-			event.type = PTP_CLOCK_EXTTS;
-			event.index = 0;
-			ptp_clock_event(pdata->ptp_clock, &event);
+	while (cnt--) {
+		val = MAC_GET_VAL(tstamp_sts, MAC_TSTAMP_STSR, ATSSTN);
+		if (val && val <= N_EXT_TS) {
+			ts[val - 1] = xgmac_get_auxtimestamp(pdata);
+			ts_valid[val - 1] = 1;
+		} else if (val > N_EXT_TS) {
+			xgmac_get_auxtimestamp(pdata);
 		}
 	}
 
-	if (val & AUX_TRIG_1) {
-		if (pdata->exts1_enabled) {
-			event.type = PTP_CLOCK_EXTTS;
-			event.index = 1;
-			ptp_clock_event(pdata->ptp_clock, &event);
+	for (i = 0; i < N_EXT_TS; i++) {
+		if (ts_valid[i]) {
+			if (pdata->exts_enabled[i]) {
+				event.timestamp = ts[i];
+				event.type = PTP_CLOCK_EXTTS;
+				event.index = i;
+				ptp_clock_event(pdata->ptp_clock, &event);
+			}
 		}
 	}
-
 #endif
 }
 
