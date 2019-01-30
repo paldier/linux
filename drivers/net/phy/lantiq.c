@@ -43,6 +43,15 @@
 #define MMD_ACTYPE_DATA_PI	(2 << MMD_ACTYPE_SHIFT)
 #define MMD_ACTYPE_DATA_PIWR	(3 << MMD_ACTYPE_SHIFT)
 
+/* p31g aneg dev */
+#define MMD_DEVANEG		0x07
+#define P31G_ANEG_MGBT_AN_CTRL	0x20
+#define CTRL_AB_2G5BT_BIT	BIT(7)
+#define CTRL_AB_FR_2G5BT	BIT(5)
+#define P31G_ANEG_MGBT_AN_STAT	0x21
+#define STAT_AB_2G5BT_BIT	BIT(5)
+#define STAT_AB_FR_2G5BT	BIT(3)
+
 static __maybe_unused int vr9_gphy_mmd_read(struct phy_device *phydev,
 						u16 regnum)
 {
@@ -154,6 +163,96 @@ static int vr9_gphy_config_intr(struct phy_device *phydev)
 	return err;
 }
 
+/* direct clause-45 read */
+static __maybe_unused int p31g_gphy_mmd_read(struct phy_device *phydev,
+					     u32 devad, u32 regnum)
+{
+	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) |
+		 (regnum & 0xffff);
+	return phy_read(phydev, regnum);
+}
+
+/* direct clause-45 write */
+static __maybe_unused int p31g_gphy_mmd_write(struct phy_device *phydev,
+					      u32 devad, u32 regnum, u32 val)
+{
+	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) |
+		 (regnum & 0xffff);
+	return phy_write(phydev, regnum, val);
+}
+
+static int p31g_gphy_config_init(struct phy_device *phydev)
+{
+	vr9_gphy_config_init(phydev);
+
+	/* Linux PHY framework does not have a way yet to define
+	 * support for 2500baseT, therefore we set the bit directly here
+	 */
+	__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+		  phydev->extended_supported);
+	__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+		  phydev->extended_advertising);
+
+	return 0;
+}
+
+static int p31g_gphy_config_aneg(struct phy_device *phydev)
+{
+	int reg, old_reg, ret;
+	bool support_2G5BT;
+
+	/* configure 2.5G advertising */
+	support_2G5BT = test_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+				 phydev->extended_advertising);
+	reg = p31g_gphy_mmd_read(phydev, MMD_DEVANEG, P31G_ANEG_MGBT_AN_CTRL);
+	old_reg = reg;
+
+	if (support_2G5BT)
+		reg |= CTRL_AB_2G5BT_BIT | CTRL_AB_FR_2G5BT;
+	else
+		reg &= ~(CTRL_AB_2G5BT_BIT | CTRL_AB_FR_2G5BT);
+
+	if (old_reg != reg)
+		p31g_gphy_mmd_write(phydev, MMD_DEVANEG, P31G_ANEG_MGBT_AN_CTRL,
+				    reg);
+
+	ret = vr9_gphy_config_aneg(phydev);
+	if (ret)
+		return ret;
+
+	/* restart aneg if 2.5G adv bit changes */
+	if (phydev->autoneg == AUTONEG_ENABLE && (old_reg != reg))
+		return genphy_restart_aneg(phydev);
+
+	return 0;
+}
+
+static int p31g_gphy_read_status(struct phy_device *phydev)
+{
+	int ret, reg;
+
+	ret = genphy_read_status(phydev);
+	if (ret)
+		return ret;
+
+	/* check for 2.5G lp advertising and speed */
+	reg = p31g_gphy_mmd_read(phydev, MMD_DEVANEG, P31G_ANEG_MGBT_AN_STAT);
+	if (reg & (STAT_AB_2G5BT_BIT | STAT_AB_FR_2G5BT)) {
+		__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			  phydev->extended_lp_advertising);
+
+		reg = p31g_gphy_mmd_read(phydev, MMD_DEVANEG,
+					 P31G_ANEG_MGBT_AN_CTRL);
+		if (reg & (CTRL_AB_2G5BT_BIT | CTRL_AB_FR_2G5BT))
+			phydev->speed = SPEED_2500;
+	} else {
+		__clear_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			    phydev->extended_lp_advertising);
+	}
+
+	return 0;
+}
+
 static struct phy_driver lantiq_phy[] = {
 	{
 		.phy_id		= 0xd565a400,
@@ -209,9 +308,9 @@ static struct phy_driver lantiq_phy[] = {
 		.name		= "Intel GPHY 31G",
 		.features	= (PHY_GBIT_FEATURES | SUPPORTED_Pause),
 		.flags		= PHY_HAS_INTERRUPT,
-		.config_init	= vr9_gphy_config_init,
-		.config_aneg	= vr9_gphy_config_aneg,
-		.read_status	= genphy_read_status,
+		.config_init	= p31g_gphy_config_init,
+		.config_aneg	= p31g_gphy_config_aneg,
+		.read_status	= p31g_gphy_read_status,
 		.ack_interrupt	= vr9_gphy_ack_interrupt,
 		.config_intr	= vr9_gphy_config_intr,
 	},

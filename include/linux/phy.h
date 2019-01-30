@@ -397,6 +397,14 @@ struct phy_device {
 	u32 advertising;
 	u32 lp_advertising;
 
+	/* Extended 64-bit support flag. These are added to add ethtool
+	 * support for 2.5GBaseT. Starting from linux 4.14, we may be
+	 * able to discard this, and use phylink support instead.
+	 */
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(extended_supported);
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(extended_advertising);
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(extended_lp_advertising);
+
 	/* Energy efficient ethernet modes which should be prohibited */
 	u32 eee_broken_modes;
 

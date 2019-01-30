@@ -190,6 +190,62 @@ static int set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 	return -ENODEV;
 }
 
+static int get_link_ksettings(struct net_device *dev,
+			      struct ethtool_link_ksettings *cmd)
+{
+	int ret;
+
+	ret = phy_ethtool_get_link_ksettings(dev, cmd);
+	if (ret)
+		return ret;
+
+	/* Linux PHY framework does not yet support 2500baseT,
+	 * so we need to configure manually here.
+	 */
+	if (test_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+		     dev->phydev->extended_supported))
+		__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			  cmd->link_modes.supported);
+	else
+		__clear_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			    cmd->link_modes.supported);
+
+	if (test_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+		     dev->phydev->extended_advertising))
+		__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			  cmd->link_modes.advertising);
+	else
+		__clear_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			    cmd->link_modes.advertising);
+
+	if (test_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+		     dev->phydev->extended_lp_advertising))
+		__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			  cmd->link_modes.lp_advertising);
+	else
+		__clear_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			    cmd->link_modes.lp_advertising);
+
+	return 0;
+}
+
+static int set_link_ksettings(struct net_device *dev,
+			      const struct ethtool_link_ksettings *cmd)
+{
+	/* Linux PHY framework does not yet support 2500baseT,
+	 * so we need to configure manually here.
+	 */
+	if (test_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+		     cmd->link_modes.advertising))
+		__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			  dev->phydev->extended_advertising);
+	else
+		__clear_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			    dev->phydev->extended_advertising);
+
+	return phy_ethtool_set_link_ksettings(dev, cmd);
+}
+
 /* Reset the device */
 static int nway_reset(struct net_device *dev)
 {
@@ -312,8 +368,8 @@ static const struct ethtool_ops ethtool_ops = {
 	.set_settings		= set_settings,
 	.nway_reset		= nway_reset,
 	.get_link		= ethtool_op_get_link,
-	.get_link_ksettings	= phy_ethtool_get_link_ksettings,
-	.set_link_ksettings	= phy_ethtool_set_link_ksettings,
+	.get_link_ksettings	= get_link_ksettings,
+	.set_link_ksettings	= set_link_ksettings,
 	.get_eee		= ethtool_eee_get,
 	.set_eee		= ethtool_eee_set,
 };
