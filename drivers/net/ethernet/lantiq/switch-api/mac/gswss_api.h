@@ -181,12 +181,18 @@ struct adap_prv_data;
 
 struct adap_prv_data {
 	u32 flags;
-	u32 ss_addr_base;
 #ifdef __KERNEL__
+	/* Adaption layer private data */
+	void __iomem *ss_addr_base;
 	spinlock_t adap_lock;
+#else
+	/* Adaption layer private data */
+	u32 ss_addr_base;
 #endif
 	u32 core_en_cnt;
 	struct adap_ops ops;
+	/* Mac Cli */
+	GSW_MAC_Cli_t *mac_cli;
 };
 
 static inline struct adap_prv_data *GET_ADAP_PDATA(void *pdev)
@@ -205,7 +211,7 @@ static inline u32 GSWSS_RGRD(struct adap_prv_data *pdata, u32 reg)
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	u32 reg_addr = pdata->ss_addr_base + reg;
 #else
-	volatile void *reg_addr = (volatile void *)pdata->ss_addr_base + reg;
+	void __iomem *reg_addr = (void __iomem *)pdata->ss_addr_base + reg;
 #endif
 
 #if defined(CHIPTEST) && CHIPTEST
@@ -215,7 +221,7 @@ static inline u32 GSWSS_RGRD(struct adap_prv_data *pdata, u32 reg)
 	pcuart_reg_rd(reg_addr, &reg_val);
 #endif
 #ifdef __KERNEL__
-	reg_val = ltq_r32(reg_addr);
+	reg_val = mac_r32(reg_addr);
 #endif
 	return reg_val;
 }
@@ -225,7 +231,7 @@ static inline void GSWSS_RGWR(struct adap_prv_data *pdata, u32 reg, u32 val)
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	u32 reg_addr = pdata->ss_addr_base + reg;
 #else
-	volatile void *reg_addr = (volatile void *)pdata->ss_addr_base + reg;
+	void __iomem *reg_addr = (void __iomem *)pdata->ss_addr_base + reg;
 #endif
 
 #if defined(CHIPTEST) && CHIPTEST
@@ -235,7 +241,7 @@ static inline void GSWSS_RGWR(struct adap_prv_data *pdata, u32 reg, u32 val)
 	pcuart_reg_wr(reg_addr, val);
 #endif
 #ifdef __KERNEL__
-	ltq_w32(val, reg_addr);
+	mac_w32(val, reg_addr);
 #endif
 }
 
@@ -260,15 +266,16 @@ int gswss_get_int_en_sts(void *pdev);
 void gswss_test_all_reg(void *pdev);
 void gswss_check_reg(void *pdev, u32 reg, char *name, int idx,
 		     u16 set_val, u16 clr_val);
-u32 gswss_get_nco(void *pdev, u32 nco_idx);
+int gswss_get_nco(void *pdev, u32 nco_idx);
 int gswss_get_cfg0_1588(void *pdev, u32 *ref_time, u32 *dig_time,
 			u32 *bin_time, u32 *pps_sel);
-u32 gswss_get_clkmode(void *pdev);
+int gswss_get_clkmode(void *pdev);
 int gswss_get_macsec_to_mac(void *pdev);
 int gswss_dbg_macsec_to_mac(void *pdev);
-u32 gswss_get_corese(void *pdev);
+int gswss_get_corese(void *pdev);
 int gswss_get_switch_ss_reset(void *pdev);
 int gswss_get_macsec_reset(void *pdev);
+int gswss_get_cfg1_1588(void *pdev, u32 *trig1_sel, u32 *trig0_sel, u32 *sw_trig);
 
 void gswss_init_fn_ptrs(struct adap_ops *adap_ops);
 

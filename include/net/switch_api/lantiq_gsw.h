@@ -22,7 +22,7 @@
 /* Local Macros & Definitions    */
 /* ============================= */
 #include "gsw_types.h"
-
+#include "mac_ops.h"
 
 /** \defgroup GSW_GROUP GSWIP Functional APIs
     \brief This chapter describes the entire interface for accessing and configuring the different services of the Ethernet Switch module. The prefix GSW (Gigabit Switch) is used for all data structures and APIs pertaining to GSWIP.
@@ -1587,7 +1587,7 @@ typedef enum {
 	    Only supported for IGMPv3. */
 	GSW_IGMP_MEMBER_INCLUDE	= 0,
 	/** Exclude source IP address membership mode.
-	    Only supported for IGMPv3. */
+	    Only supported for IGMPv2. */
 	GSW_IGMP_MEMBER_EXCLUDE	= 1,
 	/** Group source IP address is 'don't care'. This means all source IP
 	    addresses (*) are included for the multicast group membership.
@@ -7418,7 +7418,7 @@ typedef struct {
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-#define GSW_XGMAC_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x10, GSW_MAC_cfg_t)
+#define GSW_XGMAC_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x10, GSW_MAC_Cli_t)
 
 /**
    \brief GSWSS Cfg Commands to Read and write operation
@@ -7429,7 +7429,7 @@ typedef struct {
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-#define GSW_GSWSS_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x11, GSW_MAC_cfg_t)
+#define GSW_GSWSS_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x11, GSW_MAC_Cli_t)
 
 /**
    \brief LMAC Cfg Commands to Read and write operation
@@ -7440,7 +7440,7 @@ typedef struct {
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-#define GSW_LMAC_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x12, GSW_MAC_cfg_t)
+#define GSW_LMAC_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x12, GSW_MAC_Cli_t)
 
 /**
    \brief MACSEC Cfg Commands to Read and write operation

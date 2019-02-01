@@ -564,11 +564,11 @@ struct debug_ops {
 	/* Command: GSW_DEBUG_CTP_STATISTICS ; Index: 0x0F */
 	GSW_return_t (*DEBUG_GetCtpStatistics)(void *, GSW_debug_t *);
 	/* Command: GSW_XGMAC_CFG ; Index: 0x10 */
-	GSW_return_t (*Xgmac)(void *, GSW_MAC_cfg_t *);
+	GSW_return_t (*Xgmac)(void *, GSW_MAC_Cli_t *);
 	/* Command: GSW_GSWSS_CFG ; Index: 0x11 */
-	GSW_return_t (*Gswss)(void *, GSW_MAC_cfg_t *);
+	GSW_return_t (*Gswss)(void *, GSW_MAC_Cli_t *);
 	/* Command: GSW_LMAC_CFG ; Index: 0x12 */
-	GSW_return_t (*Lmac)(void *, GSW_MAC_cfg_t *);
+	GSW_return_t (*Lmac)(void *, GSW_MAC_Cli_t *);
 	/* Command: GSW_MACSEC_CFG ; Index: 0x13 */
 	GSW_return_t (*Macsec)(void *, GSW_MAC_cfg_t *);
 	/* Command: GSW_DUMP_MEM ; Index: 0x14 */

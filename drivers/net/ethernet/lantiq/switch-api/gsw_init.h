@@ -68,11 +68,8 @@
 
 #include <net/switch_api/gsw_dev.h>
 #include <linux/netdevice.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/switch_api/gsw_tbl_rw.h>
 
-/*#include <xway/switch-api/lantiq_gsw_routing.h>*/
-/*#include <xway/switch-api/gsw_types.h>*/
 
 #define LTQ_GSW_DEV_MAX 3
 #endif /* KERNEL_MODE */

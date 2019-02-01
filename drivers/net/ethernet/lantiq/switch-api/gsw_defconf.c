@@ -352,7 +352,7 @@ static int pmac_ig_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 		ops->gsw_pmac_ops.Pmac_Ig_CfgSet(ops, &ig_cfg);
 	}
 
-	pr_info("PMAC_IG_CFG_SET for PMAC %d %s\n", pmacid,
+	pr_debug("PMAC_IG_CFG_SET for PMAC %d %s\n", pmacid,
 		(dpu == NON_DPU) ? "Non-DPU" : "DPU");
 	return 0;
 }
@@ -485,7 +485,7 @@ static int pmac_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 		}
 	}
 
-	pr_info("PMAC_EG_CFG_SET for PMAC %d %s\n", pmacid,
+	pr_debug("PMAC_EG_CFG_SET for PMAC %d %s\n", pmacid,
 		(dpu == NON_DPU) ? "Non-DPU" : "DPU");
 
 	return 0;
@@ -570,7 +570,7 @@ static int pmac_glbl_cfg(struct core_ops *ops, u8 pmacid)
 
 	ops->gsw_pmac_ops.Pmac_Gbl_CfgSet(ops, &glbl_cfg);
 
-	pr_info("PMAC_GLBL_CFG_SET for PMAC %d\n", pmacid);
+	pr_debug("PMAC_GLBL_CFG_SET for PMAC %d\n", pmacid);
 
 	return 0;
 }
@@ -711,7 +711,7 @@ int gsw_pmac_init_nondpu(void)
 	pmac_eg_cfg(ops, 1, NON_DPU);
 	pmac_bp_cfg(ops, NON_DPU);
 
-	pr_info("\n\t GSW PMAC Init Done!!!\n");
+	pr_debug("\n\t GSW PMAC Init Done!!!\n");
 	return 0;
 }
 
@@ -732,7 +732,7 @@ int gsw_pmac_init_dpu(void)
 	pmac_eg_cfg(ops, 1, NON_DPU);
 	pmac_bp_cfg(ops, DPU);
 
-	pr_info("\n\t GSW PMAC Init Done!!!\n");
+	pr_debug("\n\t GSW PMAC Init Done!!!\n");
 	return 0;
 }
 

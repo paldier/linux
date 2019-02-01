@@ -19,6 +19,10 @@
 /** \brief Instantiated tables entries name  string length.
     The user can supply a name and get in return an id from Switch API. */
 #define GSW_NAME_LEN	32
+
+/** \brief Maximum mac cli argument. */
+#define MAX_MAC_CLI_ARG 10
+
 /** \brief This is the unsigned 64-bit datatype. */
 typedef unsigned long long    u64;
 /** \brief This is the unsigned 32-bit datatype. */

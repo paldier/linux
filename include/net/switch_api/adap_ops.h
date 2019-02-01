@@ -11,6 +11,31 @@
 #define _ADAP_OPS_H_
 
 #include "gsw_types.h"
+#include "lantiq_gsw.h"
+
+
+typedef enum {
+	GSWSS_REG_WR = 0,
+	GSWSS_REG_RD,
+	GSWSS_MAC_RESET,
+	GSWSS_MAC_EN,
+	GSWSS_MAC_IF,
+	GSWSS_MAC_OP,
+	GSWSS_MAC_MTU,
+	GSWSS_MAC_TXTSTAMP_FIFO,
+	GSWSS_MAC_PHY2MODE,
+	GSWSS_MAX_MAC,
+	GSWSS_ADAP_INT,
+	GSWSS_ADAP_CFG_1588,
+	GSWSS_ADAP_NCO,
+	GSWSS_ADAP_MACSEC_RST,
+	GSWSS_ADAP_SS_RST,
+	GSWSS_ADAP_MACSEC_TO_MAC,
+	GSWSS_ADAP_CORESE,
+	GSWSS_ADAP_CLK_MD,
+	GSWSS_ADAP_1588_CFG1,
+	GSWSS_MAX_ADAP,
+} GSWSS_CLI_CMDS;
 
 struct adap_ops {
 	/* This function does the whole GSWIP Subsystem Reset.
@@ -81,7 +106,7 @@ struct adap_ops {
 	 *  2 - Auto Mode (666/450) Mhz, 3 - Auto Mode (666/450) Mhz
 	 * return		OUT  -1:	Error in Getting Clock Mode
 	 */
-	u32(*ss_get_clkmode)(void *);
+	int(*ss_get_clkmode)(void *);
 	/* This function does the Switch Core Enable/Disable.
 	 * param[in/out]	IN:	ops Adaption ops Struct registered.
 	 * param[in/out]	IN:	Core Enable	Selects the Core Enable
@@ -96,7 +121,7 @@ struct adap_ops {
 	 *  			0:	Switch Core Disable,
 	 *  			1:	Switch Core Enable
 	 */
-	u32(*ss_get_core_en)(void *);
+	int(*ss_get_core_en)(void *);
 	/* This function Sets MACSEC to a Mac Module Attachment.
 	 *  param[in/out]IN:	ops Adaption ops Struct registered.
 	 * param[in/out]IN:	Mac Index	0 - MAC2 is attached to MACSEC,
@@ -140,7 +165,7 @@ struct adap_ops {
 	 * return		OUT  0:	NCO value Configured
 	 * return		OUT  -1:NCO value Get Error
 	 */
-	u32(*ss_get_nco)(void *, u32);
+	int(*ss_get_nco)(void *, u32);
 	/* This function Enables/Disbales Interrupt Enable Register.
 	 * param[in/out]	IN:	ops Adaption ops Struct registered.
 	 * param[in/out]	IN:	module	0 - XGMAC
@@ -169,19 +194,19 @@ struct adap_ops {
 	 * param[in/out]IN:	off	Adap Register offset.
 	 * return	OUT	reg_val:Register value will be returned
 	 */
-	u32(*ss_rg_rd)(void *, u32);
+	int(*ss_rg_rd)(void *, u32);
 	/* This sequence is Write Adaption register
 	 * param[in/out]IN:	ops	Adap ops Struct registered.
 	 * param[in/out]IN:	off	Adap Register offset.
 	 * param[in/out]IN:	val	Adap Register Value to be written.
 	 */
-	void(*ss_rg_wr)(void *, u32, u32);
+	int(*ss_rg_wr)(void *, u32, u32);
 	/* This sequence is used for GSWSS Cli implementation
 	 * param[in/out]IN:	argc - Number of args.
 	 * param[in/out]IN:	argv - Argument value.
 	 * return	OUT	-1: 	Exit GSWSS Error
 	 */
-	int(*ss_cli)(u32, u8 **);
+	int(*ss_cli)(GSW_MAC_Cli_t *);
 };
 
 #endif

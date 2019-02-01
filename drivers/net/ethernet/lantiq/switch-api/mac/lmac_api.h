@@ -244,22 +244,13 @@ enum {
 	LMAC_RMON_CLRALL
 };
 
-struct lmac_rmon_cnt {
-	u32 sing_coln_cnt;
-	u32 mple_coln_cnt;
-	u32 late_coln_cnt;
-	u32 excs_coln_cnt;
-	u32 rx_pause_cnt;
-	u32 tx_pause_cnt;
-};
-
 static inline u32 LMAC_RGRD(struct mac_prv_data *pdata, u32 reg)
 {
 	u32 reg_val;
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	u32 reg_addr = pdata->lmac_addr_base + reg;
 #else
-	volatile void *reg_addr = (volatile void *)pdata->lmac_addr_base + reg;
+	void __iomem *reg_addr = (void __iomem *)pdata->lmac_addr_base + reg;
 #endif
 
 #if defined(CHIPTEST) && CHIPTEST
@@ -269,7 +260,7 @@ static inline u32 LMAC_RGRD(struct mac_prv_data *pdata, u32 reg)
 	pcuart_reg_rd(reg_addr, &reg_val);
 #endif
 #ifdef __KERNEL__
-	reg_val = ltq_r32(reg_addr);
+	reg_val = mac_r32(reg_addr);
 #endif
 	return reg_val;
 }
@@ -279,7 +270,7 @@ static inline void LMAC_RGWR(struct mac_prv_data *pdata, u32 reg, u32 val)
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	u32 reg_addr = pdata->lmac_addr_base + reg;
 #else
-	volatile void *reg_addr = (volatile void *)pdata->lmac_addr_base + reg;
+	void __iomem *reg_addr = (void __iomem *)pdata->lmac_addr_base + reg;
 #endif
 
 #if defined(CHIPTEST) && CHIPTEST
@@ -289,7 +280,7 @@ static inline void LMAC_RGWR(struct mac_prv_data *pdata, u32 reg, u32 val)
 	pcuart_reg_wr(reg_addr, val);
 #endif
 #ifdef __KERNEL__
-	ltq_w32(val, reg_addr);
+	mac_w32(val, reg_addr);
 #endif
 }
 
@@ -325,21 +316,7 @@ int lmac_set_int(void *pdev, u32 val);
 int lmac_set_event_int(void *pdev, u32 evnt, u32 val);
 
 int lmac_get_event_int(void *pdev, u32 evnt);
-int lmac_get_intf_mode(void *pdev);
-int lmac_get_duplex_mode(void *pdev);
-u32 lmac_get_flowcon_mode(void *pdev);
-int lmac_get_txfcs(void *pdev);
-int lmac_get_ipg(void *pdev);
-int lmac_get_preamble(void *pdev);
-int lmac_get_defermode(void *pdev);
-int lmac_get_lpi(void *pdev, u32 *mode_en, u32 *lpi_waitg, u32 *lpi_waitm);
-int lmac_get_jps(void *pdev);
-int lmac_get_loopback(void *pdev);
-int lmac_get_txer(void *pdev);
-int lmac_get_lpimonitor_mode(void *pdev);
 int lmac_get_pauseframe_samode(void *pdev);
-int lmac_get_mac_pstat(void *pdev);
-int lmac_get_mac_pisr(void *pdev);
 int lmac_get_pauseframe_addr(void *pdev, u8 *mac_addr);
 int lmac_get_int_stat(void *pdev);
 int lmac_get_int(void *pdev);
@@ -351,8 +328,7 @@ void lmac_check_reg(void *pdev, u32 reg, char *name, int idx,
 
 void lmac_rmon_rd(void *pdev, struct lmac_rmon_cnt *lmac_cnt);
 void lmac_rmon_wr(void *pdev, struct lmac_rmon_cnt *lmac_cnt);
-void lmac_rmon_clr(void *pdev);
+int lmac_rmon_clr(void *pdev);
 void lmac_rmon_clr_allmac(void *pdev);
-void lmac_get_rmon(void);
 
 #endif

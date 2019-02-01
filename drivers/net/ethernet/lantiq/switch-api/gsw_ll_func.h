@@ -2113,7 +2113,7 @@ GSW_return_t GSW_MmdDataWrite(void *cdev, GSW_MMD_data_t *parm);
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-GSW_return_t GSW_XgmacCfg(void *cdev, GSW_MAC_cfg_t *parm);
+GSW_return_t GSW_XgmacCfg(void *cdev, GSW_MAC_Cli_t *parm);
 
 /**
    This is the switch API low-level function for
@@ -2131,7 +2131,7 @@ GSW_return_t GSW_XgmacCfg(void *cdev, GSW_MAC_cfg_t *parm);
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-GSW_return_t GSW_GswssCfg(void *cdev, GSW_MAC_cfg_t *parm);
+GSW_return_t GSW_GswssCfg(void *cdev, GSW_MAC_Cli_t *parm);
 
 /**
    This is the switch API low-level function for
@@ -2149,7 +2149,7 @@ GSW_return_t GSW_GswssCfg(void *cdev, GSW_MAC_cfg_t *parm);
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-GSW_return_t GSW_LmacCfg(void *cdev, GSW_MAC_cfg_t *parm);
+GSW_return_t GSW_LmacCfg(void *cdev, GSW_MAC_Cli_t *parm);
 
 /**
    This is the switch API low-level function for

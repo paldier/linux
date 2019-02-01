@@ -601,6 +601,7 @@ static int xgmac_extts_enable(struct ptp_clock_info *ptp,
 	return -EOPNOTSUPP;
 }
 
+#ifdef CONFIG_PTP_1588_CLOCK
 static u64 xgmac_get_auxtimestamp(struct mac_prv_data *pdata)
 {
 	u64 nsec;
@@ -614,6 +615,7 @@ static u64 xgmac_get_auxtimestamp(struct mac_prv_data *pdata)
 
 	return nsec;
 }
+#endif
 
 static void xgmac_extts_isr_handler(struct mac_prv_data *pdata,
 				    u32 tstamp_sts)
@@ -694,7 +696,9 @@ int xgmac_ptp_init(void *pdev)
 int xgmac_get_ts_info(void *pdev,
 		      struct ethtool_ts_info *ts_info)
 {
+#ifdef CONFIG_PTP_1588_CLOCK
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+#endif
 
 	ts_info->so_timestamping = SOF_TIMESTAMPING_TX_SOFTWARE |
 				   SOF_TIMESTAMPING_RX_SOFTWARE |
@@ -759,7 +763,7 @@ static int xgmac_ptp_register(void *pdev)
 		return -1;
 	}
 
-	pr_info("Added PTP HW clock successfully\n");
+	mac_dbg("Added PTP HW clock successfully\n");
 
 	/* Disable all timestamping to start */
 	pdata->tstamp_config.tx_type = HWTSTAMP_TX_OFF;

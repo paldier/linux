@@ -77,8 +77,6 @@
 #include <linux/irq.h>
 #include <linux/seq_file.h>
 #include <linux/semaphore.h>
-#include <lantiq.h>
-#include <lantiq_soc.h>
 #include <linux/netdevice.h>
 #include <linux/net_tstamp.h>
 #include <linux/clocksource.h>
@@ -113,6 +111,7 @@ extern int pc_uart_datawrite_32(u32 Offset, u32 value);
 #endif
 
 #define UPTIME 0
+#define MAX_RETRY 2000
 
 #if defined(PC_UTILITY) && PC_UTILITY
 #define NANOSEC_IN_ONESEC 550000
@@ -143,6 +142,8 @@ extern int pc_uart_datawrite_32(u32 Offset, u32 value);
 		   reg##_##field##_WIDTH, (val))
 
 #define N_EXT_TS 2
+#define mac_r32(reg)       readl(reg)
+#define mac_w32(val, reg)  writel(val, reg)
 
 #if defined(PC_UTILITY) && PC_UTILITY
 
@@ -199,63 +200,6 @@ FILE *get_fp(void);
 #define mac_dbg pr_debug
 #endif
 
-static inline int mac_nstrlen(char *s)
-{
-	int cnt = 0;
-
-	if (s == (void *)0)
-		return 0;
-
-	while (s[cnt])
-		cnt++;
-
-	return cnt;
-}
-
-static inline unsigned long mac_nstrtoul(const char *s, int len,
-		u32 *next_idx)
-{
-	unsigned long acc;
-	int cnt = 0;
-	char c;
-	int base = 0;
-
-	acc = 0;
-
-	c = s[cnt];
-
-	if (s[cnt] == '0') {
-		cnt++;
-
-		if ((s[cnt] == 'x') || (s[cnt] == 'X')) {
-			base = 16;
-			cnt++;
-		}
-	}
-
-	if (!base)
-		base = 10;
-
-	for (; cnt < len; cnt++) {
-		c = s[cnt];
-
-		if ((c >= '0') && (c <= '9'))
-			c -= '0';
-		else if ((c >= 'a') && (c <= 'f'))
-			c -= 'a' - 10;
-		else if ((c >= 'A') && (c <= 'F'))
-			c -= 'A' - 10;
-		else
-			c = 0;
-
-		acc *= base;
-		acc += c;
-	}
-
-	(*next_idx)++;
-
-	return acc;
-}
 
 enum {
 	MAC_AUTO_DPLX = 0,
@@ -381,129 +325,6 @@ struct ptp_flags {
 	u32 ptp_tx_en;
 };
 
-#if defined(CHIPTEST) && CHIPTEST
-struct xgmac_mmc_stats {
-	/* Tx Stats */
-	u32 txoctetcount_gb;
-	u32 txframecount_gb;
-	u32 txbroadcastframes_g;
-	u32 txmulticastframes_g;
-	u32 txunicastframes_gb;
-	u32 txmulticastframes_gb;
-	u32 txbroadcastframes_gb;
-	u32 txunderflowerror;
-	u32 txoctetcount_g;
-	u32 txframecount_g;
-	u32 txpauseframes;
-	u32 txvlanframes_g;
-
-	/* Rx Stats */
-	u32 rxframecount_gb;
-	u32 rxoctetcount_gb;
-	u32 rxoctetcount_g;
-	u32 rxbroadcastframes_g;
-	u32 rxmulticastframes_g;
-	u32 rxcrcerror;
-	u32 rxrunterror;
-	u32 rxjabbererror;
-	u32 rxundersize_g;
-	u32 rxoversize_g;
-	u32 rxunicastframes_g;
-	u32 rxlengtherror;
-	u32 rxoutofrangetype;
-	u32 rxpauseframes;
-	u32 rxfifooverflow;
-	u32 rxvlanframes_gb;
-	u32 rxwatchdogerror;
-};
-#else
-struct xgmac_mmc_stats {
-	/* Tx Stats */
-	u64 txoctetcount_gb;
-	u64 txframecount_gb;
-	u64 txbroadcastframes_g;
-	u64 txmulticastframes_g;
-	u64 txunicastframes_gb;
-	u64 txmulticastframes_gb;
-	u64 txbroadcastframes_gb;
-	u64 txunderflowerror;
-	u64 txoctetcount_g;
-	u64 txframecount_g;
-	u64 txpauseframes;
-	u64 txvlanframes_g;
-
-	/* Rx Stats */
-	u64 rxframecount_gb;
-	u64 rxoctetcount_gb;
-	u64 rxoctetcount_g;
-	u64 rxbroadcastframes_g;
-	u64 rxmulticastframes_g;
-	u64 rxcrcerror;
-	u64 rxrunterror;
-	u64 rxjabbererror;
-	u64 rxundersize_g;
-	u64 rxoversize_g;
-	u64 rxunicastframes_g;
-	u64 rxlengtherror;
-	u64 rxoutofrangetype;
-	u64 rxpauseframes;
-	u64 rxfifooverflow;
-	u64 rxvlanframes_gb;
-	u64 rxwatchdogerror;
-};
-
-#endif
-/* This structure contains flags that indicate what hardware features
- * or configurations are present in the device.
- */
-struct xgmac_hw_features {
-	/* HW Version */
-	u32 version;
-
-	/* HW Feature Register0 */
-	u32 gmii;              /* 1000 Mbps support */
-	u32 vlhash;            /* VLAN Hash Filter */
-	u32 sma;               /* SMA(MDIO) Interface */
-	u32 rwk;               /* PMT remote wake-up packet */
-	u32 mgk;               /* PMT magic packet */
-	u32 mmc;               /* RMON module */
-	u32 aoe;               /* ARP Offload */
-	u32 ts;                /* IEEE 1588-2008 Advanced Timestamp */
-	u32 eee;               /* Energy Efficient Ethernet */
-	u32 tx_coe;            /* Tx Checksum Offload */
-	u32 rx_coe;            /* Rx Checksum Offload */
-	u32 addn_mac;          /* Additional MAC Addresses */
-	u32 ts_src;            /* Timestamp Source */
-	u32 sa_vlan_ins;       /* Source Address or VLAN Insertion */
-	u32 vxn;				/* VxLAN/NVGRE Support */
-	u32 ediffc;			/* Different Descriptor Cache */
-	u32 edma;				/* Enhanced DMA */
-
-	/* HW Feature Register1 */
-	u32 rx_fifo_size;      /* MTL Receive FIFO Size */
-	u32 tx_fifo_size;      /* MTL Transmit FIFO Size */
-	u32 osten;      		/* One-Step Timestamping Enable */
-	u32 ptoen;      		/* PTP Offload Enable */
-	u32 adv_ts_hi;         /* Advance Timestamping High Word */
-	u32 dma_width;         /* DMA width */
-	u32 dcb;               /* DCB Feature */
-	u32 sph;               /* Split Header Feature */
-	u32 tso;               /* TCP Segmentation Offload */
-	u32 dma_debug;         /* DMA Debug Registers */
-	u32 rss;               /* Receive Side Scaling */
-	u32 tc_cnt;            /* Number of Traffic Classes */
-	u32 hash_table_size;   /* Hash Table Size */
-	u32 l3l4_filter_num;   /* Number of L3-L4 Filters */
-
-	/* HW Feature Register2 */
-	u32 rx_q_cnt;          /* Number of MTL Receive Queues */
-	u32 tx_q_cnt;          /* Number of MTL Transmit Queues */
-	u32 rx_ch_cnt;         /* Number of DMA Receive Channels */
-	u32 tx_ch_cnt;         /* Number of DMA Transmit Channels */
-	u32 pps_out_num;       /* Number of PPS outputs */
-	u32 aux_snap_num;      /* Number of Aux snapshot inputs */
-};
-
 struct mac_irq_hdl {
 	u32 irq_event;
 	void (*cb)(void *);
@@ -515,16 +336,24 @@ struct mac_irq_hdl {
 struct mac_prv_data;
 
 struct mac_prv_data {
-	/* Lmac addr base */
-	u32 lmac_addr_base;
 
 	/* XGMAC registers for indirect accessing */
 	u32 xgmac_ctrl_reg;
 	u32 xgmac_data0_reg;
 	u32 xgmac_data1_reg;
 
+#ifdef __KERNEL__
+	/* Adaption layer private data */
+	void __iomem *ss_addr_base;
+	/* Lmac addr base */
+	void __iomem *lmac_addr_base;
+#else
 	/* Adaption layer private data */
 	u32 ss_addr_base;
+	/* Lmac addr base */
+	u32 lmac_addr_base;
+
+#endif
 	/* Index to point XGMAC 2/3/4 */
 	u32 mac_idx;
 
@@ -575,6 +404,7 @@ struct mac_prv_data {
 	 * queued for transmission and device
 	 * will take timesstamp for this skb
 	 */
+	struct platform_device *pdev;
 	struct device *dev;
 	struct sk_buff *ptp_tx_skb;
 	struct work_struct ptp_tx_work;
@@ -666,8 +496,6 @@ struct mac_prv_data {
 	u32 set_all;
 	u32 duplex_mode;
 
-	u32 init_val;
-
 	u32 jd;
 	u32 wd;
 
@@ -685,10 +513,21 @@ struct mac_prv_data {
 	u32 mdio_int;
 
 	u32 phyadr;
+	u32 bus_id;
 
 	u32 ptp_clk;
 
-	u32 val;
+	/* PCH */
+	u32 pch_en;
+	u32 pch_tx;
+	u32 pch_rx;
+
+	/* PFC enable/disable */
+	u32 pfc_en;
+
+	/* Mac Cli */
+	GSW_MAC_Cli_t *mac_cli;
+
 	/* Maximum number of MAC present */
 	u32 max_mac;
 
@@ -729,14 +568,14 @@ u32 gsw_get_mac_subifcnt(u32 devid);
 #endif
 
 int xgmac_main(u32 argc, u8 *argv[]);
-int gswss_main(u32 argc, u8 *argv[]);
-int lmac_main(u32 argc, u8 *argv[]);
-void lmac_wr_reg(void *pdev, u32 reg_off, u32 reg_val);
-u32 lmac_rd_reg(void *pdev, u32 reg_off);
-void xgmac_wr_reg(void *pdev, u16 reg_off, u32 reg_val);
-u32 xgmac_rd_reg(void *pdev, u16 reg_off);
-void gswss_wr_reg(void *pdev, u32 reg_off, u32 reg_val);
-u32 gswss_rd_reg(void *pdev, u32 reg_off);
+int gswss_cfg_main(GSW_MAC_Cli_t *);
+int lmac_cfg_main(GSW_MAC_Cli_t *);
+int lmac_wr_reg(void *pdev, u32 reg_off, u32 reg_val);
+int lmac_rd_reg(void *pdev, u32 reg_off);
+int xgmac_wr_reg(void *pdev, u32 reg_off, u32 reg_val);
+int xgmac_rd_reg(void *pdev, u32 reg_off);
+int gswss_wr_reg(void *pdev, u32 reg_off, u32 reg_val);
+int gswss_rd_reg(void *pdev, u32 reg_off);
 void mac_init_fn_ptrs(struct mac_ops *mac_op);
 int xgmac_init(void *pdev);
 int xgmac_exit(void *pdev);

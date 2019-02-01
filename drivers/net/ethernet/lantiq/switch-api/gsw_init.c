@@ -917,7 +917,6 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 	gswdev->core_dev = pdev;
 
 	memset(&core_init, 0, sizeof(ethsw_core_init_t));
-	printk("GSWIP devid = %d\n", device_id);
 
 	if (device_id < 0 || device_id >= 2)
 		return -EINVAL;
@@ -931,8 +930,6 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 		return -ENOENT;
 	}
 
-	printk("memres->start = 0x%08x memres->end = 0x%08x\n", memres->start, memres->end);
-
 	/*Enable Switch Power  */
 	clk = devm_clk_get(&pdev->dev, "gate");
 
@@ -943,24 +940,20 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 
 	if (device_id == 0) {
 		addr_gswl = devm_ioremap_resource(&pdev->dev, memres);
-		printk("addr_gswl = 0x%08x\n", (unsigned int)addr_gswl);
 
 		if (IS_ERR(addr_gswl))
 			return PTR_ERR(addr_gswl);
-
-		pr_err("%s:%s:%d (Register l base:0x%08x)\n",
-		       __FILE__, __func__, __LINE__, (u32)addr_gswl);
 	}
 
 	if (device_id == 1) {
 		addr_gswr = devm_ioremap_resource(&pdev->dev, memres);
-		printk("addr_gswr = 0x%08x\n", (unsigned int)addr_gswr);
+		pr_debug("addr_gswr = 0x%p\n", addr_gswr);
 
 		if (IS_ERR(addr_gswr))
 			return PTR_ERR(addr_gswr);
 
-		pr_err("%s:%s:%d (Register r base:0x%08x)\n",
-		       __FILE__, __func__, __LINE__, (u32)addr_gswr);
+		pr_err("%s:%s:%d (Register r base:0x%p)\n",
+		       __FILE__, __func__, __LINE__, addr_gswr);
 	}
 
 
@@ -981,7 +974,6 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 		core_init.sdev = LTQ_FLOW_DEV_INT;
 		core_init.gsw_base_addr = addr_gswl;
 		core_init.pdev = (void *)pdev;
-		printk("addr_gswl = 0x%08x\n", (unsigned int)addr_gswl);
 
 		pEDev0 = ethsw_api_core_init(&core_init);
 
@@ -1219,7 +1211,6 @@ static void __exit ltq_etshw_api_exit(void)
 
 static int ltq_switch_api_probe(struct platform_device *pdev)
 {
-	printk("::::::: SWAPI Reached :::::: \n");
 	ltq_ethsw_api_init(pdev);
 	return 0;
 }

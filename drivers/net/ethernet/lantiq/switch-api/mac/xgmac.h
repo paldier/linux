@@ -43,7 +43,6 @@
 #define __XGMAC_H__
 
 #include <xgmac_common.h>
-#include <xgmac_cli.h>
 #include <mac_cfg.h>
 
 #define XGMAC_MIN_PACKET        60
@@ -393,6 +392,8 @@
 #define MAC_RX_CFG_GPSLCE_WIDTH		   1
 #define MAC_RX_CFG_GPSL_POS                16
 #define MAC_RX_CFG_GPSL_WIDTH		   14
+#define MAC_RX_CFG_PRXM_POS                15
+#define MAC_RX_CFG_PRXM_WIDTH		   1
 
 #define MAC_RX_FCR_PFCE_POS               8
 #define MAC_RX_FCR_PFCE_WIDTH             1
@@ -428,6 +429,10 @@
 #define MAC_TX_CFG_IPG_WIDTH		   3
 #define MAC_TX_CFG_IFP_POS                 11
 #define MAC_TX_CFG_IFP_WIDTH		   1
+#define MAC_TX_CFG_PEN_POS                 19
+#define MAC_TX_CFG_PEN_WIDTH		   1
+#define MAC_TX_CFG_PCHM_POS                18
+#define MAC_TX_CFG_PCHM_WIDTH		   1
 #define MAC_TX_CFG_G9991EN_POS             28
 #define MAC_TX_CFG_G9991EN_WIDTH	   1
 
@@ -467,6 +472,8 @@
 #define MAC_TSTAMP_CR_TSUPDT_WIDTH           1
 #define MAC_TSTAMP_CR_ESTI_POS               20
 #define MAC_TSTAMP_CR_ESTI_WIDTH             1
+#define MAC_TSTAMP_CR_CSC_POS               19
+#define MAC_TSTAMP_CR_CSC_WIDTH             1
 
 #define MAC_TSTAMP_STSR_ATSNS_POS              25
 #define MAC_TSTAMP_STSR_ATSNS_WIDTH            5
@@ -676,26 +683,6 @@
 #define MTL_TCPR_MAP0_PSTC0_POS		0
 #define MTL_TCPR_MAP0_PSTC0_WIDTH	8
 
-/* RX THRESHOLD operations */
-#define MTL_RX_THRESHOLD_32		0x01
-#define MTL_RX_THRESHOLD_64             0x00
-#define MTL_RX_THRESHOLD_96             0x02
-#define MTL_RX_THRESHOLD_128            0x03
-#define MTL_TX_THRESHOLD_32             0x01
-#define MTL_TX_THRESHOLD_64             0x00
-#define MTL_TX_THRESHOLD_96             0x02
-#define MTL_TX_THRESHOLD_128            0x03
-#define MTL_TX_THRESHOLD_192            0x04
-#define MTL_TX_THRESHOLD_256            0x05
-#define MTL_TX_THRESHOLD_384            0x06
-#define MTL_TX_THRESHOLD_512            0x07
-
-#define MTL_ETSALG_WRR                  0x00
-#define MTL_ETSALG_WFQ                  0x01
-#define MTL_ETSALG_DWRR                 0x02
-#define MTL_RAA_SP                      0x00
-#define MTL_RAA_WSP                     0x01
-
 enum {
 	XGMAC_256 = 0x0,
 	XGMAC_512 = 0x1,
@@ -773,22 +760,22 @@ enum  {
 static inline u32 XGMAC_IO_R32(struct mac_prv_data *pdata, u16 reg)
 {
 	u32 reg_val;
-	volatile void *xgmac_ctrl_reg  =
-		(volatile void *)(pdata->ss_addr_base + pdata->xgmac_ctrl_reg);
-	volatile void *xgmac_data0_reg =
-		(volatile void *)pdata->ss_addr_base + pdata->xgmac_data0_reg;
-	volatile void *xgmac_data1_reg =
-		(volatile void *)pdata->ss_addr_base + pdata->xgmac_data1_reg;
+	void __iomem *xgmac_ctrl_reg  =
+		(void __iomem *)(pdata->ss_addr_base + pdata->xgmac_ctrl_reg);
+	void __iomem *xgmac_data0_reg =
+		(void __iomem *)pdata->ss_addr_base + pdata->xgmac_data0_reg;
+	void __iomem *xgmac_data1_reg =
+		(void __iomem *)pdata->ss_addr_base + pdata->xgmac_data1_reg;
 
-	ltq_w32((0x8000 | reg), xgmac_ctrl_reg);
+	mac_w32((0x8000 | reg), xgmac_ctrl_reg);
 
 	while (1) {
-		if ((ltq_r32(xgmac_ctrl_reg) & 0x8000) == 0)
+		if ((mac_r32(xgmac_ctrl_reg) & 0x8000) == 0)
 			break;
 	}
 
-	reg_val = ((ltq_r32(xgmac_data1_reg) << 16) |
-		   (ltq_r32(xgmac_data0_reg)));
+	reg_val = ((mac_r32(xgmac_data1_reg) << 16) |
+		   (mac_r32(xgmac_data0_reg)));
 
 	return reg_val;
 }
@@ -796,19 +783,19 @@ static inline u32 XGMAC_IO_R32(struct mac_prv_data *pdata, u16 reg)
 static inline void XGMAC_IO_W32(struct mac_prv_data *pdata, u16 reg,
 				u32 val)
 {
-	volatile void *xgmac_ctrl_reg  =
-		(volatile void *)(pdata->ss_addr_base + pdata->xgmac_ctrl_reg);
-	volatile void *xgmac_data0_reg =
-		(volatile void *)(pdata->ss_addr_base + pdata->xgmac_data0_reg);
-	volatile void *xgmac_data1_reg =
-		(volatile void *)(pdata->ss_addr_base + pdata->xgmac_data1_reg);
+	void __iomem *xgmac_ctrl_reg  =
+		(void __iomem *)(pdata->ss_addr_base + pdata->xgmac_ctrl_reg);
+	void __iomem *xgmac_data0_reg =
+		(void __iomem *)(pdata->ss_addr_base + pdata->xgmac_data0_reg);
+	void __iomem *xgmac_data1_reg =
+		(void __iomem *)(pdata->ss_addr_base + pdata->xgmac_data1_reg);
 
-	ltq_w32(((val & 0xFFFF0000) >> 16), xgmac_data1_reg);
-	ltq_w32((val & 0x0000FFFF), xgmac_data0_reg);
-	ltq_w32((0xC000 | reg), xgmac_ctrl_reg);
+	mac_w32(((val & 0xFFFF0000) >> 16), xgmac_data1_reg);
+	mac_w32((val & 0x0000FFFF), xgmac_data0_reg);
+	mac_w32((0xC000 | reg), xgmac_ctrl_reg);
 
 	while (1) {
-		if ((ltq_r32(xgmac_ctrl_reg) & 0x8000) == 0)
+		if ((mac_r32(xgmac_ctrl_reg) & 0x8000) == 0)
 			break;
 	}
 }
@@ -953,7 +940,7 @@ int xgmac_set_flow_control_threshold(void *pdev,
 				     u32 rfa, u32 rfd);
 int xgmac_set_mmc(void *pdev);
 
-int xgmac_clear_rmon(void *pdev, u32 rmon_reset);
+int xgmac_clear_rmon(void *pdev);
 int xgmac_read_mmc_stats(void *pdev, struct xgmac_mmc_stats *stats);
 int xgmac_set_debug_ctl(void *pdev, u32 dbg_en, u32 dbg_mode);
 int xgmac_set_debug_data(void *pdev, u32 dbg_data);
@@ -1001,11 +988,10 @@ int xgmac_config_std_pkt(void *pdev);
 int xgmac_powerup(void *pdev);
 int xgmac_powerdown(void *pdev);
 int xgmac_config_subsec_inc(void *pdev, u32 ptp_clk);
-void xgmac_ptp_txtstamp_mode(void *pdev,
-			     u32 snaptypesel,
-			     u32 tsmstrena,
-			     u32 tsevntena);
-
+int xgmac_ptp_txtstamp_mode(void *pdev,
+			    u32 snaptypesel,
+			    u32 tsmstrena,
+			    u32 tsevntena);
 int xgmac_set_eee_mode(void *pdev, u32 val);
 int xgmac_set_eee_pls(void *pdev, u32 val);
 int xgmac_set_eee_timer(void *pdev, u32 twt, u32 lst);
@@ -1015,7 +1001,7 @@ int xgmac_set_ipg(void *pdev, u32 ipg);
 int xgmac_set_magic_pmt(void *pdev, u32 val);
 int xgmac_set_rwk_pmt(void *pdev, u32 val);
 int xgmac_set_extcfg(void *pdev, u32 val);
-void xgmac_set_mac_rxtx(void *pdev, u32 wd, u32 jd);
+int xgmac_set_mac_rxtx(void *pdev, u32 wd, u32 jd);
 int xgmac_set_rwk_filter_registers(void *pdev, u32 count,
 				   u32 *val);
 int xgmac_set_pmt_gucast(void *pdev, u32 val);
@@ -1023,9 +1009,11 @@ int xgmac_set_ptp_offload(void *pdev, u32 type, u32 val);
 int xgmac_set_ptp_offload_msg_gen(void *pdev, u32 mode);
 int xgmac_set_mac_lpitx(void *pdev, u32 val);
 int xgmac_pause_frame_filtering(void *pdev, u32 val);
+int xgmac_set_pch(void *pdev, u32 pch_en, u32 pch_rx, u32 pch_tx);
+int xgmac_set_pfc(void *pdev, u32 enable);
 int xgmac_set_gint(void *pdev, u32 val);
 int xgmac_set_rxcrc(void *pdev, u32 val);
-void xgmac_set_exttime_source(void *pdev, u32 val);
+int xgmac_set_exttime_source(void *pdev, u32 val);
 
 
 /* GET API's */
@@ -1064,6 +1052,7 @@ int xgmac_dbg_int_sts(void *pdev);
 int xgmac_get_ipg(void *pdev);
 int xgmac_get_txtstamp_cnt(void *pdev);
 int xgmac_get_txtstamp_pktid(void *pdev);
+int xgmac_get_pch_crc_cnt(void *pdev);
 
 
 #if defined(CHIPTEST) && CHIPTEST

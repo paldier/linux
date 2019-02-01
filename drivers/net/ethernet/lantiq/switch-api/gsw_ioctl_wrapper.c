@@ -9,8 +9,6 @@
     this software module.
 ******************************************************************************/
 
-
-
 #include <gsw_init.h>
 
 ioctl_wrapper_ctx_t *ioctlwrapctx = NULL;
@@ -64,6 +62,7 @@ int gsw_command_search(void *phandle, u32 command,
 	int retvalue;
 	ioctl_cmd_handle_t *pdrv = (ioctl_cmd_handle_t *) phandle;
 	const ltq_lowlevel_fkts_t *pLlTable = pdrv->pLlTable;
+	unsigned long ret;
 	/*  attempt to acquire the semaphore ...*/
 
 	/* This table contains the low-level function for the */
@@ -103,8 +102,8 @@ int gsw_command_search(void *phandle, u32 command,
 
 			if (apitype == ETHSW_API_USERAPP) {
 #ifdef __KERNEL__
-				copy_from_user((void *)(pdrv->paramBuffer),
-					       (const void __user *)arg, (unsigned long)size);
+				ret = copy_from_user((void *)(pdrv->paramBuffer),
+						     (const void __user *)arg, (unsigned long)size);
 				/* Now call the low-level function with the right low-level context */
 				/* handle and the local copy of the parameter structure of 'arg'. */
 
@@ -116,9 +115,9 @@ int gsw_command_search(void *phandle, u32 command,
 				/* Copy parameter to userspace. */
 				/* Only copy back to userspace if really required */
 				if (_IOC_DIR(command) & _IOC_READ) {
-					copy_to_user((void __user *)arg,
-						     (const void *)(pdrv->paramBuffer),
-						     (unsigned long)size);
+					ret = copy_to_user((void __user *)arg,
+							   (const void *)(pdrv->paramBuffer),
+							   (unsigned long)size);
 				}
 
 #endif
@@ -259,7 +258,7 @@ int gsw_api_drv_register(u32 major)
 		return result;
 	}
 
-	pr_info("SWAPI: Registered char device [%s] with major no [%d]\n",
+	pr_debug("SWAPI: Registered char device [%s] with major no [%d]\n",
 		ETHSW_API_DEV_NAME, major);
 	return 0;
 }

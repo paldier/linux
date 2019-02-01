@@ -1587,7 +1587,7 @@ int gsw_pmicro_code_init(void *cdev)
 	else
 		no_ports = gswdev->pnum;
 
-	printk("Enter PCE micro-code init\n");
+	pr_debug("Enter PCE micro-code init\n");
 
 	/* Disable all physical port  */
 	for (j = 0; j < no_ports; j++) {
@@ -1690,7 +1690,7 @@ int gsw_pmicro_code_init(void *cdev)
 	gsw_w32(cdev, BM_QUEUE_GCTRL_GL_MOD_OFFSET, BM_QUEUE_GCTRL_GL_MOD_SHIFT,
 		Gl_Mod_Size, 0);
 
-	pr_err("Exit PCE micro-code init\n");
+	pr_debug("Exit PCE micro-code init\n");
 	return GSW_statusOk;
 }
 

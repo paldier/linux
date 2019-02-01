@@ -63,8 +63,8 @@ int xgmac_set_loopback(void *pdev, u32 val)
 	reg_val = XGMAC_RGRD(pdata, MAC_RX_CFG);
 
 	if (MAC_GET_VAL(reg_val, MAC_RX_CFG, LM) != val) {
-		mac_printf("XGMAC %d: LOOPBACK mode: %s\n",
-			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: LOOPBACK mode: %s\n",
+			pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_RX_CFG, LM, val);
 		XGMAC_RGWR(pdata, MAC_RX_CFG, reg_val);
 	}
@@ -98,8 +98,8 @@ int xgmac_disable_tx_flow_ctl(void *pdev)
 	reg_val = XGMAC_RGRD(pdata, MAC_TX_FCR);
 
 	if (MAC_GET_VAL(reg_val, MAC_TX_FCR, TFE) != 0) {
-		mac_printf("XGMAC %d: Disable TX Flow Control\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Disable TX Flow Control\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(reg_val, MAC_TX_FCR, TFE, 0);
 		XGMAC_RGWR(pdata, MAC_TX_FCR, reg_val);
 	}
@@ -115,8 +115,8 @@ int xgmac_disable_rx_flow_ctl(void *pdev)
 	reg_val = XGMAC_RGRD(pdata, MAC_RX_FCR);
 
 	if (MAC_GET_VAL(reg_val, MAC_RX_FCR, RFE) != 0) {
-		mac_printf("XGMAC %d: Disable RX Flow Control\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Disable RX Flow Control\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(reg_val, MAC_RX_FCR, RFE, 0);
 		XGMAC_RGWR(pdata, MAC_RX_FCR, reg_val);
 	}
@@ -132,8 +132,8 @@ int xgmac_enable_tx_flow_ctl(void *pdev, u32 pause_time)
 	reg_val = XGMAC_RGRD(pdata, MAC_TX_FCR);
 
 	if (MAC_GET_VAL(reg_val, MAC_TX_FCR, TFE) != 1) {
-		mac_printf("XGMAC %d: Enable TX Flow Control\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Enable TX Flow Control\n",
+			pdata->mac_idx);
 		/* Enable transmit flow control */
 		MAC_SET_VAL(reg_val, MAC_TX_FCR, TFE, 1);
 		/* Set pause time */
@@ -153,8 +153,8 @@ int xgmac_enable_rx_flow_ctl(void *pdev)
 	reg_val = XGMAC_RGRD(pdata, MAC_RX_FCR);
 
 	if (MAC_GET_VAL(reg_val, MAC_RX_FCR, RFE) != 1) {
-		mac_printf("XGMAC %d: Enable RX Flow Control\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Enable RX Flow Control\n",
+			pdata->mac_idx);
 		/* Enable Receive flow control */
 		MAC_SET_VAL(reg_val, MAC_RX_FCR, RFE, 1);
 		// TODO: Need to check whether this is needed
@@ -177,13 +177,13 @@ int xgmac_enable_rx_flow_ctl(void *pdev)
 int xgmac_initiate_pause_tx(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	u32 reg_val;
+	u32 reg_val, idx = 0;
 
 	reg_val = XGMAC_RGRD(pdata, MAC_TX_FCR);
 
 	if (MAC_GET_VAL(reg_val, MAC_TX_FCR, TFE) == 0) {
-		mac_printf("XGMAC %d: Pause pkt txd only if TFE bit is set\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Pause pkt txd only if TFE bit is set\n",
+			pdata->mac_idx);
 		return 0;
 	}
 
@@ -192,15 +192,25 @@ int xgmac_initiate_pause_tx(void *pdev)
 	/* Initiate Pause TX */
 	XGMAC_RGWR(pdata, MAC_TX_FCR, reg_val);
 
-	while (1) {
+	do {
 		reg_val = XGMAC_RGRD(pdata, MAC_TX_FCR);
 
 		if (MAC_GET_VAL(reg_val, MAC_TX_FCR, FCB) == 0) {
-			mac_printf("XGMAC %d: Pause Pkt Txd complete\n",
-				   pdata->mac_idx);
+			mac_dbg("XGMAC %d: Pause Pkt Txd complete\n",
+				pdata->mac_idx);
 			break;
 		}
-	}
+
+
+		idx++;
+
+#ifdef __KERNEL__
+		/* To put a small delay and make sure previous operations
+		 * are complete
+		 */
+		usleep_range(100, 200);
+#endif
+	} while (idx <= MAX_RETRY);
 
 	return 0;
 }
@@ -213,8 +223,8 @@ int xgmac_clear_mac_int(void *pdev)
 
 	/* Clear all the interrupts which are set */
 	mac_isr = XGMAC_RGRD(pdata, MAC_ISR);
-	mac_printf("XGMAC %d Clearing MAC ISR registers with %08x\n",
-		   pdata->mac_idx, mac_isr);
+	mac_dbg("XGMAC %d Clearing MAC ISR registers with %08x\n",
+		pdata->mac_idx, mac_isr);
 	XGMAC_RGWR(pdata, MAC_ISR, mac_isr);
 	return 0;
 }
@@ -274,7 +284,7 @@ int xgmac_set_mac_int(void *pdev, u32 event, u32 val)
 		break;
 
 	default:
-		mac_printf("Unsupported Mac Event\n");
+		mac_dbg("Unsupported Mac Event\n");
 		return GSW_statusErr;
 	}
 
@@ -305,8 +315,8 @@ int xgmac_set_gmii_speed(void *pdev)
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, USS, 0);
 
 	if (MAC_GET_VAL(mac_tcr, MAC_TX_CFG, SS) != 0x3) {
-		mac_printf("XGMAC %d: Setting SPEED to GMII 1G\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Setting SPEED to GMII 1G\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, SS, 0x3);
 	}
 
@@ -328,8 +338,8 @@ int xgmac_set_gmii_2500_speed(void *pdev)
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, USS, 0);
 
 	if (MAC_GET_VAL(mac_tcr, MAC_TX_CFG, SS) != 0x2) {
-		mac_printf("XGMAC %d: Setting SPEED to GMII 2.5G\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Setting SPEED to GMII 2.5G\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, SS, 0x2);
 	}
 
@@ -351,8 +361,8 @@ int xgmac_set_xgmii_2500_speed(void *pdev)
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, USS, 1);
 
 	if (MAC_GET_VAL(mac_tcr, MAC_TX_CFG, SS) != 0x2) {
-		mac_printf("XGMAC %d: Setting SPEED to XGMII 2.5G\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Setting SPEED to XGMII 2.5G\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, SS, 0x2);
 	}
 
@@ -374,8 +384,8 @@ int xgmac_set_xgmii_speed(void *pdev)
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, USS, 0);
 
 	if (MAC_GET_VAL(mac_tcr, MAC_TX_CFG, SS) != 0) {
-		mac_printf("XGMAC %d: Setting SPEED to XGMII 10G\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Setting SPEED to XGMII 10G\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, SS, 0);
 	}
 
@@ -392,15 +402,15 @@ int xgmac_pause_frame_filtering(void *pdev, u32 val)
 	u32 mac_pfr = XGMAC_RGRD(pdata, MAC_PKT_FR);
 
 	if (MAC_GET_VAL(mac_pfr, MAC_PKT_FR, PCF) != val) {
-		mac_printf("XGMAC %d: Pause filtering %s\n",
-			   pdata->mac_idx, val ? "Enabled" : "Disabled");
+		mac_dbg("XGMAC %d: Pause filtering %s\n",
+			pdata->mac_idx, val ? "Enabled" : "Disabled");
 		/* Pause filtering */
 		MAC_SET_VAL(mac_pfr, MAC_PKT_FR, PCF, val);
 	}
 
 	if (MAC_GET_VAL(mac_pfr, MAC_PKT_FR, RA) == 1) {
-		mac_printf("XGMAC %d: MAC Filter Receive All: DISABLED\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: MAC Filter Receive All: DISABLED\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_pfr, MAC_PKT_FR, RA, 0);
 	}
 
@@ -428,8 +438,8 @@ int xgmac_set_promiscuous_mode(void *pdev, u32 val)
 	u32 reg_val = XGMAC_RGRD(pdata, MAC_PKT_FR);
 
 	if (MAC_GET_VAL(reg_val, MAC_PKT_FR, PR) != val) {
-		mac_printf("XGMAC %d: %s promiscuous mode\n",
-			   pdata->mac_idx,  val ? "Entering" : "Leaving");
+		mac_dbg("XGMAC %d: %s promiscuous mode\n",
+			pdata->mac_idx,  val ? "Entering" : "Leaving");
 		MAC_SET_VAL(reg_val, MAC_PKT_FR, PR, val);
 
 		XGMAC_RGWR(pdata, MAC_PKT_FR, reg_val);
@@ -451,8 +461,8 @@ int xgmac_set_all_multicast_mode(void *pdev, u32 val)
 
 	if (MAC_GET_VAL(reg_val, MAC_PKT_FR, PM) != val) {
 		MAC_SET_VAL(reg_val, MAC_PKT_FR, PM, val);
-		mac_printf("XGMAC %d: %s allmulti mode\n",
-			   pdata->mac_idx,  val ? "Entering" : "Leaving");
+		mac_dbg("XGMAC %d: %s allmulti mode\n",
+			pdata->mac_idx,  val ? "Entering" : "Leaving");
 		XGMAC_RGWR(pdata, MAC_PKT_FR, reg_val);
 	}
 
@@ -482,9 +492,9 @@ int xgmac_set_mac_address(void *pdev, u8 *mac_addr)
 	XGMAC_RGWR(pdata, MAC_MACA0HR, mac_addr_hi);
 
 	if (XGMAC_RGRD(pdata, MAC_MACA0LR) != mac_addr_lo) {
-		mac_printf("XGMAC %d: Setting mac_addr as %08x%04x\n",
-			   pdata->mac_idx,  mac_addr_lo,
-			   (mac_addr_hi & 0x0000FFFF));
+		mac_dbg("XGMAC %d: Setting mac_addr as %08x%04x\n",
+			pdata->mac_idx,  mac_addr_lo,
+			(mac_addr_hi & 0x0000FFFF));
 		XGMAC_RGWR(pdata, MAC_MACA0LR, mac_addr_lo);
 	}
 
@@ -512,8 +522,8 @@ int xgmac_set_checksum_offload(void *pdev, u32 val)
 	u32 reg_val = XGMAC_RGRD(pdata, MAC_RX_CFG);
 
 	if (MAC_GET_VAL(reg_val, MAC_RX_CFG, IPC) != val) {
-		mac_printf("XGMAC %d: Setting rx_checksum_offload as %s\n",
-			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: Setting rx_checksum_offload as %s\n",
+			pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_RX_CFG, IPC, val);
 		XGMAC_RGWR(pdata, MAC_RX_CFG, reg_val);
 	}
@@ -610,8 +620,8 @@ int xgmac_set_rxcrc(void *pdev, u32 val)
 	mac_rcr = XGMAC_RGRD(pdata, MAC_RX_CFG);
 	MAC_SET_VAL(mac_rcr, MAC_RX_CFG, DCRCC, val);
 
-	mac_printf("XGMAC %d: Rx CRC check: %s\n", pdata->mac_idx,
-		   val ? "DISABLED" : "ENABLED");
+	mac_dbg("XGMAC %d: Rx CRC check: %s\n", pdata->mac_idx,
+		val ? "DISABLED" : "ENABLED");
 
 	XGMAC_RGWR(pdata, MAC_RX_CFG, mac_rcr);
 
@@ -646,22 +656,22 @@ int xgmac_powerup(void *pdev)
 
 	/* Enable MAC Tx */
 	if (MAC_GET_VAL(mac_tcr, MAC_TX_CFG, TE) != 1) {
-		mac_printf("XGMAC %d: MAC TX: ENABLED\n", pdata->mac_idx);
+		mac_dbg("XGMAC %d: MAC TX: ENABLED\n", pdata->mac_idx);
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, TE, 1);
 		XGMAC_RGWR(pdata, MAC_TX_CFG, mac_tcr);
 	}
 
 	/* Enable MAC Rx */
 	if (MAC_GET_VAL(mac_rcr, MAC_RX_CFG, RE) != 1) {
-		mac_printf("XGMAC %d: MAC RX: ENABLED\n", pdata->mac_idx);
+		mac_dbg("XGMAC %d: MAC RX: ENABLED\n", pdata->mac_idx);
 		MAC_SET_VAL(mac_rcr, MAC_RX_CFG, RE, 1);
 		XGMAC_RGWR(pdata, MAC_RX_CFG, mac_rcr);
 	}
 
 	/* Enable MAC Filter Rx All */
 	if (MAC_GET_VAL(mac_pfr, MAC_PKT_FR, RA) != 1) {
-		mac_printf("XGMAC %d: MAC Filter Receive All: ENABLED\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: MAC Filter Receive All: ENABLED\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_pfr, MAC_PKT_FR, RA, 1);
 		XGMAC_RGWR(pdata, MAC_PKT_FR, mac_pfr);
 	}
@@ -678,22 +688,22 @@ int xgmac_powerdown(void *pdev)
 
 	/* Disable MAC Tx */
 	if (MAC_GET_VAL(mac_tcr, MAC_TX_CFG, TE) != 0) {
-		mac_printf("XGMAC %d: MAC TX: DISABLED\n", pdata->mac_idx);
+		mac_dbg("XGMAC %d: MAC TX: DISABLED\n", pdata->mac_idx);
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, TE, 0);
 		XGMAC_RGWR(pdata, MAC_TX_CFG, mac_tcr);
 	}
 
 	/* Disable MAC Rx */
 	if (MAC_GET_VAL(mac_rcr, MAC_RX_CFG, RE) != 0) {
-		mac_printf("XGMAC %d: MAC RX: DISABLED\n", pdata->mac_idx);
+		mac_dbg("XGMAC %d: MAC RX: DISABLED\n", pdata->mac_idx);
 		MAC_SET_VAL(mac_rcr, MAC_RX_CFG, RE, 0);
 		XGMAC_RGWR(pdata, MAC_RX_CFG, mac_rcr);
 	}
 
 	/* Disable MAC Filter Rx All */
 	if (MAC_GET_VAL(mac_pfr, MAC_PKT_FR, RA) != 0) {
-		mac_printf("XGMAC %d: MAC Filter Receive All: DISABLED\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: MAC Filter Receive All: DISABLED\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(mac_pfr, MAC_PKT_FR, RA, 0);
 		XGMAC_RGWR(pdata, MAC_PKT_FR, mac_pfr);
 	}
@@ -729,8 +739,8 @@ int xgmac_set_eee_mode(void *pdev, u32 val)
 	u32 mac_lpiscr = XGMAC_RGRD(pdata, MAC_LPI_CSR);
 
 	if (MAC_GET_VAL(mac_lpiscr, MAC_LPI_CSR, LPITXEN) != val) {
-		mac_printf("XGMAC %d: LPI Transmit Enable: %s\n",
-			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: LPI Transmit Enable: %s\n",
+			pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(mac_lpiscr, MAC_LPI_CSR, LPITXA, val);
 		MAC_SET_VAL(mac_lpiscr, MAC_LPI_CSR, LPITXEN, val);
 	}
@@ -747,8 +757,8 @@ u32 xgmac_get_eee_mode(void *pdev)
 
 	lpitxen = XGMAC_RGRD_BITS(pdata, MAC_LPI_CSR, LPITXEN);
 
-	mac_printf("\tLPI Transmit Enable: %s\n",
-		   lpitxen ? "ENABLED" : "DISABLED");
+	mac_dbg("\tLPI Transmit Enable: %s\n",
+		lpitxen ? "ENABLED" : "DISABLED");
 
 	return lpitxen;
 }
@@ -769,8 +779,8 @@ int xgmac_set_eee_pls(void *pdev, u32 val)
 
 	/* Disable MAC Tx */
 	if (MAC_GET_VAL(reg_val, MAC_LPI_CSR, PLS) != val) {
-		mac_printf("XGMAC %d: Phy link Status: %s\n",
-			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: Phy link Status: %s\n",
+			pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_LPI_CSR, PLS, val);
 		XGMAC_RGWR(pdata, MAC_LPI_CSR, reg_val);
 	}
@@ -825,8 +835,8 @@ int xgmac_set_crc_strip_type(void *pdev, u32 val)
 	reg_val = XGMAC_RGRD(pdata, MAC_RX_CFG);
 
 	if (MAC_GET_VAL(reg_val, MAC_RX_CFG, CST) != val) {
-		mac_printf("XGMAC %d: CRC stripping for Type packets: %s\n",
-			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: CRC stripping for Type packets: %s\n",
+			pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_RX_CFG, CST, val);
 		XGMAC_RGWR(pdata, MAC_RX_CFG, reg_val);
 	}
@@ -850,8 +860,8 @@ int xgmac_set_acs(void *pdev, u32 val)
 	reg_val = XGMAC_RGRD(pdata, MAC_RX_CFG);
 
 	if (MAC_GET_VAL(reg_val, MAC_RX_CFG, ACS) != val) {
-		mac_printf("XGMAC %d: Automatic Pad or CRC Stripping: %s\n",
-			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: Automatic Pad or CRC Stripping: %s\n",
+			pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_RX_CFG, ACS, val);
 		XGMAC_RGWR(pdata, MAC_RX_CFG, reg_val);
 	}
@@ -873,8 +883,8 @@ int xgmac_set_ipg(void *pdev, u32 ipg)
 	reg_val = XGMAC_RGRD(pdata, MAC_TX_CFG);
 
 	if (MAC_GET_VAL(reg_val, MAC_TX_CFG, IPG) != ipg) {
-		mac_printf("XGMAC %d: IPG set to %d bytes\n",
-			   pdata->mac_idx, ((96 + (ipg * 32)) / 8));
+		mac_dbg("XGMAC %d: IPG set to %d bytes\n",
+			pdata->mac_idx, ((96 + (ipg * 32)) / 8));
 		MAC_SET_VAL(reg_val, MAC_TX_CFG, IPG, ipg);
 		XGMAC_RGWR(pdata, MAC_TX_CFG, reg_val);
 	}
@@ -904,14 +914,14 @@ int xgmac_set_magic_pmt(void *pdev, u32 val)
 	mac_pmtcsr = XGMAC_RGRD(pdata, MAC_PMT_CSR);
 
 	if (MAC_GET_VAL(mac_pmtcsr, MAC_PMT_CSR, MGKPKTEN) != val) {
-		mac_printf("XGMAC %d: Magic Packet: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: Magic Packet: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(mac_pmtcsr, MAC_PMT_CSR, MGKPKTEN, val);
 	}
 
 	if (MAC_GET_VAL(mac_pmtcsr, MAC_PMT_CSR, PWRDWN) != val) {
-		mac_printf("XGMAC %d: Power Down Mode: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: Power Down Mode: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(mac_pmtcsr, MAC_PMT_CSR, PWRDWN, val);
 	}
 
@@ -929,14 +939,14 @@ int xgmac_pmt_int_clr(void *pdev)
 	mac_pmtcsr = XGMAC_RGRD(pdata, MAC_PMT_CSR);
 
 	if (MAC_GET_VAL(mac_pmtcsr, MAC_PMT_CSR, MGKPRCVD)) {
-		mac_printf("XGMAC %d: Clearing Magic packet "
-			   "Interrupt\n", pdata->mac_idx);
+		mac_dbg("XGMAC %d: Clearing Magic packet "
+			"Interrupt\n", pdata->mac_idx);
 		ret = 0;
 	}
 
 	if (MAC_GET_VAL(mac_pmtcsr, MAC_PMT_CSR, RWKPRCVD)) {
-		mac_printf("XGMAC %d: Clearing Remote wakeup packet "
-			   "Interrupt\n", pdata->mac_idx);
+		mac_dbg("XGMAC %d: Clearing Remote wakeup packet "
+			"Interrupt\n", pdata->mac_idx);
 		ret = 0;
 	}
 
@@ -953,13 +963,13 @@ int xgmac_lpi_int_clr(void *pdev)
 	varmac_lps = XGMAC_RGRD(pdata, MAC_LPI_CSR);
 
 	if (MAC_GET_VAL(varmac_lps, MAC_LPI_CSR, TLPIEN)) {
-		//mac_printf("XGMAC %d: Clearing LPI TX Interrupt Status\n",
+		//mac_dbg("XGMAC %d: Clearing LPI TX Interrupt Status\n",
 		//	   pdata->mac_idx);
 		ret = 0;
 	}
 
 	if (MAC_GET_VAL(varmac_lps, MAC_LPI_CSR, RLPIEN)) {
-		//mac_printf("XGMAC %d: Clearing LPI RX Interrupt Status\n",
+		//mac_dbg("XGMAC %d: Clearing LPI RX Interrupt Status\n",
 		//	   pdata->mac_idx);
 		ret = 0;
 	}
@@ -980,14 +990,14 @@ int xgmac_set_rwk_pmt(void *pdev, u32 val)
 	mac_pmtcsr = XGMAC_RGRD(pdata, MAC_PMT_CSR);
 
 	if (MAC_GET_VAL(mac_pmtcsr, MAC_PMT_CSR, RWKPKTEN) != val) {
-		mac_printf("XGMAC %d: Remote Wakeup Packet: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: Remote Wakeup Packet: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(mac_pmtcsr, MAC_PMT_CSR, RWKPKTEN, val);
 	}
 
 	if (MAC_GET_VAL(mac_pmtcsr, MAC_PMT_CSR, PWRDWN) != val) {
-		mac_printf("XGMAC %d: Power Down Mode: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: Power Down Mode: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(mac_pmtcsr, MAC_PMT_CSR, PWRDWN, val);
 	}
 
@@ -1019,8 +1029,8 @@ int xgmac_set_pmt_gucast(void *pdev, u32 val)
 	mac_pmtcsr = XGMAC_RGRD(pdata, MAC_PMT_CSR);
 
 	if (MAC_GET_VAL(mac_pmtcsr, MAC_PMT_CSR, GLBLUCAST) != val) {
-		mac_printf("XGMAC %d: PMT Global Unicast: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: PMT Global Unicast: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(mac_pmtcsr, MAC_PMT_CSR, GLBLUCAST, val);
 	}
 
@@ -1037,8 +1047,8 @@ int xgmac_set_extcfg(void *pdev, u32 val)
 	mac_extcfg = XGMAC_RGRD(pdata, MAC_EXTCFG);
 
 	if (MAC_GET_VAL(mac_extcfg, MAC_EXTCFG, SBDIOEN) != val) {
-		mac_printf("XGMAC %d: MAC Extended CFG SBDIOEN: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: MAC Extended CFG SBDIOEN: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 
 		MAC_SET_VAL(mac_extcfg, MAC_EXTCFG, SBDIOEN, val);
 
@@ -1048,7 +1058,7 @@ int xgmac_set_extcfg(void *pdev, u32 val)
 	return 0;
 }
 
-void xgmac_set_mac_rxtx(void *pdev, u32 wd, u32 jd)
+int xgmac_set_mac_rxtx(void *pdev, u32 wd, u32 jd)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	u32 reg_val;
@@ -1056,8 +1066,8 @@ void xgmac_set_mac_rxtx(void *pdev, u32 wd, u32 jd)
 	reg_val = XGMAC_RGRD(pdata, MAC_RX_CFG);
 
 	if (MAC_GET_VAL(reg_val, MAC_RX_CFG, WD) != wd) {
-		mac_printf("XGMAC %d: WD: %s\n",
-			   pdata->mac_idx, wd ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: WD: %s\n",
+			pdata->mac_idx, wd ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_RX_CFG, WD, wd);
 		XGMAC_RGWR(pdata, MAC_RX_CFG, reg_val);
 	}
@@ -1065,11 +1075,13 @@ void xgmac_set_mac_rxtx(void *pdev, u32 wd, u32 jd)
 	reg_val = XGMAC_RGRD(pdata, MAC_TX_CFG);
 
 	if (MAC_GET_VAL(reg_val, MAC_TX_CFG, JD) != jd) {
-		mac_printf("XGMAC %d: JD: %s\n",
-			   pdata->mac_idx, jd ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: JD: %s\n",
+			pdata->mac_idx, jd ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_TX_CFG, JD, jd);
 		XGMAC_RGWR(pdata, MAC_TX_CFG, reg_val);
 	}
+
+	return 0;
 }
 
 /* LPIATE: LPI Auto Timer Enable
@@ -1109,14 +1121,14 @@ int xgmac_set_mac_lpitx(void *pdev, u32 val)
 	lpiate = XGMAC_RGRD(pdata, MAC_LPI_CSR);
 
 	if (MAC_GET_VAL(lpiate, MAC_LPI_CSR, LPIATE) != val) {
-		mac_printf("XGMAC %d: LPIATE: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: LPIATE: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(lpiate, MAC_LPI_CSR, LPIATE, val);
 	}
 
 	if (MAC_GET_VAL(lpiate, MAC_LPI_CSR, LPITXA) != val) {
-		mac_printf("XGMAC %d: LPITXA: %s\n",
-			   pdata->mac_idx, val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: LPITXA: %s\n",
+			pdata->mac_idx, val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(lpiate, MAC_LPI_CSR, LPITXA, val);
 	}
 
@@ -1279,12 +1291,12 @@ int xgmac_get_txtstamp_cnt(void *pdev)
 	tx_sts = XGMAC_RGRD(pdata, MAC_TSTAMP_STSR);
 
 	ttsns = MAC_GET_VAL(tx_sts, MAC_TSTAMP_STSR, TTSNS);
-	mac_printf("\tTx Timestamp Fifo: %d\n", ttsns);
+	mac_dbg("\tTx Timestamp Fifo: %d\n", ttsns);
 
 	/* Max Fifo Value*/
 	if (ttsns == 16)
-		mac_printf("XGMAC %d: Tx Timestamp Fifo is Full\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Tx Timestamp Fifo is Full\n",
+			pdata->mac_idx);
 
 	return ttsns;
 }
@@ -1300,7 +1312,7 @@ int xgmac_get_txtstamp_pktid(void *pdev)
 	tx_sts = XGMAC_RGRD(pdata, MAC_TXTSTAMP_STS);
 
 	pktid = MAC_GET_VAL(tx_sts, MAC_TXTSTAMP_STS, PKTID);
-	mac_printf("\tTx Timestamp PacketID: %d\n", pktid);
+	mac_dbg("\tTx Timestamp PacketID: %d\n", pktid);
 
 	return pktid;
 }
@@ -1476,10 +1488,10 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	u32 mac_tscr = 0;
-	struct ptp_flags ptp_flgs;
+	struct ptp_flags ptp_flgs = {0};
 
-	mac_printf("Mac Idx %d\n", pdata->mac_idx);
-	mac_printf("tx_type = %d, rx_filter = %d\n", tx_type, rx_filter);
+	mac_dbg("Mac Idx %d\n", pdata->mac_idx);
+	mac_dbg("tx_type = %d, rx_filter = %d\n", tx_type, rx_filter);
 
 	switch (tx_type) {
 	case HWTSTAMP_TX_OFF:
@@ -1649,7 +1661,7 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	return 0;
 }
 
-void xgmac_set_exttime_source(void *pdev, u32 val)
+int xgmac_set_exttime_source(void *pdev, u32 val)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	u32 reg_val;
@@ -1657,17 +1669,19 @@ void xgmac_set_exttime_source(void *pdev, u32 val)
 	reg_val = XGMAC_RGRD(pdata, MAC_TSTAMP_CR);
 
 	if (MAC_GET_VAL(reg_val, MAC_TSTAMP_CR, ESTI) != val) {
-		mac_printf("XGMAC %d: External Ref Time: %s\n",
-			   pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: External Ref Time: %s\n",
+			pdata->mac_idx,  val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(reg_val, MAC_TSTAMP_CR, ESTI, val);
 		XGMAC_RGWR(pdata, MAC_TSTAMP_CR, reg_val);
 	}
+
+	return 0;
 }
 
-void xgmac_ptp_txtstamp_mode(void *pdev,
-			     u32 snaptypesel,
-			     u32 tsmstrena,
-			     u32 tsevntena)
+int xgmac_ptp_txtstamp_mode(void *pdev,
+			    u32 snaptypesel,
+			    u32 tsmstrena,
+			    u32 tsevntena)
 {
 	u32 mac_tscr = 0;
 
@@ -1681,6 +1695,8 @@ void xgmac_ptp_txtstamp_mode(void *pdev,
 	MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSENA, 1);
 
 	xgmac_config_tstamp(pdev, mac_tscr);
+
+	return 0;
 }
 
 int xgmac_set_gint(void *pdev, u32 val)
@@ -1690,8 +1706,8 @@ int xgmac_set_gint(void *pdev, u32 val)
 
 	/* Enable/Disable MAC G9991EN */
 	if (MAC_GET_VAL(mac_tcr, MAC_TX_CFG, G9991EN) != val) {
-		mac_printf("XGMAC %d: G9991EN: %s\n", pdata->mac_idx,
-			   val ? "ENABLED" : "DISABLED");
+		mac_dbg("XGMAC %d: G9991EN: %s\n", pdata->mac_idx,
+			val ? "ENABLED" : "DISABLED");
 		MAC_SET_VAL(mac_tcr, MAC_TX_CFG, G9991EN, val);
 		XGMAC_RGWR(pdata, MAC_TX_CFG, mac_tcr);
 	}

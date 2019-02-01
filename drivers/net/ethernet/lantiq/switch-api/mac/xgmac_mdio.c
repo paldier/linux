@@ -46,7 +46,6 @@
 #include <linux/of_mdio.h>
 #endif
 
-static void dump_phy_registers(void *pdev);
 
 /* SCAR:
  * DA
@@ -73,13 +72,12 @@ static void dump_phy_registers(void *pdev);
 int xgmac_mdio_single_rd(void *pdev,
 			 u32 dev_adr,
 			 u32 phy_id,
-			 u32 phy_reg,
-			 u32 *phy_reg_data)
+			 u32 phy_reg)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	u32 mdio_sccdr = 0;
 	u32 mdio_scar = 0;
-
+	int phy_reg_data = 0;
 	/* wait for any previous MDIO read/write operation to complete */
 
 	/*Poll*/
@@ -123,9 +121,9 @@ int xgmac_mdio_single_rd(void *pdev,
 
 	/* read the data */
 	mdio_sccdr = XGMAC_RGRD(pdata, MDIO_SCCDR);
-	*phy_reg_data = MAC_GET_VAL(mdio_sccdr, MDIO_SCCDR, SDATA);
+	phy_reg_data = MAC_GET_VAL(mdio_sccdr, MDIO_SCCDR, SDATA);
 
-	return 0;
+	return phy_reg_data;
 }
 
 void print_mdio_rd_cnt(void *pdev,
@@ -137,15 +135,17 @@ void print_mdio_rd_cnt(void *pdev,
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	int clause;
-	u32 i, phy_reg_data;
+	int i, phy_reg_data;
 
-	clause = mdio_get_clause(pdata, pdata->mac_idx);
+	clause = mdio_get_clause(pdev, pdata->mac_idx);
 	mac_printf("OP    \tCL    \tDEVADR\tPHYID \tPHYREG\tDATA\n");
 	mac_printf("============================================\n");
 
 	for (i = 0; i <= (phy_reg_end - phy_reg_st); i++) {
-		xgmac_mdio_single_rd(pdev, dev_adr, phy_id, phy_reg_st + i,
-				     &phy_reg_data);
+		phy_reg_data = xgmac_mdio_single_rd(pdev,
+						    dev_adr,
+						    phy_id,
+						    phy_reg_st + i);
 
 		mac_printf("%s\t", "RD");
 		mac_printf("%4s\t", clause ? "CL22" : "CL45");
@@ -454,8 +454,8 @@ static int xgmac_mdio_read(struct mii_bus *bus, int phyadr, int phyreg)
 	if (clause != mdio_get_clause(pdev, phyadr))
 		mdio_set_clause(pdev, clause, phyadr);
 
-	xgmac_mdio_single_rd(pdev, (phyreg >> 16) & 0x1F, phyadr,
-			     phyreg & 0xFFFF, &phydata);
+	phydata = xgmac_mdio_single_rd(pdev, (phyreg >> 16) & 0x1F, phyadr,
+			     phyreg & 0xFFFF);
 
 	mac_dbg("XGMAC %d: MDIO Read phydata = %#x\n",
 		pdata->mac_idx, phydata);
@@ -501,39 +501,6 @@ static int xgmac_mdio_write(struct mii_bus *bus, int phyadr, int phyreg,
 	return ret;
 }
 
-/* API to reset PHY
- */
-static int xgmac_mdio_reset(struct mii_bus *bus)
-{
-	struct mac_ops *pdev = bus->priv;
-	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	int phydata;
-
-	mac_printf("XGMAC %d: MDIO Reset phyadr : %d\n", pdata->mac_idx,
-		   pdata->phyadr);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_BMCR,
-			     &phydata);
-
-	if (phydata < 0)
-		return 0;
-
-	/* issue soft reset to PHY */
-	phydata |= BMCR_RESET;
-	xgmac_mdio_single_wr(pdev, 0, pdata->phyadr, MII_BMCR, phydata);
-
-	/* wait until software reset completes */
-	do {
-		xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_BMCR,
-				     &phydata);
-	} while ((phydata >= 0) && (phydata & BMCR_RESET));
-
-	mac_printf("XGMAC %d: MDIO Reset Completed\n",
-		   pdata->mac_idx);
-
-	return 0;
-}
-
 /* API to register mdio.
  */
 int xgmac_mdio_register(void *pdev)
@@ -543,9 +510,10 @@ int xgmac_mdio_register(void *pdev)
 	int ret = 0;
 	struct device_node *mdio_np;
 
-	mac_printf("XGMAC %d: mdio register\n", pdata->mac_idx);
+	mac_dbg("XGMAC %d: mdio register\n", pdata->mac_idx);
 
 	mdio_np = of_get_child_by_name(pdata->dev->of_node, "mdio");
+
 	if (!mdio_np) {
 		dev_dbg(pdata->dev, "XGMAC %d: mdio node not found\n",
 			pdata->mac_idx);
@@ -562,7 +530,7 @@ int xgmac_mdio_register(void *pdev)
 	new_bus->name = "xgmac_phy";
 	new_bus->read = xgmac_mdio_read;
 	new_bus->write = xgmac_mdio_write;
-	new_bus->reset = xgmac_mdio_reset;
+	new_bus->reset = NULL;
 	snprintf(new_bus->id, MII_BUS_ID_SIZE, "%s-%x", new_bus->name,
 		 pdata->mac_idx);
 	new_bus->priv = pdev;
@@ -574,6 +542,7 @@ int xgmac_mdio_register(void *pdev)
 	new_bus->phy_mask = 0xFFFFFFFF;
 
 	ret = of_mdiobus_register(new_bus, mdio_np);
+
 	if (ret != 0) {
 		pr_err("%s: Cannot register as MDIO bus\n",
 		       new_bus->name);
@@ -583,7 +552,7 @@ int xgmac_mdio_register(void *pdev)
 
 	pdata->mii = new_bus;
 
-	mac_printf("XGMAC %d: MDIO register Successful\n", pdata->mac_idx);
+	mac_dbg("XGMAC %d: MDIO register Successful\n", pdata->mac_idx);
 
 	return ret;
 }
@@ -610,62 +579,5 @@ void xgmac_mdio_unregister(void *pdev)
 	mac_printf("XGMAC %d: mdio_unregister Successful\n", pdata->mac_idx);
 }
 
-static void dump_phy_registers(void *pdev)
-{
-	u32 phydata = 0;
-	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 
-	mac_printf(
-		"\n************* PHY Reg dump *************************\n");
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_BMCR, &phydata);
-	mac_printf(
-		"Phy Control Reg(Basic Mode Control Reg) (%#x) = %#x\n",
-		MII_BMCR, phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_BMSR, &phydata);
-	mac_printf("Phy Status Reg(Basic Mode Status Reg) (%#x) = %#x\n",
-		   MII_BMSR, phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_PHYSID1, &phydata);
-	mac_printf("Phy Id (PHYS ID 1) (%#x)= %#x\n", MII_PHYSID1,
-		   phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_PHYSID2,
-			     &phydata);
-	mac_printf("Phy Id (PHYS ID 2) (%#x)= %#x\n", MII_PHYSID2,
-		   phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_ADVERTISE,
-			     &phydata);
-	mac_printf("Auto-nego Adv (Advertisement Control Reg)"
-		   " (%#x) = %#x\n", MII_ADVERTISE, phydata);
-
-	/* read Phy Control Reg */
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_LPA,
-			     &phydata);
-	mac_printf("Auto-nego Lap (Link Partner Ability Reg)"
-		   " (%#x)= %#x\n", MII_LPA, phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_EXPANSION,
-			     &phydata);
-	mac_printf("Auto-nego Exp (Extension Reg)"
-		   "(%#x) = %#x\n", MII_EXPANSION, phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_ESTATUS,
-			     &phydata);
-	mac_printf("Extended Status Reg (%#x) = %#x\n", MII_ESTATUS,
-		   phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_CTRL1000,
-			     &phydata);
-	mac_printf("1000 Ctl Reg (1000BASE-T Control Reg)"
-		   "(%#x) = %#x\n", MII_CTRL1000, phydata);
-
-	xgmac_mdio_single_rd(pdev, 0, pdata->phyadr, MII_STAT1000, &phydata);
-	mac_printf("1000 Sts Reg (1000BASE-T Status)(%#x) = %#x\n",
-		   MII_STAT1000, phydata);
-
-	mac_printf(
-		"\n****************************************************\n");
-}
 #endif

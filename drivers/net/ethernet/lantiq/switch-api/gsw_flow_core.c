@@ -10,7 +10,6 @@
 ******************************************************************************/
 
 #ifdef __KERNEL__
-//#include <linux/sched.h>
 #include <linux/jiffies.h>
 #include <linux/timer.h>
 
@@ -2604,52 +2603,50 @@ static void get_gsw_hw_cap(void *cdev)
 
 	if (1) {
 		if (gswdev->gipver == LTQ_GSWIP_3_0)
-			printk("\nGSWIP 3.0 HardWare Capability\n");
+			pr_debug("\nGSWIP 3.0 HardWare Capability\n");
 		else if (gswdev->gipver == LTQ_GSWIP_3_1)
-			printk("\nGSWIP 3.1 HardWare Capability\n");
+			pr_debug("\nGSWIP 3.1 HardWare Capability\n");
 		else
-			printk("\nGSWIP 2.2 HardWare Capability\n");
+			pr_debug("\nGSWIP 2.2 HardWare Capability\n");
 
-		printk("-----------------------------\n\n");
-		printk("Switch Version ID                =  0x%x\n", gswdev->gipver);
-		printk("\n");
-		printk("Number of logical port           =  %d\n", gswdev->pnum);
-		printk("Number of ports including V port =  %d\n", gswdev->tpnum);
+		pr_debug("-----------------------------\n\n");
+		pr_debug("Switch Version ID                =  0x%x\n", gswdev->gipver);
+		pr_debug("\n");
+		pr_debug("Number of logical port           =  %d\n", gswdev->pnum);
+		pr_debug("Number of ports including V port =  %d\n", gswdev->tpnum);
 
 		if (gswdev->gipver == LTQ_GSWIP_3_1) {
-			printk("Number of CTP Port               =  %d\n", gswdev->num_of_ctp);
-			printk("Number of Bridge                 =  %d\n", gswdev->num_of_bridge);
-			printk("Number of Bridge Port            =  %d\n", gswdev->num_of_bridge_port);
-			printk("Number of P-Mapper               =  %d\n", gswdev->num_of_pmapper);
+			pr_debug("Number of CTP Port               =  %d\n", gswdev->num_of_ctp);
+			pr_debug("Number of Bridge                 =  %d\n", gswdev->num_of_bridge);
+			pr_debug("Number of Bridge Port            =  %d\n", gswdev->num_of_bridge_port);
+			pr_debug("Number of P-Mapper               =  %d\n", gswdev->num_of_pmapper);
 
 		}
 
-		printk("Number of queues                 =  %d\n", gswdev->num_of_queues);
-		printk("Number of meter instance         =  %d\n", gswdev->num_of_meters);
-		printk("Number of shapers                =  %d\n", gswdev->num_of_shapers);
-		printk("Number of PMAC                   =  %d\n", gswdev->num_of_pmac);
-		printk("Number of CPU PORT               =  %d\n", gswdev->cport);
-		printk("\n");
-		printk("PPPOE table size                 =  %d\n", gswdev->num_of_pppoe);
-		printk("IP packet length table size      =  %d\n", gswdev->ip_pkt_lnt_size);
-		printk("Protocol table size              =  %d\n", gswdev->prot_table_size);
-		printk("MAC DA/SA table size             =  %d\n", gswdev->mac_dasa_table_size);
-		printk("Application table size           =  %d\n", gswdev->app_table_size);
-		printk("IP DA/SA MSB table size          =  %d\n", gswdev->idsmtblsize);
-		printk("IP DA/SA LSB table size          =  %d\n", gswdev->idsltblsize);
-		printk("Multicast table size             =  %d\n", gswdev->mctblsize);
-		printk("Multicast Hw Snoop               =  %d\n", gswdev->mcsthw_snoop);
-		printk("TFLOW table size                 =  %d\n", gswdev->tftblsize);
-		printk("MAC bridge table size            =  %d\n", gswdev->mactblsize);
+		pr_debug("Number of queues                 =  %d\n", gswdev->num_of_queues);
+		pr_debug("Number of meter instance         =  %d\n", gswdev->num_of_meters);
+		pr_debug("Number of shapers                =  %d\n", gswdev->num_of_shapers);
+		pr_debug("Number of PMAC                   =  %d\n", gswdev->num_of_pmac);
+		pr_debug("Number of CPU PORT               =  %d\n", gswdev->cport);
+		pr_debug("\n");
+		pr_debug("PPPOE table size                 =  %d\n", gswdev->num_of_pppoe);
+		pr_debug("IP packet length table size      =  %d\n", gswdev->ip_pkt_lnt_size);
+		pr_debug("Protocol table size              =  %d\n", gswdev->prot_table_size);
+		pr_debug("MAC DA/SA table size             =  %d\n", gswdev->mac_dasa_table_size);
+		pr_debug("Application table size           =  %d\n", gswdev->app_table_size);
+		pr_debug("IP DA/SA MSB table size          =  %d\n", gswdev->idsmtblsize);
+		pr_debug("IP DA/SA LSB table size          =  %d\n", gswdev->idsltblsize);
+		pr_debug("Multicast table size             =  %d\n", gswdev->mctblsize);
+		pr_debug("Multicast Hw Snoop               =  %d\n", gswdev->mcsthw_snoop);
+		pr_debug("TFLOW table size                 =  %d\n", gswdev->tftblsize);
+		pr_debug("MAC bridge table size            =  %d\n", gswdev->mactblsize);
 
 		if (gswdev->gipver == LTQ_GSWIP_3_0 || IS_VRSN_31(gswdev->gipver)) {
-			printk("TFLOW RMON counter table Size    =  %d\n", gswdev->num_of_ifrmon);
-			printk("Payload Table Size               =  %d\n", gswdev->pdtblsize);
-			printk("Extend VLAN Table Size table     =  %d\n", gswdev->num_of_extendvlan);
-			printk("VlanFilter table Size            =  %d\n\n", gswdev->num_of_vlanfilter);
+			pr_debug("TFLOW RMON counter table Size    =  %d\n", gswdev->num_of_ifrmon);
+			pr_debug("Payload Table Size               =  %d\n", gswdev->pdtblsize);
+			pr_debug("Extend VLAN Table Size table     =  %d\n", gswdev->num_of_extendvlan);
+			pr_debug("VlanFilter table Size            =  %d\n\n", gswdev->num_of_vlanfilter);
 		}
-
-		printk("\n");
 	}
 
 }
@@ -3175,7 +3172,6 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	struct core_ops *ops;
 	void *cdev;
 	u32 ret = 0;
-	printk("\n########## Switch Core INIT for device = %d ##########\n", ethcinit->sdev);
 
 #ifdef __KERNEL__
 
@@ -3240,7 +3236,6 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	PrvData->matimer = DEFAULT_AGING_TIMEOUT;
 	/** Switch Core Base Address */
 	PrvData->gsw_base = ethcinit->gsw_base_addr;
-	printk("Switch Core Base Address = 0x%08x\n", (unsigned int)PrvData->gsw_base);
 
 	/** Get Switch Hardware capablity */
 	get_gsw_hw_cap(cdev);
@@ -3275,7 +3270,7 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 
 	if ((ethcinit->sdev == LTQ_FLOW_DEV_INT) || (ethcinit->sdev == LTQ_FLOW_DEV_INT_R)) {
 		gsw_pmicro_code_init(cdev);
-		printk("Switch API: PCE MicroCode loaded !!\n");
+		pr_debug("Switch API: PCE MicroCode loaded !!\n");
 	}
 
 #endif
@@ -12304,7 +12299,7 @@ GSW_return_t GSW_MDIO_CfgSet(void *cdev, GSW_MDIO_cfg_t *parm)
 	spin_lock_bh(&gswdev->lock_mdio);
 #endif
 
-	pr_err("**********%s:%s:%d*************\n", __FILE__, __func__, __LINE__);
+	pr_debug("**********%s:%s:%d*************\n", __FILE__, __func__, __LINE__);
 
 	if (gswdev->gipver == LTQ_GSWIP_3_0) {
 		gsw_w32(cdev, (GSWT_MDCCFG_1_FREQ_OFFSET + GSW30_TOP_OFFSET),
@@ -14044,7 +14039,7 @@ GSW_return_t GSW_RMON_Clear(void *cdev, GSW_RMON_clear_t *parm)
 
 		/* Reset all port based RMON counter */
 		for (index = 0; index < num_ports; index++) {
-			pr_err("Rmon clear for CTP RX/TX --Logical Port %u\n", index);
+			pr_debug("Rmon clear for CTP RX/TX --Logical Port %u\n", index);
 			gsw_w32(cdev,
 				BM_RMON_CTRL_RAM1_RES_OFFSET + (index * 2),
 				BM_RMON_CTRL_RAM1_RES_SHIFT,

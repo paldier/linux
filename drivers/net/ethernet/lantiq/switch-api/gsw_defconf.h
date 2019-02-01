@@ -1,3 +1,12 @@
+/******************************************************************************
+ *                Copyright (c) 2016, 2017 Intel Corporation
+ *
+ *
+ * For licensing information, see the file 'LICENSE' in the root folder of
+ * this software module.
+ *
+ ******************************************************************************/
+
 #ifndef _GSW_DEFCONF_
 #define _GSW_DEFCONF_
 

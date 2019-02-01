@@ -55,9 +55,9 @@ int xgmac_set_mtl_rx_mode(void *pdev, u32 rx_mode)
 	u32 reg_val = XGMAC_RGRD(pdata, MTL_Q_RQOMR);
 
 	if (MAC_GET_VAL(reg_val, MTL_Q_RQOMR, RSF) != rx_mode) {
-		mac_printf("XGMAC %d: Setting MTL RX mode to: %s\n",
-			   pdata->mac_idx,
-			   rx_mode ? "Store and Forward" : "Threshold");
+		mac_dbg("XGMAC %d: Setting MTL RX mode to: %s\n",
+			pdata->mac_idx,
+			rx_mode ? "Store and Forward" : "Threshold");
 		MAC_SET_VAL(reg_val, MTL_Q_RQOMR, RSF, rx_mode);
 		XGMAC_RGWR(pdata, MTL_Q_RQOMR, reg_val);
 	}
@@ -71,8 +71,8 @@ int xgmac_set_mtl_rx_thresh(void *pdev, u32 rx_thresh)
 	u32 reg_val = XGMAC_RGRD(pdata, MTL_Q_RQOMR);
 
 	if (MAC_GET_VAL(reg_val, MTL_Q_RQOMR, RTC) != rx_thresh) {
-		mac_printf("XGMAC %d: Setting MTL RX threshold to: %d\n",
-			   pdata->mac_idx,  rx_thresh);
+		mac_dbg("XGMAC %d: Setting MTL RX threshold to: %d\n",
+			pdata->mac_idx,  rx_thresh);
 		MAC_SET_VAL(reg_val, MTL_Q_RQOMR, RTC, rx_thresh);
 		XGMAC_RGWR(pdata, MTL_Q_RQOMR, reg_val);
 	}
@@ -93,9 +93,9 @@ int xgmac_set_mtl_tx_mode(void *pdev, u32 tx_mode)
 	u32 reg_val = XGMAC_RGRD(pdata, MTL_Q_TQOMR);
 
 	if (MAC_GET_VAL(reg_val, MTL_Q_TQOMR, TSF) != tx_mode) {
-		mac_printf("XGMAC %d: Setting MTL TX mode to: %s\n",
-			   pdata->mac_idx,
-			   tx_mode ? "Store and Forward" : "Threshold");
+		mac_dbg("XGMAC %d: Setting MTL TX mode to: %s\n",
+			pdata->mac_idx,
+			tx_mode ? "Store and Forward" : "Threshold");
 		MAC_SET_VAL(reg_val, MTL_Q_TQOMR, TSF, tx_mode);
 		XGMAC_RGWR(pdata, MTL_Q_TQOMR, reg_val);
 	}
@@ -109,8 +109,8 @@ int xgmac_set_mtl_tx_thresh(void *pdev, u32 tx_thresh)
 	u32 reg_val = XGMAC_RGRD(pdata, MTL_Q_TQOMR);
 
 	if (MAC_GET_VAL(reg_val, MTL_Q_TQOMR, TTC) != tx_thresh) {
-		mac_printf("XGMAC %d: Setting MTL TX threshold to: %d\n",
-			   pdata->mac_idx,  tx_thresh);
+		mac_dbg("XGMAC %d: Setting MTL TX threshold to: %d\n",
+			pdata->mac_idx,  tx_thresh);
 		MAC_SET_VAL(reg_val, MTL_Q_TQOMR, TTC, tx_thresh);
 		XGMAC_RGWR(pdata, MTL_Q_TQOMR, reg_val);
 	}
@@ -126,22 +126,22 @@ int xgmac_clear_mtl_int(void *pdev, u32 event)
 
 	if ((event & XGMAC_TXQ_OVFW_EVNT) &&
 	    (MAC_GET_VAL(mtl_q_isr, MTL_Q_ISR, TXUNFIS))) {
-		mac_printf("XGMAC: %d Clearing MTL Q TXUNFIS"
-			   "Interrupt Status\n", pdata->mac_idx);
+		mac_dbg("XGMAC: %d Clearing MTL Q TXUNFIS"
+			"Interrupt Status\n", pdata->mac_idx);
 		MAC_SET_VAL(mtl_q_isr, MTL_Q_ISR, TXUNFIS, 1);
 	}
 
 	if ((event & XGMAC_RXQ_OVFW_EVNT) &&
 	    (MAC_GET_VAL(mtl_q_isr, MTL_Q_ISR, ABPSIS))) {
-		mac_printf("XGMAC: %d Clearing MTL Q ABPSIS"
-			   "Interrupt Status\n", pdata->mac_idx);
+		mac_dbg("XGMAC: %d Clearing MTL Q ABPSIS"
+			"Interrupt Status\n", pdata->mac_idx);
 		MAC_SET_VAL(mtl_q_isr, MTL_Q_ISR, ABPSIS, 1);
 	}
 
 	if ((event & XGMAC_AVG_BPS_EVNT) &&
 	    (MAC_GET_VAL(mtl_q_isr, MTL_Q_ISR, RXOVFIS))) {
-		mac_printf("XGMAC: %d Clearing MTL Q RXOVFIS"
-			   "Interrupt Status\n", pdata->mac_idx);
+		mac_dbg("XGMAC: %d Clearing MTL Q RXOVFIS"
+			"Interrupt Status\n", pdata->mac_idx);
 		MAC_SET_VAL(mtl_q_isr, MTL_Q_ISR, RXOVFIS, 1);
 	}
 
@@ -186,19 +186,31 @@ int xgmac_set_mtl_int(void *pdev, u32 val)
  *	Note: The flush operation is complete only when the Tx queue is empty.
  *	To complete this flush operation, the PHY Tx clock must be active.
  */
-
 int xgmac_flush_tx_queues(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	u32 ftq = 0;
+	int idx = 0;
 
-	mac_printf("XGMAC %d: Flushing TX Q\n", pdata->mac_idx);
+	mac_dbg("XGMAC %d: Flushing TX Q\n", pdata->mac_idx);
 
 	XGMAC_RGWR_BITS(pdata, MTL_Q_TQOMR, FTQ, 1);
 
-	while (1) {
-		if (XGMAC_RGRD_BITS(pdata, MTL_Q_TQOMR, FTQ) == 0)
+	do {
+		ftq = XGMAC_RGRD_BITS(pdata, MTL_Q_TQOMR, FTQ);
+
+		if (ftq == 0)
 			break;
-	}
+
+		idx++;
+
+#ifdef __KERNEL__
+		/* To put a small delay and make sure previous operations
+		 * are complete
+		 */
+		usleep_range(100, 200);
+#endif
+	} while (idx <= MAX_RETRY);
 
 	return 0;
 }
@@ -221,15 +233,15 @@ int xgmac_set_flow_control_threshold(void *pdev, u32 rfa, u32 rfd)
 
 	/* Activate flow control when less than 4k left in fifo */
 	if (MAC_GET_VAL(reg_val, MTL_Q_RQFCR, RFA) != rfa) {
-		mac_printf("XGMAC %d: Set Thresh for activate Flow Ctrl %d\n",
-			   pdata->mac_idx, rfa);
+		mac_dbg("XGMAC %d: Set Thresh for activate Flow Ctrl %d\n",
+			pdata->mac_idx, rfa);
 		MAC_SET_VAL(reg_val, MTL_Q_RQFCR, RFA, rfa);
 	}
 
 	/* De-activate flow control when more than 6k left in fifo */
 	if (MAC_GET_VAL(reg_val, MTL_Q_RQFCR, RFD) != rfd) {
-		mac_printf("XGMAC %d: Set Thresh for deact Flow Ctrl as %d\n",
-			   pdata->mac_idx, rfd);
+		mac_dbg("XGMAC %d: Set Thresh for deact Flow Ctrl as %d\n",
+			pdata->mac_idx, rfd);
 		MAC_SET_VAL(reg_val, MTL_Q_RQFCR, RFD, rfd);
 	}
 
@@ -259,8 +271,8 @@ int xgmac_set_mmc(void *pdev)
 
 	/* Set counters to reset on read */
 	if (MAC_GET_VAL(reg_val, MMC_CR, ROR) != 0) {
-		mac_printf("XGMAC %d: reset on read %s\n",
-			   pdata->mac_idx, "DISABLED");
+		mac_dbg("XGMAC %d: reset on read %s\n",
+			pdata->mac_idx, "DISABLED");
 		MAC_SET_VAL(reg_val, MMC_CR, ROR, 0);
 		XGMAC_RGWR(pdata, MMC_CR, reg_val);
 	}
@@ -268,22 +280,20 @@ int xgmac_set_mmc(void *pdev)
 	return 0;
 }
 
-int xgmac_clear_rmon(void *pdev, u32 rmon_reset)
+int xgmac_clear_rmon(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 
 	/* Reset the counters */
-	if (rmon_reset) {
-		mac_printf("XGMAC %d: Resetting the counters\n",
-			   pdata->mac_idx);
-		XGMAC_RGWR_BITS(pdata, MMC_CR, CR, 1);
-		memset(&prv_data[pdata->mac_idx].mmc_stats, 0,
-		       sizeof(struct xgmac_mmc_stats));
+	mac_printf("XGMAC %d: Resetting the counters\n",
+		   pdata->mac_idx);
+	XGMAC_RGWR_BITS(pdata, MMC_CR, CR, 1);
+	memset(&prv_data[pdata->mac_idx].mmc_stats, 0,
+	       sizeof(struct xgmac_mmc_stats));
 
-		while (1) {
-			if (XGMAC_RGRD_BITS(pdata, MMC_CR, CR) == 0)
-				break;
-		}
+	while (1) {
+		if (XGMAC_RGRD_BITS(pdata, MMC_CR, CR) == 0)
+			break;
 	}
 
 	return 0;
@@ -566,14 +576,14 @@ int xgmac_forward_fup_fep_pkt(void *pdev, u32 fup, u32 fef)
 	u32 reg_val = XGMAC_RGRD(pdata, MTL_Q_RQOMR);
 
 	if (MAC_GET_VAL(reg_val, MTL_Q_RQOMR, FUP) != fup) {
-		mac_printf("XGMAC %d: Set Forward Undersized Good Packets\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Set Forward Undersized Good Packets\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(reg_val, MTL_Q_RQOMR, FUP, fup);
 	}
 
 	if (MAC_GET_VAL(reg_val, MTL_Q_RQOMR, FEF) != fef) {
-		mac_printf("XGMAC %d: Set Forward Error Packets\n",
-			   pdata->mac_idx);
+		mac_dbg("XGMAC %d: Set Forward Error Packets\n",
+			pdata->mac_idx);
 		MAC_SET_VAL(reg_val, MTL_Q_RQOMR, FEF, fef);
 	}
 

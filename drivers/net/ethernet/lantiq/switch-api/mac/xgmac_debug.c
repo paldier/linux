@@ -482,10 +482,7 @@ int xgmac_get_mac_addr(void *pdev)
 	mac_addr_hi = XGMAC_RGRD(pdata, MAC_MACA0HR);
 	mac_addr_lo = XGMAC_RGRD(pdata, MAC_MACA0LR);
 
-	mac_printf("XGMAC %d: MAC ADDR\n", pdata->mac_idx);
-
-	mac_printf("\tmac_addr_hi = %08x\n", mac_addr_hi);
-	mac_printf("\tmac_addr_lo = %08x\n", mac_addr_lo);
+	mac_printf("XGMAC %d: MAC ADDR ", pdata->mac_idx);
 
 	mac_addr[5] = ((mac_addr_hi & 0x0000FF00) >> 8);
 	mac_addr[4] = (mac_addr_hi & 0x000000FF);
@@ -494,7 +491,7 @@ int xgmac_get_mac_addr(void *pdev)
 	mac_addr[1] = ((mac_addr_lo & 0x0000FF00) >> 8);
 	mac_addr[0] = (mac_addr_lo & 0x000000FF);
 
-	mac_printf("\tSet mac address %02x:%02x:%02x:%02x:%02x:%02x\n",
+	mac_printf(" %02x:%02x:%02x:%02x:%02x:%02x\n",
 		   mac_addr[0],
 		   mac_addr[1],
 		   mac_addr[2],

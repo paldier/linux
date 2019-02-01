@@ -12,6 +12,12 @@
 
 #include <xgmac_common.h>
 
+#define RESET_OFF 	0
+#define RESET_ON 	1
+
+#define MAC_EN		1
+#define MAC_DIS		0
+
 /* MAC Interface API's */
 int mac_config_loopback(void *pdev, u32 loopback);
 int mac_config_ipg(void *pdev, u32 ipg);
@@ -32,11 +38,10 @@ int mac_get_mtu(void *pdev);
 int mac_set_pfsa(void *pdev, u8 *mac_addr, u32 mode);
 int mac_get_pfsa(void *pdev, u8 *mac_addr, u32 *mode);
 
-int mac_reset(void *pdev);
+int mac_reset(void *pdev, u32 reset);
 
 int mac_init(void *pdev);
 int mac_exit(void *pdev);
-
 
 int mac_set_flowctrl(void *pdev, u32 val);
 int mac_get_flowctrl(void *pdev);
@@ -44,7 +49,7 @@ int mac_get_flowctrl(void *pdev);
 int mac_set_lpien(void *pdev, u32 enable, u32 lpi_waitg, u32 lpi_waitm);
 int mac_get_lpien(void *pdev);
 
-int mac_set_linksts(void *pdev, u8 linksts);
+int mac_set_linksts(void *pdev, u32 linksts);
 int mac_get_linksts(void *pdev);
 
 int mac_set_fcs_gen(void *pdev, u32 val);
@@ -62,5 +67,7 @@ int mac_int_enable(void *pdev);
 int mac_int_disable(void *pdev);
 
 int mac_oper_cfg(void *pdev, MAC_OPER_CFG oper);
+int xgmac_cfg_main(GSW_MAC_Cli_t *params);
+
 #endif
 

@@ -232,8 +232,7 @@ int xgmac_mdio_single_wr(void *pdev,
 			 u32 phy_id,
 			 u32 phy_reg,
 			 u32 phy_reg_data);
-int xgmac_mdio_single_rd(void *pdev, u32 dev_adr, u32 phy_id,
-			 u32 phy_reg, u32 *phy_reg_data);
+int xgmac_mdio_single_rd(void *pdev, u32 dev_adr, u32 phy_id, u32 phy_reg);
 int mdio_set_clause(void *pdev, u32 clause, u32 phy_id);
 int mdio_get_clause(void *pdev,  u32 phy_id);
 int mdio_set_interrupt(void *pdev, u32 val);

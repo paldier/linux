@@ -9,7 +9,6 @@
  * Tree and starts multiple functional drivers for GSWIP.
  ******************************************************************************/
 
-#include <lantiq_soc.h>
 #include <net/switch_api/gsw_dev.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -654,7 +653,7 @@ static int gsw_dev_probe(struct platform_device *pdev)
 	struct reset_control *gswss_rst;
 
 	if (pdev->dev.of_node)
-		printk("Node name %s\n", base_node->full_name);
+		pr_debug("Node name %s\n", base_node->full_name);
 
 	/* parse Device tree */
 	ret = gsw_parse_dt(base_node);

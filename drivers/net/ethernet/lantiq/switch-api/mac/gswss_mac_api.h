@@ -135,7 +135,7 @@ static inline u32 GSWSS_MAC_RGRD(struct mac_prv_data *pdata, u32 reg)
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	u32 reg_addr = pdata->ss_addr_base + reg;
 #else
-	volatile void *reg_addr = (volatile void *)pdata->ss_addr_base + reg;
+	void __iomem *reg_addr = (void __iomem *)pdata->ss_addr_base + reg;
 #endif
 
 #if defined(CHIPTEST) && CHIPTEST
@@ -145,7 +145,7 @@ static inline u32 GSWSS_MAC_RGRD(struct mac_prv_data *pdata, u32 reg)
 	pcuart_reg_rd(reg_addr, &reg_val);
 #endif
 #ifdef __KERNEL__
-	reg_val = ltq_r32(reg_addr);
+	reg_val = mac_r32(reg_addr);
 #endif
 	return reg_val;
 }
@@ -156,7 +156,7 @@ static inline void GSWSS_MAC_RGWR(struct mac_prv_data *pdata, u32 reg,
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	u32 reg_addr = pdata->ss_addr_base + reg;
 #else
-	volatile void *reg_addr = (volatile void *)pdata->ss_addr_base + reg;
+	void __iomem *reg_addr = (void __iomem *)pdata->ss_addr_base + reg;
 #endif
 
 #if defined(CHIPTEST) && CHIPTEST
@@ -166,33 +166,9 @@ static inline void GSWSS_MAC_RGWR(struct mac_prv_data *pdata, u32 reg,
 	pcuart_reg_wr(reg_addr, val);
 #endif
 #ifdef __KERNEL__
-	ltq_w32(val, reg_addr);
+	mac_w32(val, reg_addr);
 #endif
 }
-
-enum {
-	LMAC2 = 0,
-	LMAC3,
-	LMAC4
-};
-
-enum {
-	ADAP2 = 0,
-	ADAP3,
-	ADAP4
-};
-
-enum {
-	MAC2 = 0,
-	MAC3,
-	MAC4
-};
-
-enum {
-	LINK2 = 0,
-	LINK3,
-	LINK4
-};
 
 enum {
 	LMAC_MII = 0,
@@ -216,13 +192,6 @@ enum {
 enum {
 	RX = 0,
 	TX,
-};
-
-enum {
-	MODE0 = 0,
-	MODE1,
-	MODE2,
-	MODE3
 };
 
 enum {
@@ -267,16 +236,21 @@ u32 gswss_get_fe_intf(void *pdev);
 int gswss_get_duplex_mode(void *pdev);
 int gswss_get_linkstatus(void *pdev);
 void gswss_get_xgmac_ctrl(void *pdev);
-void gswss_get_phy2mode(void *pdev);
-void gswss_get_macop(void *pdev);
-void gswss_get_macif(void *pdev);
+int gswss_get_phy2mode(void *pdev);
+int gswss_get_macop(void *pdev);
+int gswss_get_macif(void *pdev);
 int gswss_get_mac_en(void *pdev);
 int gswss_get_mac_reset(void *pdev);
 int gswss_set_txtstamp_fifo(void *pdev,
 			    struct mac_fifo_entry *f_entry);
-void gswss_get_txtstamp_fifo(void *pdev,
-			     u32 record_id, struct mac_fifo_entry *f_entry);
-
+int gswss_get_txtstamp_fifo(void *pdev, u32 record_id, struct mac_fifo_entry *f_entry);
 int gswss_set_eee_cap(void *pdev, u32 val);
+int gswss_cfg_main(GSW_MAC_Cli_t *params);
+int gswss_get_mac_txfcs_ins_op(void *pdev);
+int gswss_get_mac_txfcs_rm_op(void *pdev);
+int gswss_get_mac_rxfcs_op(void *pdev);
+int gswss_get_mac_rxsptag_op(void *pdev);
+int gswss_get_mac_txsptag_op(void *pdev);
+int gswss_get_mac_rxtime_op(void *pdev);
 
 #endif

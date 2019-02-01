@@ -77,7 +77,7 @@ int fifo_entry_add(void *pdev, u8 ttse, u8 ostc, u8 ostpa, u8 cic,
 	return f_entry->rec_id;
 }
 
-void fifo_entry_del(void *pdev, u32 rec_id)
+int fifo_entry_del(void *pdev, u32 rec_id)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	struct mac_fifo_entry *f_entry = &pdata->ts_fifo[rec_id];
@@ -96,6 +96,8 @@ void fifo_entry_del(void *pdev, u32 rec_id)
 
 	/* Fifo available for the next packet */
 	f_entry->is_used = 0;
+
+	return 0;
 }
 
 static void fifo_update_hw_clrsts(void *pdev,
@@ -138,7 +140,7 @@ u32 timer_in_sec(u32 jiffies)
 #endif
 }
 
-void print_fifo(void *pdev)
+int print_fifo(void *pdev)
 {
 	int i = 0;
 	struct mac_fifo_entry f_entry;
@@ -170,6 +172,8 @@ void print_fifo(void *pdev)
 			   pdata->ts_fifo[i].jiffies);
 #endif
 	}
+
+	return 0;
 }
 
 static int fifo_freeid_get(void *pdev, u8 ttse)

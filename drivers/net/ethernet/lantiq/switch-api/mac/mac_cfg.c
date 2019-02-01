@@ -114,7 +114,7 @@ int mac_get_flowctrl(void *pdev)
 	return flow_ctrl;
 }
 
-int mac_reset(void *pdev)
+int mac_reset(void *pdev, u32 reset)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 
@@ -122,11 +122,15 @@ int mac_reset(void *pdev)
 	spin_lock_bh(&pdata->mac_lock);
 #endif
 
-	gswss_xgmac_reset(pdev, 1);
-	gswss_set_xgmac_rx_disable(pdev, 1);
-	gswss_set_xgmac_tx_disable(pdev, 1);
+	gswss_xgmac_reset(pdev, reset);
+	gswss_set_xgmac_rx_disable(pdev, reset);
+	gswss_set_xgmac_tx_disable(pdev, reset);
+	gswss_lmac_reset(pdev, reset);
 
-	gswss_lmac_reset(pdev, 1);
+	if (reset == RESET_OFF)
+		gswss_mac_enable(pdev, MAC_DIS);
+	else
+		gswss_mac_enable(pdev, MAC_EN);
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
@@ -466,7 +470,6 @@ int mac_get_speed(void *pdev)
 	else if (mac_speed == SPEED_AUTO)
 		mac_speed = 0;
 
-	mac_printf("Returning Speed = %d\n", mac_speed);
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
 #endif
@@ -474,7 +477,7 @@ int mac_get_speed(void *pdev)
 	return mac_speed;
 }
 
-int mac_set_linksts(void *pdev, u8 linksts)
+int mac_set_linksts(void *pdev, u32 linksts)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 
@@ -513,8 +516,6 @@ int mac_get_linksts(void *pdev)
 		linksts = GSW_PORT_LINK_DOWN;
 	else
 		linksts = -1;
-
-	mac_printf("Returning linksts = %d\n", linksts);
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
@@ -669,6 +670,64 @@ int mac_oper_cfg(void *pdev, MAC_OPER_CFG oper)
 #endif
 
 	return 0;
+}
+
+int mac_get_oper_cfg(void *pdev, MAC_OPER_CFG oper)
+{
+	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+	u32 mode;
+	int ret = 0;
+
+#ifdef __KERNEL__
+	spin_lock_bh(&pdata->mac_lock);
+#endif
+	mode = oper % 4;
+
+	switch (oper) {
+	case TX_FCS_NO_INSERT:
+	case TX_FCS_INSERT:
+		ret = gswss_get_mac_txfcs_ins_op(pdev);
+		break;
+
+	case TX_FCS_NO_REMOVE:
+	case TX_FCS_REMOVE:
+		ret = gswss_get_mac_txfcs_rm_op(pdev);
+		break;
+
+	case TX_SPTAG_KEEP:
+	case TX_SPTAG_NOTAG:
+	case TX_SPTAG_REMOVE:
+	case TX_SPTAG_REPLACE:
+		ret = gswss_get_mac_txsptag_op(pdev);
+		break;
+
+	case RX_FCS_NOFCS:
+	case RX_FCS_NO_REMOVE:
+	case RX_FCS_REMOVE:
+		ret = gswss_get_mac_rxfcs_op(pdev);
+		break;
+
+	case RX_TIME_INSERT:
+	case RX_TIME_NOTS:
+	case RX_TIME_NO_INSERT:
+		ret = gswss_get_mac_rxtime_op(pdev);
+		break;
+
+	case RX_SPTAG_INSERT:
+	case RX_SPTAG_NOTAG:
+	case RX_SPTAG_NO_INSERT:
+		ret = gswss_get_mac_rxsptag_op(pdev);
+		break;
+
+	default:
+		break;
+	}
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&pdata->mac_lock);
+#endif
+
+	return ret;
 }
 
 static int mac_set_rxcrccheck(void *pdev, u8 disable)
@@ -1010,10 +1069,9 @@ int mac_init(void *pdev)
 	int i = 0;
 
 	xgmac_init_pdata(pdata, -1);
-#endif
-	xgmac_cli_init();
 
 	mac_printf("XGMAC INIT for Module %d\n", pdata->mac_idx);
+#endif
 
 	/* Get all hw capability */
 	xgmac_get_hw_capability(pdev);
@@ -1380,8 +1438,8 @@ void mac_init_fn_ptrs(struct mac_ops *mac_op)
 
 	mac_op->init = mac_init;
 	mac_op->exit = mac_exit;
-	mac_op->xgmac_cli = xgmac_main;
-	mac_op->lmac_cli = lmac_main;
+	mac_op->xgmac_cli = xgmac_cfg_main;
+	mac_op->lmac_cli = lmac_cfg_main;
 	mac_op->xgmac_reg_rd = xgmac_rd_reg;
 	mac_op->xgmac_reg_wr = xgmac_wr_reg;
 	mac_op->lmac_reg_rd = lmac_rd_reg;

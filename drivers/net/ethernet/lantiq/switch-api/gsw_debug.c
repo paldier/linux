@@ -1067,12 +1067,11 @@ GSW_return_t GSW_Debug_PceQTable(void *cdev, GSW_debug_t *parm)
 
 }
 
-GSW_return_t GSW_XgmacCfg(void *cdev, GSW_MAC_cfg_t *mac_cfg)
+GSW_return_t GSW_XgmacCfg(void *cdev, GSW_MAC_Cli_t *mac_cfg)
 {
 	struct mac_ops *ops = NULL;
-	u8 *argv[10];
-	int i = 0;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	int ret = 0;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -1092,21 +1091,16 @@ GSW_return_t GSW_XgmacCfg(void *cdev, GSW_MAC_cfg_t *mac_cfg)
 		return GSW_statusErr;
 	}
 
-	for (i = 0; i < mac_cfg->argc; i++)
-		argv[i] = mac_cfg->argv[i];
+	ret = ops->xgmac_cli(mac_cfg);
 
-
-	ops->xgmac_cli(mac_cfg->argc, argv);
-
-	return GSW_statusOk;
+	return ret;
 }
 
-GSW_return_t GSW_GswssCfg(void *cdev, GSW_MAC_cfg_t *adap_cfg)
+GSW_return_t GSW_GswssCfg(void *cdev, GSW_MAC_Cli_t *mac_cfg)
 {
 	struct adap_ops *ops = NULL;
-	u8 *argv[10];
-	int i = 0;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	int ret = 0;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -1126,19 +1120,15 @@ GSW_return_t GSW_GswssCfg(void *cdev, GSW_MAC_cfg_t *adap_cfg)
 		return GSW_statusErr;
 	}
 
-	for (i = 0; i < adap_cfg->argc; i++)
-		argv[i] = adap_cfg->argv[i];
+	ret = ops->ss_cli(mac_cfg);
 
-	ops->ss_cli(adap_cfg->argc, argv);
-
-	return GSW_statusOk;
+	return ret;
 }
 
-GSW_return_t GSW_LmacCfg(void *cdev, GSW_MAC_cfg_t *lmac_cfg)
+GSW_return_t GSW_LmacCfg(void *cdev, GSW_MAC_Cli_t *mac_cfg)
 {
 	struct mac_ops *ops = NULL;
-	u8 *argv[10];
-	int i = 0;
+	int ret = 0;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -1158,23 +1148,20 @@ GSW_return_t GSW_LmacCfg(void *cdev, GSW_MAC_cfg_t *lmac_cfg)
 		return GSW_statusErr;
 	}
 
-	for (i = 0; i < lmac_cfg->argc; i++)
-		argv[i] = lmac_cfg->argv[i];
+	ret = ops->lmac_cli(mac_cfg);
 
-	ops->lmac_cli(lmac_cfg->argc, argv);
-
-	return GSW_statusOk;
+	return ret;
 }
+
 
 GSW_return_t GSW_MacsecCfg(void *cdev, GSW_MAC_cfg_t *macsec_cfg)
 {
-
-	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
-#if 0	
+#if 0
 	u8 *argv[10];
 	int i = 0;
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	struct macsec_ops *ops = NULL;
-#endif
+
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
@@ -1184,22 +1171,22 @@ GSW_return_t GSW_MacsecCfg(void *cdev, GSW_MAC_cfg_t *macsec_cfg)
 		pr_err("Macsec Cfg Supported only in GSWIP3.1 and above\n");
 		return GSW_statusErr;
 	}
-#if 0
-	ops = gsw_get_macsec_ops(0, 0);
+
+	if (macsec_cfg->devid > 1) {
+		pr_err("Invalid Command Name or Params\n");
+		return GSW_statusErr;
+	}
+
+	ops = gsw_get_macsec_ops(macsec_cfg->devid);
 
 	if (!ops) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
 	}
 
-	for (i = 0; i < macsec_cfg->argc; i++)
-		argv[i] = macsec_cfg->argv[i];
+	ops->macsec_cli(ops, macsec_cfg);
 
-
-	ops->macsec_cli(macsec_cfg->argc, argv);
 #endif
 	return GSW_statusOk;
 }
-
-
 

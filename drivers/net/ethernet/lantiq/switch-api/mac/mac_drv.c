@@ -7,7 +7,6 @@
  *
  ******************************************************************************/
 
-#include <lantiq_soc.h>
 #include <net/switch_api/gsw_dev.h>
 #include <net/switch_api/adap_ops.h>
 #include <gswss_api.h>
@@ -35,6 +34,9 @@ static irqreturn_t mac_isr(int irq, void *dev_id)
 		mac_int_sts = gswss_get_int_stat(adap_ops, XGMAC);
 
 		mac_ops = gsw_get_mac_ops(devid, i);
+		if (!mac_ops)
+			return IRQ_HANDLED;
+
 		pdata = GET_MAC_PDATA(mac_ops);
 
 		/* Check XGMAC i Interrupts */
@@ -131,6 +133,8 @@ static int mac_probe(struct platform_device *pdev)
 	struct mac_prv_data *pdata =
 		GET_MAC_PDATA(platform_get_drvdata(pdev));
 	struct device *dev = &pdev->dev;
+	int linksts = 0, duplex = 0, speed = 0;
+	char *load, *ls, *dp;
 
 	gswdev->mac_dev[pdev->id] = pdev;
 
@@ -153,14 +157,13 @@ static int mac_probe(struct platform_device *pdev)
 	/* Update Adaption layer pointer and Lmac base address per Mac private
 	 * data.This is needed since all MAC api's have Private data as argument
 	 */
-	pdata->ss_addr_base = (u32)base[0];
-	adap_pdata->ss_addr_base = (u32)base[0];
-	pdata->lmac_addr_base = (u32)base[1];
+	pdata->ss_addr_base = base[0];
+	adap_pdata->ss_addr_base = base[0];
+	pdata->lmac_addr_base = base[1];
 
 	pdata->max_mac = gsw_get_mac_subifcnt(0);
 
 	if (device_property_present(dev, "board_type")) {
-		pr_info("Board Type: HAPS\n");
 		pdata->haps = 1;
 	} else {
 		pdata->haps = 0;
@@ -183,9 +186,41 @@ static int mac_probe(struct platform_device *pdev)
 	/* Request IRQ for MAC */
 	mac_irq_init(pdata);
 
-	pr_info("XGMAC INIT %d Started\n", pdata->mac_idx);
 	pdata->ops.init(&pdata->ops);
-	pr_info("XGMAC INIT %d completed\n\n", pdata->mac_idx);
+
+	linksts = pdata->ops.get_link_sts(&pdata->ops);
+	duplex = pdata->ops.get_duplex(&pdata->ops);
+	speed = pdata->ops.get_speed(&pdata->ops);
+
+	if (speed == GSW_PORT_SPEED_10)
+		load = "10 Mbps";
+	else if (speed == GSW_PORT_SPEED_100)
+		load = "100 Mbps";
+	else if (speed == GSW_PORT_SPEED_1000)
+		load = "1 Gbps";
+	else if (speed == GSW_PORT_SPEED_100000)
+		load = "10 Gbps";
+	else if (speed == GSW_PORT_SPEED_25000)
+		load = "2.5 Gbps";
+	else
+		load = "AUTO";
+
+	if (linksts == GSW_PORT_LINK_UP)
+		ls = "UP";
+	else if (linksts == GSW_PORT_LINK_DOWN)
+		ls = "DOWN";
+	else
+		ls = "AUTO";
+
+	if (duplex == GSW_DUPLEX_FULL)
+		dp = "Full";
+	else if (duplex == GSW_DUPLEX_HALF)
+		dp = "Half";
+	else
+		dp = "AUTO";
+
+	pr_debug("XGMAC Init %d: Speed: %s Link: %s Duplex: %s\n",
+		pdata->mac_idx, load, ls, dp);
 
 	return 0;
 }
@@ -207,7 +242,7 @@ static struct platform_driver gsw_mac_driver = {
 
 module_platform_driver(gsw_mac_driver);
 
-MODULE_AUTHOR("Intel");
+MODULE_AUTHOR("Joby Thampan");
 MODULE_DESCRIPTION("Intel GSW_MAC Device driver");
 MODULE_LICENSE("GPL");
 
