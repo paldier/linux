@@ -1000,7 +1000,7 @@ int32_t ppa_hook_get_bridge_status(uint32_t *f_enable, uint32_t flags);
 int32_t ppa_get_if_stats(PPA_IFNAME *, PPA_IF_STATS *, uint32_t);
 int32_t ppa_get_accel_stats(PPA_IFNAME *, PPA_ACCEL_STATS *, uint32_t);
 #if defined(PPA_IF_MIB) && PPA_IF_MIB
-int32_t ppa_get_netif_accel_stats(PPA_IFNAME *, PPA_NETIF_ACCEL_STATS *, uint32_t);
+int32_t ppa_get_netif_accel_stats(PPA_IFNAME *, PPA_NETIF_ACCEL_STATS *, uint32_t, struct rtnl_link_stats64 *);
 #endif
 int32_t ppa_hook_set_ppe_fastpath_enable(uint32_t f_enable, uint32_t flags);
 int32_t ppa_hook_get_ppe_fastpath_enable(uint32_t *f_enable, uint32_t flags);
