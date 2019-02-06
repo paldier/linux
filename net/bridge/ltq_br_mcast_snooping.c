@@ -580,13 +580,13 @@ static int br_selective_flood6(struct net_bridge_port *p, struct sk_buff *skb)
 			case ICMPV6_MGM_REPORT:
 			case ICMPV6_MGM_REDUCTION:
 			case ICMPV6_MLD2_REPORT:
-				return 0;	/* Allow control packets */
+				return 1;	/* Allow control packets */
 			default:
 				break;
 			}
 		}
 	} else if (iph->nexthdr == IPPROTO_ICMPV6) {
-		return 0;       /* Allow all other ICMPv6 packets  */
+		return 1;       /* Allow all other ICMPv6 packets  */
 	}
 
 	return br_snoop_multicast_data(p, &daddr, &saddr);
