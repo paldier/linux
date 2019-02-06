@@ -297,9 +297,9 @@ config LOONGSON1_CPUFREQ
 
 config XRX500_CPUFREQ
 	tristate "XRX500 CPUFreq Driver"
-	depends on LANTIQ && CPUFREQ_DT && REGULATOR
+	depends on LANTIQ && CPUFREQ_DT
 	help
-	  This adds the CPUFreq driver for XRX500 Family SoC
+	  This adds the CPUFreq driver for XRX500/PRX300 Family SoC
 
 	  If in doubt, say N.
 
