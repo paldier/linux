@@ -231,10 +231,10 @@ int do_load_firmware(struct pp_qos_dev *qdev, const struct ppv4_qos_fw *fw,
 		return -ENOMEM;
 	}
 
-	QOS_LOG_INFO("=====> fw_data_stack_off %d, %d, %d\n",
-		     pdata->fw_sec_data_stack.is_in_dccm,
-		     pdata->fw_sec_data_stack.dccm_offset,
-		     pdata->fw_sec_data_stack.max_size);
+	QOS_LOG_DEBUG("do_load_firmware: fw_data_stack_off %d, %d, %d\n",
+		      pdata->fw_sec_data_stack.is_in_dccm,
+		      pdata->fw_sec_data_stack.dccm_offset,
+		      pdata->fw_sec_data_stack.max_size);
 
 	/* Is data stack sections in DCCM */
 	if (pdata->fw_sec_data_stack.is_in_dccm) {

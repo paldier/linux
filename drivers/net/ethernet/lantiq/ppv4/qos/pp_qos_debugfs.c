@@ -998,6 +998,12 @@ static int pp_qos_dbg_gen_show(struct seq_file *s, void *unused)
 				   qdev->hwconf.wred_const_p);
 			seq_printf(s, "max q size:\t%u\n",
 				   qdev->hwconf.wred_max_q_size);
+			seq_printf(s, "fw in dccm:\t%u\n",
+				   pdata->fw_sec_data_stack.is_in_dccm);
+			seq_printf(s, "fw dccm offset:\t%u\n",
+				   pdata->fw_sec_data_stack.dccm_offset);
+			seq_printf(s, "fw stack max size:\t%u\n",
+				   pdata->fw_sec_data_stack.max_size);
 		} else {
 			seq_puts(s, "Device is not ready !!!!\n");
 		}

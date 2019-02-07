@@ -117,14 +117,20 @@ struct qos_node *get_conform_node(const struct pp_qos_dev *qdev,
 	struct qos_node *node;
 	unsigned int phy;
 
-	phy = get_phy_from_id(qdev->mapping, id);
-	if (!QOS_PHY_VALID(phy)) {
+	if (!QOS_ID_VALID(id)) {
 		QOS_LOG_ERR("Illegal id %u\n", id);
 		return NULL;
 	}
+
+	phy = get_phy_from_id(qdev->mapping, id);
+	if (!QOS_PHY_VALID(phy)) {
+		QOS_LOG_ERR("Illegal phy (id %u)\n", id);
+		return NULL;
+	}
+
 	node = get_node_from_phy(qdev->nodes, phy);
 	if (conform && !conform(node)) {
-		QOS_LOG_ERR("Illegal id %u\n", id);
+		QOS_LOG_ERR("Illegal node (id %u)\n", id);
 		return NULL;
 	}
 
@@ -746,6 +752,11 @@ static int check_queue_conf_validity(
 	 * internal scheduler QOS_INVALID_PHY if it is a new queue
 	 */
 	unsigned int prev_virt_parent_phy;
+
+	if (!QOS_ID_VALID(id)) {
+		QOS_LOG_ERR("Illegal id %u\n", id);
+		return -EINVAL;
+	}
 
 	/* Check if node id is valid */
 	phy = get_phy_from_id(qdev->mapping, id);
@@ -1432,6 +1443,11 @@ static int check_sched_conf_validity(
 	int rc;
 	struct qos_node *nodep;
 	unsigned int prev_virt_parent_phy_phy;
+
+	if (!QOS_ID_VALID(id)) {
+		QOS_LOG_ERR("Illegal id %u\n", id);
+		return -EINVAL;
+	}
 
 	/* Check if node id is valid */
 	phy = get_phy_from_id(qdev->mapping, id);

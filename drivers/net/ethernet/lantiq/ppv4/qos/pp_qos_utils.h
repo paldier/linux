@@ -274,6 +274,12 @@ struct qos_dev_init_info {
 /******************************************************************************/
 #define QOS_LOG(format, arg...) QOS_LOG_DEBUG(format, ##arg)
 void stop_run(void);
+
+#ifdef __KERNEL__
+#define QOS_ASSERT(condition, format... )				\
+if (WARN(!(condition), format))						\
+	stop_run();
+#else
 #define QOS_ASSERT(condition, format, arg...)				\
 do {									\
 	if (!(condition)) {						\
@@ -282,6 +288,7 @@ do {									\
 		stop_run();						\
 	}								\
 } while (0)
+#endif
 
 #define QOS_BITS_SET(flags, bits)	((flags) |= (bits))
 #define QOS_BITS_CLEAR(flags, bits)	((flags) &= ~(bits))
