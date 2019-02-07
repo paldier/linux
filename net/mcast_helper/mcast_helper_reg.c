@@ -19,7 +19,7 @@
 
 
 
-#if IS_ENABLED(CONFIG_MCAST_HELPER)
+#if IS_ENABLED(CONFIG_MCAST_HELPER_REG)
 
 #include <linux/kernel.h>
 #include <linux/netdevice.h>

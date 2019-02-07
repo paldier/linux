@@ -2,6 +2,18 @@
 # mcast_helper configuration
 #
 
+config MCAST_HELPER_PACKAGE
+	tristate "Multicast Helper package enable"
+	default n
+	help
+	  mcast_helper support
+
+config MCAST_HELPER_REG
+	tristate "Multicast Helper Register Support"
+	default n
+	help
+	  mcast_helper reg support
+
 config MCAST_HELPER
 	tristate "Multicast Helper support"
 	default n 
