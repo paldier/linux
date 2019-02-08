@@ -543,6 +543,7 @@ struct cbm_dp_alloc_data {
 	u32 tx_ring_addr;  /*port ring address. should follow HW defintion*/
 	u32 tx_ring_size; /*ring size */
 	u32 tx_ring_offset;  /*next tx_ring_addr = current tx_ring_addr + tx_ring_offset */
+	u32 num_dma_chan;
 };
 
 
@@ -551,6 +552,7 @@ struct cbm_dp_en_data {
 	int cbm_inst; /*input*/
 	u32 deq_port; /*input: -1 means not valid*/
 	u32 dma_chnl_init;/*input :0 - no init, 1:- init DMA channel*/
+	u32 num_dma_chan;
 };
 
 struct cbm_tx_push {

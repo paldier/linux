@@ -1829,6 +1829,7 @@ static void fill_dp_alloc_data(struct cbm_dp_alloc_data *data, int dp,
 	data->dp_port = dp;
 	data->deq_port = port;
 	data->deq_port_num = (data->deq_port == DQM_PON_TYPE) ? 64 : 1;
+	data->num_dma_chan = 1;
 	p_info = &dqm_port_info[port];
 	if (p_info->dma_dt_init_type == DEQ_DMA_CHNL) {
 		data->flags |= CBM_PORT_DMA_CHAN_SET | CBM_PORT_PKT_CRDT_SET;

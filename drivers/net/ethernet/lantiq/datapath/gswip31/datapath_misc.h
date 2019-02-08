@@ -119,7 +119,7 @@ struct datapath_ctrl {
 int alloc_bridge_port(int inst, int portid, int subif, int fid, int bp_member);
 int free_bridge_port(int inst, int bp);
 struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
-				u32 flags);
+				u32 flags, struct dp_dev_data *data);
 void dp_sys_mib_reset_31(u32 flag);
 int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg);
 int dp_set_gsw_parser_31(u8 flag, u8 cpu, u8 mpe1, u8 mpe2, u8 mpe3);
@@ -224,6 +224,7 @@ int get_p_mib(int inst, int pid,
 	      u32 *green /* bytes*/,
 	      u32 *yellow /*bytes*/);
 int cpu_vlan_mod_dis(int inst);
+int set_port_lookup_mode(int inst, u8 ep, u32 flags);
 int tc_vlan_set_31(struct core_ops *ops, struct dp_tc_vlan *vlan,
 		   struct dp_tc_vlan_info *info,
 		   int flag);

@@ -716,7 +716,7 @@ char *dp_port_dma_tx_str(int cqm_deq_port, int flag)
 			if (!dp_port_info[inst][i].alloc_flags)
 				continue;
 			snprintf(dma_flag, sizeof(dma_flag), "CH%x",
-				 dp_port_info[inst][i].dma_chan);
+				_DMA_CHANNEL(dp_deq_port_tbl[inst][cqm_deq_port].dma_chan));
 			return dma_flag;
 		}
 	}

@@ -65,6 +65,8 @@ struct inst_info {
 	int (*dp_platform_set)(int inst, u32 flag);
 	int (*port_platform_set)(int inst, u8 ep, struct dp_port_data *data,
 				 uint32_t flags);
+	int (*dev_platform_set)(int inst, u8 ep, struct dp_dev_data *data,
+				 uint32_t flags);
 	int (*subif_platform_set_unexplicit)(int inst, int port_id,
 					     struct logic_dev *dev,
 					     u32 flag);

@@ -459,18 +459,34 @@ static int dp_platform_set(int inst, u32 flag)
 	return 0;
 }
 
+static int dev_platform_set(int inst, u8 ep, struct dp_dev_data *data,
+			     u32 flags)
+{
+	return 0;
+}
+
 static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			     u32 flags)
 {
 	int idx, i;
 	struct pmac_port_info *port_info = &dp_port_info[inst][ep];
+	u32 dma_chan;
 
 	dp_port_info[inst][ep].ctp_max = MAX_SUBIF_PER_PORT;
 	dp_port_info[inst][ep].vap_offset = 8;
 	dp_port_info[inst][ep].vap_mask = 0xF;
 	idx = port_info->deq_port_base;
-	for (i = 0; i < port_info->deq_port_num; i++)
+	for (i = 0; i < port_info->deq_port_num; i++) {
 		dp_deq_port_tbl[inst][i + idx].dp_port = ep;
+
+		/* For G.INT num_dma_chan 8 or 16, for other 1 */
+		if (port_info->num_dma_chan > 1)
+			dp_deq_port_tbl[inst][i + idx].dma_chan = dma_chan++;
+		else
+			dp_deq_port_tbl[inst][i + idx].dma_chan = dma_chan;
+		DP_DEBUG(DP_DBG_FLAG_DBG, "deq_port_tbl[%d][%d].dma_chan=%x\n",
+			 inst, (i + idx), dma_chan);
+	}
 #ifdef CONFIG_LTQ_DATAPATH_MIB
 	if (flags & DP_F_DEREGISTER) {
 		reset_gsw_itf(ep);
@@ -495,6 +511,8 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 {
 	int deq_port_idx = 0, cqe_deq;
 	struct pmac_port_info *port_info;
+	int cid, pid, nid;
+	u32 dma_chan;
 
 	if (!data || !data->subif_data) {
 		PR_ERR("data NULL or subif_data NULL\n");
@@ -510,10 +528,28 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	}
 	cqe_deq = port_info->deq_port_base + deq_port_idx;
 	port_info->subif_info[subif_ix].cqm_deq_port = cqe_deq;
+
+	dma_chan = dp_deq_port_tbl[inst][cqe_deq].dma_chan;	
+	cid = _DMA_CONTROLLER(dma_chan);
+	pid = _DMA_PORT(dma_chan) ;
+	nid = _DMA_CHANNEL(dma_chan);
+	/* cid, pid and nid should not greater than DP_DMAMAX,
+	 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
+	 */
+	if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
+	    DP_MAX_DMA_CHAN) {
+		PR_ERR("ERROR: cid=%d pid=%d nid=%d\n", cid, pid, nid);
+		PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
+		       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
+		return DP_FAILURE;
+	}
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
-	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d\n",
+	if (port_info->num_dma_chan)
+		atomic_inc(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt);
+	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d DMATXCH_Ref.cnt=%d\n",
 		 cqe_deq,
-		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt);
+		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt,
+		 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
 	return 0;
 }
 
@@ -522,6 +558,8 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 {
 	int deq_port_idx = 0, cqe_deq;
 	struct pmac_port_info *port_info;
+	u32 cid, pid, nid;
+	u32 dma_chan;
 
 	if (!data || !data->subif_data) {
 		PR_ERR("data NULL or subif_data NULL\n");
@@ -542,10 +580,28 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		       dp_deq_port_tbl[inst][cqe_deq].ref_cnt);
 		return -1;
 	}
+	dma_chan = dp_deq_port_tbl[inst][cqe_deq].dma_chan;	
+	cid = _DMA_CONTROLLER(dma_chan);
+	pid = _DMA_PORT(dma_chan) ;
+	nid = _DMA_CHANNEL(dma_chan);
+	/* cid, pid and nid should not greater than DP_DMAMAX,
+	 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
+	 */
+	if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
+	    DP_MAX_DMA_CHAN) {
+		PR_ERR("ERROR: cid=%d pid=%d nid=%d\n", cid, pid, nid);
+		PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
+		       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
+		return DP_FAILURE;
+	}
+	DP_DEBUG(DP_DBG_FLAG_DBG, "cid=%d pid=%d nid=%d\n", cid, pid, nid);
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt--;
-	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d\n",
+	if (port_info->num_dma_chan)
+		atomic_dec(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt);
+	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d DMATXCH_Ref_cnt=%d\n",
 		 cqe_deq,
-		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt);
+		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt,
+		 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
 	return 0;
 }
 
@@ -631,6 +687,7 @@ int register_dp_cap_gswip30(int flag)
 	cap.info.ver = GSWIP30_VER;
 	cap.info.dp_platform_set = dp_platform_set;
 	cap.info.port_platform_set = port_platform_set;
+	cap.info.dev_platform_set = dev_platform_set;
 	cap.info.subif_platform_set_unexplicit = subif_platform_set_unexplicit;
 	cap.info.proc_print_ctp_bp_info = NULL;
 	cap.info.init_dma_pmac_template = init_dma_pmac_template;
