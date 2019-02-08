@@ -118,6 +118,10 @@ struct sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
  */
 struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
 
+/* DMA TX CH info*/
+struct dma_chan_info dp_dma_chan_tbl[DP_MAX_INST][DP_DMAMAX][DP_MAX_DMA_PORT]
+		      [DP_MAX_DMA_CHAN];
+
 struct parser_info pinfo[4];
 static int print_len;
 #ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
@@ -434,9 +438,14 @@ static int32_t dp_alloc_port_private(int inst,
 	dp_port_info[inst][port_id].port_id = cbm_data.dp_port;
 	dp_port_info[inst][port_id].deq_port_base = cbm_data.deq_port;
 	dp_port_info[inst][port_id].deq_port_num = cbm_data.deq_port_num;
+	dp_port_info[inst][port_id].num_dma_chan = cbm_data.num_dma_chan;
+	/*save info to port data*/
+	data->deq_port_base = dp_port_info[inst][port_id].deq_port_base;
+	data->deq_num = dp_port_info[inst][port_id].deq_port_num;
 	DP_DEBUG(DP_DBG_FLAG_REG,
-		 "cbm alloc dp_port:%d deq:%d deq_num:%d\n",
-		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.deq_port_num);
+		 "cbm alloc dp_port:%d deq:%d deq_num:%d no_dma_chan:%d\n",
+		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.deq_port_num,
+		 cbm_data.num_dma_chan);
 	if (cbm_data.flags & CBM_PORT_DMA_CHAN_SET)
 		dp_port_info[inst][port_id].dma_chan = cbm_data.dma_chan;
 	if (cbm_data.flags & CBM_PORT_PKT_CRDT_SET)
@@ -451,6 +460,19 @@ static int32_t dp_alloc_port_private(int inst,
 	if (cbm_data.flags & CBM_PORT_RING_OFFSET_SET)
 		dp_port_info[inst][port_id].tx_ring_offset =
 				cbm_data.tx_ring_offset;
+
+	DP_DEBUG(DP_DBG_FLAG_DBG, "cid=%d pid=%d nid=%d\n",
+		 _DMA_CONTROLLER(cbm_data.dma_chan),
+		 _DMA_PORT(cbm_data.dma_chan),
+		 _DMA_CHANNEL(cbm_data.dma_chan));
+
+	if ((cbm_data.num_dma_chan) && (cbm_data.num_dma_chan >
+		cbm_data.deq_port_num)) {
+		PR_ERR("ERROR: deq_port_num=%d  not equal to num_dma_chan=%d\n",
+		       cbm_data.deq_port_num, cbm_data.num_dma_chan);
+		return DP_FAILURE;
+	}
+
 	if (dp_port_prop[inst].info.port_platform_set(inst, port_id,
 						      data, flags)) {
 		PR_ERR("Failed port_platform_set for port_id=%d(%s)\n",
@@ -536,6 +558,11 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 	/*PR_INFO("search range: start=%d end=%d\n",start, end);*/
     /*allocate a free subif */
 	for (i = start; i < end; i++) {
+		u32 cqm_deq_port;
+		u32 dma_chan;
+		u32 cid, pid, nid;
+		struct dma_chan_info *dp_dma_chan_tbl_info = NULL;
+
 		if (port_info->subif_info[i].flags) /*used already & not free*/
 			continue;
 
@@ -557,6 +584,27 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			PR_ERR("port info status fail for 0\n");
 			return res;
 		}
+
+		cqm_deq_port = port_info->subif_info[i].cqm_deq_port;
+		dma_chan = dp_deq_port_tbl[inst][cqm_deq_port].dma_chan;
+		cid = _DMA_CONTROLLER(dma_chan);
+		pid = _DMA_PORT(dma_chan);
+		nid = _DMA_CHANNEL(dma_chan);
+		/* cid, pid and nid should not greater than DP_DMAMAX,
+		 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
+		 */
+		if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
+		    DP_MAX_DMA_CHAN) {
+			PR_ERR("ERROR: cid=%d pid=%d nid=%d\n", cid, pid, nid);
+			PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
+			       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
+			return DP_FAILURE;
+		}
+
+		DP_DEBUG(DP_DBG_FLAG_REG, "cid=%d pid=%d nid=%d\n",
+			 cid, pid, nid);
+		dp_dma_chan_tbl_info = &dp_dma_chan_tbl[inst][cid][pid][nid];
+
 		port_info->subif_info[i].flags = 1;
 		port_info->subif_info[i].netif = dev;
 		port_info->port_id = port_id;
@@ -583,6 +631,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		if ((port_info->num_subif == 1) ||
 		    (platfrm_data.act & TRIGGER_CQE_DP_ENABLE)) {
 			cbm_data.dp_inst = inst;
+			cbm_data.num_dma_chan = port_info->num_dma_chan;
 			cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
 			cbm_data.deq_port = port_info->deq_port_base +
 				(data ? data->deq_port_idx : 0);
@@ -592,13 +641,18 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 				       cbm_data.deq_port);
 				return res;
 			}
-			if (port_info->num_subif == 1)
+			/* PPA Directpath/LitePath don't have DMA CH */
+			if ((atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].
+			     ref_cnt) == 1) && !(port_info->alloc_flags &
+			     DP_F_DIRECT) && (cbm_data.num_dma_chan))
 				cbm_data.dma_chnl_init = 1; /*to enable DMA*/
-			DP_DEBUG(DP_DBG_FLAG_REG, "%s:%s%d %s%d %s%d\n",
+			DP_DEBUG(DP_DBG_FLAG_REG, "%s:%s%d %s%d %s%d %s%d\n",
 				 "cbm_dp_enable",
 				 "dp_port=", port_id,
 				 "deq_port=", cbm_data.deq_port,
-				 "dma_chnl_init=", cbm_data.dma_chnl_init);
+				 "dma_chnl_init=", cbm_data.dma_chnl_init,
+				 "ref=",
+				 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
 			if (cbm_dp_enable(owner, port_id, &cbm_data, 0,
 					  port_info->alloc_flags)) {
 				DP_DEBUG(DP_DBG_FLAG_REG,
@@ -701,6 +755,8 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		PR_ERR("subif_platform_set fail\n");
 		/*return res;*/
 	}
+	if (!port_info->num_subif)
+		port_info->status = PORT_DEV_REGISTERED;
 
 	if (!dp_deq_port_tbl[inst][cqm_port].ref_cnt) {
 		/*delete all queues which may created by PPA or other apps*/
@@ -715,10 +771,9 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		cbm_data.dp_inst = inst;
 		cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
 		cbm_data.deq_port = cqm_port;
-		if (!port_info->num_subif) {
-			port_info->status = PORT_DEV_REGISTERED;
-			cbm_data.dma_chnl_init = 1; /*to disable DMA */
-		}
+		/* PPA Directpath/LitePath don't have DMA CH */
+		if (!(port_info->alloc_flags & DP_F_DIRECT))
+				cbm_data.dma_chnl_init = 1; /*to disable DMA */
 		if (cbm_dp_enable(owner, port_id, &cbm_data,
 				  CBM_PORT_F_DISABLE, port_info->alloc_flags)) {
 			DP_DEBUG(DP_DBG_FLAG_REG,
@@ -843,14 +898,13 @@ int32_t dp_register_dev(struct module *owner, uint32_t port_id,
 			dp_cb_t *dp_cb, uint32_t flags)
 {
 	int inst = dp_get_inst_via_module(owner, port_id, 0);
-	struct dp_dev_data data = {0};
 
 	if (inst < 0) {
 		PR_ERR("dp_register_dev not valid module %s\n", owner->name);
 		return -1;
 	}
 
-	return dp_register_dev_ext(inst, owner, port_id, dp_cb, &data, flags);
+	return dp_register_dev_ext(inst, owner, port_id, dp_cb, NULL, flags);
 }
 EXPORT_SYMBOL(dp_register_dev);
 
@@ -860,12 +914,14 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 {
 	int res = DP_FAILURE;
 	struct pmac_port_info *port_info;
+	struct dp_dev_data tmp_data = {0};
 
 	if (unlikely(!dp_init_ok)) {
 		PR_ERR("dp_register_dev failed for datapath not init yet\n");
 		return DP_FAILURE;
 	}
-
+	if (!data)
+		data = &tmp_data;
 	if (!port_id || !owner || (port_id >= MAX_DP_PORTS)) {
 		if ((inst < 0) || (inst >= DP_MAX_INST))
 			DP_DEBUG(DP_DBG_FLAG_REG, "wrong inst=%d\n", inst);
@@ -889,6 +945,8 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 		} else if (port_info->status ==
 			   PORT_DEV_REGISTERED) {
 			port_info->status = PORT_ALLOCATED;
+			DP_CB(inst, dev_platform_set)(inst, port_id, data,
+						      flags);
 			res = DP_SUCCESS;
 		} else {
 			DP_DEBUG(DP_DBG_FLAG_REG,
@@ -918,6 +976,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 	if (dp_cb)
 		port_info->cb = *dp_cb;
 
+	DP_CB(inst, dev_platform_set)(inst, port_id, data, flags);
 	DP_LIB_UNLOCK(&dp_lock);
 	return DP_SUCCESS;
 }
@@ -1225,9 +1284,8 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif_flag[num] = PORT_SUBIF(inst, k, i,
 								subif_flag);
 					if (dp_port_info[inst][k].subif_info[i].
-						ctp_dev) {
+						ctp_dev)
 						subif->flag_pmapper = 1;
-					}
 					bport = PORT_SUBIF(inst, k, i, bp);
 					if (num &&
 					    (bport != dp_port_info[inst][k].
@@ -2353,7 +2411,7 @@ int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 
 	/*for ETH LAN/WAN */
 	if (dp_info->alloc_flags & (DP_F_FAST_ETH_LAN | DP_F_FAST_ETH_WAN |
-	    DP_F_GPON | DP_F_EPON)) {
+	    DP_F_GPON | DP_F_EPON | DP_F_GINT)) {
 		/*always with pmac*/
 		if (likely(tx_chksum_flag)) {
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,

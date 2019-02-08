@@ -16,6 +16,8 @@
 #include <linux/netdevice.h>
 #include <linux/platform_device.h>
 #include <net/lantiq_cbm_api.h>
+#include <linux/dma/lantiq_dmax.h>
+#include <linux/atomic.h>
 
 //#define CONFIG_LTQ_DATAPATH_DUMMY_QOS
 //#define DUMMY_PPV4_QOS_API_OLD
@@ -147,6 +149,13 @@
 
 #define GET_VAP(subif, bit_shift, mask) (((subif) >> (bit_shift)) & (mask))
 #define SET_VAP(vap, bit_shift, mask) ((((u32)vap) & (mask)) << (bit_shift))
+
+/* maximum DMA port per controller */
+#define DP_MAX_DMA_PORT 4
+/* maximum dma channnels per port*/
+#define DP_MAX_DMA_CHAN 64
+/* maximum dma controller*/
+#define DP_DMAMAX 7
 
 enum dp_xmit_errors {
 	DP_XMIT_ERR_DEFAULT = 0,
@@ -463,6 +472,7 @@ struct pmac_port_info {
 			      *   current tx_ring_addr + tx_ring_offset
 			      */
 	u32 lct_idx; /* LCT subif register flag */
+	u32 num_dma_chan; /*For G.INT it's 8 or 16, for other 1*/
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 	u32 f_ptp:1; /* PTP1588 support enablement */
 #endif
@@ -513,6 +523,10 @@ struct sched_info {
 	int cqm_dequeue_port; /*CQM dequeue port */
 };
 
+struct dma_chan_info {
+	atomic_t ref_cnt;
+};
+
 struct cqm_port_info {
 	int f_first_qid : 1; /*0 not valid */
 	u32 ref_cnt; /*reference counter: the number of CTP attached to it*/
@@ -527,6 +541,7 @@ struct cqm_port_info {
 			*/
 	int q_node; /*first_qid's logical node id*/
 	int dp_port; /* dp_port info */
+	u32 dma_chan;
 };
 
 struct parser_info {
@@ -637,6 +652,8 @@ extern struct q_info dp_q_tbl[DP_MAX_INST][DP_MAX_QUEUE_NUM];
 extern struct sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
 extern struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
 extern struct bp_pmapper_dev dp_bp_dev_tbl[DP_MAX_INST][DP_MAX_BP_NUM];
+extern struct dma_chan_info dp_dma_chan_tbl[DP_MAX_INST][DP_DMAMAX]
+			    [DP_MAX_DMA_PORT][DP_MAX_DMA_CHAN];
 
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
 extern u32 dp_dbg_flag;
