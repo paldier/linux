@@ -359,6 +359,7 @@ enum QOS_FLAG {
 	QUEUE_MAP_SET,     /*set lookup entries to the specified qid*/
 	NODE_CHILDREN_GET, /*get direct children list of node*/
 	QOS_LEVEL_GET,     /* get Max Scheduler level for Node */
+	QOS_GLOBAL_CFG_GET, /* get global qos config info */
 };
 
 struct dev_mib {

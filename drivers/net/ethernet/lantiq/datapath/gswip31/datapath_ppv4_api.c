@@ -127,6 +127,9 @@ int qos_platform_set(int cmd_id, void *node, int flag)
 	case QOS_LEVEL_GET:
 		res = dp_qos_level_get_31((struct dp_qos_level *)node, flag);
 		break;
+	case QOS_GLOBAL_CFG_GET:
+		res = dp_qos_global_info_get_31((struct dp_qos_cfg_info *)node, flag);
+		break;
 	default:
 		PR_ERR("no support yet cmd_id %d\n", cmd_id);
 		break;
@@ -4484,3 +4487,30 @@ FREE_EXIT:
 	return res;
 }
 
+/* dp_children_get_31 API
+ * Get direct chldren and type of given node and return DP_SUCCESS
+ * else return DP_FAILURE
+ */
+int dp_qos_global_info_get_31(struct dp_qos_cfg_info *info, int flag)
+{
+	struct hal_priv *priv;
+	unsigned int quanta = 0;
+	
+	if (!info) {
+		PR_ERR("info cannot be NULL\n");
+		return DP_FAILURE;
+	}
+	priv = HAL(info->inst);
+	if (!priv) {
+		PR_ERR("priv cannot be NULL\n");
+		return DP_FAILURE;
+	}
+	if (pp_qos_get_quanta(priv->qdev, &quanta)) {
+		PR_ERR("failed pp_qos_get_quanta\n");
+		return DP_FAILURE;
+	}
+	info->quanta = quanta;
+	DP_DEBUG(DP_DBG_FLAG_QOS, "quanta=%d\n", quanta);
+
+	return DP_SUCCESS;
+}

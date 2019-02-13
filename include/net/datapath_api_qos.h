@@ -1240,6 +1240,29 @@ struct dp_tc_cfg {
  */
 int dp_ingress_ctp_tc_map_set(struct dp_tc_cfg *tc, int flag);
 
+/*!
+ * @struct dp_qos_cfg_info
+ *
+ * Structure defining the global QoS config info
+ *
+ */
+struct dp_qos_cfg_info {
+	int inst; /*!< input: dp instance. For SOC side, it is always zero */
+	u32 quanta; /*!< QoS quanta for scheduler */
+	
+};
+
+/*!< API dp_qos_global_info_get: Helps to retrieve global QoS
+ *  Config information.
+ *
+ * @param [in,out] qos info struct dp_qos_info *info
+ * @param [in] flag: reserved
+ * @return [out] integer value: return DP_SUCCESS if succeed,
+ *                              otherwise, return DP_FAILURE
+ *
+ */
+int dp_qos_global_info_get(struct dp_qos_cfg_info *info, int flag);
+
 
 #ifdef ENABLE_QOS_EXAMPLE
 /*! \ingroup APIs_dp_qos_example

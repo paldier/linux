@@ -171,6 +171,7 @@ int dp_meter_add_31(struct net_device *dev,
 int dp_meter_del_31(struct net_device *dev,
 		    struct dp_meter_cfg *meter,
 		    int flag, struct dp_meter_subif *mtr_subif);
+int dp_qos_global_info_get_31(struct dp_qos_cfg_info *info, int flag);
 
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
 GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param);
