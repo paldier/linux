@@ -626,7 +626,7 @@ static void xgmac_extts_isr_handler(struct mac_prv_data *pdata,
 #ifdef CONFIG_PTP_1588_CLOCK
 	u8 val, i;
 	struct ptp_clock_event event;
-	u64 ts[N_EXT_TS];
+	u64 ts[N_EXT_TS] = {0};
 	u8 ts_valid[N_EXT_TS] = {0};
 	u8 cnt = MAC_GET_VAL(tstamp_sts, MAC_TSTAMP_STSR, ATSNS);
 

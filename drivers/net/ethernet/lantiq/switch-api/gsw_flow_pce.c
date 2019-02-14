@@ -1505,6 +1505,11 @@ int gsw_pmicro_code_init_f24s(void *cdev)
 	pctbl_prog_t tbl_entry;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
+	if (gswdev == NULL) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
+
 	printk("PCE f24s micro-code init\n");
 	/* Disable all physical port  */
 

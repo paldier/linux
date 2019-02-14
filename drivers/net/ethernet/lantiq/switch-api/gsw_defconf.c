@@ -75,9 +75,14 @@ int gsw_set_def_pce_qmap(struct core_ops *ops)
 {
 	int i = 0, j = 0;
 	GSW_QoS_queuePort_t q_map;
-	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
 	int num_of_elem =
 		(sizeof(gsw_pce_path) / sizeof(struct _gsw_pce_path));
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
+
+	if (gswdev == NULL) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
 
 	for (j = 0; j < num_of_elem; j++) {
 		for (i = gsw_pce_path[j].tc_from;
@@ -224,8 +229,13 @@ int gsw_get_def_bypass_qmap(struct core_ops *ops)
 int gsw_misc_config(struct core_ops *ops)
 {
 	GSW_register_t reg;
-	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
 	int i = 0;
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
+
+	if (gswdev == NULL) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
 
 	/* Ignore Undersized frames and forward to CPU for the MAC ports
 	 * MAC logical ports start from 2
