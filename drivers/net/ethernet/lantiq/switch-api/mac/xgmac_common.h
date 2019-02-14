@@ -397,6 +397,7 @@ struct mac_prv_data {
 	u32 one_nsec_accuracy;
 	u32 cic;
 	u32 rec_id;
+	bool systime_initialized;
 	struct mac_fifo_entry ts_fifo[MAX_FIFO_ENTRY];
 
 #ifdef __KERNEL__

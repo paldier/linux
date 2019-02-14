@@ -964,6 +964,8 @@ int mac_disable_ts(void *pdev)
 
 	xgmac_set_mac_int(pdev, XGMAC_TSTAMP_EVNT, 0);
 
+	pdata->systime_initialized = 0;
+
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
 #endif

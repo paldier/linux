@@ -170,6 +170,7 @@ void xgmac_init_pdata(struct mac_prv_data *pdata, int idx)
 	pdata->nsec			= 0;
 	pdata->ptp_clk			= PTP_CLK;
 	pdata->one_nsec_accuracy	= 1;
+	pdata->systime_initialized      = 0;
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	pdata->lmac_addr_base		= LEGACY_MAC_BASE;
 	pdata->ss_addr_base		= adap_priv_data.ss_addr_base;

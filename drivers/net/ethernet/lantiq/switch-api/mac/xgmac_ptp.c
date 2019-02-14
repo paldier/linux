@@ -80,9 +80,12 @@ void xgmac_config_timer_reg(void *pdev)
 
 	hw_if->config_addend(pdev, pdata->def_addend);
 
-	/* initialize system time */
-	getnstimeofday(&now);
-	hw_if->init_systime(pdev, now.tv_sec, now.tv_nsec);
+	if (!pdata->systime_initialized) {
+		/* initialize system time */
+		getnstimeofday(&now);
+		hw_if->init_systime(pdev, now.tv_sec, now.tv_nsec);
+		pdata->systime_initialized = 1;
+	}
 }
 
 /* API to adjust the frequency of hardware clock.
