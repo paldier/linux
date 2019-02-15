@@ -218,6 +218,8 @@ int proc_port_dump(struct seq_file *s, int pos)
 				   port->subif_info[i].ctp_dev->name);
 		else
 			seq_puts(s, "          : ctp_dev = NULL\n");
+		seq_printf(s, "          : rx_en_flag = %d\n",
+			   STATS_GET(port->subif_info[i].rx_flag));
 	}
 	seq_printf(s, "    rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
 		   STATS_GET(port->rx_err_drop),

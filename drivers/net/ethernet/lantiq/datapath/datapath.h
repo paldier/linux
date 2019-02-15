@@ -418,6 +418,7 @@ struct dp_subif_info {
 	u32 subif_flag; /* To store original flag from caller during
 			 * dp_register_subif
 			 */
+	atomic_t rx_flag; /* To enable/disable DP rx */
 };
 
 struct vlan_info {

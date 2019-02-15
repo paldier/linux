@@ -621,6 +621,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		       sizeof(port_info->subif_info[i].device_name) - 1);
 		port_info->subif_info[i].flags = PORT_SUBIF_REGISTERED;
 		port_info->subif_info[i].subif_flag = flags;
+		STATS_SET(port_info->subif_info[i].rx_flag, 1);
 		port_info->status = PORT_SUBIF_REGISTERED;
 		subif_id->port_id = port_id;
 		subif_id->subif = port_info->subif_info[i].subif;
@@ -1981,16 +1982,21 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 	int vap, ret;
 
 	vap = dp_port->lct_idx;
+
 	skb->dev = dp_port->subif_info[vap].netif;
 	if (skb->data[PMAC_SIZE] & 0x1) {
 		/* multicast/broadcast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT mcast or broadcast\n");
+		if((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
+			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
+			return 1;
+		}
 		lct_skb = skb_clone(skb, GFP_ATOMIC);
 		if (!lct_skb) {
 			PR_ERR("LCT mcast/bcast skb clone fail\n");
 			return -1;
 		}
-		lct_skb->dev = dp_port->subif_info[vap].netif;
+		lct_skb->dev = dp_port->subif_info[vap].netif;	
 		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
 		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s) ret(%d)\n",
 			 lct_skb->dev->name ? lct_skb->dev->name : "NULL",
@@ -2002,6 +2008,11 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
 		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s) ret(%d)\n",
 				 skb->dev->name ? skb->dev->name : "NULL", ret);
+		if((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
+			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
+			dev_kfree_skb_any(skb);
+			return 0;
+		}
 		rx_fn(skb->dev, NULL, skb, skb->len);
 		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
 		return 0;
@@ -2165,11 +2176,22 @@ static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
 			if (dp_port->lct_idx > 0)
 				ret_lct = dp_handle_lct(dp_port, skb, rx_fn);
 			if (ret_lct) {
+				if((STATS_GET(dp_port->subif_info[vap].
+								rx_flag) <= 0)) {
+					UP_STATS(dp_port->subif_info[vap].
+							mib.rx_fn_dropped);
+					goto RX_DROP2;
+				}
 				rx_fn(dev, NULL, skb, skb->len);
 				UP_STATS(dp_port->subif_info[vap].mib.
 								rx_fn_rxif_pkt);
 			}
 		} else {
+			if((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
+				UP_STATS(dp_port->subif_info[vap].mib.
+						rx_fn_dropped);
+				goto RX_DROP2;
+			}
 			rx_fn(NULL, dev, skb, skb->len);
 			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_txif_pkt);
 		}
@@ -2673,6 +2695,21 @@ EXPORT_SYMBOL(dp_set_min_frame_len);
 
 int dp_rx_enable(struct net_device *netif, char *ifname, uint32_t flags)
 {
+	dp_subif_t subif = {0};
+	struct pmac_port_info *port_info;
+	int vap;
+
+	if (dp_get_netif_subifid(netif, NULL, NULL, NULL, &subif, 0)) {
+		DP_DEBUG(DP_DBG_FLAG_DBG, "get subifid fail(%s)\n",
+			 netif ? netif->name : "NULL");
+		return DP_FAILURE;
+	}
+	port_info = PORT(subif.inst, subif.port_id);
+	vap = GET_VAP(subif.subif, port_info->vap_offset,
+		      port_info->vap_mask);
+	
+	STATS_SET(port_info->subif_info[vap].rx_flag, flags ? 1 : 0);
+
 	return DP_SUCCESS;
 }
 EXPORT_SYMBOL(dp_rx_enable);
