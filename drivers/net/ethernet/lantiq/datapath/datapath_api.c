@@ -47,7 +47,7 @@ struct dma_rx_desc_1 dma_tx_desc_mask1;
 u32 dp_drop_all_tcp_err;
 u32 dp_pkt_size_check;
 
-u32 dp_dbg_flag;
+u32 dp_dbg_flag=DP_DBG_FLAG_DBG|DP_DBG_FLAG_REG;
 EXPORT_SYMBOL(dp_dbg_flag);
 
 #ifdef CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST

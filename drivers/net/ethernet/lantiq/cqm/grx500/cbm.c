@@ -3019,6 +3019,7 @@ RET_PORT:
 	data->dp_port = port_id;
 	data->deq_port = (flags & DP_F_FAST_WLAN) ? cbm_port[i] : cbm_port[0];
 	data->deq_port_num = 1;
+	data->num_dma_chan = 1;
 	return CBM_SUCCESS;
 }
 
