@@ -206,11 +206,11 @@ int proc_port_dump(struct seq_file *s, int pos)
 		cid = _DMA_CONTROLLER(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
-		seq_printf(s, "          : dma_ch/node:    0x%x/%d(ref=%d)\n",
-			   nid,
-			   port->subif_info[i].qos_deq_port,
-			   atomic_read(&dp_dma_chan_tbl[tmp_inst][cid][pid]
-					[nid].ref_cnt));
+		if (port->num_dma_chan)
+			seq_printf(s, "          : dma_ch/port:    %d/%d(ref=%d)\n",
+				   nid, cqm_p,
+				   atomic_read(&dp_dma_chan_tbl[tmp_inst][cid]
+						[pid][nid].ref_cnt));
 
 		if (port->subif_info[i].ctp_dev &&
 		    port->subif_info[i].ctp_dev->name)
