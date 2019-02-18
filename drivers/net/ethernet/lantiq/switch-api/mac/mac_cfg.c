@@ -242,7 +242,6 @@ int mac_set_mii_if(void *pdev, u32 mii_mode)
 		gswss_set_fe_intf(pdev, LMAC_MII);
 	} else if (mii_mode == GSW_PORT_HW_GMII) {
 		gswss_set_1g_intf(pdev, XGMAC_GMII);
-		gswss_set_fe_intf(pdev, XGMAC_GMII);
 		gswss_set_2G5_intf(pdev, XGMAC_GMII);
 	} else if (mii_mode == 5) {	/* For Testing LMAC 1G only */
 		gswss_set_1g_intf(pdev, LMAC_GMII);
@@ -1101,7 +1100,7 @@ int mac_init(void *pdev)
 	/* Default enable flow control Rx and TX */
 	mac_set_flowctrl(pdev, 3);
 #endif
-	/* Configure MII for 100M, 10M, 1G and 2.5G to XGMAC by default
+	/* Configure MII for 1G and 2.5G to XGMAC by default
      * default value is LMAC
      */
 	mac_set_mii_if(pdev, GSW_PORT_HW_GMII);
