@@ -597,6 +597,7 @@ struct cqm_ctrl {
 	const char *name;
 	u32 prx300_pool_ptrs[CQM_PRX300_NUM_BM_POOLS];
 	u32 prx300_pool_size[CQM_PRX300_NUM_BM_POOLS];
+	int gint_mode;
 };
 
 struct cqm_buf_dbg_cnt {

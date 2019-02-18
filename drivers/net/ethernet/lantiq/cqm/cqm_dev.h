@@ -46,5 +46,6 @@ struct cqm_data {
 	u32  dq_port[MAX_CPU_DQ_PORT_N_TYPE];
 	u32 num_dq_port;
 	u32 gsw_mode;
+	int gint_mode;
 };
 #endif

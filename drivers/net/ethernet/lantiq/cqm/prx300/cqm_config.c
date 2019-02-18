@@ -100,7 +100,7 @@ const struct cqm_config prx300_cqm_config[] = {
 	{
 	.type = DQM_DMA_TYPE,
 	.data.dqm_dma.port = 7,
-	.data.dqm_dma.port_range = 0,
+	.data.dqm_dma.port_range = 7,
 	.data.dqm_dma.dma_ctrl = 1,
 	.data.dqm_dma.dma_chan = 0,
 	.data.dqm_dma.port_enable = 1,
@@ -110,7 +110,7 @@ const struct cqm_config prx300_cqm_config[] = {
 	{
 	.type = DQM_DMA_TYPE,
 	.data.dqm_dma.port = 15,
-	.data.dqm_dma.port_range = 0,
+	.data.dqm_dma.port_range = 7,
 	.data.dqm_dma.dma_ctrl = 1,
 	.data.dqm_dma.dma_chan = 8,
 	.data.dqm_dma.port_enable = 1,

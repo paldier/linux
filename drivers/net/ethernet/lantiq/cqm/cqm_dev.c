@@ -105,6 +105,10 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	}
 	cqm_pdata->num_dq_port = count;
 
+	if (of_property_read_s32(node, "intel,gint-mode",
+				 &cqm_pdata->gint_mode))
+		cqm_pdata->gint_mode = -1;
+
 	ret_node = node;
 	gsw_node = of_find_node_by_name(NULL, "gsw_core");
 	if (!gsw_node) {
