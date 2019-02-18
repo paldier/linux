@@ -90,7 +90,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[i].all = 0xFFFFFFFF;
 	}
 	if ((flags & DP_F_FAST_ETH_LAN) || (flags & DP_F_FAST_ETH_WAN) ||
-	    (flags & DP_F_GPON) || (flags & DP_F_EPON)|| (flags & DP_F_GINT)) {
+	    (flags & DP_F_GPON) || (flags & DP_F_EPON)) {
 		/*always with pmac */
 		for (i = 0; i < MAX_TEMPLATE; i++) {
 			dp_info->pmac_template[i].class_en = 1;
@@ -1352,22 +1352,6 @@ static int dp_port_spl_cfg(int inst, int ep, struct dp_port_data *data,
 	return 0;
 }
 
-static int dev_platform_set(int inst, u8 ep, struct dp_dev_data *data,
-			     u32 flags)
-{
-	struct gsw_itf *itf;
-	struct hal_priv *priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
-
-	if (!priv) {
-		PR_ERR("priv is NULL\n");
-		return DP_FAILURE;
-	}
-	itf = ctp_port_assign(inst, ep, priv->bp_def, flags, data);
-	/*reset_gsw_itf(ep); */
-	dp_port_info[inst][ep].itf_info = itf;
-	return 0;
-}
-
 static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			     u32 flags)
 {
@@ -1375,14 +1359,16 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 	u32 mode;
 	cbm_queue_map_entry_t lookup = {0};
 	struct hal_priv *priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
+	struct gsw_itf *itf;
 	struct pmac_port_info *port_info = &dp_port_info[inst][ep];
-	u32 dma_chan;
 
 	if (!priv) {
 		PR_ERR("priv is NULL\n");
 		return DP_FAILURE;
 	}
-	set_port_lookup_mode(inst, ep, flags);
+	itf = ctp_port_assign(inst, ep, priv->bp_def, flags);
+	/*reset_gsw_itf(ep); */
+	dp_port_info[inst][ep].itf_info = itf;
 	if (flags & DP_F_DEREGISTER) {
 		dp_node_reserve(inst, ep, NULL, flags);
 		return 0;
@@ -1394,7 +1380,6 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 		 priv ? priv->qdev : NULL);
 	idx = port_info->deq_port_base;
 
-	dma_chan =  port_info->dma_chan;
 	for (i = 0; i < port_info->deq_port_num; i++) {
 		dp_deq_port_tbl[inst][i + idx].tx_ring_addr =
 			port_info->tx_ring_addr +
@@ -1404,14 +1389,6 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 		dp_deq_port_tbl[inst][i + idx].tx_pkt_credit =
 			port_info->tx_pkt_credit;
 		dp_deq_port_tbl[inst][i + idx].dp_port = ep;
-
-		/* For G.INT num_dma_chan 8 or 16, for other 1 */
-		if (port_info->num_dma_chan > 1)
-			dp_deq_port_tbl[inst][i + idx].dma_chan = dma_chan++;
-		else
-			dp_deq_port_tbl[inst][i + idx].dma_chan = dma_chan;
-		DP_DEBUG(DP_DBG_FLAG_DBG, "deq_port_tbl[%d][%d].dma_chan=%x\n",
-			 inst, (i + idx), dma_chan);
 	}
 	mode = dp_port_info[inst][ep].cqe_lu_mode;
 	lookup.ep = ep;
@@ -1503,8 +1480,6 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	struct pmac_port_info *port_info;
 	struct hal_priv *priv = HAL(inst);
 	int q_flag = 0;
-	int cid, pid, nid;
-	u32 dma_chan;
 
 	if (!data || !data->subif_data) {
 		PR_ERR("data NULL or subif_data NULL\n");
@@ -1599,22 +1574,6 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		if (!dp_deq_port_tbl[inst][q_port.cqe_deq].f_first_qid)
 			q_flag = DP_SUBIF_AUTO_NEW_Q; /*no queue created yet*/
 	}
-
-	dma_chan = dp_deq_port_tbl[inst][q_port.cqe_deq].dma_chan;	
-	cid = _DMA_CONTROLLER(dma_chan);
-	pid = _DMA_PORT(dma_chan);
-	nid = _DMA_CHANNEL(dma_chan);
-	/* cid, pid and nid should not greater than DP_DMAMAX,
-	 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
-	 */
-	if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
-	    DP_MAX_DMA_CHAN) {
-		PR_ERR("ERROR: cid=%d pid=%d nid=%d dma_chan=%d\n",
-		       cid, pid, nid, dma_chan);
-		PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
-		       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
-		return DP_FAILURE;
-	}
 	DP_DEBUG(DP_DBG_FLAG_QOS, "Queue decision:%s\n", q_flag_str(q_flag));
 	if (q_flag == DP_SUBIF_AUTO_NEW_Q) {
 		int cqe_deq;
@@ -1646,9 +1605,6 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		/*update port table */
 		cqe_deq = q_port.cqe_deq;
 		dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
-		if (port_info->num_dma_chan)
-			atomic_inc(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt);
-
 		dp_deq_port_tbl[inst][cqe_deq].qos_port = q_port.port_node;
 		if (!dp_deq_port_tbl[inst][cqe_deq].f_first_qid) {
 			dp_deq_port_tbl[inst][cqe_deq].first_qid = q_port.qid;
@@ -1681,16 +1637,10 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 				q_port.cqe_deq;
 			dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port = -1;
 			dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
-			if (port_info->num_dma_chan)
-				atomic_inc(&dp_dma_chan_tbl[inst][cid][pid][nid]
-				   .ref_cnt);
 		} else {
 			/*note: don't change need_free in this case */
 			dp_q_tbl[inst][q_port.cqe_deq].ref_cnt++;
 			dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
-			if (port_info->num_dma_chan)
-				atomic_inc(&dp_dma_chan_tbl[inst][cid][pid][nid]
-				   .ref_cnt);
 		}
 
 		/*get already stored q_node_id/qos_port id to q_port
@@ -1716,17 +1666,14 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 			dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port;
 		dp_q_tbl[inst][q_port.qid].ref_cnt++;
 		dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
-		if (port_info->num_dma_chan)
-			atomic_inc(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt);
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d DMATXCH_Ref.cnt=%d\n",
+		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d\n",
 		 "subif_hw_set",
 		 "dp_port", portid,
 		 "vap", subif_ix,
 		 q_port.qid, dp_q_tbl[inst][q_port.qid].ref_cnt,
-		 q_port.cqe_deq, dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt,
-		 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
+		 q_port.cqe_deq, dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt);
 #ifdef CONFIG_LTQ_DATAPATH_QOS_HAL
 	if (dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt == 1) /*first CTP*/
 		data->act = TRIGGER_CQE_DP_ENABLE;
@@ -1776,9 +1723,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 	int cqm_deq_port;
 	struct pmac_port_info *port_info = &dp_port_info[inst][portid];
 	struct dp_node_alloc node;
-	u32 dma_chan;
 	int bp = port_info->subif_info[subif_ix].bp;
-	u32 cid, pid, nid;
 
 	qid = port_info->subif_info[subif_ix].qid;
 	cqm_deq_port = port_info->subif_info[subif_ix].cqm_deq_port;
@@ -1800,27 +1745,9 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		       inst, bp, dp_bp_dev_tbl[inst][bp].ref_cnt);
 		return DP_FAILURE;
 	}
-	dma_chan = dp_deq_port_tbl[inst][cqm_deq_port].dma_chan;	
-	cid = _DMA_CONTROLLER(dma_chan);
-	pid = _DMA_PORT(dma_chan) ;
-	nid = _DMA_CHANNEL(dma_chan);
-	/* cid, pid and nid should not greater than DP_DMAMAX,
-	 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
-	 */
-	if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
-	    DP_MAX_DMA_CHAN) {
-		PR_ERR("ERROR: cid=%d pid=%d nid=%d\n", cid, pid, nid);
-		PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
-		       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
-		return DP_FAILURE;
-	}
-	DP_DEBUG(DP_DBG_FLAG_DBG, "cid=%d pid=%d nid=%d\n", cid, pid, nid);
-
-	/* update queue/port/sched/bp_pmapper/dma_tx_ch table's ref_cnt */
+	/* update queue/port/sched/bp_pmapper table's ref_cnt */
 	dp_q_tbl[inst][qid].ref_cnt--;
 	dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt--;
-	if (port_info->num_dma_chan)
-		atomic_dec(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt);
 	if (port_info->subif_info[subif_ix].ctp_dev) { /* pmapper */
 		port_info->subif_info[subif_ix].ctp_dev = NULL;
 		dp_bp_dev_tbl[inst][bp].ref_cnt--;
@@ -1871,13 +1798,12 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		DP_DEBUG(DP_DBG_FLAG_QOS, "q_id[%d] dont need freed\n", qid);
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d DMATXCH_Ref_cnt=%d\n",
+		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d\n",
 		 "subif_hw_reset",
 		 "dp_port", portid,
 		 "vap", subif_ix,
 		 qid, dp_q_tbl[inst][qid].ref_cnt,
-		 cqm_deq_port, dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt,
-		 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
+		 cqm_deq_port, dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt);
 #else
 	qos_queue_flush(priv->qdev, port_info->subif_info[subif_ix].q_node);
 	qos_queue_remove(priv->qdev, port_info->subif_info[subif_ix].q_node);
@@ -2045,7 +1971,6 @@ int register_dp_cap_gswip31(int flag)
 
 	cap.info.dp_platform_set = dp_platform_set;
 	cap.info.port_platform_set = port_platform_set;
-	cap.info.dev_platform_set = dev_platform_set;
 	cap.info.subif_platform_set_unexplicit = subif_platform_set_unexplicit;
 	cap.info.proc_print_ctp_bp_info = proc_print_ctp_bp_info;
 	cap.info.init_dma_pmac_template = init_dma_pmac_template;

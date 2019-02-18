@@ -576,17 +576,15 @@ int gsw_mib_reset_31(int dev, u32 flag)
 
 /* Return allocated ctp number */
 struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
-				u32 flags, struct dp_dev_data *data)
+				u32 flags)
 {
 	GSW_CTP_portAssignment_t ctp_assign;
 	struct ctp_assign *assign = &ctp_assign_def;
-	int i, alloc_flag;
-	u16 num;
+	int i;
 	struct core_ops *gsw_handle;
 
 	memset(&ctp_assign, 0, sizeof(ctp_assign));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
-	alloc_flag = dp_port_info[inst][ep].alloc_flags;
 
 	if (flags & DP_F_DEREGISTER) {
 		PR_ERR("Need to Free CTP Port here for ep=%d\n", ep);
@@ -606,33 +604,30 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	}
 
 	for (i = 0; i < ARRAY_SIZE(ctp_assign_info); i++) {
-		if ((ctp_assign_info[i].flag & alloc_flag) ==
+		if ((ctp_assign_info[i].flag & flags) ==
 			ctp_assign_info[i].flag) {
 			assign = &ctp_assign_info[i];
 			break;
 		}
 	}
-	if (data->max_ctp)
-		num = data->max_ctp;
-	else
-		num = assign->num;
-
 	ctp_assign.nLogicalPortId = ep;
 	ctp_assign.eMode = assign->emode;
 	ctp_assign.nBridgePortId = bp_default;
 	ctp_assign.nFirstCtpPortId = 0;
-	ctp_assign.nNumberOfCtpPort = num;
+	ctp_assign.nNumberOfCtpPort = assign->num;
+	dp_port_info[inst][ep].cqe_lu_mode = assign->lookup_mode;
+	dp_port_info[inst][ep].gsw_mode = (u32)assign->emode;
 	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops
 			  .CTP_PortAssignmentAlloc,
 			  gsw_handle,
 			  &ctp_assign) != 0) {
 		PR_ERR("Failed CTP Assignment for ep=%d blk size=%d mode=%s\n",
-		       ep, num, ctp_mode_string(assign->emode));
+		       ep, assign->num, ctp_mode_string(assign->emode));
 		return NULL;
 	}
 
-	DP_DEBUG(DP_DBG_FLAG_DBG, "assign ep=%d with eMode=%d ctp_max:%d\n",
-		 ep, assign->emode, ctp_assign.nNumberOfCtpPort);
+	DP_DEBUG(DP_DBG_FLAG_DBG, "assign ep=%d with eMode=%d\n",
+		 ep, assign->emode);
 	itf_assign[ep].mode = assign->emode;
 	itf_assign[ep].n = ctp_assign.nNumberOfCtpPort;
 	itf_assign[ep].start = ctp_assign.nFirstCtpPortId;
@@ -643,24 +638,6 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	dp_port_info[inst][ep].vap_offset = assign->vap_offset;
 	dp_port_info[inst][ep].vap_mask = assign->vap_mask;
 	return &itf_assign[ep];
-}
-
-int set_port_lookup_mode(int inst, u8 ep, u32 flags)
-{
-	int i, alloc_flag;	
-	struct ctp_assign *assign = &ctp_assign_def;
-
-	alloc_flag = dp_port_info[inst][ep].alloc_flags;
-	for (i = 0; i < ARRAY_SIZE(ctp_assign_info); i++) {
-		if ((ctp_assign_info[i].flag & alloc_flag) ==
-			ctp_assign_info[i].flag) {
-			assign = &ctp_assign_info[i];
-			break;
-		}
-	}
-	dp_port_info[inst][ep].cqe_lu_mode = assign->lookup_mode;
-	dp_port_info[inst][ep].gsw_mode = (u32)assign->emode;
-	return 0;
 }
 
 /*Allocate a bridge port with specified FID and hardcoded CPU port member */
