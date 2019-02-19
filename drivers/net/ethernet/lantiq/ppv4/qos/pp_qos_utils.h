@@ -215,6 +215,8 @@ struct hw_conf {
 	unsigned int	fw_logger_start;
 	unsigned int	fw_stat;
 	unsigned int	qos_clock; /* In MHZ. */
+	void*		max_allowed_ddr_virt;
+	dma_addr_t	max_allowed_ddr_phys;
 };
 
 struct fw_ver {
@@ -260,6 +262,9 @@ struct ppv4_qos_platform_data  {
 	unsigned int	fw_logger_start;
 	unsigned int	fw_stat;
 	unsigned int	qos_clock; /* In MHZ. */
+	void*		max_allowed_ddr_virt;
+	dma_addr_t	max_allowed_ddr_phys;
+	size_t		max_allowed_sz;
 };
 
 /* Info needed to create descriptor */
@@ -556,6 +561,19 @@ void node_init(const struct pp_qos_dev *qdev,
 	       unsigned int common,
 	       unsigned int parent,
 	       unsigned int child);
+
+/**
+ * get_port_rlms() - Return all rlms on a subtree
+ * @qdev:
+ * @phy:       Phy of subtree's node
+ * @rlms:      Array to store the rlms - may be NULL
+ * @size:      Size of array - may be 0
+ * @queues_num: The number of queues on the subtree
+ */
+void get_port_rlms(struct pp_qos_dev *qdev, u32 phy,
+		   u16 *rlms,
+		   u32 size, u32 *queues_num);
+
 /**
  * get_node_queues() - Return all queues on a subtree
  * @qdev:
@@ -658,6 +676,13 @@ void update_children_position(
 int allocate_ddr_for_qm(struct pp_qos_dev *qdev);
 int allocate_ddr_for_qm_on_platform(struct pp_qos_dev *qdev);
 int check_sync_with_fw(struct pp_qos_dev *qdev);
+
+int get_port_phy_queues(struct pp_qos_dev *qdev, u32 port_id,
+			u16 *rlms, u16 *ids, u32 size, u32 *queues_num);
+int store_port_queue_max_allowed(struct pp_qos_dev *qdev,
+				 u32 port_id, u16 *rlms,
+				 u16 *rlms_ids,
+				 u32 queues_num);
 
 #ifdef PP_QOS_TEST
 void test_cmd_queue(void);

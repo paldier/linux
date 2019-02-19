@@ -162,11 +162,17 @@ struct pp_qos_dev;
  *			feeding this port
  * @total_yellow_bytes - total yellow bytes currently in all queues
  *			 feeding this port
+ * @debug_back_pressure_status - Port back pressure status
+ * @debug_actual_packet_credit - Actual packet credit
+ * @debug_actual_byte_credit - Actual byte credit
  */
 struct pp_qos_port_stat {
 	int reset;
 	unsigned int total_green_bytes;
 	unsigned int total_yellow_bytes;
+	unsigned int debug_back_pressure_status;
+	unsigned int debug_actual_packet_credit;
+	unsigned int debug_actual_byte_credit;
 };
 
 /**

@@ -381,6 +381,24 @@ static int pp_qos_config_from_of_node(
 		 pdata->fw_logger_start,
 		 pdrvdata->dbg.fw_logger_addr);
 
+	pdata->max_allowed_sz = PAGE_ALIGN(NUM_OF_QUEUES * sizeof(u32));
+	pdata->max_allowed_ddr_virt = dmam_alloc_coherent(
+			dev,
+			pdata->max_allowed_sz,
+			&pdata->max_allowed_ddr_phys,
+			GFP_KERNEL | __GFP_ZERO);
+
+	if (pdata->max_allowed_ddr_virt == NULL) {
+		dev_err(dev, "Couldn't alloc %u bytes for max allowed buffer\n",
+			pdata->max_allowed_sz);
+		return -ENOMEM;
+	}
+
+	dev_dbg(dev, "Dma allocated %u bytes for max allowed buffer, bus address is 0x%08X, virtual addr is %p\n",
+		 pdata->max_allowed_sz,
+		 pdata->max_allowed_ddr_phys,
+		 pdata->max_allowed_ddr_virt);
+
 	return 0;
 }
 

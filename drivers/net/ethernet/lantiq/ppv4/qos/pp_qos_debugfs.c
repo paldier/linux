@@ -839,6 +839,40 @@ static const struct file_operations debug_node_fops = {
 	.release = single_release,
 };
 
+static void print_queue_stat(struct seq_file *s,
+			     struct pp_qos_queue_stat* qstat)
+{
+	seq_printf(s, "queue_packets_occupancy:%u\n",
+		qstat->queue_packets_occupancy);
+	seq_printf(s, "queue_bytes_occupancy:%u\n",
+		qstat->queue_bytes_occupancy);
+	seq_printf(s, "total_packets_accepted:%u\n",
+		qstat->total_packets_accepted);
+	seq_printf(s, "total_packets_dropped:%u\n",
+		qstat->total_packets_dropped);
+	seq_printf(s, "total_packets_red_dropped:%u\n",
+		qstat->total_packets_red_dropped);
+	seq_printf(s, "total_bytes_accepted:%llu\n",
+		qstat->total_bytes_accepted);
+	seq_printf(s, "total_bytes_dropped:%llu\n",
+		qstat->total_bytes_dropped);
+}
+
+static void print_port_stat(struct seq_file *s,
+			    struct pp_qos_port_stat* pstat)
+{
+	seq_printf(s, "total_green_bytes in port's queues:%u\n",
+		pstat->total_green_bytes);
+	seq_printf(s, "total_yellow_bytes in port's queues:%u\n",
+		pstat->total_yellow_bytes);
+	seq_printf(s, "back pressure status:%u\n",
+		pstat->debug_back_pressure_status);
+	seq_printf(s, "Actual packet credit:%u\n",
+		pstat->debug_actual_packet_credit);
+	seq_printf(s, "Actual byte credit:%u\n",
+		pstat->debug_actual_byte_credit);
+}
+
 static int pp_qos_dbg_stat_show(struct seq_file *s, void *unused)
 {
 	struct platform_device *pdev;
@@ -868,56 +902,33 @@ static int pp_qos_dbg_stat_show(struct seq_file *s, void *unused)
 		}
 
 		node = get_node_from_phy(qdev->nodes, phy);
-		if (node_used(node)) {
-			seq_printf(s, "%u(%u) - ", id, phy);
-			if (node_queue(node)) {
-				seq_puts(s, "Queue\n");
-				memset(&qstat, 0, sizeof(qstat));
-				if (pp_qos_queue_stat_get(qdev, id, &qstat)
-						== 0) {
-					seq_printf(s, "queue_packets_occupancy:%u\n",
-						qstat.queue_packets_occupancy);
-					seq_printf(s, "queue_bytes_occupancy:%u\n",
-						qstat.queue_bytes_occupancy);
-					seq_printf(s, "total_packets_accepted:%u\n",
-						qstat.total_packets_accepted);
-					seq_printf(s, "total_packets_dropped:%u\n",
-						qstat.total_packets_dropped);
-					seq_printf(
-						s,
-						"total_packets_red_dropped:%u\n",
-						qstat.total_packets_red_dropped
-						);
-					seq_printf(s, "total_bytes_accepted:%llu\n",
-						qstat.total_bytes_accepted);
-					seq_printf(s, "total_bytes_dropped:%llu\n",
-						qstat.total_bytes_dropped);
-				} else {
-					seq_puts(s, "Could not obtained statistics\n");
-				}
-			} else if (node_port(node)) {
-				seq_puts(s, "Port\n");
-				memset(&pstat, 0, sizeof(pstat));
-				if (pp_qos_port_stat_get(qdev, id, &pstat)
-						== 0) {
-					seq_printf(
-						s,
-						"total_green_bytes in port's queues:%u\n",
-						pstat.total_green_bytes);
-					seq_printf(
-						s,
-						"total_yellow_bytes in port's queues:%u\n",
-						pstat.total_yellow_bytes);
-				} else {
-					seq_puts(s, "Could not obtained statistics\n");
-				}
-			} else {
-					seq_puts(s, "Node is not a queue or port, no statistics\n");
-			}
-		} else {
+
+		if (!node_used(node)) {
 			seq_printf(s, "Node %u is unused\n", id);
+			return 0;
+		}
+
+		seq_printf(s, "%u(%u) - ", id, phy);
+
+		if (node_queue(node)) {
+			seq_puts(s, "Queue\n");
+			memset(&qstat, 0, sizeof(qstat));
+			if (pp_qos_queue_stat_get(qdev, id, &qstat) == 0)
+				print_queue_stat(s, &qstat);
+			else
+				seq_puts(s, "Could not obtained statistics\n");
+		} else if (node_port(node)) {
+			seq_puts(s, "Port\n");
+			memset(&pstat, 0, sizeof(pstat));
+			if (pp_qos_port_stat_get(qdev, id, &pstat) == 0)
+				print_port_stat(s, &pstat);
+			else
+				seq_puts(s, "Could not obtained statistics\n");
+		} else {
+			seq_puts(s, "Node is not a queue or port, no stats\n");
 		}
 	}
+
 	return 0;
 }
 

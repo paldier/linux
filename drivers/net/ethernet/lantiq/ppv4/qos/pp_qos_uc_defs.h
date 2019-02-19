@@ -37,7 +37,7 @@
 /* UC version */
 #define UC_VERSION_MAJOR	(1)
 #define UC_VERSION_MINOR	(0)
-#define UC_VERSION_BUILD	(9)
+#define UC_VERSION_BUILD	(13)
 
 /**************************************************************************
  *! @enum	UC_STATUS
@@ -306,6 +306,8 @@ struct port_stats_s {
 
 	/* Following stats can not be reset */
 	u32	debug_back_pressure_status;
+	u32	debug_actual_packet_credit;
+	u32	debug_actual_byte_credit;
 };
 
 /**************************************************************************
@@ -376,9 +378,6 @@ struct queue_stats_s {
 
 	/* Following stats can not be reset */
 	u32	qmgr_num_queue_entries;
-	u32	qmgr_null_pop_queue_counter;
-	u32	qmgr_empty_pop_queue_counter;
-	u32	qmgr_null_push_queue_counter;
 };
 
 /**************************************************************************
@@ -527,6 +526,7 @@ enum uc_qos_command {
 	UC_QOS_COMMAND_DEBUG_PUSH_DESC,
 	UC_QOS_COMMAND_DEBUG_ADD_CREDIT_TO_PORT,
 	UC_QOS_COMMAND_GET_ACTIVE_QUEUES_STATS,
+	UC_QOS_COMMAND_UPDATE_PORT_TREE,
 };
 
 /**************************************************************************

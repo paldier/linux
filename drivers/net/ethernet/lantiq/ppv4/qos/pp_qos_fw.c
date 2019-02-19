@@ -1884,6 +1884,50 @@ static uint32_t *fw_write_get_node_info(
 	*buf++ = qos_u32_to_uc(cmd->addr);
 	return buf;
 }
+
+static uint32_t *fw_update_tree_cmd(uint32_t* buf, u32 phy, u32 flags,
+				    const struct fw_set_common *common,
+				    struct fw_set_parent *parent,
+				    const struct fw_set_port *port,
+				    u32 max_allowed_ddr_phy_addr,
+				    u16 *queues, u32 num_queues,
+				    u16 max_queues)
+{
+	u32 *bitmap_word;
+	u16 queue_idx;
+	u32 word_idx;
+	u32 bit_in_word;
+	u32 bitmap_words = max_queues >> 5;
+
+	pr_debug("port %u. words %u\n", phy, bitmap_words);
+
+	bitmap_word = (u32 *)kzalloc(bitmap_words * sizeof(u32), GFP_ATOMIC);
+	if (unlikely(!bitmap_word)) {
+		pr_err("queue bitmap allocation failed\n");
+		return 0;
+	}
+
+	for (queue_idx = 0; queue_idx < num_queues; queue_idx++) {
+		word_idx = *queues / 32;
+		bit_in_word = *queues - (32 * word_idx);
+		bitmap_word[word_idx] |= BIT(bit_in_word);
+		queues++;
+	}
+
+	*buf++ = qos_u32_to_uc(UC_QOS_COMMAND_UPDATE_PORT_TREE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(2 + bitmap_words);
+	*buf++ = qos_u32_to_uc(phy);
+	*buf++ = qos_u32_to_uc(max_allowed_ddr_phy_addr);
+
+	for (word_idx = 0; word_idx < bitmap_words; word_idx++)
+		*buf++ = qos_u32_to_uc(bitmap_word[word_idx]);
+
+	kfree(bitmap_word);
+
+	return buf;
+}
+
 /******************************************************************************/
 /*                                FW wrappers                                 */
 /******************************************************************************/
@@ -2539,6 +2583,12 @@ static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
 		pstat = dcmd->port_stats.stat;
 		pstat->total_green_bytes = fw_pstat->total_green_bytes;
 		pstat->total_yellow_bytes = fw_pstat->total_yellow_bytes;
+		pstat->debug_back_pressure_status =
+				fw_pstat->debug_back_pressure_status;
+		pstat->debug_actual_packet_credit =
+				fw_pstat->debug_actual_packet_credit;
+		pstat->debug_actual_byte_credit =
+				fw_pstat->debug_actual_byte_credit;
 		break;
 
 	case CMD_TYPE_GET_SYSTEM_INFO:
@@ -2675,6 +2725,10 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 	struct fw_set_parent parent = {0};
 	struct fw_set_port port = {0};
 	unsigned int id;
+	u16 *rlms;
+	u16 *rlm_ids;
+	u32 num_queues = 0;
+	u32 max_allowed_addr_phy;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
@@ -2950,16 +3004,54 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 				continue;
 
 			prev = cur;
-			QOS_LOG_DEBUG("CMD_INTERNAL_RESUME_PORT port: %u\n",
+			QOS_LOG_DEBUG("CMD_INTERNAL_UPDATE_PORT_TREE port:%u\n",
 					internals->suspend_ports[i]);
 
-			cur = fw_write_set_port_cmd(
-					prev,
-					internals->suspend_ports[i],
-					flags,
-					&common,
-					&parent,
-					&port);
+			rlms = (u16 *)kzalloc(NUM_OF_QUEUES * sizeof(u16),
+					      GFP_ATOMIC);
+			if (!rlms) {
+				pr_err("queue array memory alloc failed\n");
+				continue;
+			}
+
+			rlm_ids = (u16 *)kzalloc(NUM_OF_QUEUES * sizeof(u16),
+						 GFP_ATOMIC);
+			if (!rlm_ids) {
+				kfree(rlms);
+				pr_err("rlm_ids memory alloc failed\n");
+				continue;
+			}
+
+			rc = get_port_phy_queues(qdev, id, rlms, rlm_ids,
+						 NUM_OF_QUEUES, &num_queues);
+			if (rc) {
+				pr_err("Failed fetching port queues\n");
+				kfree(rlms);
+				kfree(rlm_ids);
+				continue;
+			}
+
+			rc = store_port_queue_max_allowed(qdev, id, rlms,
+							  rlm_ids, num_queues);
+			if (rc) {
+				pr_err("Failed to set q's max allowed buf\n");
+				kfree(rlms);
+				kfree(rlm_ids);
+				continue;
+			}
+
+			max_allowed_addr_phy =
+				(u32)qdev->hwconf.max_allowed_ddr_phys;
+
+			cur = fw_update_tree_cmd(prev,
+						 internals->suspend_ports[i],
+						 flags, &common,
+						 &parent, &port,
+						 max_allowed_addr_phy,
+						 rlms, num_queues,
+						 NUM_OF_QUEUES);
+			kfree(rlms);
+			kfree(rlm_ids);
 
 			if (cur != prev) {
 				cmd_internal.base.pos = prev;

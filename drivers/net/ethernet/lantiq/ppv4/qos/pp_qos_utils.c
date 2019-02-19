@@ -1658,6 +1658,29 @@ static int update_ids_container(struct pp_qos_dev *qdev,
 	return 1;
 }
 
+struct rlm_container_metadata {
+	u32 next;
+	u16 *rlm;
+	u32 size;
+};
+
+static int update_rlm_container(struct pp_qos_dev *qdev,
+				struct qos_node *node, void *data)
+{
+	struct rlm_container_metadata *rlms;
+	u16 rlm;
+
+	rlms = (struct rlm_container_metadata *)data;
+	rlm = node->data.queue.rlm;
+
+	if (rlms->next < rlms->size) {
+		rlms->rlm[rlms->next] = rlm;
+		rlms->next++;
+	}
+
+	return 1;
+}
+
 static int node_queue_wrapper(const struct pp_qos_dev *qdev,
 		const struct qos_node *node, void *data)
 {
@@ -1675,6 +1698,19 @@ void get_node_queues(struct pp_qos_dev *qdev,
 	*queues_num = post_order_travers_tree(qdev, phy,
 			node_queue_wrapper, NULL,
 			update_ids_container, &data);
+}
+
+void get_port_rlms(struct pp_qos_dev *qdev, u32 phy,
+		   u16 *rlms, u32 size, u32 *queues_num)
+{
+	struct rlm_container_metadata data = {0, rlms, size};
+
+	if (!rlms)
+		data.size = 0;
+
+	*queues_num = post_order_travers_tree(qdev, phy,
+					      node_queue_wrapper, NULL,
+					      update_rlm_container, &data);
 }
 
 static int node_in_grp(const struct pp_qos_dev *qdev,

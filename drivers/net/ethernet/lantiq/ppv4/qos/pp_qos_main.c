@@ -488,6 +488,72 @@ out:
 	return rc;
 }
 
+int get_port_phy_queues(struct pp_qos_dev *qdev, u32 port_id,
+			u16 *rlms, u16 *ids, u32 size, u32 *queues_num)
+{
+	s32 rc = 0;
+	u32 phy;
+	const struct qos_node *node;
+
+	if (unlikely(!qos_device_ready(qdev))) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	node = get_conform_node(qdev, port_id, node_port);
+	if (!node) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	phy = get_phy_from_node(qdev->nodes, node);
+	get_port_rlms(qdev, phy, rlms, size, queues_num);
+	get_node_queues(qdev, phy, ids, size, queues_num);
+out:
+	return rc;
+}
+
+int store_port_queue_max_allowed(struct pp_qos_dev *qdev,
+				 u32 port_id, u16 *rlms, u16 *rlms_ids,
+				 u32 queues_num)
+{
+	s32 rc = 0;
+	u32 queue_idx;
+	const struct qos_node *node;
+	unsigned long addr;
+
+	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	node = get_conform_node(qdev, port_id, node_port);
+	if (!node) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	/* Store each queue max allowed value */
+	for (queue_idx = 0; queue_idx < queues_num; queue_idx++) {
+		node = get_conform_node(qdev, *rlms_ids, node_queue);
+		if (!node) {
+			rc = -EINVAL;
+			goto out;
+		}
+
+		addr = (unsigned long)qdev->hwconf.max_allowed_ddr_virt +
+			(*rlms * sizeof(u32));
+
+		*(volatile unsigned long*)(addr) = node->data.queue.max_allowed;
+
+		rlms++;
+		rlms_ids++;
+	}
+
+out:
+	return rc;
+}
+
 static int _pp_qos_port_set(
 		struct pp_qos_dev *qdev,
 		unsigned int id,
@@ -2129,6 +2195,10 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 			initinfo->pl_data.fw_logger_start;
 		qdev->hwconf.fw_stat = initinfo->pl_data.fw_stat;
 		qdev->hwconf.qos_clock = initinfo->pl_data.qos_clock;
+		qdev->hwconf.max_allowed_ddr_virt =
+			initinfo->pl_data.max_allowed_ddr_virt;
+		qdev->hwconf.max_allowed_ddr_phys =
+			initinfo->pl_data.max_allowed_ddr_phys;
 		memcpy(&qdev->fwcom, &initinfo->fwcom, sizeof(struct fw_com));
 		rc = init_fwdata_internals(qdev);
 		if (rc)
