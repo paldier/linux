@@ -2614,8 +2614,7 @@ static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
 }
 
 #define MAX_FW_CMD_SIZE 120U
-#define MS_SLEEP_BETWEEN_POLL 10U
-#define NUM_OF_POLLS	500U
+#define NUM_OF_POLLS	100000U
 
 /*
  * Go over all commands on pending queue until cmd id
@@ -2663,7 +2662,11 @@ void check_completion(struct pp_qos_dev *qdev)
 		val = qos_u32_from_uc(*pos);
 		while ((val &
 			(UC_CMD_FLAG_UC_DONE | UC_CMD_FLAG_UC_ERROR)) == 0) {
-			qos_sleep(MS_SLEEP_BETWEEN_POLL);
+#ifdef __KERNEL__
+			usleep_range(100, 200);
+#else
+			usleep(200);
+#endif
 			val = qos_u32_from_uc(*pos);
 			++i;
 			if (i == NUM_OF_POLLS) {
