@@ -1458,9 +1458,11 @@ static void pinctrl_reseve_pins(struct intel_pinctrl_drv_data *drvdata)
 	int i;
 
 	for (i = 0; i < drvdata->nr_grps; i++) {
-		group = &drvdata->pin_grps[i];
-		if (strcmp(group->name, RESERVE_PINGROUP_NAME) == 0)
+		if (strcmp(drvdata->pin_grps[i].name,
+			   RESERVE_PINGROUP_NAME) == 0) {
+			group = &drvdata->pin_grps[i];
 			break;
+		}
 	}
 
 	if (!group)
