@@ -1680,7 +1680,7 @@ int xgmac_get_stats_all(void *pdev)
 	for (i = 0; i < pdata->max_mac; i++)
 		sprintf(buf + strlen(buf), "%18s %d\t", "XGMAC", i);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1690,7 +1690,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxframecount_gb);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1700,7 +1700,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxoctetcount_gb);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1711,7 +1711,7 @@ int xgmac_get_stats_all(void *pdev)
 			(prv_data[i].mmc_stats.rxoctetcount_gb -
 			 prv_data[i].mmc_stats.rxoctetcount_g));
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1721,7 +1721,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxpauseframes);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1731,7 +1731,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxcrcerror);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1741,7 +1741,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.rxfifooverflow);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1753,7 +1753,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txframecount_gb);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1763,7 +1763,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txoctetcount_gb);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1774,7 +1774,7 @@ int xgmac_get_stats_all(void *pdev)
 			(prv_data[i].mmc_stats.txframecount_gb -
 			 prv_data[i].mmc_stats.txframecount_g));
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1785,7 +1785,7 @@ int xgmac_get_stats_all(void *pdev)
 			(prv_data[i].mmc_stats.txoctetcount_gb -
 			 prv_data[i].mmc_stats.txoctetcount_g));
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1795,7 +1795,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txpauseframes);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	memset((char *)buf, '\0', 256);
 
@@ -1805,7 +1805,7 @@ int xgmac_get_stats_all(void *pdev)
 		sprintf(buf + strlen(buf), "%20llu\t",
 			prv_data[i].mmc_stats.txunderflowerror);
 
-	mac_printf(buf);
+	mac_printf("%s", buf);
 
 	return 0;
 }
