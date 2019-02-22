@@ -47,7 +47,7 @@ struct dma_rx_desc_1 dma_tx_desc_mask1;
 u32 dp_drop_all_tcp_err;
 u32 dp_pkt_size_check;
 
-u32 dp_dbg_flag=DP_DBG_FLAG_DBG|DP_DBG_FLAG_REG;
+u32 dp_dbg_flag;
 EXPORT_SYMBOL(dp_dbg_flag);
 
 #ifdef CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST
@@ -697,6 +697,8 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	struct pmac_port_info *port_info;
 	struct cbm_dp_en_data cbm_data = {0};
 	struct subif_platform_data platfrm_data = {0};
+	u32 dma_chan;
+	u32 cid, pid, nid;
 
 	port_id = subif_id->port_id;
 	port_info = &dp_port_info[inst][port_id];
@@ -771,8 +773,13 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		cbm_data.dp_inst = inst;
 		cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
 		cbm_data.deq_port = cqm_port;
+		dma_chan = dp_deq_port_tbl[inst][cqm_port].dma_chan;
+		cid = _DMA_CONTROLLER(dma_chan);
+		pid = _DMA_PORT(dma_chan);
+		nid = _DMA_CHANNEL(dma_chan);
 		/* PPA Directpath/LitePath don't have DMA CH */
-		if (!(port_info->alloc_flags & DP_F_DIRECT))
+		if ((atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].
+		    ref_cnt) == 0) && !(port_info->alloc_flags & DP_F_DIRECT))
 				cbm_data.dma_chnl_init = 1; /*to disable DMA */
 		if (cbm_dp_enable(owner, port_id, &cbm_data,
 				  CBM_PORT_F_DISABLE, port_info->alloc_flags)) {
