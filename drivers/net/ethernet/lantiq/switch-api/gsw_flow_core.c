@@ -25762,10 +25762,6 @@ GSW_return_t GSW_RMON_FlowGet(void *cdev, GSW_RMON_flowGet_t *parm)
 		return GSW_statusErr;
 	}
 
-#ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_bm);
-#endif
-
 	//Given absolute couter index to read.
 	if (parm->bIndex)
 		tflowIndex = parm->nIndex;
@@ -25792,15 +25788,19 @@ GSW_return_t GSW_RMON_FlowGet(void *cdev, GSW_RMON_flowGet_t *parm)
 			pr_err("ERR:nPortId's MS %d bits are not matching the group %d\n",
 			       (9 - (nBits - 1)), cMode.nPortMsb);
 			ret = GSW_statusErr;
-			goto UNLOCK_AND_RETURN;
+			return ret;
 		}
 	}
 
 	//Validate absolute couter index.
 	if (tflowIndex >= PCE_TABLE_SIZE) { //Max index check.
 		ret = GSW_statusErr;
-		goto UNLOCK_AND_RETURN;
+		return ret;
 	}
+
+#ifdef __KERNEL__
+	spin_lock_bh(&gswdev->lock_bm);
+#endif
 
 	//1.Get PCE Rx counters.
 	portType = GSW_RMON_TFLOW_RX;
