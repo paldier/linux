@@ -664,6 +664,7 @@ void create_move_cmd(
 
 	update_moved_nodes(qdev, src, dst);
 	cmd_queue_put(qdev->drvcmds.cmdq, (uint8_t *)&cmd, sizeof(cmd));
+	add_suspend_port(qdev, dst_port);
 	qdev->drvcmds.cmd_fw_id++;
 }
 
