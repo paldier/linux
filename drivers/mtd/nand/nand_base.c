@@ -49,7 +49,8 @@
 #include <linux/mtd/nand_ecc_on_die.h>
 
 #ifdef CONFIG_MTD_LTQ_SPINAND
-int spinand_flash_detect(struct mtd_info *mtd, struct nand_chip *chip);
+struct nand_flash_dev *spinand_flash_detect(struct mtd_info *mtd,
+					    struct nand_chip *chip);
 #endif /* CONFIG_MTD_LTQ_SPINAND */
 
 static int nand_get_device(struct mtd_info *mtd, int new_state);
