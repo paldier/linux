@@ -274,10 +274,8 @@ static void ltq_spi_reset_fifos(struct ltq_spi *hw)
 static inline int ltq_spi_wait_ready(struct ltq_spi *hw)
 {
 	u32 stat;
-	unsigned long timeout;
-
 	#ifndef NO_TIMEOUT
-	timeout = jiffies + msecs_to_jiffies(200);
+	unsigned long timeout = jiffies + msecs_to_jiffies(200);
 	#endif /* NO_TIMEOUT */
 
 	do {
