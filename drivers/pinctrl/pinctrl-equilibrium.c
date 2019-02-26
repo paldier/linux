@@ -643,7 +643,7 @@ static void eqbr_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
 	bank = find_pinbank_via_pin(pctl, pin);
 	if (!bank) {
 		dev_err(pctl->dev, "Couldn't find pin bank for pin %u\n", pin);
-		return -ENODEV;
+		return;
 	}
 	offset = pin - bank->pin_base;
 
@@ -982,7 +982,7 @@ static void eqbr_pinconf_dbg_show(struct pinctrl_dev *pctldev,
 	bank = find_pinbank_via_pin(pctl, pin);
 	if (!bank) {
 		dev_err(pctl->dev, "Couldn't find pin bank for pin %u\n", pin);
-		return -ENODEV;
+		return;
 	}
 	mem = bank->membase;
 	offset = pin - bank->pin_base;
