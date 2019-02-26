@@ -567,7 +567,6 @@ int dev_pm_opp_of_get_sharing_cpus(struct device *cpu_dev,
 				   struct cpumask *cpumask)
 {
 	struct device_node *np, *tmp_np, *cpu_np;
-	struct device *tcpu_dev;
 	int cpu, ret = 0;
 
 	/* Get OPP descriptor node */
