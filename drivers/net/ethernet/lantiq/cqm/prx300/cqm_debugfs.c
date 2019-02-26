@@ -558,9 +558,6 @@ static inline void disp_deq_pon_reg(void *deq_base, u32 j)
 	unsigned long desc0 = DESC0_0_CPU_EGP_0;
 	int i;
 
-	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
-
 	PRINTK("Name: CFG_PON_EGP_%02d\n", j);
 	PRINTK("Addr: 0x%8p\n",
 	       deq_base + CFG_CPU_EGP_0 + tmp);
