@@ -446,12 +446,6 @@ void gsw_w32_raw(void *cdev, short offset, u32 value)
 int GSW_SMDIO_DataRead(void *cdev, GSW_MDIO_data_t *pPar)
 {
 	int ret = 0;
-	ethsw_api_dev_t *pethdev = GSW_PDATA_GET(cdev);
-
-	if (pethdev == NULL) {
-		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
-		return GSW_statusErr;
-	}
 #ifdef CONFIG_X86_INTEL_CE2700
 	u32 data;
 	ret = DWC_ETH_QOS_mdio_read_direct(MDIO_BUS_NUMBER_0, C45_ENABLED,
@@ -459,6 +453,12 @@ int GSW_SMDIO_DataRead(void *cdev, GSW_MDIO_data_t *pPar)
 	pPar->nData = data & 0xFFFF;
 #else
 	struct core_ops *gsw_ops;
+	ethsw_api_dev_t *pethdev = GSW_PDATA_GET(cdev);
+
+	if (pethdev == NULL) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
 	gsw_ops = gsw_get_swcore_ops(pethdev->parent_devid);
 	if(!gsw_ops) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -473,17 +473,18 @@ int GSW_SMDIO_DataRead(void *cdev, GSW_MDIO_data_t *pPar)
 int GSW_SMDIO_DataWrite(void *cdev, GSW_MDIO_data_t *pPar)
 {
 	int ret = 0;
+#ifdef CONFIG_X86_INTEL_CE2700
+	ret = DWC_ETH_QOS_mdio_write_direct(MDIO_BUS_NUMBER_0, C45_ENABLED,
+					    MDIO_ADDR_LANTIQ, MMD_DISABLED, pPar->nAddressReg & 0x1F, pPar->nData & 0xFFFF);
+#else
+	struct core_ops *gsw_ops;
 	ethsw_api_dev_t *pethdev = GSW_PDATA_GET(cdev);
 
 	if (pethdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
 	}
-#ifdef CONFIG_X86_INTEL_CE2700
-	ret = DWC_ETH_QOS_mdio_write_direct(MDIO_BUS_NUMBER_0, C45_ENABLED,
-					    MDIO_ADDR_LANTIQ, MMD_DISABLED, pPar->nAddressReg & 0x1F, pPar->nData & 0xFFFF);
-#else
-	struct core_ops *gsw_ops;
+
 	gsw_ops = gsw_get_swcore_ops(pethdev->parent_devid);
 	if(!gsw_ops) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
