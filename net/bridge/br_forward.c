@@ -129,7 +129,9 @@ static int deliver_clone(const struct net_bridge_port *prev,
 			 struct sk_buff *skb, bool local_orig)
 {
 	struct net_device *dev = BR_INPUT_SKB_CB(skb)->brdev;
+#ifdef CONFIG_MCAST_HELPER
 	const unsigned char *dest = eth_hdr(skb)->h_dest;
+#endif
 
 	skb = skb_clone(skb, GFP_ATOMIC);
 	if (!skb) {
