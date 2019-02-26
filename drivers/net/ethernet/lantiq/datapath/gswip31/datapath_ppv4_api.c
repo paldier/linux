@@ -2189,7 +2189,7 @@ static int dp_link_set(struct dp_node_link *info, int parent_node, int flag)
 		qos_sched_conf_set_default(sched_cfg);
 		sched_cfg->sched_child_prop.parent = parent_node;
 		sched_cfg->sched_child_prop.priority = info->prio_wfq;
-		sched_cfg->sched_parent_prop.arbitration = info->arbi;
+		sched_cfg->sched_parent_prop.arbitration = arbi_dp2pp(info->arbi);
 		node_id = info->node_id.sch_id;
 
 		DP_DEBUG(DP_DBG_FLAG_QOS,
