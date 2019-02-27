@@ -287,12 +287,6 @@ config PINCTRL_SYSFS
     help
       Say Y here to add a sysfs interface for pinctrl for Lantiq SoCs.
 
-	
-config PINCTRL_XRX500
-	bool "Lantiq XRX500 SoC pinctrl driver"
-	depends on SOC_GRX500
-	depends on PINCTRL_LANTIQ
-
 config PINCTRL_TB10X
 	bool
 	depends on OF && ARC_PLAT_TB10X
