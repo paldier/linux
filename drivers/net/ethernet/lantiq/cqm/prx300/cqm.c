@@ -2012,7 +2012,7 @@ dp_port_alloc(struct module *owner, struct net_device *dev, u32 dev_port,
 		return CBM_FAILURE;
 	dev_dbg(cqm_ctrl->dev, "flags 0x%x\n", flags);
 	/*to allocate port*/
-	if (flags & DP_F_FAST_ETH_LAN) {
+	if (flags & FLAG_LAN) {
 		port_start = PMAC_ETH_LAN_START_ID;
 		port_end = PMAC_ETH_LAN_END_ID;
 		if ((cqm_ctrl->gint_mode > 0) &&
