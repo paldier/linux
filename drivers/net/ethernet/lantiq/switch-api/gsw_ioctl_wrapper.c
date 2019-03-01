@@ -180,6 +180,9 @@ static long gsw_api_ioctl(struct file *filp, u32 cmd, unsigned long arg)
 	ioctl_wrapper_ctx_t *pdev;
 	ioctl_cmd_handle_t *cmd_handle;
 
+	if (!capable(CAP_NET_ADMIN))
+		return -EPERM;
+
 	if (!ioctlwrapctx) {
 		pr_err("ioctlwrapctx not initilized\n");
 		return -1;
