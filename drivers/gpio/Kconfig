@@ -298,15 +298,6 @@ config GPIO_MOXART
 	  Select this option to enable GPIO driver for
 	  MOXA ART SoC devices.
 
-config GPIO_XRX500
-	bool "Lantiq GPIO driver for GRX500"
-	depends on MIPS && SOC_GRX500
-	select GPIO_GENERIC
-	select GPIOLIB_IRQCHIP
-        help
-	  This driver supports the GPIO for GRX500
-
-
 config GPIO_MPC5200
 	def_bool y
 	depends on PPC_MPC52xx
