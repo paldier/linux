@@ -31,7 +31,7 @@
 /** Definition of the device handle that is retrieved during
     the \ref gsw_api_kopen call. This handle is used to access the switch
     device while calling \ref gsw_api_kioctl. */
-typedef unsigned int GSW_API_HANDLE;
+typedef void *GSW_API_HANDLE;
 
 /**
    Request a device handle for a dedicated Ethernet switch device. The switch
@@ -70,7 +70,7 @@ GSW_API_HANDLE gsw_api_kopen(char *name);
    - GSW_statusOk: if successful
    - An error code in case an error occurred.
 */
-int gsw_api_kioctl(GSW_API_HANDLE handle, unsigned int command, unsigned int arg);
+int gsw_api_kioctl(GSW_API_HANDLE handle, unsigned int command, void *arg);
 
 /**
    Releases an Ethernet switch device handle which was previously

@@ -22,7 +22,7 @@ typedef enum {
 
 
 /* general declaration fits for all low-level functions. */
-typedef int (*LTQ_ll_fkt)(void *, u32);
+typedef int (*LTQ_ll_fkt)(void *, void *);
 typedef struct ltq_lowlevel_fkts_t ltq_lowlevel_fkts_t;
 /* Switch API low-level function tables to map all supported IOCTL commands */
 struct ltq_lowlevel_fkts_t {
@@ -47,7 +47,7 @@ struct ltq_lowlevel_fkts_t {
 /* function type declaration for the default IOCTL low-level function in
    case the command cannot be found in the low-level function table,
 	or in case no low-level function table is provided.. */
-typedef int (*ioctl_default_fkt)(void *, int, int);
+typedef int (*ioctl_default_fkt)(void *, int, void *);
 /*typedef*/
 typedef struct {
 	ltq_lowlevel_fkts_t *pLlTable;

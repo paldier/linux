@@ -25862,8 +25862,6 @@ GSW_return_t GSW_RMON_FlowGet(void *cdev, GSW_RMON_flowGet_t *parm)
 
 	ret = GSW_statusOk;
 
-UNLOCK_AND_RETURN:
-
 #ifdef __KERNEL__
 	spin_unlock_bh(&gswdev->lock_bm);
 #endif

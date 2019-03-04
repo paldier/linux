@@ -57,7 +57,7 @@ ioctl_cmd_handle_t *gsw_api_alloc_cmd_handle(void)
 
 /** searching for Switch API IOCTL  command */
 int gsw_command_search(void *phandle, u32 command,
-		       u32 arg, ethsw_api_type_t apitype)
+		       void *arg, ethsw_api_type_t apitype)
 {
 	int retvalue;
 	ioctl_cmd_handle_t *pdrv = (ioctl_cmd_handle_t *) phandle;
@@ -109,8 +109,7 @@ int gsw_command_search(void *phandle, u32 command,
 
 
 				/*Calling function pointer*/
-				retvalue = fkt(pdrv->pLlHandle,
-					       (u32)pdrv->paramBuffer);
+				retvalue = fkt(pdrv->pLlHandle, pdrv->paramBuffer);
 
 				/* Copy parameter to userspace. */
 				/* Only copy back to userspace if really required */
@@ -127,8 +126,7 @@ int gsw_command_search(void *phandle, u32 command,
 
 
 				/*Calling function pointer*/
-				retvalue = fkt(pdrv->pLlHandle,
-					       (u32)pdrv->paramBuffer);
+				retvalue = fkt(pdrv->pLlHandle, pdrv->paramBuffer);
 
 				memcpy((void *)arg,
 				       (const void *)(pdrv->paramBuffer),
@@ -214,8 +212,7 @@ static long gsw_api_ioctl(struct file *filp, u32 cmd, unsigned long arg)
 		}
 	}
 
-	ret = gsw_command_search(cmd_handle, cmd,
-				 arg, ETHSW_API_USERAPP);
+	ret = gsw_command_search(cmd_handle, cmd, arg, ETHSW_API_USERAPP);
 	kfree(cmd_handle);
 	return ret;
 }
@@ -418,7 +415,7 @@ GSW_API_HANDLE gsw_api_kopen(char *name)
 EXPORT_SYMBOL(gsw_api_kopen);
 #endif
 
-int gsw_api_kioctl(GSW_API_HANDLE handle, u32 command, u32 arg)
+int gsw_api_kioctl(GSW_API_HANDLE handle, u32 command, void *arg)
 {
 	ioctl_wrapper_ctx_t *pdev = NULL;
 	ioctl_cmd_handle_t *cmd_handle;
@@ -442,7 +439,7 @@ int gsw_api_kioctl(GSW_API_HANDLE handle, u32 command, u32 arg)
 	} else if (handle == (GSW_API_HANDLE)pdev->pEthSWDev[1]) {
 		cmd_handle->pLlHandle = pdev->pEthSWDev[1];
 	}	else {
-		pr_err("ERROR:Provided wrong address ( Address:0x%08x) %s:%s:%d\n",
+		pr_err("ERROR:Provided wrong address ( Address:0x%p) %s:%s:%d\n",
 		       handle, __FILE__, __func__, __LINE__);
 #ifdef __KERNEL__
 		kfree(cmd_handle);
