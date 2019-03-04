@@ -125,18 +125,6 @@ config DT_EASY350550_BOOTCORE
 	select BUILTIN_DTB
 	depends on SOC_GRX500_BOOTCORE
 
-config DT_FALCONMXHAPS_BOOTCORE
-	bool "FALCONMX HAPS Bootcore"
-	select BUILTIN_DTB
-	depends on SOC_FALCONMX_BOOTCORE && USE_EMULATOR
-
-config DT_FALCONMX_SFU_BOOTCORE
-	bool "FALCONMX SFU Bootcore"
-	select BUILTIN_DTB
-	depends on SOC_FALCONMX_BOOTCORE
-
-
-
 endchoice
 
 choice
