@@ -128,7 +128,7 @@ static int grx500wdt_start(struct watchdog_device *wdt_dev)
 {
 	uint32_t config0;
 
-	pr_debug("[%s]:[%d] wdt_dev=0x%x id=%d cpu = %d\n", __func__, __LINE__,
+	pr_debug("[%s]:[%d] wdt_dev=0x%p id=%d cpu = %d\n", __func__, __LINE__,
 		wdt_dev, wdt_dev->id, smp_processor_id());
 	if (wdt_dev->id == smp_processor_id()) {
 		config0 = gic_read_reg(GIC_REG(VPE_LOCAL, GIC_VPE_WD_CONFIG0));
@@ -153,7 +153,7 @@ static int grx500wdt_stop(struct watchdog_device *wdt_dev)
 {
 	uint32_t config0;
 
-	pr_debug("[%s]:[%d] wdt_dev=0x%x id=%d cpu = %d\n", __func__, __LINE__,
+	pr_debug("[%s]:[%d] wdt_dev=0x%p id=%d cpu = %d\n", __func__, __LINE__,
 		wdt_dev, wdt_dev->id, smp_processor_id());
 	if (wdt_dev->id == smp_processor_id()) {
 		config0 = gic_read_reg(GIC_REG(VPE_LOCAL, GIC_VPE_WD_CONFIG0));
@@ -186,7 +186,7 @@ static int grx500wdt_set_timeout(struct watchdog_device *wdt_dev,
 	grx500_wdt = wdt_dev;
 
 	grx500_wdt->timeout = new_timeout;
-	pr_debug("%s: timeout = %d, cpu = %d, id = %d wdt_dev=0x%x\n", __func__,
+	pr_debug("%s: timeout = %d, cpu = %d, id = %d wdt_dev=0x%p\n", __func__,
 		new_timeout, smp_processor_id(), wdt_dev->id, wdt_dev);
 
 	grx500wdt_stop(grx500_wdt);
@@ -257,7 +257,7 @@ static int grx500wdt_ping(struct watchdog_device *wdt_dev)
 {
 	struct watchdog_device *grx500_wdt;
 
-	pr_debug("[%s]:[%d] wdt_dev->id=%d cpu = %d wdt_dev=0x%x\n", __func__, __LINE__,
+	pr_debug("[%s]:[%d] wdt_dev->id=%d cpu = %d wdt_dev=0x%p\n", __func__, __LINE__,
 		wdt_dev->id, smp_processor_id(), wdt_dev);
 
 	/* grx500_wdt = &per_cpu(grx500wdt, smp_processor_id()); */
