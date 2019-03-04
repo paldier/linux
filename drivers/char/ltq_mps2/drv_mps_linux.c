@@ -969,7 +969,7 @@ int ltq_mps_probe(struct platform_device *pdev)
 }
 
 static const struct of_device_id ltq_mps_match[] = {
-  { .compatible = "lantiq,falconmx-mps2" },
+  { .compatible = "lantiq,prx300-mps2" },
   { .compatible = "lantiq,mps2-xrx500" },
   {},
 };
