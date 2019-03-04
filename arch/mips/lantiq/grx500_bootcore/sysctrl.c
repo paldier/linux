@@ -191,12 +191,12 @@ void __init ltq_soc_init(void)
 
 	/* check if all the core register ranges are available */
 	if (!np_pmu || !np_ebu)
-#ifdef CONFIG_SOC_FALCONMX_BOOTCORE
-		/* no ebu or pmu setting on falconmx */
+#ifdef CONFIG_SOC_PRX300_BOOTCORE
+		/* no ebu or pmu setting on prx300 */
 		goto set_clk;
-#else /* CONFIG_SOC_FALCONMX_BOOTCORE */
+#else /* CONFIG_SOC_PRX300_BOOTCORE */
 		panic("Failed to load core nodes from devicetree");
-#endif /* CONFIG_SOC_FALCONMX_BOOTCORE */
+#endif /* CONFIG_SOC_PRX300_BOOTCORE */
 
 	if (of_address_to_resource(np_pmu, 0, &res_pmu) ||
 		of_address_to_resource(np_ebu, 0, &res_ebu))
@@ -216,9 +216,9 @@ void __init ltq_soc_init(void)
 	ltq_ebu_w32(ltq_ebu_r32(LTQ_EBU_BUSCON0) & ~EBU_WRDIS,
 			LTQ_EBU_BUSCON0);
 
-#ifdef CONFIG_SOC_FALCONMX_BOOTCORE
+#ifdef CONFIG_SOC_PRX300_BOOTCORE
 	set_clk:
-#endif /* CONFIG_SOC_FALCONMX_BOOTCORE */
+#endif /* CONFIG_SOC_PRX300_BOOTCORE */
 
 		clk = kzalloc(sizeof(struct clk), GFP_KERNEL);
 		if (clk) {

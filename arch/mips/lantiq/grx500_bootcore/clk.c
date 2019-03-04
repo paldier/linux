@@ -50,7 +50,7 @@ unsigned long ltq_grx500_cpu_hz(void)
 #else
         unsigned int clksys = CLOCK_300M;
 
-#ifdef CONFIG_SOC_FALCONMX_BOOTCORE
+#ifdef CONFIG_SOC_PRX300_BOOTCORE
 		clksys = CLOCK_500M;
 #endif
         return clksys;
