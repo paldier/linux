@@ -204,6 +204,8 @@ static u32 prx300_gphy_config_rcal_rcm(struct xway_gphy_data *priv)
 	if (!val)
 		goto exit;
 
+	rcal = val;
+
 	/* rcm calculation routine */
 
 	/* enable block access */
