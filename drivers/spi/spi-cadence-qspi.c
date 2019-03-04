@@ -47,7 +47,6 @@ static irqreturn_t cadence_qspi_irq_handler(int this_irq, void *dev)
 {
 	struct struct_cqspi *cadence_qspi = dev;
 	u32 irq_status;
-	unsigned long flags;
 
 	/* Read interrupt status
 	 * We need to ignore those that comes with irq_status 0.
@@ -182,6 +181,8 @@ static int cadence_qspi_start_queue(struct struct_cqspi *cadence_qspi)
 	queue_work(cadence_qspi->workqueue, &cadence_qspi->work);
 	return 0;
 }
+
+#ifdef CONFIG_PM
 static int cadence_qspi_stop_queue(struct struct_cqspi *cadence_qspi)
 {
 	unsigned long flags;
@@ -205,6 +206,8 @@ static int cadence_qspi_stop_queue(struct struct_cqspi *cadence_qspi)
 	spin_unlock_irqrestore(&cadence_qspi->lock, flags);
 	return status;
 }
+#endif
+
 static int cadence_qspi_of_get_pdata(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
@@ -348,9 +351,6 @@ static int cadence_qspi_probe(struct platform_device *pdev)
 	struct resource *res_ahb;
 	struct cqspi_platform_data *pdata;
 	int status;
-	struct device *dev = &pdev->dev;
-	struct device_node *np = dev->of_node;
-	struct cqspi_flash_pdata *f_pdata;
 
 	pr_debug("%s %s %s\n", __func__,
 		pdev->name, pdev->id_entry->name);
@@ -407,9 +407,9 @@ static int cadence_qspi_probe(struct platform_device *pdev)
 	cadence_qspi->res = res;
 
 	/* request and remap ahb */
-	status = devm_request_mem_region(&pdev->dev, pdata->qspi_ahb_phy,
+	res_ahb = devm_request_mem_region(&pdev->dev, pdata->qspi_ahb_phy,
 					 pdata->qspi_ahb_size, "ahb");
-	if (!status) {
+	if (!res_ahb) {
 		dev_err(&pdev->dev, "failed to request memory region\n");
 		status = -EADDRNOTAVAIL;
 		goto err_ahbremap;
