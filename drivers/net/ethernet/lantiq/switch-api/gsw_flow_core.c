@@ -211,13 +211,10 @@ struct mac_ops *get_mac_ops(ethsw_api_dev_t *gswdev, int idx)
 #endif
 	u32 max_mac = gsw_get_mac_subifcnt(dev_id);
 
-	if (idx < 2 || idx > max_mac + 1) {
-		pr_info("Invalid MAC Idx %d, Only MAC idx > 2 is Allowed\n", idx);
+	if (idx < MAC_2 || idx > ((max_mac + MAC_2) - 1)) {
+		pr_err("Invalid MAC Idx %d, Only MAC idx > 2 is Allowed\n", idx);
 		return NULL;
 	}
-
-	/* For mac Idx is from 0, 1, 2 */
-	idx -= 2;
 
 	return gsw_get_mac_ops(dev_id, idx);
 }
@@ -25702,6 +25699,7 @@ GSW_return_t GSW_RMON_ExtendGet(void *cdev, GSW_RMON_extendGet_t *parm)
 		ret = GSW_statusErr;
 		goto UNLOCK_AND_RETURN;
 	}
+
 
 	memset(parm, 0, sizeof(GSW_RMON_extendGet_t));
 

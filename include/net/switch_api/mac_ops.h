@@ -339,6 +339,23 @@ typedef enum  {
 	RX_SPTAG_RES,
 } MAC_OPER_CFG;
 
+/* MAC Index used by modules */
+typedef enum {
+	PMAC_0 = 0,
+	PMAC_1,
+	MAC_2,
+	MAC_3,
+	MAC_4,
+	MAC_5,
+	MAC_6,
+	MAC_7,
+	MAC_8,
+	MAC_9,
+	MAC_10,
+	PMAC_2,
+	MAC_LAST,
+} MAC_IDX;
+
 struct mac_ops {
 	/* This function Sets the Flow Ctrl operation in Both XGMAC and LMAC.
 	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.

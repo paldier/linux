@@ -1083,8 +1083,7 @@ GSW_return_t GSW_XgmacCfg(void *cdev, GSW_MAC_Cli_t *mac_cfg)
 		return GSW_statusErr;
 	}
 
-
-	ops = gsw_get_mac_ops(0, 0);
+	ops = gsw_get_mac_ops(0, MAC_2);
 
 	if (!ops) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -1141,7 +1140,7 @@ GSW_return_t GSW_LmacCfg(void *cdev, GSW_MAC_Cli_t *mac_cfg)
 		return GSW_statusErr;
 	}
 
-	ops = gsw_get_mac_ops(0, 0);
+	ops = gsw_get_mac_ops(0, MAC_2);
 
 	if (!ops) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);

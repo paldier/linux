@@ -109,13 +109,13 @@ void xgmac_init_pdata(struct mac_prv_data *pdata, int idx)
 {
 #ifdef __KERNEL__
 	memset(pdata, 0, sizeof(struct mac_prv_data));
-	pdata->mac_idx = idx;
+	pdata->mac_idx = idx + MAC_2;
 #else
 
 	if (idx == -1)
-		pdata->mac_idx = (pdata - &prv_data[0]);
+		pdata->mac_idx = (pdata - &prv_data[0]) + MAC_2;
 	else
-		pdata->mac_idx = idx;
+		pdata->mac_idx = idx + MAC_2;
 
 #endif
 

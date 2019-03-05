@@ -250,7 +250,7 @@ static const struct mac_api_cfg xgmac_cfg[] = {
 
 int xgmac_cfg_main(GSW_MAC_Cli_t *params)
 {
-	struct mac_ops *ops = gsw_get_mac_ops(0, 0);
+	struct mac_ops *ops = gsw_get_mac_ops(0, MAC_2);
 	struct mac_prv_data *pdata = GET_MAC_PDATA(ops);
 	int i = 0, ret = 0;
 	int num_of_elem = ARRAY_SIZE(xgmac_cfg);
@@ -498,7 +498,7 @@ int gswss_cfg_main(GSW_MAC_Cli_t *params)
 	if (params->cmdType < GSWSS_MAX_MAC) {
 
 		if (params->cmdType == GSWSS_REG_WR || params->cmdType == GSWSS_REG_RD) {
-			params->mac_idx = 0;
+			params->mac_idx = MAC_2;
 		}
 		mac_ops = gsw_get_mac_ops(0, params->mac_idx);
 		mac_pdata = GET_MAC_PDATA(mac_ops);

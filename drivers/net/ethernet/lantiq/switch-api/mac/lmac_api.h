@@ -28,18 +28,18 @@
 #define REG_LMAC_CNT_LSB		0x328
 #define REG_LMAC_CNT_MSB		0x32C
 #define REG_LMAC_CNT_ACC		0x330
-#define MAC_PSTAT(idx)			(0x400 + ((idx) * (0x30)))
-#define MAC_PISR(idx)			(0x404 + ((idx) * (0x30)))
-#define MAC_PIER(idx)			(0x408 + ((idx) * (0x30)))
-#define MAC_CTRL0(idx)			(0x40C + ((idx) * (0x30)))
-#define MAC_CTRL1(idx)			(0x410 + ((idx) * (0x30)))
-#define MAC_CTRL2(idx)			(0x414 + ((idx) * (0x30)))
-#define MAC_CTRL3(idx)			(0x418 + ((idx) * (0x30)))
-#define MAC_CTRL4(idx)			(0x41C + ((idx) * (0x30)))
-#define MAC_CTRL5(idx)			(0x420 + ((idx) * (0x30)))
-#define MAC_TESTEN(idx)			(0x42C + ((idx) * (0x30)))
-#define MAC_LPITIMER0(idx)		(0x424 + ((idx) * (0x30)))
-#define MAC_LPITIMER1(idx)		(0x428 + ((idx) * (0x30)))
+#define MAC_PSTAT(idx)			(0x400 + ((idx - MAC_2) * (0x30)))
+#define MAC_PISR(idx)			(0x404 + ((idx - MAC_2) * (0x30)))
+#define MAC_PIER(idx)			(0x408 + ((idx - MAC_2) * (0x30)))
+#define MAC_CTRL0(idx)			(0x40C + ((idx - MAC_2) * (0x30)))
+#define MAC_CTRL1(idx)			(0x410 + ((idx - MAC_2) * (0x30)))
+#define MAC_CTRL2(idx)			(0x414 + ((idx - MAC_2) * (0x30)))
+#define MAC_CTRL3(idx)			(0x418 + ((idx - MAC_2) * (0x30)))
+#define MAC_CTRL4(idx)			(0x41C + ((idx - MAC_2) * (0x30)))
+#define MAC_CTRL5(idx)			(0x420 + ((idx - MAC_2) * (0x30)))
+#define MAC_TESTEN(idx)			(0x42C + ((idx - MAC_2) * (0x30)))
+#define MAC_LPITIMER0(idx)		(0x424 + ((idx - MAC_2) * (0x30)))
+#define MAC_LPITIMER1(idx)		(0x428 + ((idx - MAC_2) * (0x30)))
 
 #define MAC_CTRL0_GMII_POS      0
 #define MAC_CTRL0_GMII_WIDTH      2

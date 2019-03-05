@@ -136,8 +136,7 @@ int lmac_set_int(void *pdev, u32 val)
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	u32 lmac_ier = LMAC_RGRD(pdata, LMAC_IER);
 
-	pdata->mac_idx += LMAC_IER_MAC2_POS;
-	SET_N_BITS(lmac_ier, pdata->mac_idx, LMAC_IER_MAC2_WIDTH, val);
+	SET_N_BITS(lmac_ier, (pdata->mac_idx - MAC_2), LMAC_IER_MAC2_WIDTH, val);
 
 	//mac_dbg("LMAC %d Interrupt : %s\n", pdata->mac_idx,
 	//	   val ? "ENABLED" : "DISABLED");
@@ -225,7 +224,7 @@ int lmac_get_int(void *pdev)
 	u32 lmac_isr = LMAC_RGRD(pdata, LMAC_ISR);
 	u32 val = 0, mac_idx = 0;
 
-	mac_idx = pdata->mac_idx + LMAC_ISR_MAC2_POS;
+	mac_idx = pdata->mac_idx - MAC_2;
 	val = GET_N_BITS(lmac_isr, mac_idx, LMAC_ISR_MAC2_WIDTH);
 
 	return val;
@@ -655,7 +654,7 @@ void lmac_rmon_rd(void *pdev, struct lmac_rmon_cnt *lmac_cnt)
 	int i = 0;
 
 	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, OPMOD, LMAC_RMON_RD);
-	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, MAC, pdata->mac_idx + 2);
+	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, MAC, pdata->mac_idx);
 
 	for (i = 0; i < 6; i++) {
 		MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, BAS, 1);
@@ -706,7 +705,7 @@ void lmac_rmon_wr(void *pdev, struct lmac_rmon_cnt *lmac_cnt)
 	int i = 0;
 
 	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, OPMOD, LMAC_RMON_WR);
-	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, MAC, pdata->mac_idx + 2);
+	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, MAC, pdata->mac_idx);
 
 	for (i = 0; i < 6; i++) {
 		MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, BAS, 1);
@@ -756,7 +755,7 @@ int lmac_rmon_clr(void *pdev)
 	u32 lmac_cnt_acc = 0;
 
 	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, OPMOD, LMAC_RMON_CLR);
-	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, MAC, pdata->mac_idx + 2);
+	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, MAC, pdata->mac_idx);
 
 	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, BAS, 1);
 	MAC_SET_VAL(lmac_cnt_acc, LMAC_CNT_ACC, ADDR, 0); // ignored

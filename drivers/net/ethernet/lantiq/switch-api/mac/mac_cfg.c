@@ -894,7 +894,7 @@ int mac_enable_ts(void *pdev)
 
 	/* Enable the Egress Special Tag */
 	ops->gsw_common_ops.CPU_PortCfgGet(ops, &cpu_port_cfg);
-	cpu_port_cfg.nPortId = (pdata->mac_idx + 2);
+	cpu_port_cfg.nPortId = pdata->mac_idx;
 	cpu_port_cfg.bSpecialTagIngress = 1;
 	cpu_port_cfg.bSpecialTagEgress = 1;
 	ops->gsw_common_ops.CPU_PortCfgSet(ops, &cpu_port_cfg);
@@ -947,7 +947,7 @@ int mac_disable_ts(void *pdev)
 
 	/* Disable the Egress Special Tag */
 	ops->gsw_common_ops.CPU_PortCfgGet(ops, &cpu_port_cfg);
-	cpu_port_cfg.nPortId = (pdata->mac_idx + 2);
+	cpu_port_cfg.nPortId = pdata->mac_idx;
 	cpu_port_cfg.bSpecialTagEgress = 0;
 	ops->gsw_common_ops.CPU_PortCfgSet(ops, &cpu_port_cfg);
 
@@ -1126,7 +1126,7 @@ int mac_init(void *pdev)
 
 #if defined(UPTIME) && UPTIME
 
-	if (pdata->mac_idx == 0)
+	if (pdata->mac_idx == MAC_2)
 		xgmac_set_hwtstamp_settings(pdev, 1, 1);
 
 #endif
@@ -1155,7 +1155,7 @@ int mac_init(void *pdev)
 	gswss_set_mac_rxfcs_op(pdev, MODE3);
 
 	/* Set XGMAC Port to MDIO Clause 22 */
-	mdio_set_clause(pdev, 1, pdata->mac_idx);
+	mdio_set_clause(pdev, 1, (pdata->mac_idx - MAC_2));
 
 #ifdef __KERNEL__
 	xgmac_mdio_register(pdev);

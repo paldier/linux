@@ -33,7 +33,8 @@ static irqreturn_t mac_isr(int irq, void *dev_id)
 
 		mac_int_sts = gswss_get_int_stat(adap_ops, XGMAC);
 
-		mac_ops = gsw_get_mac_ops(devid, i);
+		mac_ops = gsw_get_mac_ops(devid, (i + MAC_2));
+
 		if (!mac_ops)
 			return IRQ_HANDLED;
 
@@ -108,7 +109,7 @@ static int mac_irq_init(struct mac_prv_data *pdata)
 		return -1;
 	}
 
-	if (pdata->mac_idx == 0) {
+	if (pdata->mac_idx == MAC_2) {
 		ret = request_irq(pdata->irq_num, mac_isr, 0, "gsw_mac", NULL);
 
 		if (ret) {
@@ -150,7 +151,7 @@ static int mac_probe(struct platform_device *pdev)
 			return -1;
 		}
 
-		if (pdata->mac_idx == 0)
+		if (pdata->mac_idx == MAC_2)
 			base[i] = devm_ioremap_resource(&pdev->dev, res[i]);
 	}
 

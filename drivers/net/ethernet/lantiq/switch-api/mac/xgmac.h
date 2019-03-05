@@ -71,9 +71,9 @@
 
 #define MHZ_TO_HZ(val)			((val) * 1000000)
 
-#define XGMAC_CTRL_REG(idx)		(0x1298 + ((idx) * 0x100))
-#define XGMAC_DATA1_REG(idx)		(0x1294 + ((idx) * 0x100))
-#define XGMAC_DATA0_REG(idx)		(0x1290 + ((idx) * 0x100))
+#define XGMAC_CTRL_REG(idx)		(0x1298 + ((idx - MAC_2) * 0x100))
+#define XGMAC_DATA1_REG(idx)		(0x1294 + ((idx - MAC_2) * 0x100))
+#define XGMAC_DATA0_REG(idx)		(0x1290 + ((idx - MAC_2) * 0x100))
 
 /* MAC register offsets */
 #define MAC_TX_CFG			0x0000

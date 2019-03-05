@@ -13,14 +13,6 @@
 #define NOT_USED -1
 #define X NOT_USED
 
-enum _mac_pid {
-	PMAC_0 = 0,
-	PMAC_1,
-	MAC_2,
-	MAC_3,
-	MAC_4
-};
-
 enum _logical_pid {
 	LOG_0 = 0,
 	LOG_1,

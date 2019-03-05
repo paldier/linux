@@ -713,11 +713,13 @@ EXPORT_SYMBOL(gsw_get_adap_ops);
 
 struct mac_ops *gsw_get_mac_ops(u32 devid, u32 mac_idx)
 {
-	if (mac_idx > gsw_dev[devid].mac_subdevs_cnt)
+	u32 macid = mac_idx - MAC_2;
+
+	if (macid > gsw_dev[devid].mac_subdevs_cnt)
 		return NULL;
 
-	if (gsw_dev[devid].mac_dev)
-		return (platform_get_drvdata(gsw_dev[devid].mac_dev[mac_idx]));
+	if (gsw_dev[devid].mac_dev[macid])
+		return (platform_get_drvdata(gsw_dev[devid].mac_dev[macid]));
 
 	return NULL;
 }
@@ -744,15 +746,17 @@ EXPORT_SYMBOL(gsw_get_coredev);
 
 struct platform_device *gsw_get_macdev(u32 devid, u32 mac_idx)
 {
-	if (mac_idx > gsw_dev[devid].mac_subdevs_cnt) {
+	u32 macid = mac_idx - MAC_2;
+
+	if (macid > gsw_dev[devid].mac_subdevs_cnt) {
 		pr_crit("%s: No. of Mac Idx given is more than Mac Sub devs"
 			"supported\n",
 			__func__);
 		return NULL;
 	}
 
-	if (gsw_dev[devid].mac_dev)
-		return (gsw_dev[devid].mac_dev[mac_idx]);
+	if (gsw_dev[devid].mac_dev[macid])
+		return (gsw_dev[devid].mac_dev[macid]);
 
 	return NULL;
 }
