@@ -1442,3 +1442,62 @@ int dp_cpufreq_notify_init(int inst)
 	return 0;
 }
 #endif
+/**
+ * get_dma_chan_idx - Get available dma chan index from dp_dma_chan_tbl.
+ * @inst: DP instance.
+ * @num_dma_chan: Number of DMA channels.
+ * Description: Find free dma channel index from dp_dma_chan_tbl.
+ * Return: Base idx on success DP_FAILURE on failure.
+ */
+u32 get_dma_chan_idx(int inst, int num_dma_chan)
+{
+	u32 base, match;
+
+	if (!num_dma_chan)
+		return DP_FAILURE;
+	if (!dp_dma_chan_tbl[inst]) {
+		PR_ERR("dp_dma_chan_tbl[%d] NULL !!\n", inst);
+		return DP_FAILURE;
+	}
+
+	for (base = 0; base < DP_MAX_DMA_CHAN; base++) {
+		for (match = 0; (match < num_dma_chan) && ((base + match)
+						< DP_MAX_DMA_CHAN); match++) {
+			if (atomic_read(&(dp_dma_chan_tbl[inst] +
+					(base + match))->ref_cnt))
+				break;
+		}
+		if (match == num_dma_chan)
+			return base;
+	}
+	PR_ERR("No free chan available from chan table!!\n");
+	return DP_FAILURE;
+}
+
+/**
+ * alloc_dma_chan_tbl: Dynamic allocation of dp_dma_chan_tbl.
+ * @inst: DP instance.
+ * Return: DP_SUCCESS on success DP_FAILURE on failure.
+ */
+u32 alloc_dma_chan_tbl(int inst)
+{
+	dp_dma_chan_tbl[inst] = kzalloc((sizeof(struct dma_chan_info) *
+					DP_MAX_DMA_CHAN), GFP_KERNEL);
+
+	if (!dp_dma_chan_tbl[inst]) {
+		PR_ERR("Failed for kmalloc: %zu bytes\n",
+		       (sizeof(struct dma_chan_info) * DP_MAX_DMA_CHAN));
+		return DP_FAILURE;
+	}
+	return DP_SUCCESS;
+}
+
+/**
+ * free_dma_chan_tbl: Free dp_dma_chan_tbl.
+ * @inst: DP instance.
+ */
+void free_dma_chan_tbl(int inst)
+{
+	/* free dma chan tbl */
+	kfree(dp_dma_chan_tbl[inst]);
+}

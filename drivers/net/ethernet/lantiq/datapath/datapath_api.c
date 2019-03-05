@@ -119,8 +119,7 @@ struct sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
 struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
 
 /* DMA TX CH info*/
-struct dma_chan_info dp_dma_chan_tbl[DP_MAX_INST][DP_DMAMAX][DP_MAX_DMA_PORT]
-		      [DP_MAX_DMA_CHAN];
+struct dma_chan_info *dp_dma_chan_tbl[DP_MAX_INST];
 
 struct parser_info pinfo[4];
 static int print_len;
@@ -355,6 +354,7 @@ static int32_t dp_alloc_port_private(int inst,
 				     u32 flags)
 {
 	int i;
+	u16 dma_ch_base;
 	struct cbm_dp_alloc_data cbm_data = {0};
 
 	if (!owner) {
@@ -442,6 +442,18 @@ static int32_t dp_alloc_port_private(int inst,
 	/*save info to port data*/
 	data->deq_port_base = dp_port_info[inst][port_id].deq_port_base;
 	data->deq_num = dp_port_info[inst][port_id].deq_port_num;
+	if (cbm_data.num_dma_chan) {
+		dma_ch_base = get_dma_chan_idx(inst, cbm_data.num_dma_chan);
+		if (dma_ch_base == DP_FAILURE) {
+			PR_ERR("Failed get_dma_chan_idx!!\n");
+			cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data,
+					    flags | DP_F_DEREGISTER);
+			memset(&dp_port_info[inst][port_id], 0,
+			       sizeof(dp_port_info[inst][port_id]));
+			return DP_FAILURE;
+		}
+		dp_port_info[inst][port_id].dma_ch_base = dma_ch_base;
+	}
 	DP_DEBUG(DP_DBG_FLAG_REG,
 		 "cbm alloc dp_port:%d deq:%d deq_num:%d no_dma_chan:%d\n",
 		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.deq_port_num,
@@ -559,9 +571,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
     /*allocate a free subif */
 	for (i = start; i < end; i++) {
 		u32 cqm_deq_port;
-		u32 dma_chan;
-		u32 cid, pid, nid;
-		struct dma_chan_info *dp_dma_chan_tbl_info = NULL;
+		u32 dma_ch_offset;
 
 		if (port_info->subif_info[i].flags) /*used already & not free*/
 			continue;
@@ -584,27 +594,9 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			PR_ERR("port info status fail for 0\n");
 			return res;
 		}
-
 		cqm_deq_port = port_info->subif_info[i].cqm_deq_port;
-		dma_chan = dp_deq_port_tbl[inst][cqm_deq_port].dma_chan;
-		cid = _DMA_CONTROLLER(dma_chan);
-		pid = _DMA_PORT(dma_chan);
-		nid = _DMA_CHANNEL(dma_chan);
-		/* cid, pid and nid should not greater than DP_DMAMAX,
-		 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
-		 */
-		if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
-		    DP_MAX_DMA_CHAN) {
-			PR_ERR("ERROR: cid=%d pid=%d nid=%d\n", cid, pid, nid);
-			PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
-			       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
-			return DP_FAILURE;
-		}
-
-		DP_DEBUG(DP_DBG_FLAG_REG, "cid=%d pid=%d nid=%d\n",
-			 cid, pid, nid);
-		dp_dma_chan_tbl_info = &dp_dma_chan_tbl[inst][cid][pid][nid];
-
+		dma_ch_offset =
+			dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
 		port_info->subif_info[i].flags = 1;
 		port_info->subif_info[i].netif = dev;
 		port_info->port_id = port_id;
@@ -631,6 +623,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		port_info->num_subif++;
 		if ((port_info->num_subif == 1) ||
 		    (platfrm_data.act & TRIGGER_CQE_DP_ENABLE)) {
+			u32 dma_ch_ref;
 			cbm_data.dp_inst = inst;
 			cbm_data.num_dma_chan = port_info->num_dma_chan;
 			cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
@@ -642,18 +635,23 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 				       cbm_data.deq_port);
 				return res;
 			}
+			if (!dp_dma_chan_tbl[inst]) {
+				PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+				return res;
+			}
+			dma_ch_ref = atomic_read(&(dp_dma_chan_tbl[inst] +
+						 dma_ch_offset)->ref_cnt);
 			/* PPA Directpath/LitePath don't have DMA CH */
-			if ((atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].
-			     ref_cnt) == 1) && !(port_info->alloc_flags &
-			     DP_F_DIRECT) && (cbm_data.num_dma_chan))
+			if (dma_ch_ref == 1 && !(port_info->alloc_flags &
+			    DP_F_DIRECT) && (cbm_data.num_dma_chan))
 				cbm_data.dma_chnl_init = 1; /*to enable DMA*/
 			DP_DEBUG(DP_DBG_FLAG_REG, "%s:%s%d %s%d %s%d %s%d\n",
 				 "cbm_dp_enable",
 				 "dp_port=", port_id,
 				 "deq_port=", cbm_data.deq_port,
 				 "dma_chnl_init=", cbm_data.dma_chnl_init,
-				 "ref=",
-				 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
+				 "tx_dma_chan: (ref=%d)",
+				 dma_ch_ref);
 			if (cbm_dp_enable(owner, port_id, &cbm_data, 0,
 					  port_info->alloc_flags)) {
 				DP_DEBUG(DP_DBG_FLAG_REG,
@@ -698,8 +696,6 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	struct pmac_port_info *port_info;
 	struct cbm_dp_en_data cbm_data = {0};
 	struct subif_platform_data platfrm_data = {0};
-	u32 dma_chan;
-	u32 cid, pid, nid;
 
 	port_id = subif_id->port_id;
 	port_info = &dp_port_info[inst][port_id];
@@ -714,6 +710,10 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		DP_DEBUG(DP_DBG_FLAG_REG,
 			 "Unregister failed:%s not registered subif!\n",
 			 subif_name);
+		return res;
+	}
+	if (!dp_dma_chan_tbl[inst]) {
+		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
 		return res;
 	}
 
@@ -762,6 +762,9 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		port_info->status = PORT_DEV_REGISTERED;
 
 	if (!dp_deq_port_tbl[inst][cqm_port].ref_cnt) {
+		u32 dma_ch_ref;
+		u32 dma_ch_offset;
+
 		/*delete all queues which may created by PPA or other apps*/
 		struct dp_node_alloc port_node;
 
@@ -774,14 +777,12 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		cbm_data.dp_inst = inst;
 		cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
 		cbm_data.deq_port = cqm_port;
-		dma_chan = dp_deq_port_tbl[inst][cqm_port].dma_chan;
-		cid = _DMA_CONTROLLER(dma_chan);
-		pid = _DMA_PORT(dma_chan);
-		nid = _DMA_CHANNEL(dma_chan);
+		dma_ch_offset = dp_deq_port_tbl[inst][cqm_port].dma_ch_offset;
+		dma_ch_ref = atomic_read(&(dp_dma_chan_tbl[inst] +
+					 dma_ch_offset)->ref_cnt);
 		/* PPA Directpath/LitePath don't have DMA CH */
-		if ((atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].
-		    ref_cnt) == 0) && !(port_info->alloc_flags & DP_F_DIRECT))
-				cbm_data.dma_chnl_init = 1; /*to disable DMA */
+		if (dma_ch_ref == 0 && !(port_info->alloc_flags & DP_F_DIRECT))
+			cbm_data.dma_chnl_init = 1; /*to disable DMA */
 		if (cbm_dp_enable(owner, port_id, &cbm_data,
 				  CBM_PORT_F_DISABLE, port_info->alloc_flags)) {
 			DP_DEBUG(DP_DBG_FLAG_REG,
@@ -2902,8 +2903,10 @@ int dp_basic_proc(void)
 #ifdef CONFIG_LTQ_DATAPATH_MIB
 		dp_mib_exit();
 #endif
-		for (i = 0; i < dp_inst_num; i++)
+		for (i = 0; i < dp_inst_num; i++) {
 			DP_CB(i, dp_platform_set)(i, DP_PLATFORM_DE_INIT);
+			free_dma_chan_tbl(i);
+		}
 		dp_init_ok = 0;
 #ifdef CONFIG_LTQ_DATAPATH_LOOPETH
 		dp_loop_eth_dev_exit();

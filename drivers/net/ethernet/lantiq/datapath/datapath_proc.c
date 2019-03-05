@@ -65,7 +65,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 			    int subif_index, u32 flag);
 	struct pmac_port_info *port = get_port_info(tmp_inst, pos);
 	u16 start = 0;
-	u32 cid, pid, nid;
+	int dma_ch_offset;
 
 	if (!capable(CAP_SYS_PACCT))
 		return -1;
@@ -207,15 +207,12 @@ int proc_port_dump(struct seq_file *s, int pos)
 			   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
 		seq_printf(s, "          : mac_learn_dis:    %d\n",
 			   port->subif_info[i].mac_learn_dis);
-		cid = _DMA_CONTROLLER(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
-		pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
-		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
-		if (port->num_dma_chan)
-			seq_printf(s, "          : dma_ch/port:    %d/%d(ref=%d)\n",
-				   nid, cqm_p,
-				   atomic_read(&dp_dma_chan_tbl[tmp_inst][cid]
-						[pid][nid].ref_cnt));
-
+		dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
+		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst])
+			seq_printf(s, "          : tx_dma_ch:    0x%x(ref=%d)\n",
+				   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
+				   atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
+					       dma_ch_offset)->ref_cnt));
 		if (port->subif_info[i].ctp_dev &&
 		    port->subif_info[i].ctp_dev->name)
 			seq_printf(s, "          : ctp_dev = %s\n",

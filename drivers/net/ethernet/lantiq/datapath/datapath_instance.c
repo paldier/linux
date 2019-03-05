@@ -124,6 +124,10 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 		PR_ERR("dp_request_inst fail for dp inst full arealdy\n");
 		return -1;
 	}
+	if (alloc_dma_chan_tbl(i)) {
+		PR_ERR("FAIL to alloc dma chan tbl\n");
+		return -1;
+	}
 	dp_port_prop[i].ops[0] = info->ops[0];
 	dp_port_prop[i].ops[1] = info->ops[1];
 	dp_port_prop[i].mac_ops[2] = info->mac_ops[2];

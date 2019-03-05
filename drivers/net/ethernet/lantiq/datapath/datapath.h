@@ -477,6 +477,7 @@ struct pmac_port_info {
 			      */
 	u32 lct_idx; /* LCT subif register flag */
 	u32 num_dma_chan; /*For G.INT it's 8 or 16, for other 1*/
+	u32 dma_ch_base; /*! Base entry index of dp_dma_chan_tbl */
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 	u32 f_ptp:1; /* PTP1588 support enablement */
 #endif
@@ -549,6 +550,7 @@ struct cqm_port_info {
 	int q_node; /*first_qid's logical node id*/
 	int dp_port; /* dp_port info */
 	u32 dma_chan;
+	u32 dma_ch_offset; /*! Offset of dp_dma_chan_tbl */
 };
 
 struct parser_info {
@@ -659,8 +661,7 @@ extern struct q_info dp_q_tbl[DP_MAX_INST][DP_MAX_QUEUE_NUM];
 extern struct sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
 extern struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
 extern struct bp_pmapper_dev dp_bp_dev_tbl[DP_MAX_INST][DP_MAX_BP_NUM];
-extern struct dma_chan_info dp_dma_chan_tbl[DP_MAX_INST][DP_DMAMAX]
-			    [DP_MAX_DMA_PORT][DP_MAX_DMA_CHAN];
+extern struct dma_chan_info *dp_dma_chan_tbl[DP_MAX_INST];
 
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
 extern u32 dp_dbg_flag;
@@ -815,6 +816,9 @@ struct dp_subif_cache *dp_subif_lookup_safe(struct hlist_head *head,
 					    struct net_device *dev,
 					    void *data);
 int dp_subif_list_init(void);
+u32 get_dma_chan_idx(int inst, int num_dma_chan);
+u32 alloc_dma_chan_tbl(int inst);
+void free_dma_chan_tbl(int inst);
 u32 dp_subif_hash(struct net_device *dev);
 int32_t dp_get_netif_subifid_priv(struct net_device *netif,
 				  struct sk_buff *skb, void *subif_data,

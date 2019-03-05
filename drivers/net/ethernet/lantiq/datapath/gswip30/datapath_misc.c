@@ -470,20 +470,27 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 {
 	int idx, i;
 	struct pmac_port_info *port_info = &dp_port_info[inst][ep];
-	u32 dma_chan;
+	u32 dma_chan, dma_ch_base;
 
 	dp_port_info[inst][ep].ctp_max = MAX_SUBIF_PER_PORT;
 	dp_port_info[inst][ep].vap_offset = 8;
 	dp_port_info[inst][ep].vap_mask = 0xF;
 	idx = port_info->deq_port_base;
+	dma_chan =  port_info->dma_chan;
+	dma_ch_base = port_info->dma_ch_base;
 	for (i = 0; i < port_info->deq_port_num; i++) {
 		dp_deq_port_tbl[inst][i + idx].dp_port = ep;
 
 		/* For G.INT num_dma_chan 8 or 16, for other 1 */
-		if (port_info->num_dma_chan > 1)
+		if (port_info->num_dma_chan > 1) {
 			dp_deq_port_tbl[inst][i + idx].dma_chan = dma_chan++;
-		else
+			dp_deq_port_tbl[inst][i + idx].dma_ch_offset =
+								dma_ch_base + i;
+		} else if (port_info->num_dma_chan == 1) {
 			dp_deq_port_tbl[inst][i + idx].dma_chan = dma_chan;
+			dp_deq_port_tbl[inst][i + idx].dma_ch_offset =
+								dma_ch_base;
+		}
 		DP_DEBUG(DP_DBG_FLAG_DBG, "deq_port_tbl[%d][%d].dma_chan=%x\n",
 			 inst, (i + idx), dma_chan);
 	}
@@ -509,14 +516,16 @@ static int supported_logic_dev(int inst, struct net_device *dev,
 static int subif_hw_set(int inst, int portid, int subif_ix,
 			struct subif_platform_data *data, u32 flags)
 {
-	int deq_port_idx = 0, cqe_deq;
+	int deq_port_idx = 0, cqe_deq, dma_ch_offset = 0;
 	struct pmac_port_info *port_info;
-	int cid, pid, nid;
-	u32 dma_chan;
 
 	if (!data || !data->subif_data) {
 		PR_ERR("data NULL or subif_data NULL\n");
 		return -1;
+	}
+	if (!dp_dma_chan_tbl[inst]) {
+		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+		return DP_FAILURE;
 	}
 	port_info = &dp_port_info[inst][portid];
 	if (data->subif_data)
@@ -528,42 +537,31 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	}
 	cqe_deq = port_info->deq_port_base + deq_port_idx;
 	port_info->subif_info[subif_ix].cqm_deq_port = cqe_deq;
-
-	dma_chan = dp_deq_port_tbl[inst][cqe_deq].dma_chan;	
-	cid = _DMA_CONTROLLER(dma_chan);
-	pid = _DMA_PORT(dma_chan) ;
-	nid = _DMA_CHANNEL(dma_chan);
-	/* cid, pid and nid should not greater than DP_DMAMAX,
-	 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
-	 */
-	if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
-	    DP_MAX_DMA_CHAN) {
-		PR_ERR("ERROR: cid=%d pid=%d nid=%d\n", cid, pid, nid);
-		PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
-		       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
-		return DP_FAILURE;
-	}
+	dma_ch_offset = dp_deq_port_tbl[inst][cqe_deq].dma_ch_offset;
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
 	if (port_info->num_dma_chan)
-		atomic_inc(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt);
+		atomic_inc(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);
 	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d DMATXCH_Ref.cnt=%d\n",
 		 cqe_deq,
 		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt,
-		 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
+		 atomic_read(&(dp_dma_chan_tbl[inst] +
+			     dma_ch_offset)->ref_cnt));
 	return 0;
 }
 
 static int subif_hw_reset(int inst, int portid, int subif_ix,
 			  struct subif_platform_data *data, u32 flags)
 {
-	int deq_port_idx = 0, cqe_deq;
+	int deq_port_idx = 0, cqe_deq, dma_ch_offset;
 	struct pmac_port_info *port_info;
-	u32 cid, pid, nid;
-	u32 dma_chan;
 
 	if (!data || !data->subif_data) {
 		PR_ERR("data NULL or subif_data NULL\n");
 		return -1;
+	}
+	if (!dp_dma_chan_tbl[inst]) {
+		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+		return DP_FAILURE;
 	}
 	port_info = &dp_port_info[inst][portid];
 	if (data->subif_data)
@@ -574,34 +572,22 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		return -1;
 	}
 	cqe_deq = port_info->deq_port_base + deq_port_idx;
+	dma_ch_offset = dp_deq_port_tbl[inst][cqe_deq].dma_ch_offset;
 	if (!dp_deq_port_tbl[inst][cqe_deq].ref_cnt) {
 		PR_ERR("Wrong cbm[%d].ref_cnt=%d\n",
 		       cqe_deq,
 		       dp_deq_port_tbl[inst][cqe_deq].ref_cnt);
 		return -1;
 	}
-	dma_chan = dp_deq_port_tbl[inst][cqe_deq].dma_chan;	
-	cid = _DMA_CONTROLLER(dma_chan);
-	pid = _DMA_PORT(dma_chan) ;
-	nid = _DMA_CHANNEL(dma_chan);
-	/* cid, pid and nid should not greater than DP_DMAMAX,
-	 * DP_MAX_DMA_PORT and DP_MAX_DMA_CHAN respectively.
-	 */
-	if ((cid >= DP_DMAMAX) || (pid >= DP_MAX_DMA_PORT) || nid >=
-	    DP_MAX_DMA_CHAN) {
-		PR_ERR("ERROR: cid=%d pid=%d nid=%d\n", cid, pid, nid);
-		PR_ERR("DMAMAX=%d MAX_DMA_PORT=%d MAX_DMA_CHAN=%d\n",
-		       DP_DMAMAX, DP_MAX_DMA_PORT, DP_MAX_DMA_CHAN);
-		return DP_FAILURE;
-	}
 	DP_DEBUG(DP_DBG_FLAG_DBG, "cid=%d pid=%d nid=%d\n", cid, pid, nid);
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt--;
 	if (port_info->num_dma_chan)
-		atomic_dec(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt);
+		atomic_dec(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);
 	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d DMATXCH_Ref_cnt=%d\n",
 		 cqe_deq,
 		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt,
-		 atomic_read(&dp_dma_chan_tbl[inst][cid][pid][nid].ref_cnt));
+		 atomic_read(&(dp_dma_chan_tbl[inst] +
+			     dma_ch_offset)->ref_cnt));
 	return 0;
 }
 
