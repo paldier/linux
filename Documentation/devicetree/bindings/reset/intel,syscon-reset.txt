@@ -4,7 +4,7 @@ Intel System Reset Controller
 Please also refer to reset.txt in this directory for common reset
 controller binding usage.
 
-The reset controller registers are RCU module on Intel GRX500/Falconmx SoC.
+The reset controller registers are RCU module on Intel GRX500/PRX300 SoC.
 
 Required properties:
 - compatible: should be

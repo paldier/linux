@@ -3,7 +3,7 @@ Intel WAN XPCS PHY controller
 This file documents the dt bindings for the WAN XPCS PHY
 
 Required properties:
-- compatible	: should be "intel,wanxpcsphy-falconmx"
+- compatible	: should be "intel,wanxpcsphy-prx300"
 - clocks	: frequency clock.
 		  Optionally we can include gate clock
 - clock-names	: should be "freq".
@@ -22,7 +22,7 @@ one.
 Example:
 
 wan_xpcs_phy: phy {
-	compatible = "intel,wanxpcsphy-falconmx";
+	compatible = "intel,wanxpcsphy-prx300";
 	clocks = <&ponclk>, <&clkgate1 GATE_AON_CLK>, <&clkgate3 GATE_SW_REF>;
 	clock-names = "freq", "xpcs", "hwclken";
 	clock-frequency = <156250000>;
