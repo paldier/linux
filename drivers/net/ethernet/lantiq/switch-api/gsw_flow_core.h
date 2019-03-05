@@ -171,9 +171,13 @@ Where as CLEAR_FILL_CTRL_REG takes care of clear then fill.
 #define LTQ_GSWIP_2_2_ETC 0x023
 #define LTQ_GSWIP_3_0 0x030
 #define LTQ_GSWIP_3_1 0x031
+#define LTQ_GSWIP_3_2 0x032
 
 #define IS_VRSN_30_31(ver) \
 	((ver == LTQ_GSWIP_3_0) || (ver == LTQ_GSWIP_3_1))
+
+#define IS_VRSN_31_OR_32(ver) \
+	((ver == LTQ_GSWIP_3_1) || (ver == LTQ_GSWIP_3_2))
 
 #define IS_VRSN_31(ver) \
 	((ver == LTQ_GSWIP_3_1))

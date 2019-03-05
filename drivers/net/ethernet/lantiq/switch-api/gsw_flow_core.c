@@ -25692,6 +25692,12 @@ GSW_return_t GSW_RMON_ExtendGet(void *cdev, GSW_RMON_extendGet_t *parm)
 	spin_lock_bh(&gswdev->lock_bm);
 #endif
 
+	if (IS_VRSN_31_OR_32(gswdev->gipver)) {
+		/* GSW_RMON_ExtendGet will not support above 3.0 */
+		ret = GSW_statusNoSupport;
+		goto UNLOCK_AND_RETURN;
+	}
+
 	if (parm->nPortId >= gswdev->tpnum) {
 		ret = GSW_statusErr;
 		goto UNLOCK_AND_RETURN;
