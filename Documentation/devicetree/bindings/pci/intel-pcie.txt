@@ -3,7 +3,7 @@
 Required properties:
 - compatible:one of the following values:
 	- "intel,xrx500-pcie" for GRX350/GRX550
-	- "intel,falconmx-pcie" for Falcon Mountain
+	- "intel,prx300-pcie" for Falcon Mountain
 
 - device_type: Must be "pci"
 
@@ -52,13 +52,13 @@ Required properties:
 
 - reset-gpios: gpio or ssio to PERST#
 
-- intel,inbound-shift: Control the inbound endianess conversion. Each 
-	RC has unique bit to control it for some strange endpoints 
+- intel,inbound-shift: Control the inbound endianess conversion. Each
+	RC has unique bit to control it for some strange endpoints
 - intel,outbound-shift: Control the outbound endianness conversion.
 	Each RC unique bit to control it for some strange endpoints
 - intel,iatu: can not decide it by detecting registers. if iatu is supported
 	this field must be 1. Otherwise, must be 0
-- intel,pcie-syscon: syscon interface to chiptop register to control some 
+- intel,pcie-syscon: syscon interface to chiptop register to control some
 	mixed functions
 
 Optional properties:
@@ -70,8 +70,8 @@ Optional properties:
 - bus-range: Range of bus numbers associated with this controller.
 - intel,rst-interval: reset interval in ms
 - intel,inbound-swap: Control inbound endianness swap
-- intel,outbound-swap: control outbound endianness swap 
-	
+- intel,outbound-swap: control outbound endianness swap
+
 Examples:
 =========
 
@@ -132,17 +132,17 @@ Board DTS:
 	&pcie0 {
 		status = "okay";
 		intel,rst-interval = <200>;
-		intel,inbound-swap = <1>; 
-		intel,outbound-swap = <0>; 
-		reset-gpio = <&gpio0 18 0>; 
+		intel,inbound-swap = <1>;
+		intel,outbound-swap = <0>;
+		reset-gpio = <&gpio0 18 0>;
 	};
 
-FalconMX:
+PRX300:
 --------
 SoC DTSI:
 
 	pcie0:pcie@1a400000 {
-		compatible = "intel,falconmx-pcie";
+		compatible = "intel,prx300-pcie";
 		device_type = "pci";
 		#address-cells = <3>;
 		#size-cells = <2>;
@@ -192,9 +192,9 @@ SoC DTSI:
 Board DTS:
 
 	&pcie0 {
-		intel,rst-interval = <200>; 
-		intel,inbound-swap = <1>; 
+		intel,rst-interval = <200>;
+		intel,inbound-swap = <1>;
 		intel,outbound-swap = <0>;
 		reset-gpio = <&ssogpio 18 0>;
-		num-lanes = <2>; 
+		num-lanes = <2>;
 	};

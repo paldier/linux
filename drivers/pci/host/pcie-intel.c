@@ -2095,7 +2095,7 @@ static int __maybe_unused intel_pcie_resume_noirq(struct device *dev)
 
 static const struct of_device_id of_intel_pcie_match[] = {
 	{ .compatible = "intel,xrx500-pcie" },
-	{ .compatible = "intel,falconmx-pcie" },
+	{ .compatible = "intel,prx300-pcie" },
 	{}
 };
 
