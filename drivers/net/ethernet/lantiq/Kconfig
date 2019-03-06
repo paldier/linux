@@ -39,6 +39,13 @@ config LTQ_ETH_XRX500
         ---help---
         Lantiq Ethernet driver for XRX500 series.
 
+config INTEL_GINT_ETH
+        tristate "INTEL G.INT Ethernet driver"
+        depends on (LTQ_DATAPATH || PRX300_CQM)
+        default n
+        ---help---
+        INTEL G.INT Ethernet driver.
+
 config XRX500_ETH_DRV_THERMAL_SUPPORT
 	bool "ThermaL support in the ethernet driver"
 	depends on LTQ_ETH_XRX500 && THERMAL

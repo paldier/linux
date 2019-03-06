@@ -3099,9 +3099,12 @@ static GSW_return_t switch_core_init(void *cdev)
 		/*PMAC default queue assignment and configuration*/
 		gsw_set_def_bypass_qmap(cdev, GSW_QOS_QMAP_SINGLE_MODE);
 		gsw_set_def_pce_qmap(cdev);
-		gsw_pmac_init_nondpu();
 		gsw_qos_def_config(cdev);
 		gsw_misc_config(cdev);
+		if(gswdev->dpu)
+			gsw_pmac_init_dpu();
+		else
+			gsw_pmac_init_nondpu();
 #else
 
 		/*Emulation/PC tool*/

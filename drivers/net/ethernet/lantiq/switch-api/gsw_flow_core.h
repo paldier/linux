@@ -972,7 +972,8 @@ typedef struct {
 	u32	gswex_sgmiibase; 		/*Base address GSWIP External switch-SGMII */
 
 	void *gsw_base;  			/*Base address GSWITCH */
-	u32 gsw_mode;			/* GSWIP Mode 0 "short_cut", 1 "full_qos" */
+	u32 gsw_mode;				/* GSWIP Mode 0 "short_cut", 1 "full_qos" */
+	u32 dpu;			        /* DPU = 1, pmac G.INT config, DPU = 0, Non-G.INT config */
 
 #ifdef __KERNEL__
 	spinlock_t lock_pce;

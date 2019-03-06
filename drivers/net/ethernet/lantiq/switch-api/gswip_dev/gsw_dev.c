@@ -25,6 +25,7 @@
 #define EXTERNAL_SWITCH_PHYID			"intel,gsw_ext-phyid"
 #define EXTERNAL_SWITCH_BASEADDR		"intel,gsw_ext-baseaddr"
 #define EXTERNAL_SWITCH_SGMIIBASEADDR   "intel,gsw_ext-sgmiibaseaddr"
+#define GSW_DPU                         "intel,gsw-dpu"
 /* Structure for GSWIP Subsystem operations
  * used to start Sub-Functional Drivers
  */
@@ -270,6 +271,7 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 	ethsw_api_dev_t *switch_pdata = NULL;
 	int ret = 0;
 	struct resource irqres;
+	struct device_node *gsw_dpu = NULL;
 
 	/* Allocate the private data for Switch */
 	switch_pdata = kzalloc(sizeof(ethsw_api_dev_t), GFP_KERNEL);
@@ -303,7 +305,11 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 
 	of_property_read_u32(gsw_dev_cell->of_node, "gsw_mode",
 			     &switch_pdata->gsw_mode);
-
+	gsw_dpu = of_find_node_by_name(NULL, "gint_eth");
+	if (!gsw_dpu)
+		pr_err("Unable to get node from gint_eth\n");
+	of_property_read_u32(gsw_dpu, GSW_DPU,
+				     &switch_pdata->dpu);
 #ifndef CONFIG_OF
 
 	if (gsw_dev[devid].prod_id == GRX500) {
