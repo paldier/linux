@@ -44,6 +44,7 @@
 #define AT803X_FUNC_DATA			0x4003
 #define AT803X_REG_CHIP_CONFIG			0x1f
 #define AT803X_BT_BX_REG_SEL			0x8000
+#define AT803X_SGMII_ANEG_EN			0x1000
 
 #define AT803X_DEBUG_ADDR			0x1D
 #define AT803X_DEBUG_DATA			0x1E
@@ -277,6 +278,27 @@ does_not_require_reset_workaround:
 static int at803x_config_init(struct phy_device *phydev)
 {
 	int ret;
+	u32 v;
+
+	if (phydev->drv->phy_id == ATH8031_PHY_ID &&
+		phydev->interface == PHY_INTERFACE_MODE_SGMII)
+	{
+		v = phy_read(phydev, AT803X_REG_CHIP_CONFIG);
+		/* select SGMII/fiber page */
+		ret = phy_write(phydev, AT803X_REG_CHIP_CONFIG,
+						v & ~AT803X_BT_BX_REG_SEL);
+		if (ret)
+			return ret;
+		/* enable SGMII autonegotiation */
+		ret = phy_write(phydev, MII_BMCR, AT803X_SGMII_ANEG_EN);
+		if (ret)
+			return ret;
+		/* select copper page */
+		ret = phy_write(phydev, AT803X_REG_CHIP_CONFIG,
+						v | AT803X_BT_BX_REG_SEL);
+		if (ret)
+			return ret;
+	}
 
 	ret = genphy_config_init(phydev);
 	if (ret < 0)
