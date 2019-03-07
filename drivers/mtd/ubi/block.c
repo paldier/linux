@@ -493,6 +493,14 @@ int ubiblock_create(struct ubi_volume_info *vi)
 		 dev->ubi_num, dev->vol_id, vi->name);
 	mutex_unlock(&devices_mutex);
 
+	if (!strcmp(vi->name, "rootfs") &&
+	    IS_ENABLED(CONFIG_MTD_ROOTFS_ROOT_DEV) &&
+	    ROOT_DEV == 0) {
+		pr_notice("ubiblock: device ubiblock%d_%d (%s) set to be root filesystem\n",
+			  dev->ubi_num, dev->vol_id, vi->name);
+		ROOT_DEV = MKDEV(gd->major, gd->first_minor);
+	}
+
 	if (ROOT_DEV == 0 && rootfsname_set) {
 		ROOT_DEV = MKDEV(gd->major, gd->first_minor);
 		pr_notice("ubiblock: device ubiblock%d_%d (%s) set to be root filesystem\n",
