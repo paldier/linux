@@ -692,6 +692,10 @@ struct dp_subif_data {
 				     *   DP_F_NON_ACA_PORT is set during
 				     *   dp_alloc_port_ext
 				     */
+	#define DP_MAC_LEARNING_EN 0
+	#define DP_MAC_LEARNING_DIS 1
+	u16 mac_learn_disable; /*!< [in] To enable or disable mac learning for subif
+				*/
 };
 
 /*! @brief enum DP_F_DATA_RESV_CQM_PORT */

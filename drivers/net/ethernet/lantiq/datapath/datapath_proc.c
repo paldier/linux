@@ -130,7 +130,9 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_puts(s, "\n");
 	seq_printf(s, "    mode:              %d\n", port->cqe_lu_mode);
 	seq_printf(s, "    LCT:               %d\n", port->lct_idx);
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
 	seq_printf(s, "    Swdev:             %d\n", port->swdev_en);
+#endif
 	seq_printf(s, "    cb->rx_fn:         0x%0x\n", (u32)port->cb.rx_fn);
 	seq_printf(s, "    cb->restart_fn:    0x%0x\n",
 		   (u32)port->cb.restart_fn);
@@ -203,6 +205,8 @@ int proc_port_dump(struct seq_file *s, int pos)
 			   cqm_p,
 			   port->subif_info[i].qos_deq_port,
 			   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
+		seq_printf(s, "          : mac_learn_dis:    %d\n",
+			   port->subif_info[i].mac_learn_dis);
 		cid = _DMA_CONTROLLER(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);

@@ -695,7 +695,11 @@ int alloc_bridge_port(int inst, int port_id, int subif_ix,
 	/* By default Disable src mac learning for registered
 	 * non CPU bridge port with DP
 	 */
-	bp_cfg.bSrcMacLearningDisable = 1;
+	if (dp_port_info[inst][port_id].subif_info[subif_ix].mac_learn_dis ==
+							DP_MAC_LEARNING_DIS)
+		bp_cfg.bSrcMacLearningDisable = 1;
+	else
+		bp_cfg.bSrcMacLearningDisable = 0;
 	bp_cfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP |
 		GSW_BRIDGE_PORT_CONFIG_MASK_MC_SRC_MAC_LEARNING |

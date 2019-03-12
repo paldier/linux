@@ -33,35 +33,6 @@ int dp_swdev_alloc_bridge_id(int inst)
 	return br.nBridgeId;
 }
 
-int dp_set_gswip_mac_learning(GSW_BRIDGE_portConfig_t *bport)
-{
-	int i, cnt = 0;
-	/*check if there is atleast one non-cpu bridge port as member to
-	 *enable MAC learning.Ignore if CPU port is a member
-	 */
-	for (i = 0; i < MAX_BP_NUM; i++) {
-		if (i == CPU_BP)
-			continue;
-		if (GET_BP_MAP(bport->nBridgePortMap, i))
-			cnt++;
-	}
-	if (cnt < 1) {
-		bport->eMask |= GSW_BRIDGE_PORT_CONFIG_MASK_MC_SRC_MAC_LEARNING;
-		bport->bSrcMacLearningDisable = 1;
-	} else {
-		/*Enable src mac learning*/
-		bport->eMask |= GSW_BRIDGE_PORT_CONFIG_MASK_MC_SRC_MAC_LEARNING;
-		bport->bSrcMacLearningDisable = 0;
-	}
-	if (bport->bSrcMacLearningDisable)
-		DP_DEBUG(DP_DBG_FLAG_SWDEV,
-			 "MAC learning disable cnt:%d\n", cnt);
-	else
-		DP_DEBUG(DP_DBG_FLAG_SWDEV,
-			 "MAC learning enable cnt:%d\n", cnt);
-	return 0;
-}
-
 int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 				 int inst, int bport)
 {
@@ -93,7 +64,6 @@ int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 	brportcfg.nBridgePortId = bport;
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	dp_set_gswip_mac_learning(&brportcfg);
 	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops.
 			   BridgePort_ConfigSet, gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
@@ -126,7 +96,6 @@ int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 			brportcfg.eMask =
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			dp_set_gswip_mac_learning(&brportcfg);
 			ret = gsw_core_api((dp_gsw_cb)gsw_handle
 					->gsw_brdgport_ops
 					.BridgePort_ConfigSet,
@@ -193,7 +162,6 @@ int dp_swdev_bridge_port_cfg_reset(struct br_info *br_item,
 	brportcfg.nBridgePortId = bport;
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 			  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	dp_set_gswip_mac_learning(&brportcfg);
 	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
 			   .BridgePort_ConfigSet, gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
@@ -222,12 +190,10 @@ int dp_swdev_bridge_port_cfg_reset(struct br_info *br_item,
 				return -1;
 			}
 			UNSET_BP_MAP(brportcfg.nBridgePortMap, bport);
-			//brportcfg.nBridgeId = br_item->fid;
 			brportcfg.nBridgePortId = bport_list->portid;
 			brportcfg.eMask =
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			dp_set_gswip_mac_learning(&brportcfg);
 			ret = gsw_core_api((dp_gsw_cb)gsw_handle
 					 ->gsw_brdgport_ops
 					 .BridgePort_ConfigSet,

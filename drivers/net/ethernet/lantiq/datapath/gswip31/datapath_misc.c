@@ -1231,6 +1231,8 @@ static int dp_platform_set(int inst, u32 flag)
 		init_qos_fn();
 		/*just for debugging purpose */
 		dp_port_info[inst][0].subif_info[0].bp = CPU_BP;
+		dp_port_info[inst][0].subif_info[0].mac_learn_dis = 
+							DP_MAC_LEARNING_DIS;
 		INIT_LIST_HEAD(&dp_port_info[inst][0].subif_info[0].logic_dev);
 
 		priv->bp_def = alloc_bridge_port(inst, CPU_PORT, CPU_SUBIF,
@@ -1524,6 +1526,8 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 			 data->dev ? data->dev->name : "NULL",
 			 data->subif_data->ctp_dev ?
 				data->subif_data->ctp_dev->name : "NULL");
+		port_info->subif_info[subif_ix].mac_learn_dis =
+				data->subif_data->mac_learn_disable;
 		bp = alloc_bridge_port(inst, portid,
 				       subif_ix, CPU_FID, CPU_BP);
 		if (bp < 0) {

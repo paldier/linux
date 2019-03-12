@@ -419,6 +419,9 @@ struct dp_subif_info {
 			 * dp_register_subif
 			 */
 	atomic_t rx_flag; /* To enable/disable DP rx */
+	u16 mac_learn_dis; /* To store mac learning capability of subif from
+			    * caller during dp_register_subif
+			    */
 };
 
 struct vlan_info {
@@ -478,7 +481,7 @@ struct pmac_port_info {
 	u32 f_ptp:1; /* PTP1588 support enablement */
 #endif
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
-	u32 swdev_en; /* swdev enable/disable flag for port */
+	u32 swdev_en; /* switchdev enable/disable flag for port */
 #endif
 };
 
