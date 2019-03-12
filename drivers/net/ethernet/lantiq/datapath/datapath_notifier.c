@@ -127,12 +127,17 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		if (br_info) {
 			dp_dev->fid = br_info->fid;
 		} else {
-			fid = dp_notif_br_alloc(br_dev);
-			if (fid > 0) {
-				dp_dev->fid = fid;
+			if (port->swdev_en == 1) {
+				fid = dp_notif_br_alloc(br_dev);
+				if (fid > 0) {
+					dp_dev->fid = fid;
+				} else {
+					PR_ERR("FID alloc failed in %s\r\n",
+					       __func__);
+					return 0;
+				}
 			} else {
-				PR_ERR("FID alloc failed in %s\r\n", __func__);
-				return 0;
+				dp_dev->fid = 0;
 			}
 		}
 		for (i = 0; i < MAX_SUBIFS; i++) {

@@ -28,6 +28,7 @@ struct bridge_id_entry_item {
 	u16 fid;
 	u32 flags;
 	u32 portid; /*Bridge port*/
+	u32 dp_port; /*DP port*/
 	u32 inst;
 	struct switchdev_trans_item tritem;
 };

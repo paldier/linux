@@ -211,7 +211,6 @@ int arbi_pp2dp(int pp_arbi)
 		if (arbi_maps[i].pp_arbi == pp_arbi)
 			return arbi_maps[i].dp_arbi;
 	}
-	PR_ERR("Wrong pp_arbitrate: %d\n", pp_arbi);
 	return DP_FAILURE;
 }
 
@@ -2254,12 +2253,24 @@ static int get_parent_arbi(int inst, int node_id, int flag)
 			return DP_FAILURE;
 		}
 		arbi = arbi_pp2dp(sched_cfg.sched_parent_prop.arbitration);
+		if (arbi == DP_FAILURE)
+			PR_ERR("Wrong pp_arbitrate: %d for %s:%d\n",
+			       port_cfg.port_parent_prop.arbitration,
+			       (priv->qos_sch_stat[node_id].type == DP_NODE_SCH)
+			       ? "sched" : "Q",
+			       node_id);
 	} else if (priv->qos_sch_stat[node_id].parent.type == DP_NODE_PORT) {
 		if (qos_port_conf_get(priv->qdev, pid, &port_cfg)) {
 			PR_ERR("fail to get port config\n");
 			return DP_FAILURE;
 		}
 		arbi = arbi_pp2dp(port_cfg.port_parent_prop.arbitration);
+		if (arbi == DP_FAILURE)
+			PR_ERR("Wrong pp_arbitrate: %d for %s:%d\n",
+			       port_cfg.port_parent_prop.arbitration,
+			       (priv->qos_sch_stat[node_id].type == DP_NODE_SCH)
+			       ? "sched" : "Q",
+			       node_id);
 	} else {
 		PR_ERR("incorrect parent type:0x%x for node:%d.\n",
 		       priv->qos_sch_stat[node_id].parent.type,
@@ -2461,7 +2472,6 @@ int dp_qos_link_prio_get_31(struct dp_node_prio *info, int flag)
 		arbi = get_parent_arbi(info->inst, node_id, flag);
 
 		if (arbi == DP_FAILURE) {
-			PR_ERR("get_parent_arbi fail for Q:%d!\n", node_id);
 			return DP_FAILURE;
 		}
 		info->arbi = arbi;
@@ -2488,8 +2498,6 @@ int dp_qos_link_prio_get_31(struct dp_node_prio *info, int flag)
 		arbi = get_parent_arbi(info->inst, info->id.sch_id, flag);
 
 		if (arbi == DP_FAILURE) {
-			PR_ERR("get_parent_arbi fail for Sched:%d!\n",
-			       info->id.sch_id);
 			return DP_FAILURE;
 		}
 		info->arbi = arbi;

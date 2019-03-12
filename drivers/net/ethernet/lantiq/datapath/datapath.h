@@ -477,6 +477,9 @@ struct pmac_port_info {
 #if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
 	u32 f_ptp:1; /* PTP1588 support enablement */
 #endif
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+	u32 swdev_en; /* swdev enable/disable flag for port */
+#endif
 };
 
 struct pmac_port_info2 {

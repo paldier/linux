@@ -42,34 +42,35 @@ struct ctp_assign {
 	u32 vap_offset; /*VAP offset */
 	u32 vap_mask;  /*VAP Mask after shift vap_offset bits */
 	u32 lookup_mode; /*CQE lookup mode  */
+	u16 swdev_enable; /* To enable or disable switchdev feature */
 };
 
 static struct ctp_assign ctp_assign_info[] = {
 	/*note: multiple flags must put first */
-	{DP_F_GPON, GSW_LOGICAL_PORT_GPON, 256, 0, 0xFF, CQE_LU_MODE1},
-	{DP_F_EPON, GSW_LOGICAL_PORT_EPON, 256, 0, 0xFF, CQE_LU_MODE1},
-	{DP_F_GINT, GSW_LOGICAL_PORT_GINT, 16, 0, 0xFF, CQE_LU_MODE1},
+	{DP_F_GPON, GSW_LOGICAL_PORT_GPON, 256, 0, 0xFF, CQE_LU_MODE1, 1},
+	{DP_F_EPON, GSW_LOGICAL_PORT_EPON, 256, 0, 0xFF, CQE_LU_MODE1, 1},
+	{DP_F_GINT, GSW_LOGICAL_PORT_GINT, 16, 0, 0xFF, CQE_LU_MODE1, 1},
 /*#define DP_ETH_TEST*/
 #ifndef DP_ETH_TEST
 	{DP_F_FAST_ETH_WAN, GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 0xF,
-		CQE_LU_MODE2},
+		CQE_LU_MODE2, 1},
 	{DP_F_FAST_ETH_LAN | DP_F_ALLOC_EXPLICIT_SUBIFID,
-		GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 0xF, CQE_LU_MODE2},
+		GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 0xF, CQE_LU_MODE2, 1},
 	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_8BIT_WLAN, 4, 8, 0xF,
-		CQE_LU_MODE2},
+		CQE_LU_MODE2, 1},
 #else /*testing only */
-	{DP_F_FAST_ETH_WAN, GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2},
+	{DP_F_FAST_ETH_WAN, GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
 	{DP_F_FAST_ETH_LAN | DP_F_ALLOC_EXPLICIT_SUBIFID,
-		GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2},
-	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2},
+		GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
+	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
 #endif
-	{DP_F_FAST_WLAN, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 8, 0xF, CQE_LU_MODE2},
+	{DP_F_FAST_WLAN, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 8, 0xF, CQE_LU_MODE2, 1},
 	{DP_F_FAST_WLAN_EXT, GSW_LOGICAL_PORT_9BIT_WLAN, 8, 9, 0x7,
-		CQE_LU_MODE2}
+		CQE_LU_MODE2, 1}
 };
 
 static struct ctp_assign ctp_assign_def = {0, GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8,
-					   0xF, CQE_LU_MODE2};
+					   0xF, CQE_LU_MODE2, 1};
 
 static struct gsw_itf itf_assign[PMAC_MAX_NUM] = {0};
 
@@ -642,6 +643,9 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	dp_port_info[inst][ep].ctp_max = ctp_assign.nNumberOfCtpPort;
 	dp_port_info[inst][ep].vap_offset = assign->vap_offset;
 	dp_port_info[inst][ep].vap_mask = assign->vap_mask;
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+	dp_port_info[inst][ep].swdev_en = assign->swdev_enable;
+#endif
 	return &itf_assign[ep];
 }
 

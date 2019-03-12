@@ -141,7 +141,7 @@ struct br_info *dp_swdev_bridge_entry_lookup(char *br_name)
 
 static void dp_swdev_remove_bridge_id_entry(struct br_info *br_item)
 {
-	/*TODO reset switch bridge configurations*/
+	/*reset switch bridge configurations*/
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "hash del\n");
 	hlist_del(&br_item->br_hlist);
 	kfree(br_item);
@@ -254,22 +254,25 @@ static int dp_swdev_clr_gswip_cfg(struct bridge_id_entry_item *br_item,
 	if (!br_info)
 		return 0;
 	if (dp_swdev_del_bport_from_list(br_info, br_item->portid)) {
-		ret = dp_port_prop[br_item->inst].info.
-			swdev_bridge_port_cfg_reset(br_info,
-						    br_item->inst,
-						    br_item->portid);
-		if (ret == DEL_BRENTRY) {
-			dp_port_prop[br_item->inst].info.
-				swdev_free_brcfg(br_item->inst, br_item->fid);
-			dp_swdev_remove_bridge_id_entry(br_info);
-			DP_DEBUG(DP_DBG_FLAG_SWDEV,
-				 "rem bport(%d),bridge(%s)\n",
-				 br_item->portid,
-				 br_item->br_device_name);
+		if (dp_port_info[br_item->inst][br_item->dp_port].
+							swdev_en == 1) {
+			ret = dp_port_prop[br_item->inst].info.
+				swdev_bridge_port_cfg_reset(br_info,
+							    br_item->inst,
+							    br_item->portid);
+			if (ret == DEL_BRENTRY) {
+				dp_port_prop[br_item->inst].info.
+					swdev_free_brcfg(br_item->inst, br_item->fid);
+				dp_swdev_remove_bridge_id_entry(br_info);
+				DP_DEBUG(DP_DBG_FLAG_SWDEV,
+					 "rem bport(%d),bridge(%s)\n",
+					 br_item->portid,
+					 br_item->br_device_name);
+			}
+			DP_DEBUG(DP_DBG_FLAG_SWDEV, "rem bport(%d)\n",
+				 br_item->portid);
+			return 0;
 		}
-		DP_DEBUG(DP_DBG_FLAG_SWDEV, "rem bport(%d)\n",
-			 br_item->portid);
-		return 0;
 	}
 	return 0;
 }
@@ -281,9 +284,7 @@ static int dp_swdev_cfg_vlan(struct bridge_id_entry_item *br_item,
 	u32 idx, inst;
 	int vap;
 
-	/*if (br_info->flag & LOGIC_DEV_REGISTER) {*/
 	if (br_item->flags & LOGIC_DEV_REGISTER) {
-		/*get_vlan_via_dev(dev, &vlan_prop);*/
 		idx = dp_dev_hash(dev, NULL);
 		dp_dev = dp_dev_lookup(&dp_dev_list[idx], dev, NULL, 0);
 		if (!dp_dev) {
@@ -354,6 +355,12 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "britem flags:%x\n", br_item->flags);
 	if (br_item->flags & ADD_BRENTRY) {
+		if (dp_port_info[br_item->inst][br_item->dp_port].
+							swdev_en == 0) {
+			DP_DEBUG(DP_DBG_FLAG_SWDEV, "swdev disable for bp %d\n",
+				 br_item->portid);
+			return 0;
+		}
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "Add br entry %s\n",
 			 br_item->br_device_name);
 		if ((dp_port_prop[br_item->inst].info.
@@ -377,7 +384,6 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 			 * br/bport delete
 			 */
 			if (br_item->flags & LOGIC_DEV_REGISTER) {
-				//br_item->flags &= ~LOGIC_DEV_REGISTER;
 				br_info->flag = LOGIC_DEV_REGISTER;
 			}
 			strcpy(br_info->br_device_name,
@@ -405,10 +411,13 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 		if (br_item->flags & LOGIC_DEV_REGISTER)
 			br_info->flag = LOGIC_DEV_REGISTER;
 		dp_swdev_add_bport_to_list(br_info, br_item->portid);
-		dp_port_prop[br_item->inst].info.
-			swdev_bridge_port_cfg_set(br_info,
-						  br_item->inst,
-						  br_item->portid);
+		if (dp_port_info[br_item->inst][br_item->dp_port].
+							swdev_en == 1) {
+			dp_port_prop[br_item->inst].info.
+				swdev_bridge_port_cfg_set(br_info,
+							  br_item->inst,
+							  br_item->portid);
+		}
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "added bport(%d)\n",
 			 br_item->portid);
 		return 0;
@@ -482,6 +491,7 @@ static int dp_swdev_add_if(struct net_device *dev,
 		br_item->inst = subif.inst;
 		/* current bridge member port*/
 		br_item->portid = subif.bport;
+		br_item->dp_port = subif.port_id;
 		swdev_lock();
 		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 		if (br_info) {
@@ -491,20 +501,26 @@ static int dp_swdev_add_if(struct net_device *dev,
 			br_item->flags = flag;
 		} else {
 			br_item->flags = ADD_BRENTRY | flag;
-			br_id = dp_port_prop[br_item->inst].info.
-				swdev_alloc_bridge_id(br_item->inst);
-			if (br_id) {
-				/* Store bridge information to add in the table.
-				 * This
-				 * info is used during switchdev commit phase
-				 */
+			if (dp_port_info[inst][port].swdev_en == 1) {
+				br_id = dp_port_prop[br_item->inst].info.
+					swdev_alloc_bridge_id(br_item->inst);
+				if (br_id) {
+					/* Store bridge information to add in the table.
+					 * This
+					 * info is used during switchdev commit phase
+					 */
+					strcpy(br_item->br_device_name,
+					       br_dev->name);
+					br_item->fid = br_id;
+				} else {
+					PR_ERR("Switch config failed\r\n");
+					kfree(br_item);
+					swdev_unlock();
+					return -EOPNOTSUPP;
+				}
+			} else {
 				strcpy(br_item->br_device_name, br_dev->name);
 				br_item->fid = br_id;
-			} else {
-				PR_ERR("Switch configuration failed\r\n");
-				kfree(br_item);
-				swdev_unlock();
-				return -EOPNOTSUPP;
 			}
 		}
 		switchdev_trans_item_enqueue(trans, br_item,
@@ -559,6 +575,7 @@ static int dp_swdev_del_if(struct net_device *dev,
 			br_item->inst = subif.inst;
 			/* current bridge member port*/
 			br_item->portid = subif.bport;
+			br_item->dp_port = subif.port_id;
 			br_item->flags = BRIDGE_NO_ACTION;
 			strcpy(br_item->br_device_name,
 			       br_info->br_device_name);
@@ -582,7 +599,7 @@ static int dp_swdev_del_if(struct net_device *dev,
 		swdev_unlock();
 		return 0;
 	}
-	/*TODO Check bridge port exists otherwise register device with datapath
+	/*Check bridge port exists otherwise register device with datapath
 	 *i.e. only in case of new VLAN interface
 	 */
 	/*configure switch in commit phase and it cannot return failure*/
@@ -711,7 +728,6 @@ static int dp_swdev_port_attr_set(struct net_device *dev,
 	br_dev = netdev_master_upper_dev_get(attr->orig_dev);
 	if (!br_dev)
 		return -EOPNOTSUPP;
-#if 1
 	switch (attr->id) {
 	case SWITCHDEV_ATTR_ID_PORT_STP_STATE:
 		/*STP STATE forwading or ifconfig UP - add bridge*/
@@ -750,7 +766,6 @@ static int dp_swdev_port_attr_set(struct net_device *dev,
 		break;
 	}
 	return err;
-#endif
 }
 
 static int dp_swdev_port_attr_get(struct net_device *dev,
