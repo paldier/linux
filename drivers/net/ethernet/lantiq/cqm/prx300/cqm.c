@@ -121,8 +121,8 @@ static inline void cqm_populate_entry(struct cqm_pmac_port_map *local_entry,
 				      u32 flags, int *found)
 {
 	int index, idx;
-	*phys_port = cbm_port;
 	u32 port_bit;
+	*phys_port = cbm_port;
 
 	for (idx = 0; idx < MAX_PORT(flags); idx++) {
 		index = ((cbm_port + idx) / BITS_PER_LONG);
@@ -2303,9 +2303,9 @@ static struct sk_buff *build_skb_cqm(void *data, unsigned int frag_size,
 	}
 	buf_size = bm_pool_conf[pool].buf_frm_size;
 	if (frag_size > buf_size)
-		panic("Packet length exceedsf the buffer size %d %d\n",
+		panic("Packet length exceeds the buffer size %d %d\n",
 		      frag_size, buf_size);
-	return __build_skb(data + CQM_POOL_METADATA, buf_size);
+	return __build_skb(data + CQM_POOL_METADATA, frag_size);
 }
 
 static struct sk_buff *cqm_alloc_skb(unsigned int size, gfp_t priority)

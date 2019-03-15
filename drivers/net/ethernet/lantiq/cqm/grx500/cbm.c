@@ -752,7 +752,7 @@ void *data, u32 frag_size, gfp_t priority)
 		return NULL;
 	}
 
-	return __build_skb(data, buf_size);
+	return __build_skb(data, frag_size);
 }
 
 /*FSQM initialization
