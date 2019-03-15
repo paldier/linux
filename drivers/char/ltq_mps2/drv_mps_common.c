@@ -1548,7 +1548,7 @@ void cache_inv (ulong addr, uint32_t len)
    ulong end   = (addr + len - 1) & ~(CACHE_LINE_SZ - 1);
 
 	 if(addr<KSEG0||addr>KSEG1){
-			TRACE (MPS2, DBG_LEVEL_HIGH, ("Invalid address for cache ops %x\n",addr));
+			TRACE (MPS2, DBG_LEVEL_HIGH, ("Invalid address for cache ops %#lx\n",addr));
 			return;
 	 }
 
@@ -1595,7 +1595,7 @@ void cache_wb_inv (ulong addr, uint32_t len)
    ulong aline = addr & ~(CACHE_LINE_SZ - 1);
    ulong end   = (addr + len - 1) & ~(CACHE_LINE_SZ - 1);
 	 if(addr<KSEG0||addr>KSEG1){
-			TRACE (MPS2, DBG_LEVEL_HIGH, ("Invalid address for cache ops %x\n",addr));
+			TRACE (MPS2, DBG_LEVEL_HIGH, ("Invalid address for cache ops %#lx\n",addr));
 			return;
 	 }
    while (1)
