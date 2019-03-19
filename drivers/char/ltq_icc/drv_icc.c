@@ -34,6 +34,7 @@
 #include <linux/vmalloc.h>
 #include <linux/ioctl.h>
 #include <linux/cdev.h>
+#include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/string.h>
 #include <linux/wait.h>
@@ -62,6 +63,16 @@
 #define GET_ICC_WRITE_MSG(clientid , wrptr)	  (ICC_BUFFER[clientid].MPS_BUFFER[wrptr])
 CREATE_TRACE_GROUP(ICC);
 /********************************Local functions*************************/
+
+#ifdef CONFIG_SOC_GRX500_BOOTCORE
+
+#define SS_DEVICE_NAME "ltq_icc"
+static short ss_major_id ;
+static struct cdev *icc_cdev;
+static dev_t dev_no;
+static struct class *icc_class;
+
+#endif
 
 #ifndef  __LIBRARY__
 unsigned int icc_poll(struct file *file_p, poll_table *wait);
@@ -760,24 +771,74 @@ void pfn_icc_callback(void){
 }
 /*Init module routine*/
 int __init icc_init_module (void){
-	int result=0;
+	int result = 0;
+
+#ifdef CONFIG_SOC_GRX500_BOOTCORE
+	ss_major_id = 0;
+	result = alloc_chrdev_region(&dev_no, 0, 1, SS_DEVICE_NAME);
+	if (result < 0) {
+		printk(KERN_INFO "Major number allocation is failed\n");
+		goto finish;
+	}
+
+	ss_major_id = MAJOR(dev_no);
+
+	icc_class = class_create(THIS_MODULE, SS_DEVICE_NAME);
+	if (icc_class == NULL) {
+		printk(KERN_INFO "Unable to create class");
+		result = -EINVAL;
+		goto finish;
+	}
+
+	icc_cdev = cdev_alloc();
+	if (icc_cdev == NULL) {
+		class_destroy(icc_class);
+		result = -ENOMEM;
+		goto finish;
+	}
+
+	icc_cdev->ops = &icc_fops;
+	icc_cdev->owner = THIS_MODULE;
+
+	if (cdev_add(icc_cdev, dev_no, 1) < 0) {
+		class_destroy(icc_class);
+		result = -EINVAL;
+		goto finish;
+	}
+
+	if (device_create(icc_class, NULL, dev_no, NULL, SS_DEVICE_NAME) == NULL) {
+		printk(KERN_INFO "Unable to create device node");
+		result = -EINVAL;
+		cdev_del(icc_cdev);
+		class_destroy(icc_class);
+		goto finish;
+	}
+#endif
 	result=mps_open((struct inode *)1,NULL);
 	if(result<0){
 		TRACE(ICC, DBG_LEVEL_HIGH, ("open MPS2 Failed\n"));
-		return result;
+		goto finish;
 	}
 	result=mps_register_callback(&pfn_icc_callback);
 	if(result<0){
 		TRACE(ICC, DBG_LEVEL_HIGH, ("Data CallBack Register with MPS2 Failed\n"));
-		return result;
+		goto finish;
 	}
 /*Init structures if required*/
    /* register char module in kernel */
-   result = icc_os_register ();
-   if (result)
-      return result;
+
+	result = icc_os_register()
+	if (result)
+		goto finish;
 #ifdef KTHREAD
 	sema_init(&icc_callback_sem,1);
+#endif
+finish:
+#ifdef CONFIG_SOC_GRX500_BOOTCORE
+	if (result != 0) {
+		if (ss_major_id != 0)
+			unregister_chrdev_region(dev_no, 1);
+	}
 #endif
 	return result;
 }
@@ -787,6 +848,13 @@ void __exit icc_cleanup_module (void){
 	mps_close((struct inode *)1,NULL);
 	mps_unregister_callback();
 	icc_os_unregister ();
+#ifdef CONFIG_SOC_GRX500_BOOTCORE
+	device_destroy(icc_class, dev_no);
+	cdev_del(icc_cdev);
+	class_destroy(icc_class);
+	if (ss_major_id != 0)
+		unregister_chrdev_region(dev_no, 1);
+#endif
 	return;
 }
 #ifdef KTHREAD

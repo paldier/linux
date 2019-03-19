@@ -26,7 +26,7 @@
 #define MIN_THRESHOLD 4
 #define MAX_THRESHOLD 12
 #define ICC_MSG_FLOW_CONTROL 0x1
-
+#define SEC_STORE_ID 0x3
 
 
 /*DebugInfo*/
@@ -67,6 +67,7 @@ typedef enum
 	 SR,/*System reset driver*/
 	 IR,/*Ioctl redirector*/
 	 PR,/*procfs redirector*/
+	 SEC_STORE_SERVICE = 10, /*Secure store service */
    MAX_CLIENT=21/*MAX_CLIENT_ID*/
 } icc_devices;/*enum for all the possible clients*/
 /******************************************************************************
