@@ -47,9 +47,9 @@
  */
 struct device *cur_dev;
 
-#define PPV4_QOS_CMD_BUF_SIZE (0x1000)
-#define PPV4_QOS_CMD_BUF_OFFSET (0x6000U)
-#define MAX_CMD_SIZE 150
+#define PPV4_QOS_CMD_BUF_SIZE (0x4000)
+#define PPV4_QOS_CMD_BUF_OFFSET (0x4000U)
+#define MAX_CMD_SIZE 200
 
 void stop_run(void)
 {
