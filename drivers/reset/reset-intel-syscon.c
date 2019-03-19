@@ -27,6 +27,7 @@ struct intel_reset_soc_data {
 struct intel_reset_data {
 	struct reset_controller_dev rcdev;
 	struct notifier_block restart_nb;
+	struct device *dev;
 	struct regmap *regmap;
 	const struct intel_reset_soc_data *soc_data;
 	u32 reboot_id;
@@ -43,23 +44,45 @@ static u32 intel_stat_reg_off(struct intel_reset_data *data, u32 req_off)
 static int intel_assert_device(struct reset_controller_dev *rcdev,
 			       unsigned long id)
 {
+	int ret;
+	u32 val;
 	struct intel_reset_data *data = to_reset_data(rcdev);
 	u32 regoff = id >> 8;
 	u32 regbit = id & 0x3f;
+	u32 regstoff;
 
-	return regmap_update_bits(data->regmap, regoff,
-				  BIT(regbit), BIT(regbit));
+	ret = regmap_update_bits(data->regmap, regoff,
+				 BIT(regbit), BIT(regbit));
+	if (ret) {
+		dev_err(data->dev, "Failed to set reset assert bit %d\n", ret);
+		return ret;
+	}
+
+	regstoff = intel_stat_reg_off(data, regoff);
+	return regmap_read_poll_timeout(data->regmap, regstoff, val,
+					!!(val & BIT(regbit)), 20, 200);
 }
 
 static int intel_deassert_device(struct reset_controller_dev *rcdev,
 				 unsigned long id)
 {
+	int ret;
+	u32 val;
 	struct intel_reset_data *data = to_reset_data(rcdev);
 	u32 regoff = id >> 8;
 	u32 regbit = id & 0x3f;
+	u32 regstoff;
 
-	return regmap_update_bits(data->regmap, regoff,
-				  BIT(regbit), 0 << regbit);
+	ret = regmap_update_bits(data->regmap, regoff,
+				 BIT(regbit), 0 << regbit);
+	if (ret) {
+		dev_err(data->dev,
+			"Failed to set reset deassert bit %d\n", ret);
+		return ret;
+	}
+	regstoff = intel_stat_reg_off(data, regoff);
+	return regmap_read_poll_timeout(data->regmap, regstoff, val,
+					!(val & BIT(regbit)), 20, 200);
 }
 
 static int intel_reset_device(struct reset_controller_dev *rcdev,
@@ -158,6 +181,8 @@ static int intel_reset_probe(struct platform_device *pdev)
 		dev_err(dev, "Failed to get global reset offset!\n");
 		return -EINVAL;
 	}
+
+	data->dev = dev;
 	data->reboot_id = (rb_id[0] << 8) | rb_id[1];
 	data->regmap = regmap;
 	data->rcdev.of_node = np;
