@@ -68,19 +68,20 @@ void xgmac_config_timer_reg(void *pdev)
 	struct mac_ops *hw_if = &pdata->ops;
 	u64 temp = 0;
 
-	/* program Sub Second Increment Reg */
-	hw_if->config_subsec_inc(pdev, pdata->ptp_clk);
-
-	/* Calculate the def addend:
-	 * addend = 2^32 / (PTP ref clock / CLOCK_UPDATE_FREQ)
-	 *        = (2^32 * CLOCK_UPDATE_FREQ) / PTP ref clock
-	 */
-	temp = (u64)((CLOCK_UPDATE_FREQ * 1000000ULL) << 32);
-	pdata->def_addend = div_u64(temp, pdata->ptp_clk);
-
-	hw_if->config_addend(pdev, pdata->def_addend);
-
 	if (!pdata->systime_initialized) {
+
+		/* program Sub Second Increment Reg */
+		hw_if->config_subsec_inc(pdev, pdata->ptp_clk);
+
+		/* Calculate the def addend:
+		 * addend = 2^32 / (PTP ref clock / CLOCK_UPDATE_FREQ)
+		 *        = (2^32 * CLOCK_UPDATE_FREQ) / PTP ref clock
+		 */
+		temp = (u64)((CLOCK_UPDATE_FREQ * 1000000ULL) << 32);
+		pdata->def_addend = div_u64(temp, pdata->ptp_clk);
+
+		hw_if->config_addend(pdev, pdata->def_addend);
+
 		/* initialize system time */
 		getnstimeofday(&now);
 		hw_if->init_systime(pdev, now.tv_sec, now.tv_nsec);

@@ -142,6 +142,9 @@ static int mac_probe(struct platform_device *pdev)
 	/* Initialize MAC Spin lock */
 	spin_lock_init(&pdata->mac_lock);
 
+	/* Initialize Spin lock for Indirect read/write */
+	spin_lock_init(&pdata->rw_lock);
+
 	/* load the memory ranges */
 	for (i = 0; i < pdev->num_resources; i++) {
 		res[i] = platform_get_resource(pdev, IORESOURCE_MEM, i);

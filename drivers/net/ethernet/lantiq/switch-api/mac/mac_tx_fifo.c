@@ -180,23 +180,10 @@ static int fifo_freeid_get(void *pdev, u8 ttse)
 {
 	int i = FIFO_FULL;
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	u32 mac_fifo_cnt = 0;
 
 	for (i = START_FIFO; i < MAX_FIFO_ENTRY; i++) {
 		if (!pdata->ts_fifo[i].is_used) {
-			if (ttse) {
-				mac_fifo_cnt = XGMAC_RGRD_BITS(pdata,
-							       MAC_TSTAMP_STSR,
-							       TTSNS);
-			}
-
-			/* If nothing stored in Xgmac Fifo */
-			if (mac_fifo_cnt == 0) {
-				return pdata->ts_fifo[i].rec_id;
-			} else {
-				mac_printf("Xgmac Fifo already have entry\n");
-				return FIFO_FULL;
-			}
+			return pdata->ts_fifo[i].rec_id;
 		} else {
 			fifo_update_hw_clrsts(pdev, &pdata->ts_fifo[i]);
 		}

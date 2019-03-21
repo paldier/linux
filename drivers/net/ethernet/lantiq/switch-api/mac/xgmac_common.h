@@ -413,6 +413,7 @@ struct mac_prv_data {
 	spinlock_t ptp_lock;
 	struct ptp_clock *ptp_clock;
 	spinlock_t mac_lock;
+	spinlock_t rw_lock;
 	struct mii_bus *mii;
 	struct phy_device *phydev;
 	struct tasklet_struct mac_tasklet;

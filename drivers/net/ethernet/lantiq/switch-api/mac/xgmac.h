@@ -755,11 +755,10 @@ enum  {
 #define MASK_N_BITS(reg, field)		((1 << (reg##_##field##_WIDTH)) - 1)
 
 
-
 #ifdef __KERNEL__
 static inline u32 XGMAC_IO_R32(struct mac_prv_data *pdata, u16 reg)
 {
-	u32 reg_val;
+	u32 reg_val, idx = 0;
 	void __iomem *xgmac_ctrl_reg  =
 		(void __iomem *)(pdata->ss_addr_base + pdata->xgmac_ctrl_reg);
 	void __iomem *xgmac_data0_reg =
@@ -769,10 +768,14 @@ static inline u32 XGMAC_IO_R32(struct mac_prv_data *pdata, u16 reg)
 
 	mac_w32((0x8000 | reg), xgmac_ctrl_reg);
 
-	while (1) {
+	do {
 		if ((mac_r32(xgmac_ctrl_reg) & 0x8000) == 0)
 			break;
-	}
+
+	} while (++idx <= MAX_RETRY);
+
+	if (idx >= MAX_RETRY)
+		pr_err(":::: Xgmac register read failed for Offset %x ::::\n",reg);
 
 	reg_val = ((mac_r32(xgmac_data1_reg) << 16) |
 		   (mac_r32(xgmac_data0_reg)));
@@ -783,6 +786,7 @@ static inline u32 XGMAC_IO_R32(struct mac_prv_data *pdata, u16 reg)
 static inline void XGMAC_IO_W32(struct mac_prv_data *pdata, u16 reg,
 				u32 val)
 {
+	u32 idx = 0;
 	void __iomem *xgmac_ctrl_reg  =
 		(void __iomem *)(pdata->ss_addr_base + pdata->xgmac_ctrl_reg);
 	void __iomem *xgmac_data0_reg =
@@ -794,10 +798,15 @@ static inline void XGMAC_IO_W32(struct mac_prv_data *pdata, u16 reg,
 	mac_w32((val & 0x0000FFFF), xgmac_data0_reg);
 	mac_w32((0xC000 | reg), xgmac_ctrl_reg);
 
-	while (1) {
+	do {
 		if ((mac_r32(xgmac_ctrl_reg) & 0x8000) == 0)
 			break;
-	}
+
+	} while (++idx <= MAX_RETRY);
+
+	if (idx >= MAX_RETRY)
+		pr_err(":::: Xgmac register write failed for Offset %x ::::\n",reg);
+
 }
 #else
 static inline u32 XGMAC_R32(struct mac_prv_data *pdata, u16 reg)
@@ -893,7 +902,9 @@ static inline u32 XGMAC_RGRD(struct mac_prv_data *pdata, u16 reg)
 	reg_val = XGMAC_R32(pdata, reg);
 #endif
 #ifdef __KERNEL__
+	spin_lock_bh(&pdata->rw_lock);
 	reg_val = XGMAC_IO_R32(pdata, reg);
+	spin_unlock_bh(&pdata->rw_lock);
 #endif
 
 	return reg_val;
@@ -908,7 +919,9 @@ static inline void XGMAC_RGWR(struct mac_prv_data *pdata, u16 reg, u32 val)
 	XGMAC_W32(pdata, reg, val);
 #endif
 #ifdef __KERNEL__
+	spin_lock_bh(&pdata->rw_lock);
 	XGMAC_IO_W32(pdata, reg, val);
+	spin_unlock_bh(&pdata->rw_lock);
 #endif
 }
 
@@ -992,6 +1005,7 @@ int xgmac_ptp_txtstamp_mode(void *pdev,
 			    u32 snaptypesel,
 			    u32 tsmstrena,
 			    u32 tsevntena);
+
 int xgmac_set_eee_mode(void *pdev, u32 val);
 int xgmac_set_eee_pls(void *pdev, u32 val);
 int xgmac_set_eee_timer(void *pdev, u32 twt, u32 lst);
