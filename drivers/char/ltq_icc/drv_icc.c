@@ -814,20 +814,20 @@ int __init icc_init_module (void){
 		goto finish;
 	}
 #endif
-	result=mps_open((struct inode *)1,NULL);
-	if(result<0){
+	result = mps_open((struct inode *)1, NULL);
+	if (result < 0) {
 		TRACE(ICC, DBG_LEVEL_HIGH, ("open MPS2 Failed\n"));
 		goto finish;
 	}
-	result=mps_register_callback(&pfn_icc_callback);
-	if(result<0){
+	result = mps_register_callback(&pfn_icc_callback);
+	if (result < 0) {
 		TRACE(ICC, DBG_LEVEL_HIGH, ("Data CallBack Register with MPS2 Failed\n"));
 		goto finish;
 	}
-/*Init structures if required*/
-   /* register char module in kernel */
 
-	result = icc_os_register()
+	/*Init structures if required*/
+	/* register char module in kernel */
+	result = icc_os_register();
 	if (result)
 		goto finish;
 #ifdef KTHREAD
