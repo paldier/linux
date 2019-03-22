@@ -81,6 +81,8 @@ struct bmgr_pool_params {
 	u32	base_addr_low;
 	//!< Base address of the pool (high)
 	u32	base_addr_high;
+	//!< Total number of pools
+	u32	num_pools;
 };
 
 /**************************************************************************

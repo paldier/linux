@@ -500,6 +500,24 @@ static s32 bmgr_wait_for_init_completion(void)
 	return RC_SUCCESS;
 }
 
+static int is_pow_2(int num)
+{
+	int pow;
+
+	if (num == 0)
+		return 0;
+
+	for (pow = 1; pow > 0; pow <<= 1)
+	{
+		if (pow == num)
+			return 1;
+		if (pow > num)
+			return 0;
+	}
+
+	return 0;
+}
+
 /**************************************************************************
  *! \fn	bmgr_is_pool_params_valid
  **************************************************************************
@@ -550,6 +568,13 @@ static s32 bmgr_is_pool_params_valid(
 	if (pool_params->group_id >= this->driver_db.max_groups) {
 		pr_err("bmgr_is_pool_params_valid: group_id %d must be smaller than %d\n",
 		       pool_params->group_id, this->driver_db.max_groups);
+		return -EINVAL;
+	}
+
+	if (pool_params->num_pools > PP_BMGR_MAX_POOLS ||
+	    !is_pow_2(pool_params->num_pools)) {
+		pr_err("bmgr_is_pool_params_valid: max_pools %d is not valid\n",
+		       pool_params->num_pools);
 		return -EINVAL;
 	}
 
@@ -1954,14 +1979,15 @@ s32 bmgr_pool_configure(const struct bmgr_pool_params * const pool_params,
 	if (status != RC_SUCCESS)
 		goto free_memory;
 
+	val = BMGR_DEFAULT_PCU_FIFO_SIZE;
+	val /= pool_params->num_pools;
 	status = bmgr_set_pcu_fifo_base_address(*pool_id,
 						BMGR_START_PCU_FIFO_SRAM_ADDR +
-						(*pool_id *
-						BMGR_DEFAULT_PCU_FIFO_SIZE));
+						(*pool_id * val));
 	if (status != RC_SUCCESS)
 		goto free_memory;
 
-	status = bmgr_set_pcu_fifo_size(*pool_id, BMGR_DEFAULT_PCU_FIFO_SIZE);
+	status = bmgr_set_pcu_fifo_size(*pool_id, val);
 	if (status != RC_SUCCESS)
 		goto free_memory;
 
@@ -1970,11 +1996,13 @@ s32 bmgr_pool_configure(const struct bmgr_pool_params * const pool_params,
 		goto free_memory;
 
 	val = BMGR_DEFAULT_PCU_FIFO_LOW_THRESHOLD;
+	val /= pool_params->num_pools;
 	status = bmgr_set_pcu_fifo_prog_empty(*pool_id, val);
 	if (status != RC_SUCCESS)
 		goto free_memory;
 
 	val = BMGR_DEFAULT_PCU_FIFO_HIGH_THRESHOLD;
+	val /= pool_params->num_pools;
 	status = bmgr_set_pcu_fifo_prog_full(*pool_id, val);
 	if (status != RC_SUCCESS)
 		goto free_memory;

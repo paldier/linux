@@ -88,6 +88,22 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 		return NULL;
 	}
 
+	pool_size = 0;
+	of_property_for_each_u32(node, "intel,bm-buff-num-a1", prop, p,
+				 buf_num) {
+		cqm_pdata->pool_ptrs_a1[cqm_pdata->num_pools_a1++] = buf_num;
+	}
+
+	of_property_for_each_u32(node, "intel,bm-buff-size-a1", prop, p,
+				 buf_num) {
+		cqm_pdata->pool_size_a1[pool_size++] = buf_num;
+	}
+
+	if (cqm_pdata->num_pools_a1 != pool_size) {
+		pr_err("buff num and buff size mismatch\n");
+		return NULL;
+	}
+
 	for_each_available_child_of_node(node, cpu_deq_port) {
 		if (of_property_count_u32_elems(cpu_deq_port, "intel,deq-port")
 						!= MAX_CPU_DQ_PORT_ARGS) {
@@ -195,9 +211,8 @@ static int cqm_platdev_parse_dts(void)
 	int i, dev_add = 0;
 
 	for (i = 0; i < CQM_NUM_DEV_SUPP; i++) {
-		if (!add_cqm_dev(i)) {
+		if (!add_cqm_dev(i))
 			dev_add++;
-		}
 	}
 	if (!dev_add)
 		pr_err("Not Even 1 CBM device registered\n");

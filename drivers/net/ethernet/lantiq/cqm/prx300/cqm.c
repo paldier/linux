@@ -3041,6 +3041,7 @@ static int bm_init(struct platform_device *pdev)
 		 */
 		p_params.base_addr_high = 0;
 		p_params.flags = POOL_ENABLE_FOR_MIN_GRNT_POLICY_CALC;
+		p_params.num_pools = cqm_ctrl->num_pools;
 		bmgr_pool_configure(&p_params, &i);
 	}
 
@@ -3645,13 +3646,30 @@ static int conf_bm(struct cqm_data *pdata)
 	memcpy(cqm_ctrl->prx300_pool_size, pdata->pool_size
 		, sizeof(cqm_ctrl->prx300_pool_size));
 	cqm_ctrl->num_pools = pdata->num_pools;
+
+	/*Handle A1*/
+	dev_dbg(cqm_ctrl->dev, "soc rev %d\n", ltq_get_soc_rev());
+	if (ltq_get_soc_rev() == 0) {
+		memcpy(cqm_ctrl->prx300_pool_ptrs, pdata->pool_ptrs_a1,
+		       sizeof(cqm_ctrl->prx300_pool_ptrs));
+		memcpy(cqm_ctrl->prx300_pool_size, pdata->pool_size_a1,
+		       sizeof(cqm_ctrl->prx300_pool_size));
+		cqm_ctrl->num_pools = pdata->num_pools_a1;
+	}
+
+	/* check prx300 pool and policy */
+	if (cqm_ctrl->num_pools > CQM_PRX300_NUM_BM_POOLS) {
+		pr_err("prx300 pools %u\n", cqm_ctrl->num_pools);
+		return CBM_FAILURE;
+	}
 	/* Pool Index loop*/
-	for (i = 0; i < pdata->num_pools; i++) {
+	for (i = 0; i < cqm_ctrl->num_pools; i++) {
 		/* Validate pool and policy */
-		if ((pdata->pool_ptrs[i] <= 0) ||
-		    (pdata->pool_size[i] <= 0)) {
+		if ((cqm_ctrl->prx300_pool_ptrs[i] <= 0) ||
+		    (cqm_ctrl->prx300_pool_size[i] <= 0)) {
 			pr_err("Idx %u 0x%x 0x%x\n"
-				, i, pdata->pool_ptrs[i], pdata->pool_ptrs[i]);
+				, i, cqm_ctrl->prx300_pool_ptrs[i],
+				cqm_ctrl->prx300_pool_size[i]);
 			return result;
 		}
 
@@ -3679,7 +3697,7 @@ static int conf_bm(struct cqm_data *pdata)
 		}
 
 		/* Config no of policy */
-		p_param[i].num_pools_in_policy = pdata->num_pools - i;
+		p_param[i].num_pools_in_policy = cqm_ctrl->num_pools - i;
 
 		/* group_id default value */
 		p_param[i].group_id = 0;
@@ -3915,12 +3933,6 @@ static int cqm_prx300_probe(struct platform_device *pdev)
 	cqm_ctrl->syscfg = pdata->syscfg;
 	cqm_ctrl->force_xpcs = pdata->force_xpcs;
 	cqm_ctrl->gint_mode = pdata->gint_mode;
-
-	/* check prx300 pool and policy */
-	if (pdata->num_pools > CQM_PRX300_NUM_BM_POOLS) {
-		pr_err("prx300 pools %u\n", pdata->num_pools);
-		return CBM_FAILURE;
-	}
 
 	if (conf_bm(pdata) != CBM_SUCCESS) {
 		pr_err("conf_BMpool_and_policy failed\n");

@@ -41,8 +41,11 @@ struct cqm_data {
 	struct regmap *syscfg;
 	bool force_xpcs;
 	int num_pools;
+	int num_pools_a1;
 	unsigned int pool_ptrs[MAX_NUM_POOLS];
 	unsigned int pool_size[MAX_NUM_POOLS];
+	unsigned int pool_ptrs_a1[MAX_NUM_POOLS];
+	unsigned int pool_size_a1[MAX_NUM_POOLS];
 	u32  dq_port[MAX_CPU_DQ_PORT_N_TYPE];
 	u32 num_dq_port;
 	u32 gsw_mode;
