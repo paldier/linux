@@ -15,6 +15,7 @@
 #include <linux/reset.h>
 #include <linux/regmap.h>
 #include <linux/mfd/syscon.h>
+#include <lantiq.h>
 
 #define XRX500_GPHY_NUM 5 /* phy2-5 + phyf */
 struct xrx500_reset_control {
@@ -86,6 +87,7 @@ static u32 xrx500_gphy[] = {
 /* GPHY CDB FCSI */
 #define PRX300_GPHY_CDB_FCSI_PLL_CFG1 0x0
 #define PRX300_GPHY_CDB_FCSI_PLL_CFG2 0x4
+#define PRX300_GPHY_CDB_FCSI_PLL_RCALSTAT 0x20
 #define PRX300_GPHY_CDB_FCSI_PLL_RCMSTAT 0x28
 #define PRX300_GPHY_CDB_FCSI_PLL_RCMCFG 0x2c
 /* GPHY CDB PDI */
@@ -195,10 +197,16 @@ static u32 prx300_gphy_config_rcal_rcm(struct xway_gphy_data *priv)
 	u32 val;
 	int retry;
 
-	/* get rcal from fused register (upper 4-bits) */
-	regmap_read(priv->chipid_syscfg, PRX300_FUSE_REDUND_1,
-		    &val);
-	val = val >> 28;
+	if (ltq_get_soc_rev() == 1) {
+		/* B-Step: get rcal from cdb register */
+		val = gsw_reg_r32(priv->fcsi_base,
+				  PRX300_GPHY_CDB_FCSI_PLL_RCALSTAT) & 0xF;
+	} else {
+		/* A-Step: get rcal from fused register (upper 4-bits) */
+		regmap_read(priv->chipid_syscfg, PRX300_FUSE_REDUND_1,
+			    &val);
+		val = val >> 28;
+	}
 
 	/* no fused values, simply use default settings */
 	if (!val)
