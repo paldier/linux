@@ -1190,7 +1190,12 @@ extern uint32_t (*ppa_is_ipv4_gretap_fn)(struct net_device *dev);
 
 static u32 ppa_is_ipv4_gretap(struct net_device *dev)
 {
-	return (dev && (dev->netdev_ops == (&gre_tap_netdev_ops)));
+	/* NOTE:
+	 * To include acelerated counters in gre_tap net_device stats,
+	 * gre_tap netdev_ops pointer (i.e., @gre_tap_netdev_ops) can be modified with a new one.
+	 * This is specifically to overload @ndo_get_stats64, but @ndo_init remains unchanged.
+	 */
+	return (dev && dev->netdev_ops && (dev->netdev_ops->ndo_init == gre_tap_netdev_ops.ndo_init));
 }
 #endif
 
