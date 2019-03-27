@@ -36,7 +36,7 @@
 #include <asm/uaccess.h>
 #include <linux/buffer_head.h>
 
-#include "drv_icc.h"
+#include <linux/icc/drv_icc.h>
 
 extern struct proc_dir_entry *proc_lokup_dir;
 struct proc_dir_entry *bootcore_proc_dir;

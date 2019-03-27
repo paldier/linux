@@ -55,7 +55,7 @@
 #include <asm/unistd.h>
 #include <asm/cacheflush.h>     // flush_cache_range
 /*icc header file*/
-#include "drv_icc.h"
+#include <linux/icc/drv_icc.h>
 /****************************Local definitions**************************/
 #define FIFO_GET_READ_PTR(index)  (ICC_BUFFER[index].fifo_read)
 #define FIFO_GET_WRITE_PTR(index) (ICC_BUFFER[index].fifo_write)

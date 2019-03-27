@@ -29,7 +29,7 @@
 #include <linux/module.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
-#include "drv_icc.h"
+#include <linux/icc/drv_icc.h>
 
 #ifdef CONFIG_PROC_FS
 #include <internal.h>

@@ -29,7 +29,7 @@
 #include <linux/module.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
-#include "drv_icc.h"
+#include <linux/icc/drv_icc.h>
 
 extern uint32_t BLOCK_MSG[MAX_CLIENT];
 extern void process_icc_message(unsigned int uiClientId);

@@ -26,7 +26,7 @@
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
-#include "drv_mps.h"
+#include <linux/icc/drv_mps.h>
 #include "drv_mps_dbg.h"
 #include "drv_mps_device.h"
 

@@ -60,7 +60,7 @@
 #include <grx500_bootcore_time.h>
 #include <grx500_bootcore_interrupt.h>
 #endif
-#include "drv_mps.h"
+#include <linux/icc/drv_mps.h>
 #include "drv_mps_dbg.h"
 #include "drv_mps_device.h"
 /* device structure */

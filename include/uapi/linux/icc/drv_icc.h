@@ -1,5 +1,5 @@
-#ifndef _DRV_ICC_H
-#define _DRV_ICC_H
+#ifndef _DRV_UAPI_ICC_H
+#define _DRV_UAPI_ICC_H
 /******************************************************************************
 
                               Copyright (c) 2012
@@ -14,9 +14,7 @@
    Description : This file contains the defines, the structures declarations
                  the tables declarations and the global functions declarations.
 *******************************************************************************/
-#include <linux/fs.h>
-#include "../ltq_mps2/drv_config.h"
-#include "../ltq_mps2/drv_mps.h"
+#include "drv_mps.h"
 /* ============================= */
 /* ICC Common defines            */
 /* ============================= */
@@ -115,4 +113,4 @@ int icc_init(void);
 int icc_raw_read (icc_msg_t * rw);
 int icc_write (icc_devices type, icc_msg_t * rw);
 #endif
-#endif /* _DRV_ICC_H */
+#endif /* _DRV_UAPI_ICC_H */

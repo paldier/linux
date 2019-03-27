@@ -61,8 +61,8 @@
 #include "../../../arch/mips/lantiq/grx500_bootcore/ngi_map.h"
 #endif /* SUPPORT_NGI_DRIVER */
 #ifdef SUPPORT_ICC_DRIVER
-#include "../ltq_mps2/drv_mps.h"
-#include "../ltq_icc/drv_icc.h"
+#include <linux/icc/drv_mps.h>
+#include <linux/icc/drv_icc.h>
 #endif /* SUPPORT_ICC_DRIVER */
 
 #include <linux/ltq_system_reset.h>
