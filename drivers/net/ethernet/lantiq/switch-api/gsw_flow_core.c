@@ -22981,7 +22981,7 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			}
 		} else {
 			/* disable Egress VLAN filtering - Range 1*/
-			tbl_prog_brdgeport_ingress.val[10] &= ~(1 << 14);
+			tbl_prog_brdgeport_egress.val[10] &= ~(1 << 14);
 
 			if (gswdev->brdgeportconfig_idx[param->nBridgePortId].EgressVlanFilter1Assigned) {
 				idx = gswdev->brdgeportconfig_idx[param->nBridgePortId].EgressVlanFilter1BlkId;
@@ -23112,7 +23112,7 @@ GSW_return_t GSW_BridgePortConfigSet(void *cdev, GSW_BRIDGE_portConfig_t *param)
 			}
 		} else {
 			/* disable Egress VLAN filtering - Range 2*/
-			tbl_prog_brdgeport_ingress.val[12] &= ~(1 << 14);
+			tbl_prog_brdgeport_egress.val[12] &= ~(1 << 14);
 
 			if (gswdev->brdgeportconfig_idx[param->nBridgePortId].EgressVlanFilter2Assigned) {
 				idx = gswdev->brdgeportconfig_idx[param->nBridgePortId].EgressVlanFilter2BlkId;
