@@ -103,7 +103,7 @@ struct ina2xx_config {
 };
 
 struct ina2xx_data {
-	const struct ina2xx_config *config;
+	struct ina2xx_config *config;
 
 	long rshunt;
 	long current_lsb_uA;
@@ -114,7 +114,7 @@ struct ina2xx_data {
 	const struct attribute_group *groups[INA2XX_MAX_ATTRIBUTE_GROUPS];
 };
 
-static const struct ina2xx_config ina2xx_config[] = {
+static struct ina2xx_config ina2xx_config[] = {
 	[ina219] = {
 		.config_default = INA219_CONFIG_DEFAULT,
 		.calibration_value = 4096,
@@ -468,6 +468,12 @@ static int ina2xx_probe(struct i2c_client *client,
 	}
 
 	ina2xx_set_shunt(data, val);
+
+	if (of_property_read_u32(dev->of_node, "config", &val) >= 0)
+		data->config->config_default = val;
+
+	if (of_property_read_u32(dev->of_node, "calibration", &val) >= 0)
+		data->config->calibration_value = val;
 
 	ina2xx_regmap_config.max_register = data->config->registers;
 
