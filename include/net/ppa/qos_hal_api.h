@@ -56,4 +56,14 @@ int qos_hal_remove_dp_egress_connectivity(
 int qos_hal_remove_dp_ingress_connectivity(
 		struct net_device *netdev,
 		uint32_t pmac_port);
+
+int32_t qos_mgr_set_mapped_queue(
+		struct net_device *netdev,
+		int32_t portid,
+		int32_t deq_idx,
+		uint32_t queue_id, /* Queue Id */
+		uint32_t dir, /* 0 - Egress 1 - Ingress */
+		uint32_t class, /* Traffic class */
+		int32_t flag);
+
 #endif  /*  __QOS_HAL_API_H*/
