@@ -501,7 +501,8 @@ static int dp_swdev_add_if(struct net_device *dev,
 			br_item->flags = flag;
 		} else {
 			br_item->flags = ADD_BRENTRY | flag;
-			if (dp_port_info[inst][port].swdev_en == 1) {
+			if (dp_port_info[br_item->inst]
+					[br_item->dp_port].swdev_en == 1) {
 				br_id = dp_port_prop[br_item->inst].info.
 					swdev_alloc_bridge_id(br_item->inst);
 				if (br_id) {
