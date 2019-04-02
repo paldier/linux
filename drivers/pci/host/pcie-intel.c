@@ -799,13 +799,6 @@ static int intel_pcie_wait_phy_link_up(struct intel_pcie_port *lpp)
 		return err;
 	}
 
-	/* Check Data link active or not */
-	if (!(pcie_rc_cfg_rd(lpp, PCIE_LCTLSTS)
-		& PCIE_LCTLSTS_DLL_ACTIVE)) {
-		dev_err(dev, "%s port %d DLL is not active\n",
-			__func__, lpp->id);
-		return -ETIMEDOUT;
-	}
 	return 0;
 }
 
@@ -868,14 +861,6 @@ static void intel_pcie_lane_and_width_setup(struct intel_pcie_port *lpp)
 	dev_dbg(dev, "PCIE_PLCR: 0x%08x\n", pcie_rc_cfg_rd(lpp, PCIE_PLCR));
 	dev_dbg(dev, "PCIE_LINK_WIDTH_SPEED_CONTROL: 0x%08x\n",
 		pcie_rc_cfg_rd(lpp, PCIE_LINK_WIDTH_SPEED_CONTROL));
-}
-
-static void intel_pcie_gen3_ctrl(struct intel_pcie_port *lpp)
-{
-	pcie_rc_cfg_wr_mask(lpp, 0, PCIE_RXEQ_ADAPT_EN, PCIE_GEN3_REL_CTRL);
-	dev_dbg(lpp->dev, "PCIE_GEN3_REL_CTRL addr %p val 0x%08x\n",
-		lpp->dbi_base + PCIE_GEN3_REL_CTRL,
-		pcie_rc_cfg_rd(lpp, PCIE_GEN3_REL_CTRL));
 }
 
 static void intel_pcie_rc_mode_setup(struct intel_pcie_port *lpp)
@@ -1072,7 +1057,6 @@ static void intel_pcie_rc_setup(struct intel_pcie_port *lpp)
 	if (lpp->max_speed >= PCIE_LINK_SPEED_GEN3) {
 		intel_pcie_rc_mode_setup(lpp);
 		intel_pcie_lane_and_width_setup(lpp);
-		intel_pcie_gen3_ctrl(lpp);
 	}
 	intel_pcie_upconfig_setup(lpp);
 	intel_pcie_bridge_class_code_setup(lpp);
