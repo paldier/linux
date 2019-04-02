@@ -2223,11 +2223,18 @@ static int set_child(struct pp_qos_dev *qdev,
 		QOS_BITS_SET(*modified, QOS_MODIFIED_BW_WEIGHT);
 	}
 
-	parent = get_node_from_phy(qdev->nodes, node->child_prop.parent_phy);
-	if ((parent->parent_prop.arbitration == PP_QOS_ARBITRATION_WSP) &&
-			(node->child_prop.priority != child->priority)) {
-		node->child_prop.priority = child->priority;
-		QOS_BITS_SET(*modified, QOS_MODIFIED_PRIORITY);
+	if (node->child_prop.priority != child->priority) {
+		if (QOS_PHY_VALID(node->child_prop.parent_phy)) {
+			parent = get_node_from_phy(qdev->nodes, 
+						   node->child_prop.parent_phy);
+			if (parent->parent_prop.arbitration ==
+			    PP_QOS_ARBITRATION_WSP) {
+				node->child_prop.priority = child->priority;
+				QOS_BITS_SET(*modified, QOS_MODIFIED_PRIORITY);
+			}
+		} else {
+			QOS_LOG_ERR("Trying to set priority, INVALID parent phy\n");
+		}
 	}
 
 	return 0;

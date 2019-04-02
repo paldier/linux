@@ -2718,7 +2718,7 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 	uint32_t *cur;
 	uint32_t *prev;
 	uint32_t *start;
-	size_t remain;
+	int remain;
 	uint32_t flags;
 	union driver_cmd dcmd;
 	struct cmd_internal	cmd_internal;
