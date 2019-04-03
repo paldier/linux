@@ -696,7 +696,7 @@ static int ltq_enable_gsw_r_pmac_jumbo(struct net_device *dev)
 	gsw_reg_set_bit(ops, 0xd05, 0x8);
 
 	/* Set the jumbo frame length threshold */
-	gsw_reg_set_val(ops, 0xd06, 1694);
+	gsw_reg_set_val(ops, 0xd06, 1662);
 
 	return 0;
 }
