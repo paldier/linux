@@ -16,18 +16,6 @@
 DECLARE_RWSEM(pci_bus_sem);
 EXPORT_SYMBOL_GPL(pci_bus_sem);
 
-static void pci_bus_lock(void)
-{
-	WARN_ON(in_interrupt());
-	down_read(&pci_bus_sem);
-}
-
-static void pci_bus_unlock(void)
-{
-	WARN_ON(in_interrupt());
-	up_read(&pci_bus_sem);
-}
-
 /*
  * pci_for_each_dma_alias - Iterate over DMA aliases for a device
  * @pdev: starting downstream device
@@ -182,6 +170,7 @@ struct pci_bus *pci_find_next_bus(const struct pci_bus *from)
 	up_read(&pci_bus_sem);
 	return b;
 }
+EXPORT_SYMBOL(pci_find_next_bus);
 
 /**
  * pci_get_slot - locate PCI device for a given PCI slot
