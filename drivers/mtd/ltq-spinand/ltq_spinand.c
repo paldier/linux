@@ -514,11 +514,13 @@ static int spinand_read_status(struct spi_device *spi, uint8_t *status)
 #define MAX_WAIT_MS  40
 static int wait_till_ready(struct spi_device *spi)
 {
-	unsigned long deadline;
 	int retval;
 	u8 stat = 0;
+#ifndef NOTIMEOUT
+	unsigned long deadline;
+#endif
 
-	#ifdef NOTIMEOUT
+#ifdef NOTIMEOUT
 
 	do {
 		retval = spinand_read_status(spi, &stat);
@@ -530,8 +532,7 @@ static int wait_till_ready(struct spi_device *spi)
 		cond_resched();
 	} while (1);
 
-
-	#else /* NOTIMEOUT */
+#else /* NOTIMEOUT */
 
 	deadline = jiffies + msecs_to_jiffies(MAX_WAIT_MS);
 	do {
@@ -544,7 +545,7 @@ static int wait_till_ready(struct spi_device *spi)
 		cond_resched();
 	} while (!time_after_eq(jiffies, deadline));
 
-	#endif /* NOTIMEOUT */
+#endif /* NOTIMEOUT */
 
 	if ((stat & 0x1) == 0)
 		return 0;
