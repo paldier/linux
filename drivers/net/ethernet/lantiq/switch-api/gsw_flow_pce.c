@@ -12,6 +12,7 @@
 
 
 #include <gsw_init.h>
+#include <gsw_swmcast.h>
 
 #define PCE_MC_M3(val, msk, ns, out, len, type, flags, ipv4_len) \
 	{ val, msk, (ns << 8 | out << 0),\
@@ -4176,9 +4177,12 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				}
 
 				//If CPU type set to 'MC router' portmap MUX control.
-				if (paction->ePortMapAction == GSW_PCE_ACTION_PORTMAP_CPU) {
+				if ((paction->ePortMapAction == GSW_PCE_ACTION_PORTMAP_CPU) &&
+					((IS_VRSN_BELOW_31(gswdev->gipver)) ||
+					(gswdev->mcsthw_snoop == MCAST_HWSNOOP_EN))) {
+					/*Applicable for 3.0 and when multicast hardware enabled */
 					ptbl.val[4] &= ~(0x3 << 2);
-					ptbl.val[4] |= (0x1 << 2); //Govind - why CPU type to MC router?
+					ptbl.val[4] |= (0x1 << 2); /* set to 'MC router' portmap MUX control */
 				}
 
 				break;

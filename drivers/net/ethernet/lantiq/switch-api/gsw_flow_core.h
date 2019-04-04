@@ -184,6 +184,13 @@ Where as CLEAR_FILL_CTRL_REG takes care of clear then fill.
 
 #define IS_VRSN_NOT_31(ver) \
 	((ver != LTQ_GSWIP_3_1))
+
+/* Features compared with less than 3.1 GSWIP versions */
+#define IS_VRSN_BELOW_31(ver) \
+    ((ver == LTQ_GSWIP_3_0) || (ver == LTQ_GSWIP_2_2_ETC) \
+    || (ver == LTQ_GSWIP_2_2) || (ver == LTQ_GSWIP_2_1) \
+    || (ver == LTQ_GSWIP_2_0))
+
 #define GSW_BRIDGE_PORT_SRC_IP_LOOKUP_DISABLE 1
 
 /*PHY Reg 0x4 */
