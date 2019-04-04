@@ -1,7 +1,7 @@
 /*
  * GPL LICENSE SUMMARY
  *
- *  Copyright(c) 2017 Intel Corporation.
+ *  Copyright(c) 2017-2019 Intel Corporation.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of version 2 of the GNU General Public License as
@@ -529,6 +529,7 @@ enum uc_qos_command {
 	UC_QOS_COMMAND_UPDATE_PORT_TREE,
 };
 
+#define UC_MAX_PARAMS	(30)
 /**************************************************************************
  *! @struct	uc_qos_cmd_s
  **************************************************************************
@@ -554,32 +555,7 @@ struct uc_qos_cmd_s {
 	/* must be synced between the host and uc! */
 	u32			num_params;
 
-	u32			param0;
-	u32			param1;
-	u32			param2;
-	u32			param3;
-	u32			param4;
-	u32			param5;
-	u32			param6;
-	u32			param7;
-	u32			param8;
-	u32			param9;
-	u32			param10;
-	u32			param11;
-	u32			param12;
-	u32			param13;
-	u32			param14;
-	u32			param15;
-	u32			param16;
-	u32			param17;
-	u32			param18;
-	u32			param19;
-	u32			param20;
-	u32			param21;
-	u32			param22;
-	u32			param23;
-	u32			param24;
-	u32			param25;
+	u32			param[UC_MAX_PARAMS];
 };
 
 #endif /* SRC_UC_HOST_DEFS_H_ */

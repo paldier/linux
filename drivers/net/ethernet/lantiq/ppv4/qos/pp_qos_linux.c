@@ -1,7 +1,7 @@
 /*
  * GPL LICENSE SUMMARY
  *
- *  Copyright(c) 2017 Intel Corporation.
+ *  Copyright(c) 2017-2019 Intel Corporation.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of version 2 of the GNU General Public License as
@@ -47,9 +47,8 @@
  */
 struct device *cur_dev;
 
-#define PPV4_QOS_CMD_BUF_SIZE (0x4000)
-#define PPV4_QOS_CMD_BUF_OFFSET (0x4000U)
-#define MAX_CMD_SIZE 200
+#define PPV4_QOS_CMD_BUF_SIZE	(0x1000)
+#define PPV4_QOS_CMD_BUF_OFFSET	(0x4000U)
 
 void stop_run(void)
 {

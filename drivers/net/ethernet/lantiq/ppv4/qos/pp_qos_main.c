@@ -1,7 +1,7 @@
 /*
  * GPL LICENSE SUMMARY
  *
- *  Copyright(c) 2017 Intel Corporation.
+ *  Copyright(c) 2017-2019 Intel Corporation.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of version 2 of the GNU General Public License as
@@ -38,10 +38,13 @@ void update_cmd_id(struct driver_cmds *drvcmds)
 	drvcmds->cmd_fw_id = 0;
 }
 
+int is_ongoing(struct pp_qos_dev *qdev);
+
 void transmit_cmds(struct pp_qos_dev *qdev)
 {
-
-	while (!cmd_queue_is_empty(qdev->drvcmds.cmdq)) {
+	/* Handle commands in case there are commands in queue or in case
+	   ports were suspended and need to be resumed again */
+	while (!cmd_queue_is_empty(qdev->drvcmds.cmdq) || (is_ongoing(qdev))) {
 		enqueue_cmds(qdev);
 		check_completion(qdev);
 	}
