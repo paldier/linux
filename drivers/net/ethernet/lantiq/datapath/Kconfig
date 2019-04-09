@@ -12,6 +12,7 @@ menuconfig LTQ_DATAPATH
 	  Take note: All devices need to register to datapath Lib first
 
 if LTQ_DATAPATH
+
 config LTQ_DATAPATH_ACA_CSUM_WORKAROUND
 	bool "ACA Checksum Workaround"
 	default n
@@ -142,6 +143,86 @@ config LTQ_DATAPATH_CPUFREQ
 	default n
 	---help---
 	  It is to support DFS(COC) in Datapath
+
+config INTEL_DATAPATH
+	bool
+	depends on LTQ_DATAPATH
+	default y
+
+config INTEL_DATAPATH_ACA_CSUM_WORKAROUND
+	bool
+	default y
+	depends on SOC_GRX500 && INTEL_DATAPATH && LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+
+config INTEL_DATAPATH_MANUAL_PARSE
+	bool
+	default y
+	depends on INTEL_DATAPATH && LTQ_DATAPATH_MANUAL_PARSE
+
+config INTEL_DATAPATH_COPY_LINEAR_BUF_ONLY
+	bool
+	default y
+	depends on INTEL_DATAPATH && LTQ_DATAPATH_COPY_LINEAR_BUF_ONLY
+
+config INTEL_DATAPATH_DBG
+	bool
+	default y
+	depends on INTEL_DATAPATH && LTQ_DATAPATH_DBG
+
+config INTEL_DATAPATH_DBG_PROTOCOL_PARSE
+	bool
+	default y
+	depends on INTEL_DATAPATH_DBG && LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+
+config INTEL_DATAPATH_EXTRA_DEBUG
+	bool
+	default y
+	depends on  INTEL_DATAPATH_DBG && LTQ_DATAPATH_EXTRA_DEBUG
+
+config INTEL_DATAPATH_SWDEV_TEST
+	bool
+	default y
+	depends on  INTEL_DATAPATH_DBG && INTEL_DATAPATH_SWITCHDEV && LTQ_DATAPATH_SWDEV_TEST
+
+config INTEL_DATAPATH_SKB
+	bool
+	default y
+	depends on  INTEL_DATAPATH && LTQ_DATAPATH_SKB
+
+config INTEL_DATAPATH_MPE_FASTHOOK_TEST
+	bool
+	default y
+	depends on  INTEL_DATAPATH_SKB && LTQ_DATAPATH_MPE_FASTHOOK_TEST
+
+config INTEL_DATAPATH_ETH_OAM
+	bool
+	default y
+	depends on  INTEL_DATAPATH_SKB && LTQ_DATAPATH_ETH_OAM
+
+config INTEL_DATAPATH_SWITCHDEV
+	bool
+	default y
+	depends on  INTEL_DATAPATH && LTQ_DATAPATH_SWITCHDEV
+
+config INTEL_DATAPATH_PTP1588
+	bool
+	default y
+	depends on  INTEL_DATAPATH && LTQ_DATAPATH_PTP1588
+
+config INTEL_DATAPATH_PTP1588_SW_WORKAROUND
+	bool
+	default y
+        depends on  INTEL_DATAPATH && INTEL_DATAPATH_PTP1588 && LTQ_DATAPATH_PTP1588_SW_WORKAROUND
+
+config INTEL_DATAPATH_DDR_SIMULATE_GSWIP31
+	bool
+	default y
+	depends on INTEL_DATAPATH && LTQ_DATAPATH_DDR_SIMULATE_GSWIP31
+
+config INTEL_DATAPATH_CPUFREQ
+	bool
+	default y
+	depends on INTEL_DATAPATH && CPU_FREQ && LTQ_DATAPATH_CPUFREQ
 
 source "drivers/net/ethernet/lantiq/datapath/gswip31/Kconfig"
 source "drivers/net/ethernet/lantiq/datapath/gswip30/Kconfig"

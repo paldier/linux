@@ -543,6 +543,13 @@ struct cbm_dp_alloc_data {
 	u32 tx_ring_addr;  /*port ring address. should follow HW defintion*/
 	u32 tx_ring_size; /*ring size */
 	u32 tx_ring_offset;  /*next tx_ring_addr = current tx_ring_addr + tx_ring_offset */
+	void *tx_ring_addr_txpush; /* port ring physical base address/TXIN address  
+				    *  to configured to QOS TX Push register.
+	                            *  In falcon_mx, it needs to left
+				    *  shift some bits.
+				    *  In LGM,  ???
+				    */
+
 	u32 num_dma_chan;
 };
 

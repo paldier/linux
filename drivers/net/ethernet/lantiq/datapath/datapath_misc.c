@@ -14,22 +14,23 @@
 #include <linux/types.h>
 #include <linux/version.h>
 #include <linux/if_ether.h>
+#include <linux/netdevice.h>
+#include <linux/inetdevice.h>
+#include <linux/if_vlan.h>
+
 #include <linux/ethtool.h>
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/clk.h>
-#include <linux/if_ether.h>
-#include <linux/if_vlan.h>
 #include <linux/clk.h>
 #include <linux/ip.h>
 #include <net/ip.h>
-#include <lantiq_soc.h>
 #include <net/datapath_api.h>
 #include "datapath.h"
-#include <net/lantiq_cbm_api.h>
-#if IS_ENABLED(CONFIG_LTQ_PPA_API_SW_FASTPATH)
-#include <net/ppa_api.h>
+#if IS_ENABLED(CONFIG_PPA_API_SW_FASTPATH) || \
+	IS_ENABLED(CONFIG_LTQ_PPA_API_SW_FASTPATH)
+#include <net/ppa/ppa_api.h>
 #endif
 
 #if defined(CONFIG_LTQ_HWMCPY) && CONFIG_LTQ_HWMCPY
@@ -41,7 +42,7 @@
 #define dp_memcpy(x, y, z)   memcpy(x, y, z)
 #endif
 
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#ifdef CONFIG_INTEL_DATAPATH_CPUFREQ
 #include <linux/cpufreq.h>
 static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
 					      unsigned long event, void *data);
@@ -153,7 +154,7 @@ void dump_parser_flag(char *buf)
 	 * flags: FLAG_L2TPFLAG_NO
 	 * 00 00 00 00 80 18 80 00
 	 */
-	PR_INFO("paser flag at 0x%p: ", buf);
+	PR_INFO("paser flag at 0x%px: ", buf);
 	len = 0;
 	for (i = 0; i < 8; i++)
 		len += sprintf(p + len, "%02x ", *(pflags - 7 + i));
@@ -205,7 +206,7 @@ void dp_dump_raw_data(char *buf, int len, char *prefix_str)
 		PR_ERR("kmalloc failed: %d\n", bytes);
 		return;
 	}
-	sprintf(s, "%s in hex at 0x%p\n",
+	sprintf(s, "%s in hex at 0x%px\n",
 		prefix_str ? (char *)prefix_str : "Data", p);
 	PR_INFO("%s", s);
 
@@ -268,7 +269,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 
 	if (info->ip_ver == DP_IP_VER4) {	/*ipv4 */
 		ip_hdr_size = (p[0] & 0xf) << 2;
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 		DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 			 "IPV4 pkt with protocol 0x%x with ip hdr size %d\n",
 			 p[9], ip_hdr_size);
@@ -279,7 +280,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 		    (info->proto == PROTOCOL_TCP)) {
 			if ((iphdr->frag_off & IP_MF) ||
 			    (iphdr->frag_off & IP_OFFSET)) {
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 				DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 					 "frag pkt:off=%x,IP_MF=%x,IP_OFFSET=%x\n",
 					 iphdr->frag_off, IP_MF, IP_OFFSET);
@@ -288,7 +289,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 				info->is_fragment = 1;
 				return -1;
 			}
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 			DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 				 "%s packet with src/dst port:%u/%u\n",
 				 (p[9] ==
@@ -306,7 +307,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 			info->next_ip_hdr_offset = (p[0] & 0x0f) << 2;
 			return 0;
 		}
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 		DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 			 "Not supported extension hdr:0x%x\n", p[9]);
 #endif
@@ -320,7 +321,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 		ip_hdr_size = IPV6_HDR_SIZE;
 		udp_tcp_h_offset = IPV6_HDR_SIZE;
 		next_hdr = p[6];
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 		if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX) {
 			int i;
 
@@ -352,7 +353,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 					    IPV6_EXTENSION_SIZE + p[1];
 
 				info->udp_tcp_offset = udp_tcp_h_offset;
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 				DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 					 "IP6 UDP:src/dst port:%u/%u udp_tcp_off=%d\n",
 					 *(unsigned short *)(pdata +
@@ -375,7 +376,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 				info->is_fragment = 1;
 				return -1;
 			}
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 			DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 				 "Skip extension hdr:0x%x\n", next_hdr);
 #endif
@@ -395,7 +396,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 			}
 			next_hdr = p[0];
 			if (udp_tcp_h_offset > len) {
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 				DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 					 "\n- Wrong IPV6 packet header ?\n");
 #endif
@@ -408,7 +409,7 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 	return -1;
 }
 
-#ifdef CONFIG_LTQ_DATAPATH_MANUAL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_MANUAL_PARSE)
 int ip_offset_hw_adjust = 8;
 
 /*parse protol and get the ip_offset/tcp_h_offset and its type:
@@ -422,7 +423,7 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 	u8 *p = p_l2_mac + TWO_MAC_SIZE;
 	struct ip_hdr_info pkt_info[2];
 	u8 ip_num = 0;
-#ifdef CONFIG_LTQ_DATAPATH_DBG
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	int i;
 #endif
 	int len;
@@ -433,7 +434,7 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 	*ip_offset = 0;
 	*tcp_h_offset = 0;
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (dp_dbg_flag)
 		DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 			 "flags DP_TX_CAL_CHKSUM is set\n");
@@ -445,14 +446,14 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 	if ((p[0] == 0x88) && (p[1] == 0x64))	/*skip pppoe header */
 		p += PPPOE_HDR_SIZE;
 
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 	DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 		 "To find ip header:%02x %02x %02x %02x %02x %02x %02x %02x\n",
 		 p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
 #endif
 	if (((p[0] != 0x08) || (p[1] != 0x00)) &&
 	    ((p[0] != 0x86) && (p[1] != 0xdd))) {
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "None IP type:%02x%02x\n", p[0],
 			 p[1]);
 #endif
@@ -463,7 +464,8 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 
 	while (1) {
 		if (get_ip_hdr_info(p, len, &pkt_info[ip_num]) == 0) {
-			pkt_info[ip_num].ip_offset = (u32)p - (u32)p_l2_mac;
+			pkt_info[ip_num].ip_offset = (uintptr_t)p -
+				(unsigned long)p_l2_mac;
 
 			if (pkt_info[ip_num].next_ip_hdr_offset) {
 				p += pkt_info[ip_num].next_ip_hdr_offset;
@@ -490,7 +492,7 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 			return -1;
 		}
 	}
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX) {
 		for (i = 0; i < ip_num; i++) {
 			DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
@@ -630,7 +632,7 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 
 	return -1;
 }
-#else	/* CONFIG_LTQ_DATAPATH_MANUAL_PARSE */
+#else	/* CONFIG_INTEL_DATAPATH_MANUAL_PARSE */
 /*parse protol and get the ip_offset/tcp_h_offset and its type
  * based on skb_inner_network_header/skb_network_header/
  *           skb_inner_transport_header/skb_transport_header
@@ -648,7 +650,7 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 	unsigned char *l4_p;
 
 	if (skb->ip_summed != CHECKSUM_PARTIAL) {
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 		DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
 			 "No need HW checksum Support\n");
 #endif
@@ -672,7 +674,7 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 		l4_p = skb_transport_header(skb);
 	}
 	if (((int)(ip_offset) <= 0) || ((int)(tcp_h_offset) <= 0)) {
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 		DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
 			 "Wrong IP offset(%d) or TCP/UDP offset(%d)\n",
 			 ((int)(ip_offset) <= 0), ((int)(tcp_h_offset) <= 0));
@@ -703,13 +705,13 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 		tcph = (struct tcphdr *)l4_p;
 		tcph->check = 0;	/*clear original UDP checksum */
 	}
-#ifdef CONFIG_LTQ_DATAPATH_DBG_PROTOCOL_PARSE
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG_PROTOCOL_PARSE)
 	DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM, "Found tcp_type=%u ip_offset=%u\n",
 		 *tcp_type, *ip_offset);
 #endif
 	return 0;
 }
-#endif				/* CONFIG_LTQ_DATAPATH_MANUAL_PARSE */
+#endif				/* CONFIG_INTEL_DATAPATH_MANUAL_PARSE */
 
 /*  Make a copy of both an &sk_buff and part of its data, located
  * in header. Fragmented data remain shared. This is used since
@@ -724,7 +726,7 @@ int get_offset_clear_chksum(struct sk_buff *skb, u32 *ip_offset,
 struct sk_buff *dp_create_new_skb(struct sk_buff *skb)
 {
 	struct sk_buff *new_skb;
-#ifndef CONFIG_LTQ_DATAPATH_COPY_LINEAR_BUF_ONLY
+#ifndef CONFIG_INTEL_DATAPATH_COPY_LINEAR_BUF_ONLY
 	/* seems CBM driver does not support it yet */
 	void *p;
 	const skb_frag_t *frag;
@@ -746,7 +748,7 @@ struct sk_buff *dp_create_new_skb(struct sk_buff *skb)
 		dev_kfree_skb_any(skb);
 		return NULL;
 	}
-#ifndef CONFIG_LTQ_DATAPATH_COPY_LINEAR_BUF_ONLY
+#ifndef CONFIG_INTEL_DATAPATH_COPY_LINEAR_BUF_ONLY
 	new_skb = cbm_alloc_skb(skb->len + 8, GFP_ATOMIC);
 #else
 	linear_len = skb->len - skb->data_len;
@@ -759,7 +761,7 @@ struct sk_buff *dp_create_new_skb(struct sk_buff *skb)
 		dev_kfree_skb_any(skb);
 		return NULL;
 	}
-#ifndef CONFIG_LTQ_DATAPATH_COPY_LINEAR_BUF_ONLY
+#ifndef CONFIG_INTEL_DATAPATH_COPY_LINEAR_BUF_ONLY
 	p = new_skb->data;
 	dp_memcpy(p, skb->data, skb->len - skb->data_len);
 	p += skb->len - skb->data_len;
@@ -796,10 +798,12 @@ struct sk_buff *dp_create_new_skb(struct sk_buff *skb)
 	new_skb->dev = skb->dev;
 	new_skb->priority = skb->priority;
 	new_skb->truesize += skb->data_len;
+#ifdef DATAPATH_SKB_HACK
 	new_skb->DW0 = skb->DW0;
 	new_skb->DW1 = skb->DW1;
 	new_skb->DW2 = skb->DW2;
 	new_skb->DW3 = skb->DW3;
+#endif
 
 	/*copy other necessary fields for checksum calculation case */
 	new_skb->ip_summed = skb->ip_summed;
@@ -1048,6 +1052,7 @@ int high_10dec(u64 x)
 
 int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo)
 {
+#if IS_ENABLED(CONFIG_VLAN_8021Q)
 	struct vlan_dev_priv *vlan;
 	struct net_device *lower_dev;
 	struct list_head *iter;
@@ -1055,8 +1060,7 @@ int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo)
 
 	if (is_vlan_dev(dev)) {
 		num++;
-		vlan = vlan_dev_priv(dev);
-
+		vlan = dp_vlan_dev_priv((const struct net_device *)dev);
 		DP_DEBUG(DP_DBG_FLAG_DBG,
 			 "vlan proto:%x VID:%d real devname:%s\n",
 			 vlan->vlan_proto, vlan->vlan_id,
@@ -1066,7 +1070,7 @@ int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo)
 				num++;
 				vinfo->in_proto = vlan->vlan_proto;
 				vinfo->in_vid = vlan->vlan_id;
-				vlan = vlan_dev_priv(lower_dev);
+				vlan = dp_vlan_dev_priv(lower_dev);
 				DP_DEBUG(DP_DBG_FLAG_DBG,
 					 "%s:%x VID:%d %s:%s\n",
 					 "Outer vlan proto",
@@ -1087,6 +1091,7 @@ int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo)
 		PR_ERR("Not a VLAN device\n");
 		return -1;
 	}
+#endif
 	return 0;
 }
 
@@ -1186,7 +1191,7 @@ int dp_meter_del(struct net_device *dev, struct dp_meter_cfg *meter,
 }
 EXPORT_SYMBOL(dp_meter_del);
 
-#if (!IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV))
+#if (!IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV))
 int dp_get_fid_by_brname(struct net_device *dev, int *inst)
 {
 	PR_ERR("API not support when SWDEV disabled\n");
@@ -1314,7 +1319,7 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
 	if (flags & DP_F_DEREGISTER) {
-
+		/* subif info not required for data->ctp_dev */
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data, NULL,
 					      &subif_id[0], 0))
 			*f_subif_up = 0;
@@ -1376,7 +1381,7 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 	return 0;
 }
 
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#ifdef CONFIG_INTEL_DATAPATH_CPUFREQ
 static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 					  unsigned long event, void *data)
 {
@@ -1472,8 +1477,8 @@ u32 get_dma_chan_idx(int inst, int num_dma_chan)
 	}
 
 	for (base = 0; base < DP_MAX_DMA_CHAN; base++) {
-		for (match = 0; (match < num_dma_chan) && ((base + match)
-						< DP_MAX_DMA_CHAN); match++) {
+		for (match = 0; (match < num_dma_chan) &&
+		     ((base + match) < DP_MAX_DMA_CHAN); match++) {
 			if (atomic_read(&(dp_dma_chan_tbl[inst] +
 					(base + match))->ref_cnt))
 				break;
@@ -1481,7 +1486,7 @@ u32 get_dma_chan_idx(int inst, int num_dma_chan)
 		if (match == num_dma_chan)
 			return base;
 	}
-	PR_ERR("No free chan available from chan table!!\n");
+	DP_ERR("No free chan available from chan table!!\n");
 	return DP_FAILURE;
 }
 
@@ -1493,12 +1498,54 @@ u32 get_dma_chan_idx(int inst, int num_dma_chan)
 u32 alloc_dma_chan_tbl(int inst)
 {
 	dp_dma_chan_tbl[inst] = kzalloc((sizeof(struct dma_chan_info) *
-					DP_MAX_DMA_CHAN), GFP_KERNEL);
+					DP_MAX_DMA_CHAN), GFP_ATOMIC);
 
 	if (!dp_dma_chan_tbl[inst]) {
 		PR_ERR("Failed for kmalloc: %zu bytes\n",
 		       (sizeof(struct dma_chan_info) * DP_MAX_DMA_CHAN));
 		return DP_FAILURE;
+	}
+	return DP_SUCCESS;
+}
+
+/**
+ * alloc_dp_port_info: Dynamic allocation of alloc_dp_port_info.
+ * @inst: DP instance.
+ * Return: DP_SUCCESS on success DP_FAILURE on failure.
+ */
+u32 alloc_dp_port_subif_info(int inst)
+{
+	int port_id;
+	int max_dp_ports;	/* max dp ports */
+	int max_subif;		/* max subif per port */
+	struct inst_info *info = NULL;
+
+	if (inst < 0 || inst >= DP_MAX_INST)
+		return DP_FAILURE;
+
+	/* Retrieve the hw capabilities */
+	info = &dp_port_prop[inst].info;
+	max_dp_ports = info->cap.max_num_dp_ports;
+	max_subif = info->cap.max_num_subif_per_port;
+
+	dp_port_info[inst] = kzalloc((sizeof(struct pmac_port_info) *
+				     max_dp_ports), GFP_KERNEL);
+	if (!dp_port_info[inst]) {
+		PR_ERR("Failed for kmalloc: %zu bytes\n",
+		       (sizeof(struct pmac_port_info) * max_dp_ports));
+		return DP_FAILURE;
+	}
+	for (port_id = 0; port_id < max_dp_ports; port_id++) {
+		dp_port_info[inst][port_id].subif_info =
+			kzalloc(sizeof(struct dp_subif_info) * max_subif,
+				GFP_KERNEL);
+		if (!dp_port_info[inst][port_id].subif_info) {
+			PR_ERR("Failed for kmalloc: %zu bytes\n",
+			       max_subif * sizeof(struct dp_subif_info));
+			while (--port_id >= 0)
+				kfree(dp_port_info[inst][port_id].subif_info);
+			return DP_FAILURE;
+		}
 	}
 	return DP_SUCCESS;
 }
@@ -1511,4 +1558,28 @@ void free_dma_chan_tbl(int inst)
 {
 	/* free dma chan tbl */
 	kfree(dp_dma_chan_tbl[inst]);
+}
+
+/**
+ * free_dp_port_subif_info: free port subif info.
+ * @inst: DP instance.
+ */
+void free_dp_port_subif_info(int inst)
+{
+	int port_id;
+	int max_dp_ports;
+	struct pmac_port_info *port_info;
+	struct inst_info *info = NULL;
+
+	/* Retrieve the hw capabilities */
+	info = &dp_port_prop[inst].info;
+	max_dp_ports = info->cap.max_num_dp_ports;
+
+	if (dp_port_info[inst]) {
+		for (port_id = 0; port_id < max_dp_ports; port_id++) {
+			port_info = &dp_port_info[inst][port_id];
+			kfree(port_info->subif_info);
+		}
+		kfree(dp_port_info[inst]);
+	}
 }

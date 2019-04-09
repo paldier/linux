@@ -22,10 +22,7 @@
 #include <linux/clk.h>
 #include <linux/ip.h>
 #include <net/ip.h>
-#include <lantiq_soc.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
-#include <net/datapath_api_skb.h>
 #include "datapath.h"
 #include "datapath_instance.h"
 #include "datapath_swdev_api.h"
@@ -65,7 +62,7 @@ int register_dp_hw_cap(struct dp_hw_cap *info, u32 flag)
 		hw_cap_list[i].valid = 1;
 		hw_cap_list[i].info = info->info;
 		dp_cap_num++;
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 		PR_ERR("Succeed to %s HAL[%d]: type=%d ver=%d dp_cap_num=%d\n",
 		       "Register",
 		       i,
@@ -88,7 +85,7 @@ int register_dp_hw_cap(struct dp_hw_cap *info, u32 flag)
  */
 int dp_request_inst(struct dp_inst_info *info, u32 flag)
 {
-	int i, k;
+	int i, k, j;
 
 	if (!info)
 		return -1;
@@ -130,9 +127,12 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	}
 	dp_port_prop[i].ops[0] = info->ops[0];
 	dp_port_prop[i].ops[1] = info->ops[1];
-	dp_port_prop[i].mac_ops[2] = info->mac_ops[2];
-	dp_port_prop[i].mac_ops[3] = info->mac_ops[3];
-	dp_port_prop[i].mac_ops[4] = info->mac_ops[4];
+
+	for(j = 0; j < DP_MAX_MAC_HANDLE; j++) {
+		if (info->mac_ops[j])
+			dp_port_prop[i].mac_ops[j] = info->mac_ops[j];
+	}
+	
 	dp_port_prop[i].info = hw_cap_list[k].info;
 	dp_port_prop[i].cbm_inst = info->cbm_inst;
 	dp_port_prop[i].qos_inst = info->qos_inst;
@@ -141,6 +141,10 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	dp_cpufreq_notify_init(i);
 	DP_DEBUG(DP_DBG_FLAG_COC, "DP registered CPUFREQ notifier\n");
 #endif
+	if (alloc_dp_port_subif_info(i)) {
+		PR_ERR("alloc_dp_port_subif_info fail..\n");
+		return DP_FAILURE;
+	}
 	if (dp_port_prop[i].info.dp_platform_set(i, DP_PLATFORM_INIT) < 0) {
 		dp_port_prop[i].valid = 0;
 		PR_ERR("dp_platform_init failed for inst=%d\n", i);
@@ -204,6 +208,8 @@ struct dp_dev *dp_dev_lookup(struct hlist_head *head,
 	return NULL;
 }
 
+#if IS_ENABLED(CONFIG_PPA)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,13,0)
 static int dp_ndo_setup_tc(struct net_device *dev, u32 handle,
 			   __be16 protocol, struct tc_to_netdev *tc)
 {
@@ -216,6 +222,15 @@ static int dp_ndo_setup_tc(struct net_device *dev, u32 handle,
 	PR_ERR("Cannot support ndo_setup_tc\n");
 	return -1;
 }
+#else
+static int dp_ndo_setup_tc(struct net_device *dev,
+				enum tc_setup_type type,
+				void *type_data)
+{
+	return -1;
+}
+#endif /* LINUX_VERSION_CODE */
+#endif /* CONFIG_PPA */
 
 /*Note:
  *dev and subif_name: only one will be used for the hash index calculation.
@@ -230,8 +245,9 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 	u8 new_f = 0;
 	u32 idx;
 	struct subif_basic *subif;
+#if IS_ENABLED(CONFIG_PPA)
 	int err = DP_SUCCESS;
-
+#endif
 	if (!dev && !subif_name) {
 		PR_ERR("Why dev/subif_name both NULL?\n");
 		return -1;
@@ -239,7 +255,7 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 	idx = dp_dev_hash(dev, subif_name);
 	subif = kmalloc(sizeof(*subif), GFP_KERNEL);
 	if (!subif) {
-		PR_ERR("failed to alloc %d bytes\n", sizeof(*subif));
+		PR_ERR("failed to alloc %zd bytes\n", sizeof(*subif));
 		return -1;
 	}
 
@@ -266,7 +282,7 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 		}
 	}
 	if (!dp_dev) {
-		PR_ERR("Failed to kmalloc %d bytes\n", sizeof(*dp_dev));
+		PR_ERR("Failed to kmalloc %zd bytes\n", sizeof(*dp_dev));
 		kfree(subif);
 		return -1;
 	}
@@ -296,11 +312,11 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 				return DP_FAILURE;
 		}
 #endif
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	if (!(flag & DP_F_SUBIF_LOGICAL))
 		dp_port_register_switchdev(dp_dev, dev);
 #endif
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	dp_register_ptp_ioctl(dp_dev, dev, inst);
 #endif
 	}
@@ -409,7 +425,7 @@ int dp_inst_insert_mod(struct module *owner, u16 ep, u32 inst, u32 flag)
 		}
 	}
 	if (!dp_mod) {
-		PR_ERR("Failed to kmalloc %d bytes\n", sizeof(*dp_mod));
+		PR_ERR("Failed to kmalloc %zd bytes\n", sizeof(*dp_mod));
 		return -1;
 	}
 	if (new_f)
@@ -494,7 +510,7 @@ int proc_inst_dev_dump(struct seq_file *s, int pos)
 			&dp_dev_list[dev_hash_index])->first,
 			struct dp_dev, hlist);
 	}
-	seq_printf(s, "Hash=%u pos=%d dev=%s(@%p) inst=%d ep=%d bp=%d ctp=%d count=%d @%p\n",
+	seq_printf(s, "Hash=%u pos=%d dev=%s(@%px) inst=%d ep=%d bp=%d ctp=%d count=%d @%px\n",
 		   dev_hash_index,
 		   pos,
 		   dp_dev_proc->dev ? dp_dev_proc->dev->name :
@@ -577,7 +593,7 @@ int proc_inst_mod_dump(struct seq_file *s, int pos)
 			&dp_mod_list[mod_hash_index])->first,
 			struct dp_mod, hlist);
 	}
-	seq_printf(s, "Hash=%u pos=%d owner=%s(@%p) ep=%d inst=%d\n",
+	seq_printf(s, "Hash=%u pos=%d owner=%s(@%px) ep=%d inst=%d\n",
 		   mod_hash_index,
 		   pos,
 		   dp_mod_proc->mod->name,

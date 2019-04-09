@@ -21,6 +21,11 @@ extern struct dp_hw_cap hw_cap_list[DP_MAX_HW_CAP];
 #define DP_MOD_HASH_BIT_LENGTH 10
 #define DP_MOD_HASH_SIZE ((1 << DP_MOD_HASH_BIT_LENGTH) - 1)
 
+#define NO_NEED_PMAC(flags)  ((flags & \
+		(DP_F_FAST_WLAN | DP_F_FAST_DSL)) && \
+		!((flags) & (DP_TX_CAL_CHKSUM | DP_TX_DSL_FCS)))
+
+
 extern struct hlist_head dp_dev_list[DP_DEV_HASH_SIZE];
 u32 dp_dev_hash(struct net_device *dev, char *subif_name);
 struct dp_dev *dp_dev_lookup(struct hlist_head *head,
@@ -59,7 +64,7 @@ struct dp_dev {
 	struct net_device_ops new_dev_ops;
 	const struct ethtool_ops *old_ethtool_ops;
 	struct ethtool_ops new_ethtool_ops;
-#ifdef CONFIG_NET_SWITCHDEV
+#if IS_ENABLED(CONFIG_NET_SWITCHDEV)
 	struct switchdev_ops *old_swdev_ops;
 	struct switchdev_ops new_swdev_ops;
 #endif

@@ -228,6 +228,19 @@ int dp_qos_level_get(struct dp_qos_level *cfg, int flag)
 }
 EXPORT_SYMBOL(dp_qos_level_get);
 
+int dp_qos_get_q_logic(struct dp_qos_q_logic *cfg, int flag)
+{
+	if (!cfg)
+		return DP_FAILURE;
+	if (!dp_port_prop[cfg->inst].info.dp_qos_platform_set) {
+		cfg->q_logic_id = cfg->q_id; /* For GRX500 */
+		return DP_SUCCESS;
+	}
+	return dp_port_prop[cfg->inst].info.
+		dp_qos_platform_set(QOS_Q_LOGIC, cfg, flag);
+}
+EXPORT_SYMBOL(dp_qos_get_q_logic);
+
 int dp_qos_global_info_get(struct dp_qos_cfg_info *info, int flag)
 {
 	if (!dp_port_prop[info->inst].info.dp_qos_platform_set)

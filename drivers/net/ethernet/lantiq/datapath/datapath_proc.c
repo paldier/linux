@@ -11,11 +11,8 @@
 #include <net/datapath_proc_api.h>	/*for proc api */
 #include <net/datapath_api.h>
 #include <net/datapath_api_vlan.h>
+#include <linux/version.h>
 
-#ifdef CONFIG_LTQ_VMB
-#include <asm/ltq_vmb.h>	/*vmb */
-#include <asm/ltq_itc.h>	/*mips itc */
-#endif
 #include <linux/list.h>
 #include <linux/of_device.h>
 #include <linux/of_platform.h>
@@ -43,7 +40,7 @@
 static int tmp_inst;
 static ssize_t proc_port_write(struct file *file, const char *buf,
 			       size_t count, loff_t *ppos);
-#if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
+#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 static void proc_dbg_read(struct seq_file *s);
 static ssize_t proc_dbg_write(struct file *, const char *, size_t, loff_t *);
 #endif
@@ -60,12 +57,14 @@ int proc_port_dump(struct seq_file *s, int pos)
 {
 	int i, j;
 	int cqm_p;
+	int dma_ch_offset;
 	int (*print_ctp_bp)(struct seq_file *s, int inst,
 			    struct pmac_port_info *port,
 			    int subif_index, u32 flag);
 	struct pmac_port_info *port = get_port_info(tmp_inst, pos);
 	u16 start = 0;
-	int dma_ch_offset;
+	int loop;
+	struct inst_info *info = NULL;
 
 	if (!capable(CAP_SYS_PACCT))
 		return -1;
@@ -73,6 +72,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 		PR_ERR("Why port is NULL\n");
 		return -1;
 	}
+	info = &dp_port_prop[tmp_inst].info;
 	print_ctp_bp = DP_CB(tmp_inst, proc_print_ctp_bp_info);
 	DP_CB(tmp_inst, get_itf_start_end)(port->itf_info, &start, NULL);
 
@@ -82,9 +82,10 @@ int proc_port_dump(struct seq_file *s, int pos)
 				   "Reserved Port: rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
 				   STATS_GET(port->rx_err_drop),
 				   STATS_GET(port->tx_err_drop));
-			if (print_ctp_bp) /*just to print bridge
-					   *port zero's member
-					   */
+			if (print_ctp_bp && pos) /* just to print bridge
+						  * port zero's member.
+						  * CPU port no ctp/bridge port
+						  */
 				print_ctp_bp(s, tmp_inst, port, 0, 0);
 			i = 0;
 			seq_printf(s, "          : qid/node:    %d/%d\n",
@@ -93,6 +94,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 			seq_printf(s, "          : port/node:    %d/%d\n",
 				   port->subif_info[i].cqm_deq_port,
 				   port->subif_info[i].qos_deq_port);
+			
 
 		} else
 			seq_printf(s,
@@ -105,10 +107,10 @@ int proc_port_dump(struct seq_file *s, int pos)
 	}
 
 	seq_printf(s,
-		   "%02d:%s=0x0x%0x(%s:%8s) %s=%02d %s=%02d %s=%d(%s) %s=%d\n",
+		   "%02d:%s=0x%0lx(%s:%8s) %s=%02d %s=%02d %s=%d(%s) %s=%d\n",
 		   pos,
 		   "module",
-		   (u32)port->owner,
+		   (uintptr_t)port->owner,
 		   "name",
 		   port->owner->name,
 		   "dev_port",
@@ -130,7 +132,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_puts(s, "\n");
 	seq_printf(s, "    mode:              %d\n", port->cqe_lu_mode);
 	seq_printf(s, "    LCT:               %d\n", port->lct_idx);
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	seq_printf(s, "    Swdev:             %d\n", port->swdev_en);
 #endif
 	seq_printf(s, "    cb->rx_fn:         0x%0x\n", (u32)port->cb.rx_fn);
@@ -148,22 +150,31 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_printf(s, "    deq_port_num:      %d\n", port->deq_port_num);
 	seq_printf(s, "    num_dma_chan:      %d\n", port->num_dma_chan);
 	seq_printf(s, "    dma_chan:          0x%x\n", port->dma_chan);
+	seq_printf(s, "    gpid_base:         %d\n", port->gpid_base);
+	seq_printf(s, "    gpid_num:          %d\n", port->gpid_num);
+	seq_printf(s, "    gpid_base:         %d\n", port->policy_base);
+	seq_printf(s, "    gpid_num:          %d\n", port->policy_num);
 	seq_printf(s, "    tx_pkt_credit:     %d\n", port->tx_pkt_credit);
 	seq_printf(s, "    tx_b_credit:       %02d\n", port->tx_b_credit);
-	seq_printf(s, "    tx_ring_addr:      0x%x\n", port->tx_ring_addr);
+	seq_printf(s, "    tx_ring_addr:      0x%px\n", port->tx_ring_addr);
+	seq_printf(s, "    tx_ring_addr_push: 0x%px\n", port->tx_ring_addr_push);
 	seq_printf(s, "    tx_ring_size:      %d\n", port->tx_ring_size);
 	seq_printf(s, "    tx_ring_offset:    %d(to next dequeue port)\n",
 		   port->tx_ring_offset);
-	for (i = 0; i < port->ctp_max; i++) {
+	if (pos == 0)
+		loop = info->cap.max_num_subif_per_port;
+	else 
+		loop = port->ctp_max;
+	for (i = 0; i < loop; i++) {
 		if (!port->subif_info[i].flags)
 			continue;
 		seq_printf(s,
-			   "      [%02d]:%s=0x%04x %s=0x%0x(%s=%s),%s=%s\n",
+			   "      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
 			i,
 			"subif",
 			port->subif_info[i].subif,
 			"netif",
-			(u32)port->subif_info[i].netif,
+			(uintptr_t)port->subif_info[i].netif,
 			"netif",
 			port->subif_info[i].netif ?
 			port->subif_info[i].netif->name : "NULL/DSL",
@@ -210,9 +221,11 @@ int proc_port_dump(struct seq_file *s, int pos)
 		dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
 		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst])
 			seq_printf(s, "          : tx_dma_ch:    0x%x(ref=%d)\n",
-				   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
-				   atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
-					       dma_ch_offset)->ref_cnt));
+			   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
+			   atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
+				       dma_ch_offset)->ref_cnt));
+		seq_printf(s, "          : gpid:           %d\n",
+			   port->subif_info[i].gpid);
 		if (port->subif_info[i].ctp_dev &&
 		    port->subif_info[i].ctp_dev->name)
 			seq_printf(s, "          : ctp_dev = %s\n",
@@ -267,10 +280,10 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 
 	DP_CB(tmp_inst, get_itf_start_end)(port->itf_info, &start, NULL);
 
-	PR_INFO("%02d: %s=0x0x%0x(name:%8s) %s=%02d %s=%02d itf_base=%d(%s)\n",
+	PR_INFO("%02d: %s=0x0x%0lx(name:%8s) %s=%02d %s=%02d itf_base=%d(%s)\n",
 		pos,
 		"module",
-		(u32)port->owner, port->owner->name,
+		(uintptr_t)port->owner, port->owner->name,
 		"dev_port",
 		port->dev_port,
 		"dp_port",
@@ -289,26 +302,26 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 	PR_INFO("\n");
 
 	if (!flag) {
-		PR_INFO("    cb->rx_fn:         0x%0x\n",
-			(u32)port->cb.rx_fn);
-		PR_INFO("    cb->restart_fn:    0x%0x\n",
-			(u32)port->cb.restart_fn);
-		PR_INFO("    cb->stop_fn:       0x%0x\n",
-			(u32)port->cb.stop_fn);
-		PR_INFO("    cb->get_subifid_fn:0x%0x\n",
-			(u32)port->cb.get_subifid_fn);
+		PR_INFO("    cb->rx_fn:         0x%0lx\n",
+			(uintptr_t)port->cb.rx_fn);
+		PR_INFO("    cb->restart_fn:    0x%0lx\n",
+			(uintptr_t)port->cb.restart_fn);
+		PR_INFO("    cb->stop_fn:       0x%0lx\n",
+			(uintptr_t)port->cb.stop_fn);
+		PR_INFO("    cb->get_subifid_fn:0x%0lx\n",
+			(uintptr_t)port->cb.get_subifid_fn);
 		PR_INFO("    num_subif:         %02d\n", port->num_subif);
 	}
 
 	for (i = start_vap; i < end_vap; i++) {
 		if (port->subif_info[i].flags) {
 			PR_INFO
-			    ("      [%02d]:%s=0x%04x %s=0x%0x(%s=%s),%s=%s\n",
+			    ("      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
 			     i,
 			     "subif",
 			     port->subif_info[i].subif,
 			     "netif",
-			     (u32)port->subif_info[i].netif,
+			     (uintptr_t)port->subif_info[i].netif,
 			     "device_name",
 			     port->subif_info[i].netif ? port->subif_info[i].
 			     netif->name : "NULL/DSL",
@@ -410,7 +423,7 @@ ssize_t proc_port_write(struct file *file, const char *buf, size_t count,
 	return count;
 }
 
-#if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
+#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 void proc_dbg_read(struct seq_file *s)
 {
 	int i;
@@ -429,14 +442,14 @@ void proc_dbg_read(struct seq_file *s)
 
 	seq_puts(s, "\n\n");
 
-	seq_printf(s, "dp_drop_all_tcp_err=%d @ 0x%p\n", dp_drop_all_tcp_err,
+	seq_printf(s, "dp_drop_all_tcp_err=%d @ 0x%px\n", dp_drop_all_tcp_err,
 		   &dp_drop_all_tcp_err);
-	seq_printf(s, "dp_pkt_size_check=%d @ 0x%p\n", dp_pkt_size_check,
+	seq_printf(s, "dp_pkt_size_check=%d @ 0x%px\n", dp_pkt_size_check,
 		   &dp_pkt_size_check);
 
-	seq_printf(s, "dp_rx_test_mode=%d @ 0x%p\n", dp_rx_test_mode,
+	seq_printf(s, "dp_rx_test_mode=%d @ 0x%px\n", dp_rx_test_mode,
 		   &dp_rx_test_mode);
-	seq_printf(s, "dp_dbg_err(flat to print error or not)=%d @ 0x%p\n",
+	seq_printf(s, "dp_dbg_err(flat to print error or not)=%d @ 0x%px\n",
 		   dp_dbg_err,
 		   &dp_dbg_err);
 	print_parser_status(s);
@@ -452,7 +465,6 @@ ssize_t proc_dbg_write(struct file *file, const char *buf, size_t count,
 	int f_enable;
 	char *tmp_buf;
 	#define BUF_SIZE_TMP 2000
-
 	if (!capable(CAP_SYS_ADMIN))
 		return -EPERM;
 
@@ -506,9 +518,206 @@ help:
 }
 #endif
 
+struct property_info {
+	char *name;
+	int type;
+};
+
+enum PROPERTY_TYPE {
+	PROP_UNKNOWN = 0,
+	PROP_STRING,
+	PROP_REG,
+	PROP_RANGER,
+	PROP_U32_OCT,
+	PROP_U32_HEX,
+	PROP_HANDLE,
+	PROP_REFERENCE
+};
+
+struct property_info prop_info[] = {
+	{"compatible", PROP_STRING},
+	{"status", PROP_STRING},
+	{"name", PROP_STRING},
+	{"label", PROP_STRING},
+	{"model", PROP_STRING},
+	{"reg-names", PROP_STRING},
+	{"reg", PROP_REG},
+	{"interrupts", PROP_U32_OCT},
+	{"ranges", PROP_RANGER},
+	{"dma-ranges", PROP_RANGER},
+	{"phandle", PROP_HANDLE},
+	{"interrupt-parent", PROP_HANDLE}
+
+};
+
+int get_property_info(char *name)
+{
+	int i;
+
+	if (!name)
+		return PROP_UNKNOWN;
+	for (i = 0; i < ARRAY_SIZE(prop_info); i++) {
+		if (dp_strncmpi(name, prop_info[i].name, strlen(prop_info[i].name)) == 0)
+			return prop_info[i].type;
+	}
+
+	return PROP_UNKNOWN;
+}
+
+/*0--not string
+ *1--is string
+ */
+/*#define LOCAL_STRING_PARSE*/
+int is_print_string(char *p, int len)
+{
+	int i;
+
+	if (!p || !len)
+		return 0;
+	if (p[len - 1] != 0)
+		return 0;
+	for (i = 0; i < len - 1; i++) {
+#ifdef LOCAL_STRING_PARSE
+		if (!(((p[i] >= 'a') && (p[i] <= 'z')) ||
+		      ((p[i] >= 'A') && (p[i] <= 'Z')) ||
+		      ((p[i] >= '0') && (p[i] <= '9')) ||
+		      (p[i] == '.') ||
+		      (p[i] == '/')))
+#else
+		if (!isprint(p[i]) && p[i] != 0) /*string list */
+#endif
+			return 0;
+	}
+	if (p[0] == 0)
+		return 0;
+
+	return 1;
+}
+
+#define INDENT_BASE 3 /*3 Space */
+void print_property(struct device_node *node, struct property *p, char *indent)
+{
+	int type;
+	int k, times, i;
+
+	if (!p || !node)
+		return;
+	type = get_property_info(p->name);
+	if (type == PROP_UNKNOWN) {
+		if (is_print_string(p->value, p->length))
+			type = PROP_STRING;
+		else if ((p->length % 4) == 0)
+			type = PROP_U32_OCT;
+	}
+	if (type == PROP_STRING) {
+		char *s = (char *)p->value;
+		int k = 0;
+
+		PR_INFO("%s  %s=", indent, p->name);
+		do {
+			PR_INFO("\"%s\"", s);
+			k += strlen(s) + 1;
+			if (k < p->length) {
+				s += strlen(s) + 1;
+				PR_INFO(",");
+				continue;
+			}
+			PR_INFO("\n");
+			break;
+		} while (1);
+	} else if (type == PROP_U32_OCT) { /*each item is 4 bytes*/
+		PR_INFO("%s  %s=<", indent, p->name);
+		times = p->length / 4;
+		if (times) {
+			for (k = 0; k < times; k++)
+				PR_INFO("%d ", *(int *)(p->value + k * 4));
+		}
+		PR_INFO(">\n");
+	} else if (type == PROP_U32_HEX) { /*each item is 4 bytes*/
+		PR_INFO("%s  %s=<", indent, p->name);
+		times = p->length / 4;
+		if (times) {
+			for (k = 0; k < times; k++)
+				PR_INFO("0x%x ", *(int *)(p->value + k * 4));
+		}
+		PR_INFO(">\n");
+	} else if (type == PROP_REG) {/*two tuple: address and size */
+		int n = (of_n_addr_cells(node) + of_n_size_cells(node));
+		int j;
+
+		PR_INFO("%s  %s=<", indent, p->name);
+		times = p->length / (4 * n);
+		if (times) {
+			for (k = 0; k < times; k++) {
+				if (k)
+					PR_INFO("%s    ", indent);
+				for (j = 0; j < n; j++)
+					PR_INFO("0x%x ",
+						*(int *)(p->value + k * 8 +
+						4 * j));
+				if (k != (times - 1))
+					PR_INFO("\n");
+			}
+		}
+		PR_INFO(">\n");
+	} else if (type == PROP_RANGER) {
+		/*triple: child-bus-address, parent-bus-address, length */
+		PR_INFO("%s  %s=<", indent, p->name);
+		times = p->length / (4 * 3);
+		if (times) {
+			for (k = 0; k < times; k++) {
+				if (!k)
+					PR_INFO("0x%x 0x%x 0x%x",
+						*(int *)(p->value + k * 8),
+						*(int *)(p->value + k * 8 + 4),
+						*(int *)(p->value + k * 8 + 8));
+				else
+					PR_INFO("%s    0x%x 0x%x 0x%x", indent,
+						*(int *)(p->value + k * 8),
+						*(int *)(p->value + k * 8 + 4),
+						*(int *)(p->value + k * 8 + 8));
+				if (k != (times - 1))
+					PR_INFO("\n");
+			}
+		}
+		PR_INFO(">\n");
+	} else if (type == PROP_HANDLE) {
+		struct device_node *tmp = of_find_node_by_phandle(
+			be32_to_cpup((u32 *)p->value));
+		int offset = 0;
+
+		if (tmp) {
+			PR_INFO("%s  %s=<&%s", indent, p->name, tmp->name);
+			offset = 1;
+		} else {
+			PR_INFO("%s  %s=<", indent, p->name);
+		}
+		if (p->length >= 4) {
+			int times = p->length / 4;
+
+			if (times) {
+				for (k = offset; k < times; k++)
+					PR_INFO("%d ",
+						*(int *)(p->value + k * 4));
+			}
+		}
+		PR_INFO(">\n");
+	} else {
+		PR_INFO("%s  %s length=%d\n", indent, p->name, p->length);
+		if (p->length) {
+			char *s = (unsigned char *)p->value;
+
+			PR_INFO("%s   ", indent);
+			for (i = 0; i < p->length; i++)
+				PR_INFO("0x%02x ", s[i]);
+			PR_INFO("\n");
+		}
+	}
+}
+
 static struct dp_proc_entry dp_proc_entries[] = {
 	/*name single_callback_t multi_callback_t/_start write_callback_t */
-#if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
+#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 	{PROC_DBG, proc_dbg_read, NULL, NULL, proc_dbg_write},
 #endif
 	{PROC_PORT, NULL, proc_port_dump, proc_port_init, proc_port_write},

@@ -10,37 +10,46 @@
 #ifndef DATAPATH_H
 #define DATAPATH_H
 
-#include <linux/klogging.h>
 #include <linux/skbuff.h>	/*skb */
 #include <linux/types.h>
 #include <linux/netdevice.h>
 #include <linux/platform_device.h>
-#include <net/lantiq_cbm_api.h>
-#include <linux/dma/lantiq_dmax.h>
 #include <linux/atomic.h>
+#include <linux/version.h>
+#include <net/ppa/qos_mgr_tc_hook.h>
+//#include "../cqm/cqm_common.h"
 
-//#define CONFIG_LTQ_DATAPATH_DUMMY_QOS
+//#define CONFIG_INTEL_DATAPATH_DUMMY_QOS
 //#define DUMMY_PPV4_QOS_API_OLD
-
+#define dp_vlan_dev_priv vlan_dev_priv
 #ifdef DUMMY_PPV4_QOS_API_OLD
 /*TODO:currently need to include both header file */
 #include <net/pp_qos_drv_slim.h>
-#include <net/pp_qos_drv.h>
+#include <linux/pp_qos_api.h>
 #else
-#include <net/pp_qos_drv.h>
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0)
+		#include <net/pp_qos_drv.h>
+	#else
+		#include <linux/pp_qos_api.h>
+	#endif
+#endif
+#if IS_ENABLED(CONFIG_INTEL_CBM_SKB) || \
+	LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0)
+	#define DP_SKB_HACK
 #endif
 #include <net/datapath_api_qos.h>
-#ifdef CONFIG_NET_SWITCHDEV
+#if IS_ENABLED(CONFIG_NET_SWITCHDEV)
 #include <net/switchdev.h>
 #endif
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 #include "datapath_swdev.h"
 #endif
 #include <net/datapath_inst.h>
 
-#define MAX_SUBIFS 256
+#define MAX_SUBIFS 256  /* Max subif per DPID */
 #define MAX_DP_PORTS  16
 #define PMAC_SIZE 8
+#define PMAC_SIZE_GSW32	16
 #define PMAC_CPU_ID  0
 #define DP_MAX_BP_NUM 128
 #define DP_MAX_QUEUE_NUM 256
@@ -49,15 +58,21 @@
 
 #ifdef LOGF_KLOG_ERROR
 #define PR_ERR  LOGF_KLOG_ERROR
+#define DP_ERR  LOGF_KLOG_ERROR
+
 #else
 #define PR_ERR printk
+#define DP_ERR printk
 #endif
 
 #ifdef LOGF_KLOG_INFO
 #undef PR_INFO
-#define PR_INFO LOGF_KLOG_INFO
+#define PR_INFO LOGF_KLOG_ERROR
+#define DP_INFO LOGF_KLOG_ERROR
+
 #else
 #undef PR_INFO
+#define DP_INFO printk
 #define PR_INFO printk
 #endif
 
@@ -99,7 +114,7 @@
 	PR_ERR(fmt, ##arg); \
 } while (0)
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 #define DP_DEBUG(flags, fmt, arg...)  do { \
 	if (unlikely((dp_dbg_flag & (flags)) && \
 		     (((dp_print_num_en) && \
@@ -115,13 +130,13 @@
 
 #else
 #define DP_DEBUG(flags, fmt, arg...)
-#endif				/* end of CONFIG_LTQ_DATAPATH_DBG */
+#endif				/* end of CONFIG_INTEL_DATAPATH_DBG */
 
 #define IFNAMSIZ 16
 #define DP_MAX_HW_CAP 4
 
 #if (!IS_ENABLED(CONFIG_PRX300_CQM))
-#define DP_SPIN_LOCK 
+#define DP_SPIN_LOCK
 #endif
 #ifdef DP_SPIN_LOCK
 #define DP_DEFINE_LOCK(lock) DEFINE_SPINLOCK(lock)
@@ -342,7 +357,7 @@ enum DP_DBG_FLAG {
 	DP_DBG_ENUM_OR_STRING(DP_DBG_FLAG_MAX, "")\
 }
 
-enum QOS_FLAG {
+enum {
 	NODE_LINK_ADD = 0, /*add a link node */
 	NODE_LINK_GET,     /*get a link node */
 	NODE_LINK_EN_GET,  /*Get link status: enable/disable */
@@ -368,6 +383,7 @@ enum QOS_FLAG {
 	QUEUE_MAP_SET,     /*set lookup entries to the specified qid*/
 	NODE_CHILDREN_GET, /*get direct children list of node*/
 	QOS_LEVEL_GET,     /* get Max Scheduler level for Node */
+	QOS_Q_LOGIC,       /* get logical queue ID based on physical queue ID */
 	QOS_GLOBAL_CFG_GET, /* get global qos config info */
 };
 
@@ -394,7 +410,7 @@ struct logic_dev {
 /*! Sub interface detail information */
 struct dp_subif_info {
 	s32 flags;
-	u32 subif:15;
+	u32 subif;
 	struct net_device *netif; /*! pointer to  net_device */
 	char device_name[IFNAMSIZ]; /*! devide name, like wlan0, */
 	struct dev_mib mib; /*! mib */
@@ -402,11 +418,7 @@ struct dp_subif_info {
 	u16 bp; /*bridge port */
 	u16 fid; /* switch bridge id */
 	struct list_head logic_dev; /*unexplicit logical dev*/
-	struct net_device_ops *old_dev_ops;
-	struct net_device_ops new_dev_ops;
-#ifdef CONFIG_NET_SWITCHDEV
-	struct switchdev_ops *old_swdev_ops;
-	struct switchdev_ops new_swdev_ops;
+#if IS_ENABLED(CONFIG_NET_SWITCHDEV)
 	void *swdev_priv; /*to store ext vlan info*/
 #endif
 	s16 qid;    /* physical queue id */
@@ -418,10 +430,29 @@ struct dp_subif_info {
 	u32 subif_flag; /* To store original flag from caller during
 			 * dp_register_subif
 			 */
-	atomic_t rx_flag; /* To enable/disable DP rx */
 	u16 mac_learn_dis; /* To store mac learning capability of subif from
 			    * caller during dp_register_subif
 			    */
+	atomic_t rx_flag; /* To enable/disable DP rx */
+	atomic_t f_dfl_sess[DP_DFL_SESS_NUM]; /*! flag to indicate whether
+					       *  dfl_eg_sess valid or
+					       *  not
+					       */
+	u32 dfl_sess[DP_DFL_SESS_NUM]; /*! default CPU egress session ID
+					* Valid only if f_dfl_eg_sess is set
+					* one sesson per class[4 bits]
+					*/
+	u16 max_pkt_size;
+	u16 headroom_size;
+	u16 tailroom_size;
+	u16 min_pkt_len;
+#define DP_POLICY_PER_PORT 4
+	u16 policy_base;
+	u8 policy_num;
+	u16 pool_map; /* pool map: bit 0: POOL SIZE 0, bit 1: POOL_SIZE_1 and so on */
+	u8  pkt_only_en;
+	u8  seg_en;
+	u16 gpid;
 };
 
 struct vlan_info {
@@ -435,7 +466,7 @@ struct vlan_info {
 enum DP_TEMP_DMA_PMAC {
 	TEMPL_NORMAL = 0,
 	TEMPL_CHECKSUM,
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	TEMPL_PTP,
 #endif
 	TEMPL_OTHERS,
@@ -455,7 +486,6 @@ struct pmac_port_info {
 	u32 dev_port;
 	u32 num_subif;
 	s32 port_id;
-	struct dp_subif_info subif_info[MAX_SUBIFS];
 	atomic_t tx_err_drop;
 	atomic_t rx_err_drop;
 	struct gsw_itf *itf_info;  /*point to switch interface configuration */
@@ -470,23 +500,37 @@ struct pmac_port_info {
 	u32 dma_chan; /*associated dma tx CH,-1 means no DMA CH*/
 	u32 tx_pkt_credit;  /*PP port tx bytes credit */
 	u32 tx_b_credit;  /*PP port tx bytes credit */
-	u32 tx_ring_addr;  /*PP port ring address. should follow HW definition*/
+	void *tx_ring_addr;  /*PP port ring address (physical address) */
+	void *tx_ring_addr_push;  /*PP port ring address. should follow HW definition*/
 	u32 tx_ring_size; /*PP ring size */
 	u32 tx_ring_offset;  /*PP: next tx_ring_addr=
 			      *   current tx_ring_addr + tx_ring_offset
 			      */
-	u32 lct_idx; /* LCT subif register flag */
+	u16 gpid_base; /* gpid base
+			* For CPU/DPDK:
+			*   alloc it in dp_platform_set
+			*   config it in dp_platform_set
+			* For peripheral device
+			*   alloc it at dp_alloc_port via gpid_port_assign
+			*   config it at dp_register_subif
+			*/
+	u16 gpid_num; /* reserved nubmer of continuous of gpid */
+	u16 gpid_spl;  /* special GPID:
+			* alloc it at dp_alloc_port
+			* config it at dp_register_dev for policy setting
+			*/
+	u16 policy_base; /* policy base */
+	u8 policy_num;   /* policy number */
+	u16 pool_map; /* pool map: bit 0: POOL SIZE 0, bit 1: POOL_SIZE_1 and so on */
 	u32 num_dma_chan; /*For G.INT it's 8 or 16, for other 1*/
+	u32 lct_idx; /* LCT subif register flag */
 	u32 dma_ch_base; /*! Base entry index of dp_dma_chan_tbl */
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	u32 f_ptp:1; /* PTP1588 support enablement */
 #endif
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	u32 swdev_en; /* switchdev enable/disable flag for port */
 #endif
-};
-
-struct pmac_port_info2 {
 	/*only valid for 1st dp instanace which need dp_xmit/dp_rx*/
 	/*[0] for non-checksum case,
 	 *[1] for checksum offload
@@ -499,6 +543,11 @@ struct pmac_port_info2 {
 	struct dma_tx_desc_0 dma0_mask_template[MAX_TEMPLATE];
 	struct dma_tx_desc_1 dma1_template[MAX_TEMPLATE];
 	struct dma_tx_desc_1 dma1_mask_template[MAX_TEMPLATE];
+	struct dma_tx_desc_3 dma3_template[MAX_TEMPLATE];
+	struct dma_tx_desc_3 dma3_mask_template[MAX_TEMPLATE];
+	/* These members must be end. */
+	u32 tail;
+	struct dp_subif_info *subif_info;
 };
 
 /*bridge port with pmapper supported dev structure */
@@ -525,7 +574,7 @@ struct q_info {
 };
 
 /*scheduler struct */
-struct sched_info {
+struct dp_sched_info {
 	int flag;  /*0-FREE, 1-Used*/
 	int ref_cnt; /*subif_counter*/
 	int cqm_dequeue_port; /*CQM dequeue port */
@@ -539,7 +588,8 @@ struct cqm_port_info {
 	int f_first_qid : 1; /*0 not valid */
 	u32 ref_cnt; /*reference counter: the number of CTP attached to it*/
 	u32 tx_pkt_credit;  /*PP port tx bytes credit */
-	u32 tx_ring_addr;  /*PP port ring address. should follow HW definition*/
+	void *tx_ring_addr;  /*PP port ring address. should follow HW definition*/
+	void *tx_ring_addr_push;  /*PP port ring address. should follow HW definition*/
 	u32 tx_ring_size; /*PP port ring size */
 	int qos_port; /*qos port id*/
 	int first_qid; /*in order to auto sharing queue, 1st queue allocated by
@@ -644,7 +694,7 @@ struct dp_tc_vlan_info {
 	int inst;  /*DP instance */
 };
 
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#ifdef CONFIG_INTEL_DATAPATH_CPUFREQ
 enum CPUFREQ_FLAG {
 	PRE_CHANGE = 0,		/*! Cpufreq transition prechange */
 	POST_CHANGE,		/*! Cpufreq transition postchange */
@@ -654,20 +704,22 @@ enum CPUFREQ_FLAG {
 
 /*port 0 is reserved*/
 extern int dp_inst_num;
+extern int dp_print_len;
 extern struct inst_property dp_port_prop[DP_MAX_INST];
-extern struct pmac_port_info dp_port_info[DP_MAX_INST][MAX_DP_PORTS];
-extern struct pmac_port_info2 dp_port_info2[DP_MAX_INST][MAX_DP_PORTS];
+extern struct pmac_port_info *dp_port_info[DP_MAX_INST];
 extern struct q_info dp_q_tbl[DP_MAX_INST][DP_MAX_QUEUE_NUM];
-extern struct sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
+extern struct dp_sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
 extern struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
 extern struct bp_pmapper_dev dp_bp_dev_tbl[DP_MAX_INST][DP_MAX_BP_NUM];
 extern struct dma_chan_info *dp_dma_chan_tbl[DP_MAX_INST];
-
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
 extern u32 dp_dbg_flag;
 extern unsigned int dp_dbg_err;
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 extern unsigned int dp_max_print_num;
 extern unsigned int dp_print_num_en;
+#endif
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
+extern int aca_portid;
 #endif
 
 int dp_loop_eth_dev_init(struct dentry *parent);
@@ -688,6 +740,7 @@ enum TEST_MODE {
 
 extern u32 dp_rx_test_mode;
 extern struct dma_rx_desc_1 dma_rx_desc_mask1;
+extern struct dma_rx_desc_2 dma_rx_desc_mask2;
 extern struct dma_rx_desc_3 dma_rx_desc_mask3;
 extern struct dma_rx_desc_0 dma_tx_desc_mask0;
 extern struct dma_rx_desc_1 dma_tx_desc_mask1;
@@ -763,7 +816,7 @@ void set_dp_dbg_flag(uint32_t flags);
 uint32_t get_dp_dbg_flag(void);
 void dp_dump_raw_data(char *buf, int len, char *prefix_str);
 
-#ifdef CONFIG_LTQ_TOE_DRIVER
+#if IS_ENABLED(CONFIG_LTQ_TOE_DRIVER)
 /*! @brief  ltq_tso_xmit
  *@param[in] skb  pointer to packet buffer like sk_buff
  *@param[in] hdr  point to packet header, like pmac header
@@ -787,10 +840,19 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag);
 int register_dp_cap(u32 flag);
 typedef GSW_return_t(*dp_gsw_cb)(void *, void *);
 int bp_pmapper_dev_get(int inst, struct net_device *dev);
+extern int dp_init_ok;
+void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
+		u32 ip_offset, int ip_off_hw_adjust, u32 tcp_h_offset);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,13,0)
 extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle,
 					__be16 protocol,
 					struct tc_to_netdev *tc);
+#else
+extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev,
+					enum tc_setup_type type,
+					void *type_data);
+#endif
 
 #define DP_SUBIF_LIST_HASH_SHIFT 8
 #define DP_SUBIF_LIST_HASH_BIT_LENGTH 10
@@ -813,9 +875,13 @@ struct dp_subif_cache *dp_subif_lookup_safe(struct hlist_head *head,
 					    struct net_device *dev,
 					    void *data);
 int dp_subif_list_init(void);
+int parser_enabled(int ep, struct dma_rx_desc_1 *desc_1);
+int dp_lan_wan_bridging(int port_id, struct sk_buff *skb);
 u32 get_dma_chan_idx(int inst, int num_dma_chan);
 u32 alloc_dma_chan_tbl(int inst);
 void free_dma_chan_tbl(int inst);
+u32 alloc_dp_port_subif_info(int inst);
+void free_dp_port_subif_info(int inst);
 u32 dp_subif_hash(struct net_device *dev);
 int32_t dp_get_netif_subifid_priv(struct net_device *netif,
 				  struct sk_buff *skb, void *subif_data,

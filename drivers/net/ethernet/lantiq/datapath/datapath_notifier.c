@@ -37,7 +37,7 @@ int unregister_notifier(u32 flag)
 
 int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 {
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	struct net_device *dev;
 	u8 *addr;
 	int i;

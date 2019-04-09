@@ -21,9 +21,7 @@
 #include <linux/clk.h>
 #include <linux/ip.h>
 #include <net/ip.h>
-#include <lantiq_soc.h>
 #include <net/datapath_api.h>
-#include <net/datapath_api_skb.h>
 #include <linux/if_vlan.h>
 #include "datapath.h"
 #include "datapath_instance.h"
@@ -35,6 +33,7 @@ struct net_device *get_base_dev(struct net_device *dev, int level);
  */
 int get_vlan_via_dev(struct net_device *dev, struct vlan_prop *vlan_prop)
 {
+#if IS_ENABLED(CONFIG_VLAN_8021Q)
 	struct vlan_dev_priv *vlan;
 	struct net_device *base1, *base2;
 
@@ -45,7 +44,7 @@ int get_vlan_via_dev(struct net_device *dev, struct vlan_prop *vlan_prop)
 	if (!is_vlan_dev(dev))
 		return 0;
 	base1 = get_base_dev(dev, 1);
-	vlan = vlan_dev_priv(dev);
+	vlan = dp_vlan_dev_priv(dev);
 	if (!base1) { /*single vlan */
 		PR_ERR("Not 1st VLAN interface no base\n");
 		return -1;
@@ -64,8 +63,7 @@ int get_vlan_via_dev(struct net_device *dev, struct vlan_prop *vlan_prop)
 		vlan_prop->num = 2;
 		vlan_prop->in_proto = vlan->vlan_proto;
 		vlan_prop->in_vid = vlan->vlan_id;
-
-		vlan = vlan_dev_priv(base1);
+		vlan = dp_vlan_dev_priv(base1);
 		vlan_prop->out_proto = vlan->vlan_proto;
 		vlan_prop->out_vid = vlan->vlan_id;
 		vlan_prop->base = base2;
@@ -76,6 +74,7 @@ int get_vlan_via_dev(struct net_device *dev, struct vlan_prop *vlan_prop)
 	vlan_prop->out_proto = vlan->vlan_proto;
 	vlan_prop->out_vid = vlan->vlan_id;
 	vlan_prop->base = base1;
+#endif
 	return 0;
 }
 
@@ -161,7 +160,7 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 	}
 	logic_dev_tmp = kmalloc(sizeof(*logic_dev_tmp), GFP_KERNEL);
 	if (!logic_dev_tmp) {
-		DP_DEBUG(DP_DBG_FLAG_LOGIC, "kmalloc fail for %d bytes\n",
+		DP_DEBUG(DP_DBG_FLAG_LOGIC, "kmalloc fail for %zd bytes\n",
 			 sizeof(*logic_dev_tmp));
 		return -1;
 	}

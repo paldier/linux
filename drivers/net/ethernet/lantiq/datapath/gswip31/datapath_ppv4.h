@@ -10,7 +10,7 @@
 #ifndef DATAPATH_PPV4_H
 #define DATAPATH_PPV4_H
 
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
 struct pp_qos_dev {
 	int dq_port;
 };
@@ -49,7 +49,7 @@ struct ppv4_queue {
 	u16 parent; /* -1 means no parent.
 		     * it is used for shared dropping queueu purpose
 		     */
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
 	int dq_port; /* cqm dequeue port for qos slim driver queue alloc */
 #endif
 };

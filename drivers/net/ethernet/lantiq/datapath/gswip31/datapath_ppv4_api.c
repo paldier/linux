@@ -12,7 +12,6 @@
 #include <net/pp_qos_drv.h>
 #include "../datapath.h"
 #include "datapath_misc.h"
-#include <net/lantiq_cbm_api.h>
 
 #define FLUSH_RESTORE_LOOKUP BIT(0)
 

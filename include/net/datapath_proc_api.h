@@ -62,20 +62,12 @@ void dp_replace_ch(char *p, int len, char orig_ch, char new_ch);
  */
 int dp_split_buffer(char *buffer, char *array[], int max_param_num);
 
-#ifdef LTQ_DATAPATH_MPE_FASTHOOK_TEST
-/*add the macro in order to be back-compatible with old MPE FW HOOK */
-#define ltq_proc_entry dp_proc_entry
-#define ltq_proc_file_entry dp_proc_file_entry
-
-#define ltq_proc_entry_create dp_proc_entry_create
-
+/* below ltq_xxx api is for back-compatible only */
 #define ltq_atoi dp_atoi
 #define ltq_strncmpi dp_strncmpi
 #define ltq_replace_ch dp_replace_ch
 #define ltq_remove_leading_whitespace dp_remove_leading_whitespace
 #define ltq_split_buffer dp_split_buffer
-#endif /*LTQ_DATAPATH_MPE_FASTHOOK_TEST*/
-
 void set_start_end_id(unsigned int new_start, unsigned int new_end,
 		      unsigned int max_start, unsigned int max_end,
 		      unsigned int default_start, unsigned int default_end,

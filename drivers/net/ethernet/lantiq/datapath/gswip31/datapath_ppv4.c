@@ -49,7 +49,7 @@ struct pp_qos_dev *(*qos_dev_open)(unsigned int id);
 int (*qos_dev_init)(struct pp_qos_dev *qos_dev,
 		    struct pp_qos_init_param *conf);
 
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
 struct fixed_q_port {
 	int deq_port; /*cqm dequeue port */
 	int queue_id; /*queue physical id*/
@@ -331,7 +331,7 @@ s32 qos_node_config(struct qos_node_api_param *param)
 }
 #endif /*DUMMY_PPV4_QOS_API_OLD*/
 
-#endif /*CONFIG_LTQ_DATAPATH_DUMMY_QOS*/
+#endif /*CONFIG_INTEL_DATAPATH_DUMMY_QOS*/
 
 void init_qos_fn(void)
 {
@@ -627,11 +627,11 @@ int dp_pp_alloc_queue(struct ppv4_queue *info)
 	struct hal_priv *priv = HAL(info->inst);
 	struct pp_qos_dev *qos_dev = priv->qdev;
 
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
 	qos_dev->dq_port = info->dq_port;
 #endif
 	if (qos_queue_allocate(qos_dev, &q_node_id)) {
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
 		PR_ERR("qos_queue_allocate fail for dq_port %d\n",
 		       info->dq_port);
 #else
@@ -678,7 +678,7 @@ int init_ppv4_qos(int inst, int flag)
 	union qos_init *t = NULL;
 	int res = DP_FAILURE, i;
 	struct hal_priv *priv = HAL(inst);
-#ifdef CONFIG_LTQ_DATAPATH_QOS_HAL
+#ifdef CONFIG_INTEL_DATAPATH_QOS_HAL
 	unsigned int q, idx;
 	struct cbm_tx_push *flush_port;
 	struct cbm_cpu_port_data cpu_data = {0};
@@ -736,7 +736,7 @@ int init_ppv4_qos(int inst, int flag)
 		 priv->cqm_drop_p, dp_deq_port_tbl[inst][idx].tx_ring_addr,
 		 dp_deq_port_tbl[inst][idx].tx_ring_size,
 		 dp_deq_port_tbl[inst][idx].tx_pkt_credit);
-#ifdef CONFIG_LTQ_DATAPATH_QOS_HAL
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_QOS_HAL)
 	DP_DEBUG(DP_DBG_FLAG_DBG, "priv=%p deq_port_stat=%p q_dev=%p\n",
 		 priv, priv ? priv->deq_port_stat : NULL,
 		 priv ? priv->qdev : NULL);
@@ -756,7 +756,7 @@ int init_ppv4_qos(int inst, int flag)
 	t->p_conf.credit = dp_deq_port_tbl[inst][idx].tx_pkt_credit;
 	t->p_conf.disable = 1; /*not allowed for dequeue*/
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (dp_dbg_flag & DP_DBG_FLAG_QOS) {
 		DP_DEBUG(DP_DBG_FLAG_QOS,
 			 "qos_port_set param: %d/%d for drop pot:\n",
@@ -811,7 +811,7 @@ int init_ppv4_qos(int inst, int flag)
 		 priv->ppv4_drop_q, q,
 		 priv->cqm_drop_p,
 		 priv->ppv4_drop_p);
-#endif /* end of CONFIG_LTQ_DATAPATH_QOS_HAL */
+#endif /* end of CONFIG_INTEL_DATAPATH_QOS_HAL */
 	DP_DEBUG(DP_DBG_FLAG_DBG, "init_ppv4_qos done\n");
 	res = DP_SUCCESS;
 

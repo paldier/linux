@@ -22,25 +22,19 @@
 #include <linux/clk.h>
 #include <linux/ip.h>
 #include <net/ip.h>
-#include <lantiq_soc.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
-#include <net/datapath_api_skb.h>
 #include "datapath.h"
 #include "datapath_instance.h"
 #include "datapath_swdev_api.h"
 
-#if IS_ENABLED(CONFIG_PPA_API_SW_FASTPATH)
-#include <net/ppa/ppa_api.h>
-#endif
-
-#if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
+#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 unsigned int dp_max_print_num = -1, dp_print_num_en = 0;
 #endif
 
 GSW_API_HANDLE gswr_r;
 u32    dp_rx_test_mode = DP_RX_MODE_NORMAL;
 struct dma_rx_desc_1 dma_rx_desc_mask1;
+struct dma_rx_desc_2 dma_rx_desc_mask2;
 struct dma_rx_desc_3 dma_rx_desc_mask3;
 struct dma_rx_desc_0 dma_tx_desc_mask0;
 struct dma_rx_desc_1 dma_tx_desc_mask1;
@@ -49,20 +43,6 @@ u32 dp_pkt_size_check;
 
 u32 dp_dbg_flag;
 EXPORT_SYMBOL(dp_dbg_flag);
-
-#ifdef CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST
-u32 ltq_mpe_eanble;
-EXPORT_SYMBOL(ltq_mpe_eanble);
-
-int (*ltq_mpe_fasthook_free_fn)(struct sk_buff *) = NULL;
-EXPORT_SYMBOL(ltq_mpe_fasthook_free_fn);
-
-int (*ltq_mpe_fasthook_tx_fn)(struct sk_buff *, u32, void *) = NULL;
-EXPORT_SYMBOL(ltq_mpe_fasthook_tx_fn);
-
-int (*ltq_mpe_fasthook_rx_fn)(struct sk_buff *, u32, void *) = NULL;
-EXPORT_SYMBOL(ltq_mpe_fasthook_rx_fn);
-#endif	/*CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST */
 
 #undef DP_DBG_ENUM_OR_STRING
 #define DP_DBG_ENUM_OR_STRING(name, short_name) short_name
@@ -89,18 +69,17 @@ char *dp_port_status_str[] = {
 };
 
 static int try_walkaround;
-static int dp_init_ok;
+int dp_init_ok;
 DP_DEFINE_LOCK(dp_lock);
 unsigned int dp_dbg_err = 1; /*print error */
-static int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags);
+EXPORT_SYMBOL(dp_dbg_err);
+
 /*port 0 is reserved and never assigned to any one */
 int dp_inst_num;
 /* Keep per DP instance information here */
 struct inst_property dp_port_prop[DP_MAX_INST];
 /* Keep all subif information per instance/LPID/subif */
-struct pmac_port_info dp_port_info[DP_MAX_INST][MAX_DP_PORTS];
-/* Keep all default DMA descriptor mask/bit per instance/LPID */
-struct pmac_port_info2 dp_port_info2[DP_MAX_INST][MAX_DP_PORTS];
+struct pmac_port_info *dp_port_info[DP_MAX_INST];
 
 /* bp_mapper_dev[] is mainly for PON case
  * Only if multiple gem port are attached to same bridge port,
@@ -113,7 +92,7 @@ struct bp_pmapper_dev dp_bp_dev_tbl[DP_MAX_INST][DP_MAX_BP_NUM];
 struct q_info dp_q_tbl[DP_MAX_INST][DP_MAX_QUEUE_NUM];
 /* sched_tbl[] is mainly for the sched created/used during dp_register_subif_ext
  */
-struct sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
+struct dp_sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
 /* dp_deq_port_tbl[] is to record cqm dequeue port info
  */
 struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
@@ -122,11 +101,12 @@ struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
 struct dma_chan_info *dp_dma_chan_tbl[DP_MAX_INST];
 
 struct parser_info pinfo[4];
-static int print_len;
-#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+int dp_print_len;
+
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
 static struct module aca_owner;
 static struct net_device aca_dev;
-static int aca_portid = -1;
+int aca_portid = -1;
 #endif
 
 char *get_dp_port_type_str(int k)
@@ -157,7 +137,7 @@ int get_dp_port_status_str_size(void)
 int parser_size_via_index(u8 index)
 {
 	if (index >= ARRAY_SIZE(pinfo)) {
-		PR_ERR("Wrong index=%d, it should less than %d\n", index,
+		PR_ERR("Wrong index=%d, it should less than %zu\n", index,
 		       ARRAY_SIZE(pinfo));
 		return 0;
 	}
@@ -165,17 +145,22 @@ int parser_size_via_index(u8 index)
 	return pinfo[index].size;
 }
 
-static inline int parser_enabled(int ep, struct dma_rx_desc_1 *desc_1)
+int parser_enabled(int ep, struct dma_rx_desc_1 *desc_1)
 {
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 	if (!desc_1) {
 		PR_ERR("NULL desc_1 is not allowed\n");
 		return 0;
 	}
 #endif
+
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SIMULATE_GSWIP32) || \
+	IS_ENABLED(CONFIG_X86_INTEL_LGM)
+#else
 	if (!ep)
 		return pinfo[(desc_1->field.mpe2 << 1) +
 			desc_1->field.mpe1].size;
+#endif
 	return 0;
 }
 
@@ -354,7 +339,6 @@ static int32_t dp_alloc_port_private(int inst,
 				     u32 flags)
 {
 	int i;
-	u16 dma_ch_base;
 	struct cbm_dp_alloc_data cbm_data = {0};
 
 	if (!owner) {
@@ -370,7 +354,7 @@ static int32_t dp_alloc_port_private(int inst,
 		return DP_FAILURE;
 	}
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (unlikely(dp_dbg_flag & DP_DBG_FLAG_REG)) {
 		DP_DEBUG(DP_DBG_FLAG_REG, "Flags=");
 		for (i = 0; i < ARRAY_SIZE(dp_port_type_str); i++)
@@ -396,8 +380,9 @@ static int32_t dp_alloc_port_private(int inst,
 		dp_inst_insert_mod(owner, port_id, inst, 0);
 		DP_DEBUG(DP_DBG_FLAG_REG, "de-alloc port %d\n", port_id);
 		DP_CB(inst, port_platform_set)(inst, port_id, data, flags);
+		/* Only clear those fields we need to clear */
 		memset(&dp_port_info[inst][port_id], 0,
-		       sizeof(dp_port_info[inst][port_id]));
+		       offsetof(struct pmac_port_info, tail));
 		return DP_SUCCESS;
 	}
 	if (port_id) { /*with specified port_id */
@@ -424,9 +409,15 @@ static int32_t dp_alloc_port_private(int inst,
 		       owner->name, dev_port);
 		return DP_FAILURE;
 	}
+	DP_DEBUG(DP_DBG_FLAG_REG,
+		 "cbm alloc dpport:%d deq:%d dmachan=0x%x deq_num:%d\n",
+		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.dma_chan,
+		 cbm_data.deq_port_num);
+	
 	port_id = cbm_data.dp_port;
+	/* Only clear those fields we need to clear */
 	memset(&dp_port_info[inst][port_id], 0,
-	       sizeof(dp_port_info[inst][port_id]));
+	       offsetof(struct pmac_port_info, tail));
 	/*save info from caller */
 	dp_port_info[inst][port_id].owner = owner;
 	dp_port_info[inst][port_id].dev = dev;
@@ -438,49 +429,52 @@ static int32_t dp_alloc_port_private(int inst,
 	dp_port_info[inst][port_id].port_id = cbm_data.dp_port;
 	dp_port_info[inst][port_id].deq_port_base = cbm_data.deq_port;
 	dp_port_info[inst][port_id].deq_port_num = cbm_data.deq_port_num;
+	DP_DEBUG(DP_DBG_FLAG_REG,
+		 "cbm alloc dp_port:%d deq:%d deq_num:%d\n",
+		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.deq_port_num);
+
 	dp_port_info[inst][port_id].num_dma_chan = cbm_data.num_dma_chan;
-	/*save info to port data*/
-	data->deq_port_base = dp_port_info[inst][port_id].deq_port_base;
-	data->deq_num = dp_port_info[inst][port_id].deq_port_num;
+#if 1  /* TODO: Hardcorded currently, later need to align with CQM */
+	dp_port_info[inst][port_id].policy_base = 0;
+	dp_port_info[inst][port_id].policy_num = 4;
+#endif
 	if (cbm_data.num_dma_chan) {
+		u16 dma_ch_base;
+
 		dma_ch_base = get_dma_chan_idx(inst, cbm_data.num_dma_chan);
 		if (dma_ch_base == DP_FAILURE) {
-			PR_ERR("Failed get_dma_chan_idx!!\n");
+			DP_ERR("Failed get_dma_chan_idx!!\n");
 			cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data,
 					    flags | DP_F_DEREGISTER);
+			/* Only clear those fields we need to clear */
 			memset(&dp_port_info[inst][port_id], 0,
-			       sizeof(dp_port_info[inst][port_id]));
+			       offsetof(struct pmac_port_info, tail));
 			return DP_FAILURE;
 		}
 		dp_port_info[inst][port_id].dma_ch_base = dma_ch_base;
 	}
-	DP_DEBUG(DP_DBG_FLAG_REG,
-		 "cbm alloc dp_port:%d deq:%d deq_num:%d no_dma_chan:%d\n",
-		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.deq_port_num,
-		 cbm_data.num_dma_chan);
+	/*save info to port data*/
+	data->deq_port_base = dp_port_info[inst][port_id].deq_port_base;
+	data->deq_num = dp_port_info[inst][port_id].deq_port_num;
 	if (cbm_data.flags & CBM_PORT_DMA_CHAN_SET)
 		dp_port_info[inst][port_id].dma_chan = cbm_data.dma_chan;
 	if (cbm_data.flags & CBM_PORT_PKT_CRDT_SET)
 		dp_port_info[inst][port_id].tx_pkt_credit =
 				cbm_data.tx_pkt_credit;
 	if (cbm_data.flags & CBM_PORT_BYTE_CRDT_SET)
-	dp_port_info[inst][port_id].tx_b_credit = cbm_data.tx_b_credit;
-	if (cbm_data.flags & CBM_PORT_RING_ADDR_SET)
-	dp_port_info[inst][port_id].tx_ring_addr = cbm_data.tx_ring_addr;
+		dp_port_info[inst][port_id].tx_b_credit = cbm_data.tx_b_credit;
+	if (cbm_data.flags & CBM_PORT_RING_ADDR_SET) {
+		dp_port_info[inst][port_id].tx_ring_addr = cbm_data.tx_ring_addr;
+		dp_port_info[inst][port_id].tx_ring_addr_push = cbm_data.tx_ring_addr_txpush;
+	}
 	if (cbm_data.flags & CBM_PORT_RING_SIZE_SET)
 	dp_port_info[inst][port_id].tx_ring_size = cbm_data.tx_ring_size;
 	if (cbm_data.flags & CBM_PORT_RING_OFFSET_SET)
 		dp_port_info[inst][port_id].tx_ring_offset =
 				cbm_data.tx_ring_offset;
-
-	DP_DEBUG(DP_DBG_FLAG_DBG, "cid=%d pid=%d nid=%d\n",
-		 _DMA_CONTROLLER(cbm_data.dma_chan),
-		 _DMA_PORT(cbm_data.dma_chan),
-		 _DMA_CHANNEL(cbm_data.dma_chan));
-
-	if ((cbm_data.num_dma_chan) && (cbm_data.num_dma_chan >
-		cbm_data.deq_port_num)) {
-		PR_ERR("ERROR: deq_port_num=%d  not equal to num_dma_chan=%d\n",
+	if((cbm_data.num_dma_chan > 1) && (cbm_data.deq_port_num !=
+	   cbm_data.num_dma_chan)) {
+		PR_ERR("ERROR:deq_port_num=%d not equal to num_dma_chan=%d\n",
 		       cbm_data.deq_port_num, cbm_data.num_dma_chan);
 		return DP_FAILURE;
 	}
@@ -491,8 +485,9 @@ static int32_t dp_alloc_port_private(int inst,
 		       port_id, owner ? owner->name : "");
 		cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data,
 				    flags | DP_F_DEREGISTER);
+		/* Only clear those fields we need to clear */
 		memset(&dp_port_info[inst][port_id], 0,
-		       sizeof(dp_port_info[inst][port_id]));
+		       offsetof(struct pmac_port_info, tail));
 		return DP_FAILURE;
 	}
 	if (pmac_cfg)
@@ -597,6 +592,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		cqm_deq_port = port_info->subif_info[i].cqm_deq_port;
 		dma_ch_offset =
 			dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
+
 		port_info->subif_info[i].flags = 1;
 		port_info->subif_info[i].netif = dev;
 		port_info->port_id = port_id;
@@ -642,15 +638,15 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			dma_ch_ref = atomic_read(&(dp_dma_chan_tbl[inst] +
 						 dma_ch_offset)->ref_cnt);
 			/* PPA Directpath/LitePath don't have DMA CH */
-			if (dma_ch_ref == 1 && !(port_info->alloc_flags &
-			    DP_F_DIRECT) && (cbm_data.num_dma_chan))
+			if (dma_ch_ref == 1 &&
+			    !(port_info->alloc_flags & DP_F_DIRECT))
 				cbm_data.dma_chnl_init = 1; /*to enable DMA*/
-			DP_DEBUG(DP_DBG_FLAG_REG, "%s:%s%d %s%d %s%d %s%d\n",
+			DP_DEBUG(DP_DBG_FLAG_REG, "%s:%s%d %s%d %s%d  %s%d\n",
 				 "cbm_dp_enable",
 				 "dp_port=", port_id,
 				 "deq_port=", cbm_data.deq_port,
 				 "dma_chnl_init=", cbm_data.dma_chnl_init,
-				 "tx_dma_chan: (ref=%d)",
+				 "tx_dma_chan ref=%d\n",
 				 dma_ch_ref);
 			if (cbm_dp_enable(owner, port_id, &cbm_data, 0,
 					  port_info->alloc_flags)) {
@@ -763,9 +759,6 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		port_info->status = PORT_DEV_REGISTERED;
 
 	if (!dp_deq_port_tbl[inst][cqm_port].ref_cnt) {
-		u32 dma_ch_ref;
-		u32 dma_ch_offset;
-
 		/*delete all queues which may created by PPA or other apps*/
 		struct dp_node_alloc port_node;
 
@@ -778,11 +771,8 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		cbm_data.dp_inst = inst;
 		cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
 		cbm_data.deq_port = cqm_port;
-		dma_ch_offset = dp_deq_port_tbl[inst][cqm_port].dma_ch_offset;
-		dma_ch_ref = atomic_read(&(dp_dma_chan_tbl[inst] +
-					 dma_ch_offset)->ref_cnt);
 		/* PPA Directpath/LitePath don't have DMA CH */
-		if (dma_ch_ref == 0 && !(port_info->alloc_flags & DP_F_DIRECT))
+		if (!(port_info->alloc_flags & DP_F_DIRECT))
 			cbm_data.dma_chnl_init = 1; /*to disable DMA */
 		if (cbm_dp_enable(owner, port_id, &cbm_data,
 				  CBM_PORT_F_DISABLE, port_info->alloc_flags)) {
@@ -867,7 +857,7 @@ int32_t dp_alloc_port_ext(int inst, struct module *owner,
 	if (inst) /* only inst zero need ACA workaround */
 		return res;
 
-#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
 	/*For VRX518, it will always carry DP_F_FAST_WLAN flag for
 	 * ACA HW resource purpose in CBM
 	 */
@@ -924,8 +914,10 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 {
 	int res = DP_FAILURE;
 	struct pmac_port_info *port_info;
+#if 0
+	struct cbm_dp_alloc_complete_data cbm_data = {0};
+#endif
 	struct dp_dev_data tmp_data = {0};
-
 	if (unlikely(!dp_init_ok)) {
 		PR_ERR("dp_register_dev failed for datapath not init yet\n");
 		return DP_FAILURE;
@@ -968,7 +960,13 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 		return res;
 	}
 
+#if 0
 	/*register a device */
+	if (cbm_dp_port_alloc_complete(owner, port_info->dev,
+		port_info->dev_port, port_id, &cbm_data, flags)) {
+		;
+	}
+#endif
 	if (port_info->status != PORT_ALLOCATED) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
 			 "No de-register for %s for unknown status:%d\n",
@@ -977,7 +975,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 	}
 
 	if (port_info->owner != owner) {
-		DP_DEBUG(DP_DBG_FLAG_REG, "No matched owner(%s):%p->%p\n",
+		DP_DEBUG(DP_DBG_FLAG_REG, "No matched owner(%s):%px->%px\n",
 			 owner->name, owner, port_info->owner);
 		DP_LIB_UNLOCK(&dp_lock);
 		return res;
@@ -1058,7 +1056,7 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 
 	if (((!dev) && !(port_info->alloc_flags & DP_F_FAST_DSL)) ||
 	    !subif_name) {
-		DP_DEBUG(DP_DBG_FLAG_REG, "Wrong dev=%p, subif_name=%p\n",
+		DP_DEBUG(DP_DBG_FLAG_REG, "Wrong dev=%px, subif_name=%px\n",
 			 dev, subif_name);
 		return DP_FAILURE;
 	}
@@ -1067,7 +1065,7 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 	DP_LIB_LOCK(&dp_lock);
 	if (port_info->owner != owner) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
-			 "Unregister subif fail:Not matching:%p(%s)->%p(%s)\n",
+			 "Unregister subif fail:Not matching:%px(%s)->%px(%s)\n",
 			 owner, owner->name, port_info->owner,
 			 port_info->owner->name);
 		DP_LIB_UNLOCK(&dp_lock);
@@ -1086,9 +1084,10 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 					  subif_id, data, flags);
 	if (!(flags & DP_F_SUBIF_LOGICAL))
 		subifid_fn_t = port_info->cb.get_subifid_fn;
+	
 	subif_id_sync = kmalloc(sizeof(*subif_id_sync) * 2, GFP_KERNEL);
 	if (!subif_id_sync) {
-		PR_ERR("Failed to alloc %d bytes\n",
+		PR_ERR("Failed to alloc %zu bytes\n",
 		       sizeof(*subif_id_sync) * 2);
 		return DP_FAILURE;
 	}
@@ -1195,31 +1194,32 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	u16 *subifs = NULL;
 	u32 *subif_flag = NULL;
 	struct logic_dev *tmp = NULL;
+	u16 gpid = 0;
 
 	subifs = kmalloc(sizeof(*subifs) * DP_MAX_CTP_PER_DEV,
 			 GFP_ATOMIC);
 	if (!subifs) {
-		PR_ERR("Failed to alloc %d bytes\n",
+		PR_ERR("Failed to alloc %zu bytes\n",
 		       sizeof(*subifs) * DP_MAX_CTP_PER_DEV);
 		return res;
 	}
 	subif_flag = kmalloc(sizeof(*subif_flag) * DP_MAX_CTP_PER_DEV,
 			     GFP_ATOMIC);
 	if (!subif_flag) {
-		PR_ERR("Failed to alloc %d bytes\n",
+		PR_ERR("Failed to alloc %zu bytes\n",
 		       sizeof(*subif_flag) * DP_MAX_CTP_PER_DEV);
 		kfree(subifs);
 		return res;
 	}
 	if (!netif && !subif_data) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
-			 "dp_get_netif_subifid failed: netif=%p subif_data=%p\n",
+			 "dp_get_netif_subifid failed: netif=%px subif_data=%px\n",
 			 netif, subif_data);
 		goto EXIT;
 	}
 	if (!subif) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
-			 "dp_get_netif_subifid failed:subif=%p\n", subif);
+			 "dp_get_netif_subifid failed:subif=%px\n", subif);
 		goto EXIT;
 	}
 	if (!netif && subif_data)
@@ -1264,6 +1264,8 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 							subif_flag);
 				bport = PORT_SUBIF(inst, k, i, bp);
 				subif->flag_bp = 0;
+				gpid = PORT_SUBIF(inst, k, i, gpid);
+				subif->def_qid = PORT_SUBIF(inst, k, i, qid);
 				num++;
 				break;
 			}
@@ -1290,6 +1292,9 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					 */
 					subifs[num] = PORT_SUBIF(inst, k, i,
 								 subif);
+					gpid = PORT_SUBIF(inst, k, i, gpid);
+					subif->def_qid = PORT_SUBIF(inst, k, i,
+							     qid);
 					subif_flag[num] = PORT_SUBIF(inst, k, i,
 								subif_flag);
 					if (dp_port_info[inst][k].subif_info[i].
@@ -1320,6 +1325,10 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif->inst = inst;
 					subif->port_id = k;
 					subif->bport = tmp->bp;
+					subif->gpid = dp_port_info[inst][k].
+					    subif_info[i].gpid;
+					subif->def_qid = dp_port_info[inst][k].
+					    subif_info[i].qid;
 					res = 0;
 					/*note: logical device no callback */
 					goto EXIT;
@@ -1333,7 +1342,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	if (port_id < 0) {
 		if (subif_data)
 			DP_DEBUG(DP_DBG_FLAG_DBG,
-				 "dp_get_netif_subifid failed with subif_data %p\n",
+				 "dp_get_netif_subifid failed with subif_data %px\n",
 				 subif_data);
 		else /*netif must should be valid */
 			DP_DEBUG(DP_DBG_FLAG_DBG,
@@ -1345,6 +1354,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	subif->inst = inst;
 	subif->port_id = port_id;
 	subif->bport = bport;
+	subif->gpid = gpid;
 	subif->alloc_flag = dp_port_info[inst][port_id].alloc_flags;
 	subif->subif_num = num;
 	for (i = 0; i < num; i++) {
@@ -1728,7 +1738,7 @@ int dp_set_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 	}
 	map = kmalloc(sizeof(*map), GFP_ATOMIC);
 	if (!map) {
-		PR_ERR("Failed for kmalloc: %d bytes\n", sizeof(*map));
+		PR_ERR("Failed for kmalloc: %zu bytes\n", sizeof(*map));
 		return DP_FAILURE;
 	}
 	memcpy(map, mapper, sizeof(*map));
@@ -1828,6 +1838,7 @@ int32_t dp_rx(struct sk_buff *skb, uint32_t flags)
 {
 	struct sk_buff *next;
 	int res = -1;
+	int inst = 0;
 
 	if (unlikely(!dp_init_ok)) {
 		while (skb) {
@@ -1841,7 +1852,7 @@ int32_t dp_rx(struct sk_buff *skb, uint32_t flags)
 	while (skb) {
 		next = skb->next;
 		skb->next = 0;
-		res = dp_rx_one_skb(skb, flags);
+		res = dp_port_prop[inst].info.dp_rx(skb, flags);
 		skb = next;
 	}
 
@@ -1890,423 +1901,7 @@ int dp_lan_wan_bridging(int port_id, struct sk_buff *skb)
 	return DP_SUCCESS;
 }
 
-static void rx_dbg(u32 f, struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
-		   struct dma_rx_desc_1 *desc1, struct dma_rx_desc_2 *desc2,
-		   struct dma_rx_desc_3 *desc3, unsigned char *parser,
-		   struct pmac_rx_hdr *pmac, int paser_exist)
-{
-	int inst = 0;
-
-	DP_DEBUG(DP_DBG_FLAG_DUMP_RX,
-		 "\ndp_rx:skb->data=%p Loc=%x offset=%d skb->len=%d\n",
-		 skb->data, desc2->field.data_ptr,
-		 desc3->field.byte_offset, skb->len);
-	if ((f) & DP_DBG_FLAG_DUMP_RX_DATA)
-		dp_dump_raw_data(skb->data,
-				 (skb->len >
-				  (print_len)) ? skb->len : (print_len),
-				 "Original Data");
-	DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "parse hdr size = %d\n",
-		 paser_exist);
-	if ((f) & DP_DBG_FLAG_DUMP_RX_DESCRIPTOR)
-		dp_port_prop[inst].info.dump_rx_dma_desc(desc0, (desc1),
-			desc2, desc3);
-	if (paser_exist && (dp_dbg_flag & DP_DBG_FLAG_DUMP_RX_PASER))
-		dump_parser_flag(parser);
-	if ((f) & DP_DBG_FLAG_DUMP_RX_PMAC)
-		dp_port_prop[inst].info.dump_rx_pmac(pmac);
-}
-
-#define PRINT_INTERVAL  (5 * HZ) /* 5 seconds */
-unsigned long dp_err_interval = PRINT_INTERVAL;
-static void rx_dbg_zero_port(struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
-			     struct dma_rx_desc_1 *desc1,
-			     struct dma_rx_desc_2 *desc2,
-			     struct dma_rx_desc_3 *desc3,
-			     unsigned char *parser,
-			     struct pmac_rx_hdr *pmac, int paser_exist,
-			     u32 ep, u32 port_id, int vap)
-{
-	int inst = 0;
-	static unsigned long last;
-
-	if (!dp_dbg_err) /*bypass dump */
-		return;
-	if (time_before(jiffies, last + dp_err_interval))
-		/* not print in order to keep console not busy */
-		return;
-	last = jiffies;
-	DP_DEBUG(-1, "%s=%d vap=%d\n",
-		 (ep) ? "ep" : "port_id", port_id, vap);
-	PR_ERR("\nDrop for ep and source port id both zero ??\n");
-	dp_port_prop[inst].info.dump_rx_dma_desc(desc0, desc1, desc2, desc3);
-
-	if (paser_exist)
-		dump_parser_flag(parser);
-	if (pmac)
-		dp_port_prop[inst].info.dump_rx_pmac(pmac);
-	dp_dump_raw_data((char *)(skb->data),
-			 (skb->len >
-			  print_len) ? skb->len : print_len,
-			 "Recv Data");
-}
-
-/* clone skb to send one copy to lct dev for multicast/broadcast
- * otherwise for unicast send only to lct device
- * return 0 - Caller will not proceed handling i.e. for unicast do rx only for
- *	      LCT port
- *	  1 - Caller continue to handle rx for other device
- */
-static int dp_handle_lct(struct pmac_port_info *dp_port,
-			 struct sk_buff *skb, dp_rx_fn_t rx_fn)
-{
-	struct sk_buff *lct_skb;
-	int vap;
-
-	vap = dp_port->lct_idx;
-
-	skb->dev = dp_port->subif_info[vap].netif;
-	if (skb->data[PMAC_SIZE] & 0x1) {
-		/* multicast/broadcast */
-		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT mcast or broadcast\n");
-		if ((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
-			return 1;
-		}
-		lct_skb = skb_clone(skb, GFP_ATOMIC);
-		if (!lct_skb) {
-			PR_ERR("LCT mcast/bcast skb clone fail\n");
-			return -1;
-		}
-		lct_skb->dev = dp_port->subif_info[vap].netif;
-		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
-		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s)\n",
-			 lct_skb->dev->name ? lct_skb->dev->name : "NULL");
-		rx_fn(lct_skb->dev, NULL, lct_skb, lct_skb->len);
-		return 1;
-	} else if (memcmp(skb->data + PMAC_SIZE, skb->dev->dev_addr, 6) == 0) {
-		/* unicast */
-		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
-		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s)\n",
-			 skb->dev->name ? skb->dev->name : "NULL");
-		if ((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
-			dev_kfree_skb_any(skb);
-			return 0;
-		}
-		rx_fn(skb->dev, NULL, skb, skb->len);
-		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
-		return 0;
-	}
-	return 1;
-}
-
-#define DP_TS_HDRLEN	10
-
-static inline int32_t dp_rx_one_skb(struct sk_buff *skb, uint32_t flags)
-{
-	int res = DP_SUCCESS;
-	struct dma_rx_desc_0 *desc_0 = (struct dma_rx_desc_0 *)&skb->DW0;
-	struct dma_rx_desc_1 *desc_1 = (struct dma_rx_desc_1 *)&skb->DW1;
-	struct dma_rx_desc_2 *desc_2 = (struct dma_rx_desc_2 *)&skb->DW2;
-	struct dma_rx_desc_3 *desc_3 = (struct dma_rx_desc_3 *)&skb->DW3;
-	struct pmac_rx_hdr *pmac;
-	unsigned char *parser = NULL;
-	int rx_tx_flag = 0;	/*0-rx, 1-tx */
-	u32 ep = desc_1->field.ep;	/* ep: 0 -15 */
-	int vap; /*vap: 0-15 */
-	int paser_exist;
-	u32 port_id = ep; /*same with ep now, later set to sspid if ep is 0 */
-	struct net_device *dev = NULL;
-	dp_rx_fn_t rx_fn;
-	char decryp = 0;
-	u8 inst = 0;
-	struct pmac_port_info *dp_port;
-	struct mac_ops *ops;
-	int ret_lct = 1;
-
-	dp_port = &dp_port_info[inst][0];
-	if (!skb) {
-		PR_ERR("skb NULL\n");
-		return DP_FAILURE;
-	}
-	if (!skb->data) {
-		PR_ERR("skb->data NULL\n");
-		return DP_FAILURE;
-	}
-
-	paser_exist = parser_enabled(port_id, desc_1);
-	if (paser_exist)
-		parser = skb->data;
-	pmac = (struct pmac_rx_hdr *)(skb->data + paser_exist);
-
-	if (unlikely(dp_dbg_flag))
-		rx_dbg(dp_dbg_flag, skb, desc_0, desc_1, desc_2,
-		       desc_3, parser, pmac, paser_exist);
-	if (paser_exist) {
-		skb_pull(skb, paser_exist);	/*remove parser */
-#if IS_ENABLED(CONFIG_PPA_API_SW_FASTPATH)
-		skb->mark |= FLG_PPA_PROCESSED;
-#endif
-	}
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
-	/*Sanity check */
-	if (unlikely(dp_port_prop[inst].info.not_valid_rx_ep(ep))) {
-		DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "Wrong: why ep=%d??\n", ep);
-		rx_dbg(-1, skb, desc_0, desc_1, desc_2, desc_3,
-		       parser, pmac, paser_exist);
-		goto RX_DROP;
-	}
-	if (unlikely(dp_drop_all_tcp_err && desc_1->field.tcp_err)) {
-		DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "\n----dp_rx why tcp_err ???\n");
-		rx_dbg(-1, skb, desc_0, desc_1, desc_2, desc_3, parser,
-		       pmac, paser_exist);
-		goto RX_DROP;
-	}
-#endif
-
-	if (port_id == PMAC_CPU_ID) { /*To CPU and need check src pmac port */
-		dp_port_prop[inst].info.update_port_vap(inst, &port_id, &vap,
-			skb,
-			pmac, &decryp);
-	} else {		/*GSWIP-R already know the destination */
-		rx_tx_flag = 1;
-		vap = GET_VAP(desc_0->field.dest_sub_if_id,
-			      dp_port_info[inst][port_id].vap_offset,
-			      dp_port_info[inst][port_id].vap_mask);
-	}
-	if (unlikely(!port_id)) { /*Normally shouldnot go to here */
-		rx_dbg_zero_port(skb, desc_0, desc_1, desc_2, desc_3, parser,
-				 pmac, paser_exist, ep, port_id, vap);
-		goto RX_DROP;
-	}
-	dp_port = &dp_port_info[inst][port_id];
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-	if (dp_port->f_ptp) {
-		ops = dp_port_prop[inst].mac_ops[port_id];
-		if (ops)
-			ops->do_rx_hwts(ops, skb);
-	}
-#endif
-	/*PON traffic always have timestamp attached,removing Timestamp */
-	if (dp_port->alloc_flags & (DP_F_GPON | DP_F_EPON)) {
-		/* Stripping of last 10 bytes timestamp */
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-		if (!dp_port->f_ptp)
-			__pskb_trim(skb, skb->len - DP_TS_HDRLEN);
-#else
-		__pskb_trim(skb, skb->len - DP_TS_HDRLEN);
-#endif
-	}
-
-	rx_fn = dp_port->cb.rx_fn;
-	if (likely(rx_fn && dp_port->status)) {
-		/*Clear some fields as SWAS V3.7 required */
-		//desc_1->all &= dma_rx_desc_mask1.all;
-		desc_3->all &= dma_rx_desc_mask3.all;
-		skb->priority = desc_1->field.classid;
-		skb->dev = dp_port->subif_info[vap].netif;
-		if (((dp_port->alloc_flags & DP_F_FAST_DSL) == 0) && /*non-dsl*/
-			dp_port->subif_info[vap].flags) { /*not de-registered */
-			dev = dp_port->subif_info[vap].netif;
-		}
-		if (decryp) { /*workaround mark for bypass xfrm policy*/
-			desc_1->field.dec = 1;
-			desc_1->field.enc = 1;
-		}
-		if (!dev &&
-		    ((dp_port->alloc_flags & DP_F_FAST_DSL) == 0)) {
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
-			goto RX_DROP;
-		}
-
-		if (unlikely(dp_dbg_flag)) {
-			DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "%s=%d vap=%d\n",
-				 (ep) ? "ep" : "port_id", port_id, vap);
-
-			if (dp_dbg_flag & DP_DBG_FLAG_DUMP_RX_DATA) {
-				dp_dump_raw_data(skb->data, PMAC_SIZE,
-						 "pmac to top drv");
-				dp_dump_raw_data(skb->data + PMAC_SIZE,
-						 ((skb->len - PMAC_SIZE) >
-							print_len) ?
-							skb->len - PMAC_SIZE :
-							print_len,
-						 "Data to top drv");
-			}
-			if (dp_dbg_flag & DP_DBG_FLAG_DUMP_RX_DESCRIPTOR)
-				dp_port_prop[inst].info.dump_rx_dma_desc(
-					desc_0, desc_1,
-					desc_2, desc_3);
-		}
-#ifdef CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST
-		if (unlikely(ltq_mpe_fasthook_rx_fn))
-			ltq_mpe_fasthook_rx_fn(skb, 1, NULL);	/*with pmac */
-#endif
-		if (unlikely((enum TEST_MODE)dp_rx_test_mode ==
-			DP_RX_MODE_LAN_WAN_BRIDGE)) {
-			/*for datapath performance test only */
-			dp_lan_wan_bridging(port_id, skb);
-			/*return DP_SUCCESS;*/
-		}
-		/*If switch h/w acceleration is enabled,setting of this bit
-		 *avoid forwarding duplicate packets from linux
-		 */
-		#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
-			if (dp_port->subif_info[vap].fid > 0)
-				skb->offload_fwd_mark = 1;
-		#endif
-		if (rx_tx_flag == 0) {
-			if (dp_port->lct_idx > 0)
-				ret_lct = dp_handle_lct(dp_port, skb, rx_fn);
-			if (ret_lct) {
-				if ((STATS_GET(dp_port->subif_info[vap].
-					rx_flag) <= 0) &&
-					((dp_port->alloc_flags & DP_F_FAST_DSL)
-						== 0)) {
-					UP_STATS(dp_port->subif_info[vap].
-							mib.rx_fn_dropped);
-					goto RX_DROP2;
-				}
-				rx_fn(dev, NULL, skb, skb->len);
-				UP_STATS(dp_port->subif_info[vap].mib.
-								rx_fn_rxif_pkt);
-			}
-		} else {
-			if ((STATS_GET(dp_port->subif_info[vap].
-					rx_flag) <= 0) &&
-					((dp_port->alloc_flags & DP_F_FAST_DSL)
-						== 0)) {
-				UP_STATS(dp_port->subif_info[vap].mib.
-						rx_fn_dropped);
-				goto RX_DROP2;
-			}
-			rx_fn(NULL, dev, skb, skb->len);
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_txif_pkt);
-		}
-
-		return DP_SUCCESS;
-	}
-
-	if (unlikely(port_id >=
-	    dp_port_prop[inst].info.cap.max_num_dp_ports - 1)) {
-		PR_ERR("Drop for wrong ep or src port id=%u ??\n",
-		       port_id);
-		goto RX_DROP;
-	} else if (unlikely(dp_port->status == PORT_FREE)) {
-		DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "Drop for port %u free\n",
-			 port_id);
-		goto RX_DROP;
-	} else if (unlikely(!rx_fn)) {
-		DP_DEBUG(DP_DBG_FLAG_DUMP_RX,
-			 "Drop for subif of port %u not registered yet\n",
-			 port_id);
-		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
-		goto RX_DROP2;
-	} else {
-		pr_info("Unknown issue\n");
-	}
-RX_DROP:
-	UP_STATS(dp_port->rx_err_drop);
-RX_DROP2:
-	if (skb)
-		dev_kfree_skb_any(skb);
-	return res;
-}
-
-void dp_xmit_dbg(
-	char *title,
-	struct sk_buff *skb,
-	s32 ep,
-	s32 len,
-	u32 flags,
-	struct pmac_tx_hdr *pmac,
-	dp_subif_t *rx_subif,
-	int need_pmac,
-	int gso,
-	int checksum)
-{
-	DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
-		 "%s: dp_xmit:skb->data/len=0x%p/%d data_ptr=%x from port=%d and subitf=%d\n",
-		 title,
-		 skb->data, len,
-		 ((struct dma_tx_desc_2 *)&skb->DW2)->field.data_ptr,
-		 ep, rx_subif->subif);
-	if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DATA) {
-		if (pmac) {
-			dp_dump_raw_data((char *)pmac, PMAC_SIZE, "Tx Data");
-			dp_dump_raw_data(skb->data,
-					 (skb->len > print_len) ?
-						skb->len :
-						print_len,
-					 "Tx Data");
-		} else
-			dp_dump_raw_data(skb->data,
-					 (skb->len > print_len) ?
-						skb->len : print_len,
-					 "Tx Data");
-	}
-	DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
-		 "ip_summed=%s(%d) encapsulation=%s\n",
-		 dp_skb_csum_str(skb), skb->ip_summed,
-		 skb->encapsulation ? "Yes" : "No");
-	if (skb->encapsulation)
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
-			 "inner ip start=0x%x(%d), transport=0x%x(%d)\n",
-			 (unsigned int)skb_inner_network_header(skb),
-			 (int)(skb_inner_network_header(skb) -
-			       skb->data),
-			 (unsigned int)
-			 skb_inner_transport_header(skb),
-			 (int)(skb_inner_transport_header(skb) -
-			       skb_inner_network_header(skb)));
-	else
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
-			 "ip start=0x%x(%d), transport=0x%x(%d)\n",
-			 (unsigned int)(unsigned int)
-			 skb_network_header(skb),
-			 (int)(skb_network_header(skb) - skb->data),
-			 (unsigned int)skb_transport_header(skb),
-			 (int)(skb_transport_header(skb) -
-			       skb_network_header(skb)));
-
-	if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DESCRIPTOR)
-		dp_port_prop[0].info.dump_tx_dma_desc(
-				 (struct dma_tx_desc_0 *)&skb->DW0,
-				 (struct dma_tx_desc_1 *)&skb->DW1,
-				 (struct dma_tx_desc_2 *)&skb->DW2,
-				 (struct dma_tx_desc_3 *)&skb->DW3);
-
-	DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "flags=0x%x skb->len=%d\n",
-		 flags, skb->len);
-	DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
-		 "skb->data=0x%p with pmac hdr size=%u\n", skb->data,
-		 sizeof(struct pmac_tx_hdr));
-	if (need_pmac) { /*insert one pmac header */
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
-			 "need pmac\n");
-		if (pmac && (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DESCRIPTOR))
-			dp_port_prop[0].info.dump_tx_pmac(pmac);
-	} else {
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "no pmac\n");
-	}
-	if (gso)
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "GSO pkt\n");
-	else
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "Non-GSO pkt\n");
-	if (checksum)
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "Need checksum offload\n");
-	else
-		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "No need checksum offload pkt\n");
-
-	DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "\n\n");
-}
-
-#define NO_NEED_PMAC(flags)  ((dp_info->alloc_flags & \
-		(DP_F_FAST_WLAN | DP_F_FAST_DSL)) && \
-		!((flags) & (DP_TX_CAL_CHKSUM | DP_TX_DSL_FCS)))
-
-static void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
+void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 		       u32 ip_offset, int ip_off_hw_adjust,
 		       u32 tcp_h_offset)
 {
@@ -2318,329 +1913,12 @@ static void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 int32_t dp_xmit(struct net_device *rx_if, dp_subif_t *rx_subif,
 		struct sk_buff *skb, int32_t len, uint32_t flags)
 {
-	struct dma_tx_desc_0 *desc_0;
-	struct dma_tx_desc_1 *desc_1;
-	struct dma_tx_desc_2 *desc_2;
-	struct dma_tx_desc_3 *desc_3;
-	struct pmac_port_info *dp_info = NULL;
-	struct pmac_port_info2 *dp_info2 = NULL;
-	struct pmac_tx_hdr pmac = {0};
-	u32 ip_offset, tcp_h_offset, tcp_type;
-	char tx_chksum_flag = 0; /*check csum cal can be supported or not */
-	char insert_pmac_f = 1;	/*flag to insert one pmac */
-	int res = DP_SUCCESS;
-	int ep, vap;
-	enum dp_xmit_errors err_ret = 0;
+	int32_t res;
 	int inst = 0;
-	struct cbm_tx_data data;
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-	struct mac_ops *ops;
-	int rec_id = 0;
-#endif
 
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
-	if (unlikely(!dp_init_ok)) {
-		err_ret = DP_XMIT_ERR_NOT_INIT;
-		goto lbl_err_ret;
-	}
-	if (unlikely(!rx_subif)) {
-		err_ret = DP_XMIT_ERR_NULL_SUBIF;
-		goto lbl_err_ret;
-	}
-	if (unlikely(!skb)) {
-		err_ret = DP_XMIT_ERR_NULL_SKB;
-		goto lbl_err_ret;
-	}
-#endif
-	ep = rx_subif->port_id;
-	if (unlikely(ep >= dp_port_prop[inst].info.cap.max_num_dp_ports)) {
-		err_ret = DP_XMIT_ERR_PORT_TOO_BIG;
-		goto lbl_err_ret;
-	}
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
-	if (unlikely(in_irq())) {
-		err_ret = DP_XMIT_ERR_IN_IRQ;
-		goto lbl_err_ret;
-	}
-#endif
-	dp_info = &dp_port_info[inst][ep];
-	dp_info2 = &dp_port_info2[inst][ep];
-	vap = GET_VAP(rx_subif->subif, dp_info->vap_offset, dp_info->vap_mask);
-	if (unlikely(!rx_if && /*For atm pppoa case, rx_if is NULL now */
-		     !(dp_info->alloc_flags & DP_F_FAST_DSL))) {
-		err_ret = DP_XMIT_ERR_NULL_IF;
-		goto lbl_err_ret;
-	}
-#ifdef CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST
-	if (unlikely(ltq_mpe_fasthook_tx_fn))
-		ltq_mpe_fasthook_tx_fn(skb, 0, NULL);
-#endif
-	if (unlikely(dp_dbg_flag))
-		dp_xmit_dbg("\nOrig", skb, ep, len, flags,
-			    NULL, rx_subif, 0, 0, flags & DP_TX_CAL_CHKSUM);
+	res = dp_port_prop[inst].info.dp_tx(rx_if, rx_subif, skb, len, flags);
 
-	/*No PMAC for WAVE500 and DSL by default except bonding case */
-	if (unlikely(NO_NEED_PMAC(dp_info->alloc_flags)))
-		insert_pmac_f = 0;
-
-	/**********************************************
-	 *Must put these 4 lines after INSERT_PMAC
-	 *since INSERT_PMAC will change skb if needed
-	 *********************************************/
-	desc_0 = (struct dma_tx_desc_0 *)&skb->DW0;
-	desc_1 = (struct dma_tx_desc_1 *)&skb->DW1;
-	desc_2 = (struct dma_tx_desc_2 *)&skb->DW2;
-	desc_3 = (struct dma_tx_desc_3 *)&skb->DW3;
-
-	if (flags & DP_TX_CAL_CHKSUM) {
-		int ret_flg;
-
-		if (!dp_port_prop[inst].info.check_csum_cap()) {
-			err_ret = DP_XMIT_ERR_CSM_NO_SUPPORT;
-			goto lbl_err_ret;
-		}
-		ret_flg = get_offset_clear_chksum(skb, &ip_offset,
-						  &tcp_h_offset, &tcp_type);
-		if (likely(ret_flg == 0))
-			/*HW can support checksum offload*/
-			tx_chksum_flag = 1;
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
-		else if (ret_flg == -1)
-			pr_info_once("packet can't do hw checksum\n");
-#endif
-	}
-
-	/*reset all descriptors as SWAS required since SWAS 3.7 */
-	/*As new SWAS 3.7 required, MPE1/Color/FlowID is set by applications */
-	desc_0->all &= dma_tx_desc_mask0.all;
-	desc_1->all &= dma_tx_desc_mask1.all;
-	/*desc_2->all = 0;*/ /*remove since later it will be set properly */
-	if (desc_3->field.dic) {
-		desc_3->all = 0; /*keep DIC bit to support test tool*/
-		desc_3->field.dic = 1;
-	} else {
-		desc_3->all = 0;
-	}
-
-	if (flags & DP_TX_OAM) /* OAM */
-		desc_3->field.pdu_type = 1;
-	desc_1->field.classid = (skb->priority >= 15) ? 15 : skb->priority;
-	desc_2->field.data_ptr = (uint32_t)skb->data;
-
-	/*for ETH LAN/WAN */
-	if (dp_info->alloc_flags & (DP_F_FAST_ETH_LAN | DP_F_FAST_ETH_WAN |
-	    DP_F_GPON | DP_F_EPON | DP_F_GINT)) {
-		/*always with pmac*/
-		if (likely(tx_chksum_flag)) {
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			set_chksum(&pmac, tcp_type, ip_offset,
-				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		} else {
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		}
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588_SW_WORKAROUND)
-		if (dp_info->f_ptp)
-#else
-		if (dp_info->f_ptp &&
-		    (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
-#endif
-		{	ops = dp_port_prop[inst].mac_ops[dp_info->port_id];
-			if (!ops) {
-				err_ret = DP_XMIT_PTP_ERR;
-				goto lbl_err_ret;
-			}
-			rec_id = ops->do_tx_hwts(ops, skb);
-			if (rec_id < 0) {
-				err_ret = DP_XMIT_PTP_ERR;
-				goto lbl_err_ret;
-			}
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_PTP, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			pmac.record_id_msb = rec_id;
-		}
-#endif
-	} else if (dp_info->alloc_flags & DP_F_FAST_DSL) { /*some with pmac*/
-		if (unlikely(flags & DP_TX_CAL_CHKSUM)) { /* w/ pmac*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			set_chksum(&pmac, tcp_type, ip_offset,
-				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-#endif
-		} else if (flags & DP_TX_DSL_FCS) {/* after checksum check */
-			/* w/ pmac for FCS purpose*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-			insert_pmac_f = 1;
-#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-#endif
-		} else { /*no pmac */
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
-							desc_0, desc_1,
-							dp_info2);
-		}
-	} else if (dp_info->alloc_flags & DP_F_FAST_WLAN) {/*some with pmac*/
-		/*normally no pmac. But if need checksum, need pmac*/
-		if (unlikely(tx_chksum_flag)) { /*with pmac*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			set_chksum(&pmac, tcp_type, ip_offset,
-				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-#ifdef CONFIG_LTQ_DATAPATH_ACA_CSUM_WORKAROUND
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-#endif
-		} else { /*no pmac*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
-							desc_0, desc_1,
-							dp_info2);
-		}
-	} else if (dp_info->alloc_flags & DP_F_DIRECTLINK) { /*always w/ pmac*/
-		if (unlikely(flags & DP_TX_CAL_CHKSUM)) { /* w/ pmac*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			set_chksum(&pmac, tcp_type, ip_offset,
-				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		} else if (flags & DP_TX_TO_DL_MPEFW) { /*w/ pmac*/
-			/*copy from checksum's pmac template setting,
-			 *but need to reset tcp_chksum in TCP header
-			 */
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		} else { /*do like normal directpath with pmac */
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		}
-	} else { /*normal directpath: always w/ pmac */
-		if (unlikely(tx_chksum_flag)) {
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM,
-							&pmac,
-							desc_0,
-							desc_1,
-							dp_info2);
-			set_chksum(&pmac, tcp_type, ip_offset,
-				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		} else { /*w/ pmac */
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
-							desc_0, desc_1,
-							dp_info2);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		}
-	}
-	desc_3->field.data_len = skb->len;
-
-	if (unlikely(dp_dbg_flag)) {
-		if (insert_pmac_f)
-			dp_xmit_dbg("After", skb, ep, len, flags, &pmac,
-				    rx_subif, insert_pmac_f, skb_is_gso(skb),
-				    tx_chksum_flag);
-		else
-			dp_xmit_dbg("After", skb, ep, len, flags, NULL,
-				    rx_subif, insert_pmac_f, skb_is_gso(skb),
-				    tx_chksum_flag);
-	}
-
-#if IS_ENABLED(CONFIG_LTQ_TOE_DRIVER)
-	if (skb_is_gso(skb)) {
-		res = ltq_tso_xmit(skb, &pmac, sizeof(pmac), 0);
-		UP_STATS(dp_info->subif_info[vap].mib.tx_tso_pkt);
-		return res;
-	}
-#endif /* CONFIG_LTQ_TOE_DRIVER */
-
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
-	if (unlikely(!desc_1->field.ep)) {
-		err_ret = DP_XMIT_ERR_EP_ZERO;
-		goto lbl_err_ret;
-	}
-#endif
-	if (insert_pmac_f) {
-		data.pmac = (u8 *)&pmac;
-		data.pmac_len = sizeof(pmac);
-		data.dp_inst = inst;
-		data.dp_inst = 0;
-	} else {
-		data.pmac = NULL;
-		data.pmac_len = 0;
-		data.dp_inst = inst;
-		data.dp_inst = 0;
-	}
-	res = cbm_cpu_pkt_tx(skb, &data, 0);
-	UP_STATS(dp_info->subif_info[vap].mib.tx_cbm_pkt);
 	return res;
-
-lbl_err_ret:
-	switch (err_ret) {
-	case DP_XMIT_ERR_NOT_INIT:
-		PR_RATELIMITED("dp_xmit failed for dp no init yet\n");
-		break;
-	case DP_XMIT_ERR_IN_IRQ:
-		PR_RATELIMITED("dp_xmit not allowed in interrupt context\n");
-		break;
-	case DP_XMIT_ERR_NULL_SUBIF:
-		PR_RATELIMITED("dp_xmit failed for rx_subif null\n");
-		UP_STATS(PORT_INFO(inst, 0, tx_err_drop));
-		break;
-	case DP_XMIT_ERR_PORT_TOO_BIG:
-		UP_STATS(PORT_INFO(inst, 0, tx_err_drop));
-		PR_RATELIMITED("rx_subif->port_id >= max_ports");
-		break;
-	case DP_XMIT_ERR_NULL_SKB:
-		PR_RATELIMITED("skb NULL");
-		UP_STATS(PORT_INFO(inst, rx_subif->port_id, tx_err_drop));
-		break;
-	case DP_XMIT_ERR_NULL_IF:
-		UP_STATS(PORT_VAP_MIB(inst, ep, vap, tx_pkt_dropped));
-		PR_RATELIMITED("rx_if NULL");
-		break;
-	case DP_XMIT_ERR_REALLOC_SKB:
-		PR_INFO_ONCE("dp_create_new_skb failed\n");
-		break;
-	case DP_XMIT_ERR_EP_ZERO:
-		PR_ERR("Why ep zero in dp_xmit for %s\n",
-		       skb->dev ? skb->dev->name : "NULL");
-		break;
-	case DP_XMIT_ERR_GSO_NOHEADROOM:
-		PR_ERR("No enough skb headerroom(GSO). Need tune SKB buffer\n");
-		break;
-	case DP_XMIT_ERR_CSM_NO_SUPPORT:
-		PR_RATELIMITED("dp_xmit not support checksum\n");
-		break;
-	case DP_XMIT_PTP_ERR:
-		break;
-	default:
-		UP_STATS(dp_info->subif_info[vap].mib.tx_pkt_dropped);
-		PR_INFO_ONCE("Why come to here:%x\n",
-			     dp_port_info[inst][ep].status);
-	}
-	if (skb)
-		dev_kfree_skb_any(skb);
-	return DP_FAILURE;
 }
 EXPORT_SYMBOL(dp_xmit);
 
@@ -2678,6 +1956,7 @@ int dp_set_min_frame_len(s32 dp_port,
 			 s32 min_frame_len,
 			 uint32_t flags)
 {
+	PR_INFO("Dummy dp_set_min_frame_len, need to implement later\n");
 	return DP_SUCCESS;
 }
 EXPORT_SYMBOL(dp_set_min_frame_len);
@@ -2696,6 +1975,7 @@ int dp_rx_enable(struct net_device *netif, char *ifname, uint32_t flags)
 	port_info = PORT(subif.inst, subif.port_id);
 	vap = GET_VAP(subif.subif, port_info->vap_offset,
 		      port_info->vap_mask);
+	
 	STATS_SET(port_info->subif_info[vap].rx_flag, flags ? 1 : 0);
 
 	return DP_SUCCESS;
@@ -2716,9 +1996,9 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 	info.bp = subif.bport;
 	info.dp_port = subif.port_id;
 	info.inst = subif.inst;
-
-	if ((vlan->def_apply == DP_VLAN_APPLY_CTP) &&
-	    (subif.flag_pmapper == 1)) {
+	
+	if ((vlan->def_apply == DP_VLAN_APPLY_CTP) && 
+				(subif.flag_pmapper == 1)) {
 		PR_ERR("cannot apply VLAN rule for pmapper device\n");
 		return DP_FAILURE;
 	} else if (vlan->def_apply == DP_VLAN_APPLY_CTP) {
@@ -2726,7 +2006,7 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 	} else {
 		info.dev_type |= subif.flag_bp;
 	}
-	if (vlan->mcast_flag == DP_MULTICAST_SESSION)
+	if (vlan->mcast_flag == DP_MULTICAST_SESSION) 
 		info.dev_type |= 0x02;
 	DP_DEBUG(DP_DBG_FLAG_PAE, "dev_type:0x%x\n", info.dev_type);
 	if (DP_CB(subif.inst, dp_tc_vlan_set))
@@ -2785,7 +2065,7 @@ void test(void)
 	 *byte 6:port_map=0
 	 *byte 7:port_map2=1
 	 */
-#ifdef CONFIG_LITTLE_ENDIAN
+#if IS_ENABLED(CONFIG_LITTLE_ENDIAN)
 	char example_data[] = {
 		0x00, 0x3a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e,
@@ -2830,22 +2110,18 @@ void test(void)
 
 int dp_basic_proc(void)
 {
-#ifdef CONFIG_LTQ_DATAPATH_LOOPETH
 	struct dentry *p_node;
-#endif
 
 	/*mask to reset some field as SWAS required  all others try to keep */
 	memset(dp_port_prop, 0, sizeof(dp_port_prop));
 	memset(dp_port_info, 0, sizeof(dp_port_info));
-#ifdef CONFIG_LTQ_DATAPATH_LOOPETH
 	p_node = dp_proc_install();
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_LOOPETH)
 	dp_loop_eth_dev_init(p_node);
-#else
-	dp_proc_install();
 #endif
 	dp_inst_init(0);
 	dp_subif_list_init();
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	dp_switchdev_init();
 #endif
 	return 0;
@@ -2858,15 +2134,15 @@ int dp_basic_proc(void)
 	if (dp_init_ok) /*alredy init */
 		return 0;
 	register_notifier(0);
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST)
 	PR_INFO("\n\n--prx300_test to simulate SLIM QOS drv---\n\n\n");
-#endif /*CONFIG_LTQ_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST*/
+#endif /*CONFIG_INTEL_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST*/
 	register_dp_cap(0);
 	if (request_dp(0)) /*register 1st dp instance */ {
 		PR_ERR("register_dp instance fail\n");
 		return -1;
 	}
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 	PR_INFO("preempt_count=%x\n", preempt_count());
 	if (preempt_count() & HARDIRQ_MASK)
 		PR_INFO("HARDIRQ_MASK\n");
@@ -2886,19 +2162,19 @@ int dp_basic_proc(void)
 
 	if (dp_init_ok) {
 		DP_LIB_LOCK(&dp_lock);
-		memset(dp_port_info, 0, sizeof(dp_port_info));
-#ifdef CONFIG_LTQ_DATAPATH_MIB
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB)
 		dp_mib_exit();
 #endif
 		for (i = 0; i < dp_inst_num; i++) {
 			DP_CB(i, dp_platform_set)(i, DP_PLATFORM_DE_INIT);
 			free_dma_chan_tbl(i);
+			free_dp_port_subif_info(i);
 		}
 		dp_init_ok = 0;
-#ifdef CONFIG_LTQ_DATAPATH_LOOPETH
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_LOOPETH)
 		dp_loop_eth_dev_exit();
 #endif
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 		dp_cpufreq_notify_exit();
 #endif
 		unregister_notifier(0);

@@ -411,17 +411,6 @@ static int tc_vlan_filter(struct core_ops *ops,
 		j++;
 	}
 
-	/* Check if we have anything to configure */
-	if (j <= 0) {
-		/* Update bridge port */
-		ret = update_bp(ops,
-				(u32)info->bp,
-				vlan->dir == DP_DIR_INGRESS,
-				NULL,
-				NULL);
-		goto EXIT;
-	}
-
 	if (untagged < 0)
 		untagged = 0;
 	if (tagged < 0)

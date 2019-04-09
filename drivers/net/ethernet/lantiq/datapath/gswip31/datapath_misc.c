@@ -27,12 +27,10 @@
 
 #include <lantiq.h>
 #include <lantiq_soc.h>
-#include <net/lantiq_cbm_api.h>
 #define DATAPATH_HAL_LAYER   /*must put before include datapath_api.h in
 			      *order to avoid include another platform's
 			      *DMA descriptor and pmac header files
 			      */
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include <net/datapath_api_gswip31.h>
 #include "../datapath.h"
@@ -41,7 +39,7 @@
 #include "datapath_ppv4.h"
 #include "datapath_misc.h"
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 #include "datapath_switchdev.h"
 #endif
 
@@ -75,7 +73,7 @@ static void init_dma_desc_mask(void)
 static void init_dma_pmac_template(int portid, u32 flags)
 {
 	int i;
-	struct pmac_port_info2 *dp_info = &dp_port_info2[0][portid];
+	struct pmac_port_info *dp_info = &dp_port_info[0][portid];
 
 	/*Note:
 	 * final tx_dma0 = (tx_dma0 & dma0_mask_template) | dma0_template
@@ -99,7 +97,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 			dp_info->dma0_template[i].field.redir = 1;
 			dp_info->dma0_mask_template[i].field.redir = 0;
 		}
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 		dp_info->pmac_template[TEMPL_PTP].ptp = 1;
 #endif
 	} else if (flags & DP_F_DIRECTLINK) { /*always with pmac*/
@@ -434,7 +432,7 @@ static void dump_tx_pmac(struct pmac_tx_hdr *pmac)
 
 static void mib_init(u32 flag)
 {
-#ifdef CONFIG_LTQ_DATAPATH_MIB
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB)
 	dp_mib_init(0);
 #endif
 	gsw_mib_reset_31(0, 0); /* GSW O */
@@ -442,7 +440,7 @@ static void mib_init(u32 flag)
 
 void dp_sys_mib_reset_31(u32 flag)
 {
-#ifdef CONFIG_LTQ_DATAPATH_MIB
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB)
 	dp_reset_sys_mib(0);
 #else
 	gsw_mib_reset_31(0, 0); /* GSW L */
@@ -451,7 +449,7 @@ void dp_sys_mib_reset_31(u32 flag)
 #endif
 }
 
-#ifndef CONFIG_LTQ_DATAPATH_QOS_HAL
+#ifndef CONFIG_INTEL_DATAPATH_QOS_HAL
 int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 {
 	struct ppv4_queue q;
@@ -487,7 +485,7 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 	q.qid = -1;
 	q.parent = port.node_id;
 	q.inst = inst;
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
 	q.dq_port = info->cqe_deq; /*for qos slim driver only */
 #endif
 	if (dp_pp_alloc_queue(&q)) {
@@ -533,8 +531,7 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 		 link.p_node_id.cqm_deq_port, info->cqe_deq);
 	return 0;
 }
-#endif /*CONFIG_LTQ_DATAPATH_QOS_HAL*/
-
+#endif /*CONFIG_INTEL_DATAPATH_QOS_HAL*/
 #define PRIO0	0
 #define PRIO1	1
 #define PRIO2	2
@@ -1111,7 +1108,7 @@ int dp_platform_queue_set(int inst, u32 flag)
 	/*Alloc queue/scheduler/port per CPU port */
 	cpu_data.dp_inst = inst;
 	cpu_data.cbm_inst = dp_port_prop[inst].cbm_inst;
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
 	cpu_data.dq_tx_push_info[0].deq_port = 0;
 	cpu_data.dq_tx_push_info[1].deq_port = -1;
 	cpu_data.dq_tx_push_info[2].deq_port = -1;
@@ -1243,7 +1240,7 @@ static int dp_platform_set(int inst, u32 flag)
 		if (!inst) /*only inst zero will support mib feature */
 			mib_init(0);
 		dp_get_gsw_parser_31(NULL, NULL, NULL, NULL);
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 	if (!inst)
 		dp_coc_cpufreq_init();
 #endif
@@ -1382,7 +1379,7 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 		PR_ERR("priv is NULL\n");
 		return DP_FAILURE;
 	}
-	set_port_lookup_mode(inst, ep, flags);
+	set_port_lookup_mode_31(inst, ep, flags);
 	if (flags & DP_F_DEREGISTER) {
 		dp_node_reserve(inst, ep, NULL, flags);
 		return 0;
@@ -1429,7 +1426,7 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 
 	dp_node_reserve(inst, ep, data, flags);
 	dp_port_spl_cfg(inst, ep, data, flags);
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (DP_DBG_FLAG_QOS & dp_dbg_flag) {
 		for (i = 0; i < port_info->deq_port_num; i++) {
 			PR_INFO("cqm[%d]: addr=%x credit=%d size==%d\n",
@@ -1506,10 +1503,10 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		CBM_QUEUE_MAP_F_MPE2_DONTCARE |
 		CBM_QUEUE_MAP_F_TC_DONTCARE;
 	int subif, deq_port_idx = 0, bp = -1;
+	int dma_ch_offset = 0;
 	struct pmac_port_info *port_info;
 	struct hal_priv *priv = HAL(inst);
 	int q_flag = 0;
-	int dma_ch_offset = 0;
 
 	if (!data || !data->subif_data) {
 		PR_ERR("data NULL or subif_data NULL\n");
@@ -1581,7 +1578,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		PR_ERR("priv NULL\n");
 		return -1;
 	}
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (unlikely(dp_dbg_flag & DP_DBG_FLAG_QOS)) {
 		DP_DEBUG(DP_DBG_FLAG_QOS, "cqe_deq=%d\n", q_port.cqe_deq);
 		DP_DEBUG(DP_DBG_FLAG_QOS, "priv=%p deq_port_stat=%p qdev=%p\n",
@@ -1602,6 +1599,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	q_port.dp_port = portid;
 	q_port.ctp = subif_ix;
 
+	dma_ch_offset = dp_deq_port_tbl[inst][q_port.cqe_deq].dma_ch_offset;
 	if (data->subif_data->flag_ops & DP_SUBIF_SPECIFIC_Q) {
 		q_flag = DP_SUBIF_SPECIFIC_Q;
 	} else if (data->subif_data->flag_ops & DP_SUBIF_AUTO_NEW_Q) {
@@ -1610,8 +1608,6 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		if (!dp_deq_port_tbl[inst][q_port.cqe_deq].f_first_qid)
 			q_flag = DP_SUBIF_AUTO_NEW_Q; /*no queue created yet*/
 	}
-
-	dma_ch_offset = dp_deq_port_tbl[inst][q_port.cqe_deq].dma_ch_offset;
 	DP_DEBUG(DP_DBG_FLAG_QOS, "Queue decision:%s\n", q_flag_str(q_flag));
 	if (q_flag == DP_SUBIF_AUTO_NEW_Q) {
 		int cqe_deq;
@@ -1646,7 +1642,6 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		if (port_info->num_dma_chan)
 			atomic_inc(&(dp_dma_chan_tbl[inst] +
 				   dma_ch_offset)->ref_cnt);
-
 		dp_deq_port_tbl[inst][cqe_deq].qos_port = q_port.port_node;
 		if (!dp_deq_port_tbl[inst][cqe_deq].f_first_qid) {
 			dp_deq_port_tbl[inst][cqe_deq].first_qid = q_port.qid;
@@ -1719,7 +1714,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 				   dma_ch_offset)->ref_cnt);
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d DMATXCH_Ref.cnt=%d\n",
+		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan: (ref=%d)\n",
 		 "subif_hw_set",
 		 "dp_port", portid,
 		 "vap", subif_ix,
@@ -1727,7 +1722,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		 q_port.cqe_deq, dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt,
 		 atomic_read(&(dp_dma_chan_tbl[inst] +
 			     dma_ch_offset)->ref_cnt));
-#ifdef CONFIG_LTQ_DATAPATH_QOS_HAL
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_QOS_HAL)
 	if (dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt == 1) /*first CTP*/
 		data->act = TRIGGER_CQE_DP_ENABLE;
 #else
@@ -1781,6 +1776,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 
 	qid = port_info->subif_info[subif_ix].qid;
 	cqm_deq_port = port_info->subif_info[subif_ix].cqm_deq_port;
+	dma_ch_offset = dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
 	bp = port_info->subif_info[subif_ix].bp;
 
 	if (!dp_dma_chan_tbl[inst]) {
@@ -1804,9 +1800,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		       inst, bp, dp_bp_dev_tbl[inst][bp].ref_cnt);
 		return DP_FAILURE;
 	}
-	dma_ch_offset = dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
-
-	/* update queue/port/sched/bp_pmapper/dma_tx_ch table's ref_cnt */
+	/* update queue/port/sched/bp_pmapper table's ref_cnt */
 	dp_q_tbl[inst][qid].ref_cnt--;
 	dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt--;
 	if (port_info->num_dma_chan)
@@ -1829,7 +1823,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 			 bp, subif_ix);
 		free_bridge_port(inst, bp);
 	}
-#ifdef CONFIG_LTQ_DATAPATH_QOS_HAL
+#ifdef CONFIG_INTEL_DATAPATH_QOS_HAL
 	qid = port_info->subif_info[subif_ix].qid;
 	cqm_deq_port = dp_q_tbl[inst][qid].cqm_dequeue_port;
 
@@ -1861,7 +1855,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		DP_DEBUG(DP_DBG_FLAG_QOS, "q_id[%d] dont need freed\n", qid);
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d DMATXCH_Ref_cnt=%d\n",
+		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan: (ref=%d)\n",
 		 "subif_hw_reset",
 		 "dp_port", portid,
 		 "vap", subif_ix,
@@ -1876,7 +1870,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 			port_info->subif_info[subif_ix].qos_deq_port);
 	priv->deq_port_stat[port_info->subif_info[subif_ix].cqm_deq_port].flag =
 		PP_NODE_FREE;
-#endif /* CONFIG_LTQ_DATAPATH_QOS_HAL */
+#endif /* CONFIG_INTEL_DATAPATH_QOS_HAL */
 
 	if (!port_info->num_subif &&
 	    dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt) {
@@ -1978,7 +1972,9 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 			    struct pmac_rx_hdr *pmac, char *decryp)
 {
 	//*ep = pmac->igp_egp; /*get the port_id from pmac's sppid */
+#ifdef DP_SKB_HACK
 	*ep = (skb->DW1 >> 4) & 0xF; /*get the port_id from pmac's sppid */
+#endif
 	if (dp_port_info[inst][*ep].alloc_flags & DP_F_LOOPBACK) {
 		/*get the real source port from VAP for ipsec */
 		/* related tunnel decap case */
@@ -1990,8 +1986,12 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 		*decryp = 1;
 	} else {
 		struct dma_rx_desc_1 *desc_1;
-
+#ifdef DP_SKB_HACK
 		desc_1 = (struct dma_rx_desc_1 *)&skb->DW1;
+#else
+	//error "Please add proper logic here"
+	return;
+#endif
 		*vap = desc_1->field.session_id;
 	}
 }
@@ -1999,7 +1999,7 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 static void get_dma_pmac_templ(int index, struct pmac_tx_hdr *pmac,
 			       struct dma_tx_desc_0 *desc_0,
 			       struct dma_tx_desc_1 *desc_1,
-			       struct pmac_port_info2 *dp_info)
+			       struct pmac_port_info *dp_info)
 {
 	if (likely(pmac))
 		memcpy(pmac, &dp_info->pmac_template[index], sizeof(*pmac));
@@ -2064,12 +2064,14 @@ int register_dp_cap_gswip31(int flag)
 	cap.info.dp_meter_alloc = dp_meter_alloc_31;
 	cap.info.dp_meter_add = dp_meter_add_31;
 	cap.info.dp_meter_del = dp_meter_del_31;
-#ifdef CONFIG_LTQ_DATAPATH_HAL_GSWIP31_MIB
+	cap.info.dp_rx = dp_rx_31;
+	cap.info.dp_tx = dp_xmit_31;
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP31_MIB)
 	cap.info.dp_get_port_vap_mib = dp_get_port_vap_mib_31;
 	cap.info.dp_clear_netif_mib = dp_clear_netif_mib_31;
 #endif
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	cap.info.swdev_flag = 1;
 	cap.info.swdev_alloc_bridge_id = dp_swdev_alloc_bridge_id;
 	cap.info.swdev_free_brcfg = dp_swdev_free_brcfg;

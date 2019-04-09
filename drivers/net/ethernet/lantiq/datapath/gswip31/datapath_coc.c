@@ -91,7 +91,7 @@ struct ltq_cpufreq_module_info dp_coc_feature_fss = {
 	.ltq_cpufreq_pwr_feature_switch = dp_coc_fss_ena,
 };
 
-#if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
+#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 static char *get_sub_module_str(uint32_t flag)
 {
 	if (flag == DP_COC_REQ_DP)
@@ -146,6 +146,7 @@ int update_coc_rmon_timer(enum ltq_cpufreq_state new_state, uint32_t flag)
 
 static int update_coc_cfg(enum ltq_cpufreq_state new_state,
 			  enum ltq_cpufreq_state old_state, uint32_t flag)
+{
 	return 0;
 }
 

@@ -9,7 +9,8 @@
 
 #include<linux/init.h>
 #include<linux/module.h>
-
+#include <linux/platform_device.h>
+#include <linux/of_address.h>
 #include <net/datapath_api.h>
 #include "datapath.h"
 
@@ -38,7 +39,7 @@ static int dp_release(struct platform_device *pdev)
 }
 
 static const struct of_device_id dp_match[] = {
-	{.compatible  = "lantiq,datapath-lib"},
+	{.compatible = "lantiq,datapath-lib", },
 	{},
 };
 

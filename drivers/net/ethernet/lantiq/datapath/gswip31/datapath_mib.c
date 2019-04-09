@@ -23,11 +23,9 @@
 #include <linux/clk.h>
 
 #include <lantiq_soc.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include <net/datapath_proc_api.h>
 #include "../datapath.h"
-#include <net/lantiq_cbm_api.h>
 
 #define WRAPAROUND32   0xFFFFFFFF
 /*timer interval for mib wraparound handling:

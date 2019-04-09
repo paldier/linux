@@ -287,7 +287,7 @@ int proc_print_ctp_bp_info(struct seq_file *s, int inst,
 static struct dp_proc_entry dp_proc_entries[] = {
 	/*name single_callback_t multi_callback_t/_start write_callback_t */
 	{PROC_PARSER, proc_parser_read, NULL, NULL, proc_parser_write},
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 	{PROC_COC, proc_coc_read, NULL, NULL, proc_coc_write},
 #endif
 	{DP_PROC_CBMLOOKUP, NULL, lookup_dump31, lookup_start31,

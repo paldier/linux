@@ -10,11 +10,10 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/etherdevice.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include "../datapath.h"
 #include "datapath_misc.h"
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
 #include "datapath_gswip_simulate.h"
 #endif
 
@@ -91,7 +90,7 @@ static char *ctp_mode_string(GSW_LogicalPortMode_t type)
 	return "Undef";
 }
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
 GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param)
 {
 	if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
@@ -394,7 +393,7 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 
 			if (pmac_cfg->eg_pmac_flags & EG_PMAC_F_MPE2FLG)
 				egcfg.bMpe2Flag = pmac_cfg->eg_pmac.mpe2_flag;
-#if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
+#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 			if (dp_dbg_flag) {
 				DP_DEBUG(DP_DBG_FLAG_DBG,
 					 "\nPMAC %d egcfg configuration:\n",
@@ -643,13 +642,13 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	dp_port_info[inst][ep].ctp_max = ctp_assign.nNumberOfCtpPort;
 	dp_port_info[inst][ep].vap_offset = assign->vap_offset;
 	dp_port_info[inst][ep].vap_mask = assign->vap_mask;
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	dp_port_info[inst][ep].swdev_en = assign->swdev_enable;
 #endif
 	return &itf_assign[ep];
 }
 
-int set_port_lookup_mode(int inst, u8 ep, u32 flags)
+int set_port_lookup_mode_31(int inst, u8 ep, u32 flags)
 {
 	int i, alloc_flag;	
 	struct ctp_assign *assign = &ctp_assign_def;

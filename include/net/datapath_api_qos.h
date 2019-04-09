@@ -992,6 +992,7 @@ struct dp_q_map_mask {
 	u32	subif:1; /*!< subif don't care */
 	u32	dp_port:1; /*!< logical port don't care */
 	u32	class:1; /*!< Traffic Class don't care */
+	u32	egflag :1; /*!< egflag don't care */
 };
 
 /*! @brief queue_map_set*/
@@ -1013,6 +1014,7 @@ struct dp_queue_map_entry {
 struct dp_queue_map_get {
 	int inst; /*!< input: dp instance. For SOC side, it is always zero */
 	int q_id; /*!<  queue id */
+	u32 egflag; /*!< eglag map to different table: for LGM only */
 	int num_entry; /*!< output: the number of entries mapped to specified
 			*           qid
 			*/
@@ -1263,6 +1265,25 @@ struct dp_qos_cfg_info {
  */
 int dp_qos_global_info_get(struct dp_qos_cfg_info *info, int flag);
 
+/*!
+ * @struct dp_qos_q_logic
+ *
+ * Structure defining the conversion from physical to logical queue ID
+ *
+ */
+struct dp_qos_q_logic {
+	int inst;  /*!< [in] DP instance */
+	int q_id;  /*!< [in] physical queue id */
+	u32 q_logic_id; /*!< [out] q_logical id */
+};
+
+/*!< dp_qos_get_q_logic: convert physical queue ID to logical queue ID
+ *   @param [in/out] cfg
+ *   @param [in] flag: reserved only
+ *   @return failure DP_FAILURE
+ *           succeed DP_SUCCESS
+ */
+int dp_qos_get_q_logic(struct dp_qos_q_logic *cfg, int flag);
 
 #ifdef ENABLE_QOS_EXAMPLE
 /*! \ingroup APIs_dp_qos_example

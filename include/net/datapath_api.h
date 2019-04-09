@@ -14,23 +14,40 @@
 #include <linux/etherdevice.h>
 #include <linux/atmdev.h>
 
-#ifndef DATAPATH_HAL_LAYER
 #if IS_ENABLED(CONFIG_PRX300_CQM) || \
-	IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31) /*testing only */
+	IS_ENABLED(CONFIG_GRX500_CBM)
+	#include <net/lantiq_cbm_api.h>
+#else
+	#include <net/intel_cbm_api.h>
+#endif
+
+#ifndef DATAPATH_HAL_LAYER
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SIMULATE_GSWIP32) || \
+	IS_ENABLED(CONFIG_SOC_LGM) || \
+	IS_ENABLED(CONFIG_X86_INTEL_LGM)
+#include <net/datapath_api_gswip32.h>
+#include <net/datapath_api_ppv4.h>
+#elif IS_ENABLED(CONFIG_PRX300_CQM) || \
+	IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31) /*testing only */
 #include <net/datapath_api_gswip31.h>
-#else /*GRX500 GSWIP30*/
+#elif IS_ENABLED(CONFIG_GRX500_CBM) /*GRX500 GSWIP30*/
 #include <net/datapath_api_gswip30.h>
+#else
+#error "wrong DP HAL selected"
 #endif
 #endif /*DATAPATH_HAL_LAYER */
+#include <net/datapath_api_umt.h>
 #include <net/datapath_api_vlan.h>
 #include <net/switch_api/lantiq_gsw_api.h>
 #include <net/switch_api/lantiq_gsw_flow.h>
 #include <net/switch_api/lantiq_gsw.h>
 #include <net/switch_api/gsw_dev.h>
 #include <net/switch_api/gsw_flow_ops.h>
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 #include <linux/cpufreq.h>
-#endif /*CONFIG_LTQ_DATAPATH_CPUFREQ*/
+#include <cpufreq/ltq_cpufreq.h>
+
+#endif /*CONFIG_INTEL_DATAPATH_CPUFREQ*/
 
 /*! @mainpage Datapath Manager API
  * @section Basic Datapath Registration API
@@ -91,8 +108,28 @@
 #define DP_RXOUT_PKT_SIZE_DEF 2048 /*!< Default size of RXOUT normal pkt */
 #define DP_RXOUT_PKt_SIZE_DEF_JUMBO 10240 /*!< Default size of RXOUT jumbo pkt*/
 
+#define DP_RX_RING_NUM 2  /*!< maximum number of ACA RX ring
+			   *   For GRX500/PRX300, only support 1 ring
+			   *   For LGM, maximum up to 2 rings
+			   */
+#define DP_TX_RING_NUM 8 /*!< maximum number of ACA RXOUT ring
+			   *   For GRX500/PRX300, only support 1 ring
+			   *   For 5G, it needs to support up to 16 ring.
+			   */
+#define DP_MAX_UMT DP_RX_RING_NUM /*!< maximum number of UMT port per DC
+				   *   For GRX500/PRX300, only support 1
+				   *      umt port
+				   *   For LGM docsis, it can support up to 2
+				   */
+#define DP_MAX_POLICY_GPID 4     /*!< maximum number of policy per GPID
+				  *   for HW automatically free BM buffer
+				  *   In LGM, it is 4. Not valid for all other
+				  *   existing products
+				  */
+#define DP_TS_HDRLEN	10    /*!< Befault Timestamp Header Length to strip */
+#define DP_DFL_SESS_NUM 16    /*!< Maximum default egress session per subif */
 /*! @addtogroup Datapath_Driver_Structures */
-/*! @brief  PPA Sub-interface Data structure
+/*! @brief  DP Sub-interface Data structure
  *@param port_id  Datapath Port Id corresponds to PMAC Port Id
  *@param subif    Sub-interface Id info. In GRX500, this 15 bits,
  *		only 13 bits in PAE are handled [14, 11:0]
@@ -141,6 +178,7 @@ enum DP_F_FLAG {
 	DP_F_EPON     = BIT(13), /*!< For EPON device */
 	DP_F_GINT     = BIT(14), /*!< For GINT device */
 	DP_F_DOCSIS   = BIT(15), /*!< For DOCSIS device support */
+	DP_F_CPU      = BIT(16), /*!< For CPU */
 
 	DP_F_SHARE_RES = BIT(22), /*!< Wave600 multiple radio share same ACA */
 	DP_F_ACA       = BIT(23), /*!< peripheral PCI device via ACA*/
@@ -217,11 +255,33 @@ enum DP_PMAP_MODE {
 	DP_PMAP_MAX       /*!< Not valid */
 };
 
+/*! @brief DP Special Connectivity Type*/
+enum DP_SPL_TYPE {
+	DP_SPL_LRO = 0, /*!< Special connectivity type: LRO */
+	DP_SPL_TSO, /*!< Special connectivity type: TSO */
+	DP_SPL_VOICE, /*!< Special connectivity type: VOICE */
+	DP_SPL_VPN, /*!< Special connectivity type: VPN Adaptor */
+	DP_SPL_PP_2ND_PATH, /*!< Special connectivity type: a second pass via
+			     *   PPV4
+			     */
+	DP_SPL_APP_LITEPATH, /*!< Special connectivity type: For Application
+			      *   Litepath
+			      */
+	DP_SPL_PPV4_NFS, /*!< Special connectivity type:For PPV4 uCs-
+			  *   Fragmenter, Reassembler, Multicast, TurboDox
+			  */
+	DP_SPL_MAX /*!< Special connectivity type: NOT VALID */
+};
+
 #define DP_PMAP_PCP_NUM 8  /*!< @brief  Max pcp entries supported per pmapper*/
 #define DP_PMAP_DSCP_NUM 64 /*!<@brief  Max dscp entries supported per pmapper*/
 #define DP_MAX_CTP_PER_DEV  64  /*!< @brief  max CTP per dev:
 				 *  Note: its value should be like
 				 *     max(DP_PMAP_DSCP_NUM, DP_PMAP_PCP_NUM)
+				 *   ? Maybe we can reduce from 64 to 8 since
+				 *     PON currently only needs 8 CTP per
+				 *     pmapper althogh GSIWP support 64
+				 *     in pcp mode
 				 */
 #define DP_PMAPPER_DISCARD_CTP 0xFFFF  /*!<@brief Discard ctp flag for pmapper*/
 /*! @brief structure for pmapper */
@@ -253,15 +313,27 @@ typedef struct dp_subif {
 			*   no use for dp_register_subif_ext
 			*/
 	union {
-		s32 subif; /*!< Sub-interface Id as HW defined
-			    * in full length
-			    * In GRX500/PRX300, it is 15 bits
+		s32 subif; /*!< [in/out] Sub-interface Id as HW defined
 			    */
-		s32 subif_list[DP_MAX_CTP_PER_DEV]; /*!< subif list */
+		s32 subif_list[DP_MAX_CTP_PER_DEV]; /*!< [in/out] subif list
+						     *   Normally 1 subif per
+						     *   dev. But for PON
+						     *   pmapper case, multiple
+						     *   subif per pmapper
+						     *   device
+						     */
 	};
-
-	int lookup_mode; /*!< CQM lookup mode for this device (dp_port based)*/
-	int alloc_flag; /*!< the flag is used during dp_alloc_port
+	u16 gpid; /*!< [out] gpid which is mapped from dpid + subif
+		   *   normally one GPID per subif for non PON device.
+		   *   For PON case, one GPID per bridge port
+		   */
+	u16 def_qid; /*!< [out] default physical queue id assigned by DP */
+	int lookup_mode; /*!< [out] CQM lookup mode for this device
+			  *   (dp_port based)
+			  *   valid for dp_get_netif_subifid only
+			  */
+	int alloc_flag; /*!< [out] the flag value is from the top level driver
+			 *    during calling dp_alloc_port_ext
 			 *   output for dp_get_netif_subifid
 			 *   no use for dp_register_subif_ext
 			 *   This is requested by PPA/DCDP to get original flag
@@ -278,18 +350,25 @@ typedef struct dp_subif {
 					     *   provided to DP during
 					     *   dp_register_subif_ext
 					     */
-	u32 flag_bp : 1; /*!< output: flag to indicate whether this device is
+	u32 flag_bp : 1; /*!< [out] flag to indicate whether this device is
 			  *   bridge port device or GEM device
-			  *   if it is bridge port device, it will be set to 1
-			  *   otherwise, it is 0
+			  *   For PON CTP device under pmapper: 0.
+			  *   For PON pmapper or normal registered subif: 1
+			  *   For example: eth1, pmapper device and so on.
 			  *   Valid only for API output of dp_get_netif_subifid
 			  *   It will be used for asymmetric VLAN case
 			  *   in case need call API dp_vlan_set to apply VLAN
 			  *   rule to CTP or bridge port
 			  */
-	u32 flag_pmapper : 1; /*!< output: flag to indicate whether this
-			       *   device is pmapper device
+	u32 flag_pmapper : 1; /*!< [out] flag to indicate whether this
+			       *   device is pmapper device.
+			       *   For PON pmappper device: 1
+			       *   For PON CTP device or other non PON device:0
+			       *   valid for dp_get_netif_subifid only
 			       */
+	u16 dfl_eg_sess[DP_DFL_SESS_NUM]; /*!< [out] default egress session id
+			*   This is for CPU TX to DC only
+			*/
 } dp_subif_t;
 
 typedef dp_subif_t PPA_SUBIF; /*!< @brief structure type dp_subif PPA_SUBIF*/
@@ -359,11 +438,11 @@ typedef int32_t(*dp_get_mib_fn_t)(dp_subif_t *subif, dp_drv_mib_t *,
 typedef int32_t(*dp_get_netif_subifid_fn_t)(struct net_device *netif,
 	struct sk_buff *skb, void *subif_data, uint8_t dst_mac[DP_MAX_ETH_ALEN],
 	dp_subif_t *subif, uint32_t flags);	/*!< @brief   get subifid */
-#if defined(CONFIG_LTQ_DATAPATH_CPUFREQ)
+#if defined(CONFIG_INTEL_DATAPATH_CPUFREQ) && defined(CONFIG_LTQ_CPUFREQ)
 typedef int32_t(*dp_coc_confirm_stat)(int new_state,
 	int old_st, uint32_t f); /*!< @brief Confirm state
-						     *   by COC
-						     */
+				  *   by COC
+				  */
 #endif
 /*!
  *@brief Datapath Manager Registration Callback
@@ -398,7 +477,7 @@ typedef struct dp_cb {
 	int (*aca_fw_stop)(struct dp_aca_stop *cfg, int flags); /*!< callback to
 								 *   stop ACA FW
 								 */
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 	dp_coc_confirm_stat dp_coc_confirm_stat_fn; /*!< once COC confirm the
 						     *state changed, Datatpath
 						     *will notify Ethernet/
@@ -627,7 +706,7 @@ struct pon_subif_d {
 		*   -1: non valid pcp value
 		*/
 };
-
+#define DP_F_DATA_LCT_SUBIF DP_SUBIF_LCT
 /*! @brief enum DP_SUBIF_DATA_FLAG */
 enum DP_SUBIF_DATA_FLAG {
 	DP_SUBIF_AUTO_NEW_Q = BIT(0), /*!< create new queue for this subif */
@@ -637,7 +716,7 @@ enum DP_SUBIF_DATA_FLAG {
 				       *  be created by caller itself, or
 				       *  by last call of dp_register_subif_ext
 				       */
-	DP_F_DATA_LCT_SUBIF = BIT(2), /*!< Register as LCT port */
+	DP_SUBIF_LCT = BIT(2), /*!< Register as LCT port */
 };
 
 /*! @brief dp_subif_id struct for get_netif_subif */
@@ -651,6 +730,26 @@ struct dp_subif_cache {
 					      */
 	void *data;
 	struct rcu_head rcu;
+};
+
+struct dp_gpid_tx_info {
+	/* Note for GPID max packet lengh setting, DP should get it from
+	 *      struct dp_tx_ring's tx_pkt_size
+	 */
+	u32 f_min_pkt_len : 1; /*!< flag to indicate whether min_pkt_len is
+				*   set or not by caller
+				*   1: min_pkt_len is set by caller
+				*   0: min_pkt_len is not set by caller.
+				*/
+	u32 seg_en : 1; /*!< support FSQM buffer or not
+			 *   For stream port: should set to 1.
+			 *   For non_stream port: shoudl set to 0
+			 */
+
+	u16 min_pkt_len; /*!< minimum packet length in bytes
+			  *   valid if f_min_pkt_len is set
+			  */
+
 };
 
 /*! @brief struct dp_subif_data */
@@ -667,30 +766,56 @@ struct dp_subif_data {
 		   * Note: this queue can be created by caller,
 		   *         or by dp_register_subif_ext itself in Pmapper case
 		   */
-	struct net_device *ctp_dev; /*Optional CTP device if there is one bridge
-				     *port device
+	struct net_device *ctp_dev; /*!<  Optional CTP device.
+				     * Mainly for PON CTP device under pmapper.
 				     */
-	dp_rx_fn_t rx_fn; /*!< [in] for subif level rx_fn callback.
-			   *   Mainly for docsis/voice special handling.
-			   *   For wave/VRX618/518, just set to NULL
+	dp_cb_t *dp_cb; /*!< [in] for subif level callback.
+			 *   Mainly for docsis/voice special handling.
+			 *   For wave/VRX618/518, just set to NULL.
+			 */
+	u16 f_tx_policy : 1;   /*!< [in] flag to indicate whether need new
+				*   policy for this subif or not.
+				*   if this flat is set, it needs new txin
+				*       policy
+				*   otherwise DP will use its existing base
+				*       policy which is create during
+				*       dp_register_dev_ext
+				*/
+	u16 tx_pkt_size;  /*!< [in] maximum packet size required
+			   *   to alloc new policy for different cqm dequeue
+			   *   port
+			   *   valid only if f_tx_policy set
 			   */
+	struct dp_gpid_tx_info gpid_tx_info; /*!< [in] for GPID tx information
+					      *   Valid only if \ref
+					      *   f_tx_policy set
+					      */
+	u16 txin_base_policy; /*!< [out] txin_policy
+			       *   if f_txin_policy set, this subif will need
+			       *       create new policy
+			       *   else DP will use its base policy which is
+			       *       create during dp_register_dev_ext
+			       */
+
 	int txin_ring_size;  /*!< [in/out] ACA TXIN Ring size.
 			      *   if input value is not zero, DP try to tune
 			      *   down the pre-allocated TXIN ring buffer size.
 			      *   Only allowed to tune down.
 			      */
 	void *txin_ring_phy_addr; /*!< [out] ACA TXIN Ring Buffer physical
-				   *   address
+				   *   address based on deq_port_idx
 				   */
 	void *credit_add_phy_addr; /*!< [out] PPv4 credit add physical address
 				    *   which is valid only if flag
 				    *   DP_F_NON_ACA_PORT is set during
-				    *   dp_alloc_port_ext
+				    *   dp_alloc_port_ext.
+				    *   So far for 5G without using CQM DC port
 				    */
 	void *credit_left_phy_addr; /*!< [out] PPv4 credit left physical address
 				     *   which is valid only if flag
 				     *   DP_F_NON_ACA_PORT is set during
 				     *   dp_alloc_port_ext
+				     *   So far for 5G without using CQM DC port
 				     */
 	#define DP_MAC_LEARNING_EN 0
 	#define DP_MAC_LEARNING_DIS 1
@@ -706,11 +831,20 @@ enum dp_port_data_flag {
 	DP_F_DATA_RESV_Q = BIT(3), /*!< reserve QOS queue */
 	DP_F_DATA_RESV_SCH = BIT(4), /*!< reserve QOS scheduler */
 	DP_F_DATA_FCS_DISABLE = BIT(5), /*!< Disable FCS for PON port on SOC */
+	DP_F_DATA_NO_CQM_DEQ = BIT(6), /*!< No mapped CQM dequeue port needed,
+				    *   instead DC device directly dequeue
+				    *   packet from PP QOS port via credit left
+				    *   and credit add
+				    */
+	DP_F_DATA_CONTINOUS_Q_RESV = BIT(7) /*!< reserve continous physical
+					     *   queue ID
+					     */
 };
 
 /*! @brief typedef struct dp_port_data */
 struct dp_port_data {
-	int flag_ops; /*!< flag operation, refer to enum dp_port_data_flag */
+	int flag_ops; /*!< [in] flag operation, refer to enum dp_port_data_flag
+		       */
 	u32 resv_num_port; /*!< valid only if DP_F_DATA_RESV_CQM_PORT is set.
 			    * the number of cqm dequeue port to reserve.
 			    * Currently mainly for Wave600 multiple radio but
@@ -725,136 +859,350 @@ struct dp_port_data {
 			     *   Valid only if DP_F_DATA_RESV_SCH bit valid in
 			     *   \ref flag_ops
 			     */
-	int deq_port_base; /*!< output: the CQM dequeue port base. Mainly for
-			    *          PON
+	int deq_port_base; /*!< output: the CQM dequeue port base for the
+			    *   traffic to this device.
 			    */
-	int enq_num;  /*!< [out] the number of enqueue port allcoated */
-	int deq_num;  /*!< [out] the number of dequeue port allocated */
+	int deq_num;  /*!< [out] the number of dequeue port allocated for the
+		       *         traffic to this device
+		       */
 };
 
-/*! @brief typedef struct dp_dev_data */
-struct dp_dev_data {
-#define DP_RXOUT_RING_NUM 2  /*!< maximum number of ACA TXOUT ring support
-			      *   For GRX500/PRX300, only support 1 ring
-			      *   For LGM, maximum up to 2 rings
-			      */
-	int rxout_ring_size[DP_RXOUT_RING_NUM]; /*!< [in/out]
-						 *   rxout ring buf size
-						 *   If 0, then auto set by DP
-						 *   otherwise try to set as
-						 *   requested. Only allowed to
-						 *   tune down.
-						 *   GRX350/PRX300: 1 ring
-						 *   LGM: up to 2 rings
-						 */
-	void *rxout_phy_addr[DP_RXOUT_RING_NUM]; /*!< [out] rxout ring buf
-						  *   physical address
-						  *   GRX350/PRX300: 1 ring
-						  *   LGM: up to 2 rings
-						  *   If NULL, it means no
-						  *   valid
-						  */
-	int rxout_pkt_num[DP_RXOUT_RING_NUM]; /*!< [in/out] the number of packet
-					       *   if input is zero, set by DP
-					       *   with DP_RXOUT_RING_SIZE_DEF
-					       */
-	int rxout_pkt_size[DP_RXOUT_RING_NUM]; /*!< [in/out] the size of each
-						*   packet buffer.
-						*   if input is zero, auto set
-						*   by DP
-						*/
-	void *rxout_pkt_phy_addr[DP_RXOUT_RING_NUM]; /*!< [out] packet buffer
-						      *   list's physical
-						      *   address which will be
-						      *   usedin rxout ring to
-						      *   store the packet
-						      *   content
-						      */
-	int rxin_ring_size[DP_RXOUT_RING_NUM]; /*!< [in/out]
-						*   rxin ring buf size
-						*   If 0, then auto set by DP
-						*   otherwise try to set as
-						*   requested. Only allowed to
-						*   tune down.
-						*   GRX350/PRX300: 1 ring
-						*   LGM: up to 2 rings
-						*/
-	void *rxin_phy_addr[DP_RXOUT_RING_NUM]; /*!< [out] rxin ring buf
-						 *  physical address
-						 *  GRX350/PRX300: 1 ring
-						 *  LGM: up to 2 rings
-						 *  If NULL, it means no
-						 *  valid
-						 */
-	void *umt_msg_phy_addr; /*!< [in] umt message physical address */
-	void *umt_msg_virt_addr; /*!< [in] umt message virtual address */
-	int  umt_msg_timer; /*!< [in/out] ACA UMT MSG Interval in us */
-#define DP_UMT_MSG_ENDIAN_LITTLE 0 /*!< umt msg endian mode when writing to
-				    *   peripheral side
-				    */
-#define DP_UMT_MSG_ENDIAN_BIG    1 /*!< umt msg endian when writing to
-				    *   peripheral side
-				    */
-	int umt_msg_endian; /*!< [in] UMT message endian */
+/* DC/ACA Rings
+ *  4 Ring with 1 DC dequeue port
+ *  |-----| ------1 TXIN (Pkt+Desc)-----------> |-----------|
+ *  |     |    (via UMT TX Msg Cnt to dequeue)  |           |
+ *  |     |                                     |           |
+ *  |     | <-----1 TXOUT(Pkt Free)-----------  |           |
+ *  | Host|                                     | DC Device |
+ *  |     | <-----1 RXOUT (PKt+Desc) ---------- | (via ACA) |
+ *  |     |                                     |           |
+ *  |     |  -----1 RXINT (Pkt Alloc)---------> |           |
+ *  |     |    (via UMT RX Msg to Alloc )       |           |
+ *  |-----| ----------------------------------> |-----------|
+ *
+ *  4 Ring with Multipe QOS dequeue ports
+ *  |-----| ------Multiple TXIN (Pkt+Desc)----> |-----------|
+ *  |     |    (Poll Each QOS port Credit_Add ) |           |
+ *  |     |                                     |           |
+ *  |     | <-----1 TXOUT(Pkt Free)-----------  |           |
+ *  | Host|                                     | DC Device |
+ *  |     | <-----1 RXOUT (PKt+Desc) ---------- | (via ACA) |
+ *  |     |                                     |           |
+ *  |     |  -----1 RXINT (Pkt Alloc)---------> |           |
+ *  |     |    (via UMT RX Msg to Alloc )       |           |
+ *  |-----| ----------------------------------> |-----------|
+ *
+ *  3 Ring with 1 DC dequeue port
+ *  |-----| ------1 TXIN (Pkt+Desc)-----------> |-----------|
+ *  |     |    (via UMT TX Msg Cnt to dequeue)  |           |
+ *  |     |                                     |           |
+ *  |     | <-----1 TXOUT(Pkt Free)-----------  |           |
+ *  | Host|                                     | DC Device |
+ *  |     | <-----1 RXOUT (PKt+Desc) ---------- | (via ACA) |
+ *  |     |    (via UMT RX Msg to recycle )     |           |
+ *  |-----| ----------------------------------> |-----------|
+ *
+ *  3 Ring with Multiple QOS dequeue ports
+ *  |-----| -------Multiple TXIN (Pkt+Desc)---> |-----------|
+ *  |     |   (Poll Each QOS port Credit_Add )  |           |
+ *  |     |                                     |           |
+ *  |     | <-----1 TXOUT(Pkt Free)-----------  |           |
+ *  | Host|                                     | DC Device |
+ *  |     | <-----1 RXOUT (PKt+Desc) ---------- | (via ACA) |
+ *  |     |    (via UMT RX Msg to recycle )     |           |
+ *  |-----| ----------------------------------> |-----------|
+ */
 
-#define DP_UMT_MODE_AUTO    0 /*!< UMT setting auto set by DP */
-#define DP_UMT_MODE_HW_SELF 1 /*!< HW UMT self couting mode */
-#define DP_UMT_MODE_HW_USER 2 /*!< HW UMT user Mode */
-#define DP_UMT_MODE_SW      3 /*!< SW UMT */
-	int umt_mode; /*!< [in/out] UMT  mode: HW self couting, HW User, SW
-		       *   if input value == DP_UMT_MODE_AUTO, set by DP
-		       *   otherwise set as specified by caller if possible
-		       */
-#define DP_UMT_MSG_MODE_AUTO  0  /*!< UMT message mode auto set by DP */
-#define DP_UMT_MSG_MODE_ACCU  1  /*!< Accumulated msg mode */
-#define DP_UMT_MSG_MODE_INCRE 2  /*!< Incremental msg mode */
-	int umt_rx_msg_mode; /*!< [in/out] UMT RX MSG mode:
-			      *   if umt_rx_msg_mode == DP_UMT_MSG_MODE_AUTO,
-			      *      auto set by DP
-			      *   else set as specified by caller if possible
-			      */
-	int umt_tx_msg_mode; /*!< [in/out] UMT TX MSG mode:
-			      *   if umt_tx_msg_mode == DP_UMT_MSG_MODE_AUTO,
-			      *      auto set by DP
-			      *   else set as specified by caller if possible
-			      */
+/*! @brief struct dp_buf_type for free ACA/DC buffer */
+struct dp_dc_buf {
+	u16 f_policy_pool : 1; /*!< flag to indicate policy/pool valid or not */
+	u16 policy; /*!< buffer policy, valid if f_policy_pool is set */
+	u16 pool; /*!< buffer pool, valid if f_policy_pool is set.
+		   *   For PRX300, it is a must to provide pool id or extract
+		   *   from DP local table
+		   */
 
-	int txin_ring_size;  /*!< [in/out] ACA TXIN Ring Buffer size
-			      *   address (for legacy ACA back-compatible
-			      *   only, like wave500).
-			      *   For legacy ACA with CQM port: maximum 32
-			      *   For non ACA port based: like 5G,
-			      *         just pass zero here. Later can tune with
-			      *         dp_register_subif_ext
-			      *   For DP, here we just return first
-			      *   TXIN ring buffer size
-			      */
-	void *txin_ring_phy_addr; /*!< [out] ACA TXIN Ring Buffer physical
-				   *   address (for legacy ACA back-compatible
-				   *   only for wave500 case).
-				   *   For DP, here just return first
-				   *  TXIN ring buffer address
-				   */
-	int txout_ring_size;/*!< [out] ACA TXOUT Free Ring Buffer size */
-	void *txout_ring_base_phy_addr; /*!< [out] ACA TXOUT(Free) base register
-					 *   physical address
-					 */
-	int txout_policy_base; /*!< [out] For PRX300: For legacy ACA to free
-				*   BM buffer
-				*         for LGM, it is base policy.
-				*   Note: For LGM, each ACA device needs to
-				*   support 4 policy to let HW auto free/return
-				*   the buffer since its information may lost
+	u16 num; /*!< number of buffers in the buffer list */
+	void *buf; /*!< buffer list pointer */
+};
+
+/*! @brief struct dp_buf_info for free ACA/DC buffer */
+struct dp_buf_info {
+	int inst; /*!< [in] DP instance ID */
+	int dp_port; /*!< [in] DP port ID */
+	struct dp_dc_buf rx[DP_RX_RING_NUM]; /* [in] buffers in the rx ring
+						 * to free
+						 */
+	struct dp_dc_buf tx; /* [in] buffers in the rx ring to free */
+};
+
+/*! @addtogroup Datapath_Driver_API */
+/*! @brief  dp_free_dc_buf is used to free the buffer which is allocated by
+ *          DP or from HW BM
+ *  @note: DP will internal make assumption:
+ *         a) For 3 ring case: tx is BM buffer and rx is linux system buffer
+ *         b) For 4 ring case: both are using BM buffer
+ *         c) in case caller does not provide policy/pool information, DP will
+ *            use default policy to free it
+ */
+int dp_free_dc_buf(struct dp_buf_info *buf, int flag);
+
+/**
+ * @brief dp_gpid_tx_info
+ */
+#define DP_DFT_MAX_PKT_LEN 1600 /*!< Default maximal packet length ??? Not sure need or not */
+#define DP_DFT_MIN_PKT_LEN 60 /*!< Default minimal packet length ??? Not sure need or not */
+/*! @addtogroup Datapath_Driver_Structures */
+/*! @brief  PPA Sub-interface Data structure
+ *@param port_id  Datapath Port Id corresponds to PMAC Port Id
+ *@param subif    Sub-interface Id info. In GRX500, this 15 bits,
+ *                only 13 bits in PAE are handled [14, 11:0]
+ *\note
+ */
+enum DP_UMT_MODE {
+	DP_UMT_MODE_HW_SELF, /*!< HW UMT self couting mode */
+	DP_UMT_MODE_HW_USER, /*!< HW UMT user Mode */
+	DP_UMT_MODE_SW, /*!< SW UMT: no need to call UMT API */
+	DP_UMT_MODE_MAX, /*!< Not valid UMT mode */
+};
+
+enum DP_UMT_MSG_MODE {
+	DP_UMT_MSG_MODE_ACCU,  /*!< Accumulated msg mode */
+	DP_UMT_MSG_MODE_INCRE, /*!< Accumulated msg mode */
+	DP_UMT_MSG_MODE_MAX  /*!< Not valid UMT msg mode */
+};
+
+enum DP_RXOUT_MSG_MODE {
+	DP_RXOUT_MSG_ADD = 0, /*!< rxout_add */
+	DP_RXOUT_MSG_SUB, /*!< rxout_sub */
+};
+
+enum DP_RXOUT_QOS_MODE {
+	DP_RXOUT_BYPASS_QOS_ONLY = 0, /*!< bypass QOS but with FSQM */
+	DP_RXOUT_QOS, /*!< with QOS */
+	DP_RXOUT_BYPASS_QOS_FSQM, /*!< bypass QOS and FSQM */
+	DP_RXOUT_QOS_MAX /*!< Not valid RXOUT qos mode */
+};
+
+enum DP_UMT_MSG_ENDIAN {
+	DP_UMT_MSG_ENDIAN_LITTLE = 0, /*!< UMT message in little endian */
+	DP_UMT_MSG_ENDIAN_BIG, /*!< UMT message in big endian */
+	DP_UMT_MSG_ENDIAN_MAX  /*!< Not valid UMT msg endian */
+};
+
+/*! @brief struct dp_rx_ring, which is used for DirectConnected (DC)
+ *  applications
+ */
+struct dp_rx_ring {
+	int out_enq_ring_size;  /*!< [in/out]
+				 *   rxout enqueue ring size, ie, burst size
+				 *   for Peripheral device to enqueue packets to
+				 *   Host side via CQM or DMA in burst.
+				 *   If 0, then auto set by DP/CQM.
+				 *   Note: this paramater will be forced to tune
+				 *         down to HW capability
+				 */
+	u32   out_enq_port_id; /*!< [out] CQM enqueue port based ID */
+	void *out_enq_paddr;   /*!< [out] rxout ring physical address
+				*   For GRX350/PRX300, it is DMA Descriptor base
+				*      address
+				*   For LGM: it is CQM enqueue register address
+				*   If NULL, it means not valid
 				*/
-	int txout_poolid; /*!< [out] For legacy ACA to free BM buffer in
-			   *   in PRX300
-			   */
+	u32 out_dma_ch_to_gswip; /*!< [out] DMA TX channel base to GSWIP for
+				  *   forwarding rxout packet to GSWIP
+				  */
+	u32 num_out_tx_dma_ch; /*!< [out] number of DMA tx channel assigned */
+	u32 out_cqm_deq_port_id; /*!< [out] CQM dequeue port to GSWIP for rxout
+				  *   packet
+				  */
+	u32 num_out_cqm_deq_port; /*!< [out] number of CQM dequeue port to GSWIP
+				   *   for rxout packet
+				   */
+	int in_alloc_ring_size; /*!< [out] rxin ring size, ie, maximum number of
+				 *   burst alloc buffers size supported.
+				 */
+	void *in_alloc_paddr; /*!< [out] rxin ring buf allocation physical
+			       *     address. It is for 4 ring case only
+			       *   Note:
+			       *   1. GRX350/PRX300: not support
+			       */
+	u32 num_pkt; /*!< [in/out] nuber of packet for this policy */
+	int rx_pkt_size; /*!< [in/out] rx packet buffer size
+			  *   requirement rxout packets.
+			  *   DP/CQM will adjust to most
+			  *   matched BM pool
+			  */
+	u16 rx_policy_base; /*!< [out] the rx_policy based on @rx_pkt_size
+			     *      requirement.
+			     */
+	int prefill_pkt_num; /*!< [in] the number of pre-fill packet buffer
+			      *       required.
+			      * For LGM, normally no need and caller just set it
+			      *     to 0.
+			      * For GRX350/PRX300, Normally needed to pre-fill
+			      *     The buffer size should based on @rx_pkt_size
+			      *     requirement
+			      */
+	void *pkt_base_paddr; /*!< [out] packet list base physical address,
+			       *    which stored  @prefill_pkt_num of packet
+			       *    physical addressin
+			       * For LGM, normally no need and caller just set it
+			       *     to 0.
+			       * For GRX350/PRX300, Normally needed to pre-fill
+			       *     The buffer size should based on @rx_pkt_size
+			       *     requirement
+			       */
+	enum DP_RXOUT_MSG_MODE out_msg_mode; /*!< [in] rxout msg mode */
+	enum DP_RXOUT_QOS_MODE out_qos_mode; /*!< [in] rxout qos mode */
+};
+
+/*! @brief struct dp_tx_ring, which is used for DirectConnected (DC)
+ *  applications
+ */
+struct dp_tx_ring {
+	int in_deq_ring_size; /*!< [in/out] ACA TXIN Ring burst size, ie,
+			       * size of maximum number of
+			       * buffer can be dequeue in one time
+			       * For GRX500/PRX300 CQM DC: maximum 32
+			       * For 5G with PP QOS port only, ???
+			       */
+	void *in_deq_paddr; /*!< [out] txin ring/dequeue physical base
+			     *   address
+			     */
+	int out_free_ring_size;/*!< [out] txout ring/free buffer burst size,
+				*     the number of buffer can be freed in
+				*     in one free operation.
+				*/
+	void *out_free_paddr; /*!< [out] txout/free buffer
+			       *     physica address
+			       */
+	u32 num_tx_pkt; /*!< [in] nuber of packet */
+	int tx_pkt_size; /*!< [in] maximum packet size
+			  *   requirement to the packet
+			  *   buffer used in tx ring
+			  *   For LGM, need provide up to
+			  *      @DP_MAX_POLICY_GPID
+			  *   For PRX300, only support 1
+			  *   For GRX500, only support 1
+			  */
+	int txout_policy_base; /*!< [out] It should based on @tx_pkt_size and
+				*          @dp_gpid_tx_info to get the proper
+				*          BM pool.
+				*   gpid_info to generate the policy
+				*   Not valid for GRX500
+				*   In case multiple policy is allocated, only
+				*   first policy is really configured properly
+				*   and can be used by, all other policy should
+				*   be dummy one and cannot allcoate via it now.
+				*   later peripheral drivce should call
+				*   dp_register_subif_ext to create the
+				*   remaining policies
+				*   This is also used to configure CQM DQ port
+				*   with the egress base policy if
+				*   f_txout_auto_free is set to 1
+				*/
+	int policy_num;  /*!< [out] the number of policy create
+			  *   a) For PRX300: it should be 1.
+			  *   b) For LGM: it should always 4
+			  *   c) For GRX500, not valid
+			  */
+	u16 tx_poolid; /*!< [out] Only for PRX300, it should be passed for
+			*     device to free the packet buffer in tx ring
+			*/
+	struct dp_gpid_tx_info gpid_info; /*!< [in] for GPID tx information
+					   *   Valid only if @f_gpid valid.
+					   */
+
+	int f_out_auto_free : 1; /*!< [in] flag to indicate whether need txout
+				  *      base policy to auto free TXIN buffer.
+				  * Once f_txout_auto_free is set, this
+				  * device can only support maximum up to 4
+				  * continuous policy and later not allowed to
+				  * create new policy during
+				  * dp_register_subif_ext. Otherwise auto free
+				  * will cause problem since CQM in LGM only
+				  * support 4 policy only.
+				  * For those DC device which can keep
+				  * policy/pool information, no need
+				  * to enable this flag and it can support
+				  * more than 4 policies
+				  * Note, this setting is not valid for
+				  *GRX500/FLM
+				  */
+};
+
+/*! @brief struct dp_umt, which only used for DirectConnected (DC)
+ *  applications
+ */
+struct dp_umt {
+	u8 enable : 1; /*!< [in] enable flag to indicate whether need to
+			*   use this UMT or not
+			*/
+	u32 umt_msg_timer; /*!< [in] UMT msg update interval in us */
+
+	void *umt_msg_paddr; /*!< [in] umt message physical base address.
+			      *   Note: umt rx/tx share same base address.
+			      *   The msg sequence is rx first, followed by tx
+			      *   For SW UMT case, it should be NULL
+			      */
+	void *umt_msg_vaddr; /*!< [in] umt message virtual base address
+			      *    If HW UMT , it should be NULL
+			      */
+	enum DP_UMT_MODE umt_mode; /*!< [in] UMT mode */
+	enum DP_UMT_MSG_MODE umt_msg_mode; /*!< [in] UMT RX MSG mode
+					    */
+	/* Note: remove enum dp_umt_rx_src umt_rx_src for LGM;
+	 * Basic rule to set inside DP:
+	 *     1) bypass both QOS and FSQM: set mode DP_UMT_RX_FROM_DMA
+	 *     2) otherwise set mode DP_UMT_RX_FROM_CQEM
+	 */
+	enum dp_umt_sw_msg usr_msg; /*!< [in] For UMT HW user mode only
+				     *    For HW_SELF counting mode, always with
+				     *      msg rx + tx
+				     */
+};
+
+/*! @brief struct dp_dev_data, which used for DirectConnected (DC)
+ *  applications
+ */
+struct dp_dev_data {
+	u8 num_rx_ring;   /*!< [in] number of rx ring from DC device to Host.
+			    *   num_rx_ring requirement:
+			    *   @num_rings <= @DP_RX_RING_NUM
+			    *   GRX350/PRX300:1 rx ring
+			    *   LGM: up to 2 rx ring, like Docsis can use 2 rings
+			    *   For two ring case:
+			    *    1st rxout ring without qos
+			    *    2nd rxout ring with qos
+			    */
+	u8 num_tx_ring;   /*!< [in] number of tx ring from Host to DC device
+			    *   num_rx_ring requirement:
+			    *   @num_rings <= @DP_TX_RING_NUM
+			    *   Normally it is 1 TX ring only.
+			    *   But for 5G, it can support up to 8 TX ring
+			    *   For docsis, alhtough it is 16 dequeue port to WIB.
+			    *   But the final ring only 1, ie, WIB to Dcosis
+			    */
+	u8 num_umt_port;   /*!< [in] number of UMT port.
+			    *    Normally is 1 only. But Docsis can use up to 2
+			    */
+	struct dp_rx_ring rx_ring[DP_RX_RING_NUM]; /*!< [in/out] DC rx ring info
+						    */
+	struct dp_tx_ring tx_ring[DP_TX_RING_NUM]; /*!< [in/out] DC tx ring info
+						     */
+	struct dp_gpid_tx_info gpid_info; /*!< [in] for GPID tx information
+					   *   Valid only if @f_gpid valid.
+					   */
+	struct dp_umt umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+	u32 enable_cqm_meta : 1; /*!< enable CQM buffer meta data marking */
+
 	u16 max_ctp;    /*!< [in] maximum subif required which will be mapped to
 			 * GSWIP continuous CTP block.
 			 * Since very limited CTP in GSWIP and it is already
 			 * out of range, some drivers have to specify this
 			 * parameter to save the system resource, for example
-			 * of G.INIT in PRX300:
+			 * of G.INIT in falcon_mx:
 			 * 1) single LAN port only: it is value should be 16
 			 * 2) two Lan Ports:
 			 *      a) 1st lan port: 8 CPT with 8 subif only
@@ -867,6 +1215,14 @@ struct dp_dev_data {
 			 * move the CTP allocation from dp_alloc_port to
 			 * dp_register_dev
 			 */
+	u16 max_gpid;  /*!< [in] maximum subif required which will be mapped to
+			* PP continious GPID block. The continuous limitation is
+			* from GSWIP (subif->GPID mapping design), not because
+			* of PP itself.
+			* since overall number of GPID < nubmer of CTP in HW,
+			* DP need to add this parameter to fully use of shared
+			* HW resource.
+			*/
 };
 
 /*! @addtogroup Datapath_Driver_API */
@@ -1106,7 +1462,7 @@ int dp_get_port_subitf_via_ifname(char *ifname, dp_subif_t *subif);
  */
 int dp_get_port_subitf_via_dev(struct net_device *dev,
 			       dp_subif_t *subif);
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 
 /*!
  *@brief  The API is for dp_get_port_subitf_via_dev
@@ -1125,7 +1481,8 @@ int dp_coc_new_stat_req(int new_state, uint32_t flag);
 /*! DP's submodule to call it */
 /*int dp_set_rmon_threshold(struct dp_coc_threshold *threshold,
 			  uint32_t flags);*/
-#endif /*! CONFIG_LTQ_DATAPATH_CPUFREQ*/
+#endif /*! CONFIG_INTEL_DATAPATH_CPUFREQ*/
+
 /*! get port flag. for TMU proc file cat /proc/tmu/queue1 and /proc/tmu/eqt */
 u32 get_dp_port_flag(int k);
 
@@ -1300,6 +1657,68 @@ int dp_dma_chan_irq_rx_enable(int inst, struct dp_dma_ch *ch, int flag);
  *@return Returns GSWIP bridge id i.e. FID
  */
 int dp_get_fid_by_brname(struct net_device *dev, int *inst);
+
+struct dp_spl_conn {
+	enum DP_SPL_TYPE type; /*!< [in] Special Connectity Type */
+	u32 f_subif : 1; /*!< [in] need allocate subif */
+	u32 f_gpid : 1; /*!< [in] need allocate GPID */
+	u32 f_gpid_policy : 1; /*!< [in] need allocate policy or not.
+				*   valid only if f_gpid set
+				*   For LGM:
+				*     Required only for Voice CPU DQ port.
+				*     TSO - Not required (No Dequeue )
+				*     LRO - Not required (No GPID )
+				*     VPN-A: Not required.(reuses input buffer)
+				*     App Litepath: Not required
+				*       (reuses the CPU DQ ports for the host).
+				*     Fragmenter NF: Not required
+				*       (GPID will not be used as Egress port
+				*     Other NFs: Not required (No GPIDs).
+				*/
+	dp_cb_t *dp_cb; /*!< [in] for subif level callback.
+			 *   Valid only if f_subif valid.
+			 *   Mainly for voice related applicaton only
+			 */
+	int dp_port; /*!< [out] dp_port ID, normally it is CPU 0.
+		      *   if -1, then not applicable for this special connect
+		      */
+	u8 num_rx_ring;   /*!< [in] number of rx ring from DC device to Host.
+		    *   num_rx_ring requirement:
+		    *   @num_rings <= @DP_RX_RING_NUM
+		    *   GRX350/PRX300:1 rx ring
+		    *   LGM: up to 2 rx ring, like Docsis can use 2 rings
+		    *   For two ring case:
+		    *    1st rxout ring without qos
+		    *    2nd rxout ring with qos
+		    */
+	u8 num_tx_ring;   /*!< [in] number of tx ring from Host to DC device
+			    *   num_rx_ring requirement:
+			    *   @num_rings <= @DP_TX_RING_NUM
+			    *   Normally it is 1 TX ring only.
+			    *   But for 5G, it can support up to 8 TX ring
+			    *   For docsis, alhtough it is 16 dequeue port to WIB.
+			    *   But the final ring only 1, ie, WIB to Dcosis
+			    */
+	u8 num_umt_port;   /*!< [in] number of UMT port.
+			     *    Normally is 1 only. But Docsis can use up to 2
+			     */
+	struct dp_rx_ring rx_ring[DP_RX_RING_NUM]; /*!< [in/out] DC rx ring info
+						    */
+	struct dp_tx_ring tx_ring[DP_TX_RING_NUM]; /*!< [in/out] DC tx ring info
+						     */
+	struct dp_gpid_tx_info gpid_info; /*!< [in] for GPID tx information
+					   *   Valid only if @f_gpid valid.
+					   */
+	struct dp_umt umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+};
+
+/*!
+ *@brief Datapath Manager Initialize Speical Connectivity API
+ *@param[in] inst: DP instance ID
+ *@param[in] conn: Special Connect information
+ *@return Returns DP_SUCCESS on succeed and DP_FAILURE on failure
+ */
+int dp_connect_spl_path(int inst, struct dp_spl_conn *conn);
 
 #endif /*DATAPATH_API_H */
 

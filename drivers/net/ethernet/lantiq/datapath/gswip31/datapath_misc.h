@@ -129,7 +129,7 @@ int proc_print_ctp_bp_info(struct seq_file *s, int inst,
 			   struct pmac_port_info *port,
 			   int subif_index, u32 flag);
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 int dp_gswip_mac_entry_add(int bport, int fid, int inst, u8 *addr);
 int dp_gswip_mac_entry_del(int bport, int fid, int inst, u8 *addr);
 int set_gswip_ext_vlan(struct core_ops *ops, struct ext_vlan_info *vlan,
@@ -172,15 +172,21 @@ int dp_meter_del_31(struct net_device *dev,
 		    struct dp_meter_cfg *meter,
 		    int flag, struct dp_meter_subif *mtr_subif);
 int dp_qos_global_info_get_31(struct dp_qos_cfg_info *info, int flag);
+int32_t dp_rx_31(struct sk_buff *skb, u32 flags);
+int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
+		struct sk_buff *skb, int32_t len, uint32_t flags);
+void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
+		       u32 ip_offset, int ip_off_hw_adjust,
+		       u32 tcp_h_offset);
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
 GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param);
 #define GSW_SIMUTE_DDR_NOT_MATCH  0x1234
 #endif
 
 static inline GSW_return_t gsw_core_api(dp_gsw_cb func, void *ops, void *param)
 {
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
 	{
 		GSW_return_t res;
 
@@ -188,7 +194,7 @@ static inline GSW_return_t gsw_core_api(dp_gsw_cb func, void *ops, void *param)
 		if (res != GSW_SIMUTE_DDR_NOT_MATCH)
 			return res;
 	}
-#endif /*CONFIG_LTQ_DATAPATH_DDR_SIMULATE_GSWIP31*/
+#endif /*CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31*/
 	if (!func)
 		return DP_FAILURE;
 	return func(ops, param);
@@ -224,7 +230,7 @@ int get_p_mib(int inst, int pid,
 	      u32 *green /* bytes*/,
 	      u32 *yellow /*bytes*/);
 int cpu_vlan_mod_dis(int inst);
-int set_port_lookup_mode(int inst, u8 ep, u32 flags);
+int set_port_lookup_mode_31(int inst, u8 ep, u32 flags);
 int tc_vlan_set_31(struct core_ops *ops, struct dp_tc_vlan *vlan,
 		   struct dp_tc_vlan_info *info,
 		   int flag);

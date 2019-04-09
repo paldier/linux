@@ -2,11 +2,10 @@
 #define DATAPATH_IOCTL_H
 
 #include <net/datapath_api.h>
-#include <net/datapath_api_skb.h>
 #include "datapath.h"
 #include "datapath_instance.h"
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 int dp_register_ptp_ioctl(struct dp_dev *dp_dev,
 			  struct net_device *dp_port, int inst);
 #endif

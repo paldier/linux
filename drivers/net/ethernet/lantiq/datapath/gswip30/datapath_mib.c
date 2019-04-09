@@ -23,11 +23,9 @@
 #include <linux/clk.h>
 
 #include <lantiq_soc.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include <net/datapath_proc_api.h>
 #include "../datapath.h"
-#include <net/lantiq_cbm_api.h>
 #ifdef CONFIG_LTQ_TMU
 #include <net/drv_tmu_ll.h>
 #endif
@@ -187,7 +185,7 @@ struct task_struct *thread;
 static struct timer_list exp_timer;	/*timer setting */
 #endif
 
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 static int32_t (*tmu_hal_get_qos_m_local)(struct net_device *dev,
 					  dp_subif_t *subif_id,
 					  s32 queue_id,
@@ -567,7 +565,7 @@ static int update_port_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 	GSW_return_t ret;
 	struct mibs_low_lvl_port *curr;
 	dp_subif_t tmp;
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 	int update_flag, i;
 	struct pmac_port_info *port;
 #endif
@@ -615,7 +613,7 @@ static int update_port_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 	if (ret)/*workaroud */
 		curr->r = last[tmp.port_id].r;
 
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 	/* collect all mib per VAP for TMU and MPE MIB */
 	tmu_hal_get_qos_m_local = tmu_hal_get_qos_mib_hook_fn;
 	port = get_port_info(tmp.port_id);
@@ -665,7 +663,7 @@ static int update_port_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 					  &curr->redir);
 		if (ret)	/*workaroud */
 			curr->redir = last[tmp.port_id].redir;
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 		tmu_hal_get_csum_ol_m_local =
 			tmu_hal_get_csum_ol_mib_hook_fn;
 		update_flag = 0;
@@ -765,7 +763,7 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 		PR_ERR("get_gsw_itf_rmon failed for port/vap(%d/%d)", port_id,
 		       vap);
 	}
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 	/*get TMU mib */
 	tmu_hal_get_qos_m_local = tmu_hal_get_qos_mib_hook_fn;
 	if (!tmu_hal_get_qos_m_local) {
@@ -1619,7 +1617,7 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 		gsw_mib_reset_30(1, 0);
 		tmu_reset_mib_all(flag);
 		dp_clear_all_mib_inside(flag);
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 		tmu_hal_clear_qos_m_local =
 			tmu_hal_clear_qos_mib_hook_fn;
 		if (tmu_hal_clear_qos_m_local)
@@ -1709,7 +1707,7 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 		gsw_core_api((dp_gsw_cb)gsw_r->gsw_rmon_ops.RMON_Clear,
 			     gsw_r, &rmon);
 
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 		tmu_hal_clear_csum_ol_m_local =
 			tmu_hal_clear_csum_ol_mib_hook_fn;
 		if (tmu_hal_clear_csum_ol_m_local)
@@ -1730,7 +1728,7 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 		gsw_core_api((dp_gsw_cb)gsw_r->gsw_rmon_ops.RMON_Clear,
 			     gsw_r, &rmon);
 	}
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 	tmu_hal_clear_qos_m_local = tmu_hal_clear_qos_mib_hook_fn;
 	if (tmu_hal_clear_qos_m_local)
 		tmu_hal_clear_qos_m_local(NULL, subif, -1, flag);
@@ -1831,7 +1829,7 @@ int proc_mib_port_dump(struct seq_file *s, int pos)
 ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 			    loff_t *ppos)
 {
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 	int len;
 	char str[64];
 	int i, num, res;
@@ -1955,7 +1953,7 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 	return count;
 #endif
 	return count;
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#if IS_ENABLED(CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB)
 help:
 	PR_INFO("usage:\n");
 	PR_INFO("  test qos_mib  api:      echo qos_mib        > %s\n",

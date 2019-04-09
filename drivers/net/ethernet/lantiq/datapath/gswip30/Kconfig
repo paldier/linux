@@ -1,19 +1,18 @@
-menuconfig LTQ_DATAPATH_HAL_GSWIP30
+menuconfig INTEL_DATAPATH_HAL_GSWIP30
 	bool "Datapath HAL_GSWIP30"
 	default y
-	depends on LTQ_DATAPATH && GRX500_CBM
+	depends on INTEL_DATAPATH && GRX500_CBM
 	---help---
 	  Datapath Lib is to provide common rx/tx wrapper Lib without taking
 	  care of much HW knowledge and also provide common interface for legacy
 	  devices and different HW like to CBM or LRO.
 	  Take note: All devices need to register to datapath Lib first
 
-if LTQ_DATAPATH_HAL_GSWIP30
-config LTQ_DATAPATH_HAL_GSWIP30_MIB
+if INTEL_DATAPATH_HAL_GSWIP30
+config INTEL_DATAPATH_HAL_GSWIP30_MIB
 	bool "Datapath aggregated mib support"
-	depends on LTQ_DATAPATH_HAL_GSWIP30 && SOC_GRX500 && LTQ_TMU && LTQ_PPA_TMU_MIB_SUPPORT
+	depends on INTEL_DATAPATH_HAL_GSWIP30 && SOC_GRX500 && LTQ_TMU && LTQ_PPA_TMU_MIB_SUPPORT
 	default y
 	---help---
 	  It is to aggregate GSWIP-L/R, TMU and driver's MIB counter
-
 endif

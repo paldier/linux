@@ -1,15 +1,15 @@
-menuconfig LTQ_DATAPATH_HAL_GSWIP31
+menuconfig INTEL_DATAPATH_HAL_GSWIP31
 	bool "Datapath HAL_GSWIP31"
 	default y
-	depends on LTQ_DATAPATH && PRX300_CQM
+	depends on INTEL_DATAPATH && PRX300_CQM
 	---help---
 	  Datapath Lib is to provide common rx/tx wrapper Lib without taking
 	  care of much HW knowledge and also provide common interface for legacy
 	  devices and different HW like to CBM or LRO.
 	  Take note: All devices need to register to datapath Lib first
 
-if LTQ_DATAPATH_HAL_GSWIP31
-config LTQ_DATAPATH_HAL_GSWIP31_MIB
+if INTEL_DATAPATH_HAL_GSWIP31
+config INTEL_DATAPATH_HAL_GSWIP31_MIB
 	bool "Datapath aggregated mib support"
 	depends on LTQ_DATAPATH_HAL_GSWIP30 && SOC_GRX500 && LTQ_TMU && LTQ_PPA_TMU_MIB_SUPPORT
 	default y
@@ -35,7 +35,7 @@ config LTQ_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST
 	default y
 	depends on (LTQ_PPV4_QOS || LTQ_PPV4) && !LTQ_PPV4_QOS_SLIM && LTQ_DATAPATH_DUMMY_QOS
 
-config LTQ_DATAPATH_QOS_HAL
+config INTEL_DATAPATH_QOS_HAL
 	bool "datapath QOS hal"
 	default n
 	depends on (LTQ_PPV4_QOS || LTQ_PPV4) && !LTQ_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST

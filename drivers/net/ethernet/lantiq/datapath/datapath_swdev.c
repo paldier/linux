@@ -691,7 +691,7 @@ int dp_del_br_if(struct net_device *dev, struct net_device *br_dev,
 	return 0;
 }
 
-//#define CONFIG_LTQ_DATAPATH_SWDEV_TEST
+//#define CONFIG_INTEL_DATAPATH_SWDEV_TEST
 
 static int dp_swdev_port_attr_set(struct net_device *dev,
 				  const struct switchdev_attr *attr,
@@ -699,7 +699,7 @@ static int dp_swdev_port_attr_set(struct net_device *dev,
 {
 	int err = -EOPNOTSUPP;
 	struct net_device *br_dev;
-#ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 	{
 		struct net_device *br_dev =
 			netdev_master_upper_dev_get(attr->orig_dev);
@@ -819,7 +819,7 @@ static int dp_swdev_port_obj_add(struct net_device *dev,
 {
 	int err = -EOPNOTSUPP;
 	struct net_device *br_dev;
-#ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 	{
 		struct net_device *br_dev = netdev_master_upper_dev_get(dev);
 
@@ -866,7 +866,7 @@ static int dp_swdev_port_obj_del(struct net_device *dev,
 {
 	int err = -EOPNOTSUPP;
 	return err;//TODO
-#ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 	{
 		struct net_device *br_dev = netdev_master_upper_dev_get(dev);
 
@@ -894,10 +894,12 @@ static int dp_swdev_port_fdb_dump(struct net_device *dev,
 				  struct switchdev_obj_port_fdb *fdb_obj,
 				  switchdev_obj_dump_cb_t *cb)
 {
+#if 0
 	int err = 0;
 	struct fdb_tbl *fdb_d = NULL;
-
-	list_for_each_entry(fdb_d, &fdb_tbl_list, fdb_list) {
+	
+	extern struct list_head fdb_tbl_list_31;
+	list_for_each_entry(fdb_d, &fdb_tbl_list_31, fdb_list) {
 		if (fdb_d) {
 			if (fdb_d->port_dev != dev) {
 				continue;
@@ -913,6 +915,7 @@ static int dp_swdev_port_fdb_dump(struct net_device *dev,
 			break;
 		}
 	}
+#endif
 	return 0;
 }
 
@@ -924,7 +927,7 @@ static int dp_swdev_port_obj_dump(struct net_device *dev,
 
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "dp_swdev_port_obj_dump\r\n");
 	switch (obj->id) {
-#ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 	case SWITCHDEV_OBJ_ID_PORT_VLAN:
 		err = dp_swdev_port_vlan_dump(mlxsw_sp_port,
 					      SWITCHDEV_OBJ_PORT_VLAN(obj),
@@ -951,7 +954,7 @@ static int dp_ndo_bridge_setlink(struct net_device *dev,
 
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "ndo_bridge_setlink: dev=%s\n",
 		 dev ? dev->name : "NULL");
-#ifdef CONFIG_LTQ_DATAPATH_SWDEV_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 	struct nlattr *attr, *br_spec;
 	int rem;
 	u16 mode = 0;

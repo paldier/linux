@@ -18,12 +18,10 @@
 
 #include <lantiq.h>
 #include <lantiq_soc.h>
-#include <net/lantiq_cbm_api.h>
 #define DATAPATH_HAL_LAYER   /*must put before include datapath_api.h in
 			      *order to avoid include another platform's
 			      *DMA descriptor and pmac header files
 			      */
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include <net/datapath_api_gswip31.h>
 #include "../datapath.h"
@@ -398,6 +396,8 @@ ssize_t proc_get_qid_via_index30(struct file *file, const char *buf,
 	char *param_list[10];
 	int num;
 
+	if (!capable(CAP_NET_ADMIN))
+		return -EPERM;
 	len = (count >= sizeof(data)) ? (sizeof(data) - 1) : count;
 	DP_DEBUG(DP_DBG_FLAG_LOOKUP, "len=%d\n", len);
 

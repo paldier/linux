@@ -199,7 +199,7 @@ static int dp_seq_show(struct seq_file *s, void *v)
 			local_dbg("multiple call");
 			p->pos = p->multi_callback(s, p->pos);
 		} else if (p->single_callback) {
-			local_dbg("single call: %p", p->single_callback);
+			local_dbg("single call: %px", p->single_callback);
 			p->single_callback(s);
 			p->pos = -1;
 		}

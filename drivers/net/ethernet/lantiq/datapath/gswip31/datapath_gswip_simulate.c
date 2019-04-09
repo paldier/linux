@@ -10,7 +10,6 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/etherdevice.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include "../datapath.h"
 #include "datapath_misc.h"

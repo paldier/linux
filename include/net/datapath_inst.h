@@ -28,13 +28,15 @@ struct gsw_itf;
 /*! enum for DP HW capability type */
 enum DP_HW_CAP_TYPE {
 	GSWIP30_TYPE = 0,
-	GSWIP31_TYPE
+	GSWIP31_TYPE,
+	GSWIP32_TYPE
 };
 
 /*! enum for DP HW version */
 enum DP_HW_CAP_VER {
 	GSWIP30_VER = 0,
-	GSWIP31_VER
+	GSWIP31_VER,
+	GSWIP32_VER
 };
 
 struct dp_meter_subif {
@@ -89,7 +91,7 @@ struct inst_info {
 	void (*get_dma_pmac_templ)(int index, struct pmac_tx_hdr *pmac,
 				   struct dma_tx_desc_0 *desc_0,
 				   struct dma_tx_desc_1 *desc_1,
-				   struct pmac_port_info2 *dp_info);
+				   struct pmac_port_info *dp_info);
 	int (*get_itf_start_end)(struct gsw_itf *itf_info, u16 *start,
 				 u16 *end);
 	void (*dump_rx_dma_desc)(struct dma_rx_desc_0 *desc_0,
@@ -126,7 +128,11 @@ struct inst_info {
 			    struct dp_meter_cfg *meter, int flag,
 			    struct dp_meter_subif *mtr_subif);
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+	int32_t (*dp_rx)(struct sk_buff *skb, uint32_t flags);
+	int32_t (*dp_tx)(struct net_device *rx_if, dp_subif_t *rx_subif,
+			 struct sk_buff *skb, int32_t len, uint32_t flags);
+
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	int swdev_flag;
 	int (*swdev_alloc_bridge_id)(int inst);
 	int (*swdev_free_brcfg)(int inst, u16 fid);
@@ -142,9 +148,10 @@ struct inst_info {
 	int (*dp_tc_vlan_set)(struct core_ops *ops, struct dp_tc_vlan *vlan,
 			      struct dp_tc_vlan_info *info,
 			      int flag);
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#ifdef CONFIG_INTEL_DATAPATH_CPUFREQ
 	int (*dp_handle_cpufreq_event)(int event_id, void *cfg);
 #endif
+	int (*dp_qos_get_q_logic)(int cmd_id, void *cfg, int flag);
 };
 
 struct dp_inst {
@@ -171,6 +178,7 @@ struct inst_property {
 
 int register_dp_cap_gswip30(int flag);
 int register_dp_cap_gswip31(int flag);
+int register_dp_cap_gswip32(int flag);
 int register_dp_hw_cap(struct dp_hw_cap *info, u32 flag);
 
 /*! request a new DP instance based on its HW type/version */

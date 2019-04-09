@@ -58,6 +58,9 @@ int dp_set_gsw_parser_30(u8 flag, u8 cpu, u8 mpe1, u8 mpe2, u8 mpe3);
 int dp_get_gsw_parser_30(u8 *cpu, u8 *mpe1, u8 *mpe2, u8 *mpe3);
 int gsw_mib_reset_30(int dev, u32 flag);
 int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg);
+int32_t dp_rx_30(struct sk_buff *skb, u32 flags);
+int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
+		   struct sk_buff *skb, int32_t len, uint32_t flags);
 
 static inline GSW_return_t gsw_core_api(dp_gsw_cb func,
 					void *ops, void *param)

@@ -601,7 +601,7 @@ struct q_print_info *collect_info(struct seq_file *s,
 			q_info->sch_box[i][j] = &q_info->box[q_info->box_num];
 			q_info->box_num++;
 			if (q_info->box_num == ARRAY_SIZE(q_info->box)) {
-				PR_ERR("sched+port (%d) in one node: %s<%d\n",
+				PR_ERR("sched+port (%d) in one node: %s<%zd\n",
 				       q_info->box_num,
 				       "expect",
 				       ARRAY_SIZE(q_info->box));

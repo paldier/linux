@@ -27,12 +27,10 @@
 
 #include <lantiq.h>
 #include <lantiq_soc.h>
-#include <net/lantiq_cbm_api.h>
 #define DATAPATH_HAL_LAYER   /*must put before include datapath_api.h in
 			      *order to avoid include another platform's
 			      *DMA descriptor and pmac header files
 			      */
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include <net/datapath_api_gswip31.h>
 #include "../datapath.h"

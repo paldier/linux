@@ -1,10 +1,9 @@
 #include "datapath_ioctl.h"
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 static int dp_ndo_ptp_ioctl(struct net_device *dev,
 			    struct ifreq *ifr,
 			    int cmd);
-#endif
 
 static int get_tsinfo(struct net_device *dev,
 		      struct ethtool_ts_info *ts_info)
@@ -30,6 +29,7 @@ static int get_tsinfo(struct net_device *dev,
 		 dev->name);
 	return 0;
 }
+#endif
 
 int dp_ops_set(void **dev_ops, int ops_cb_offset,
 	       size_t ops_size, void **dp_orig_ops_cb,
@@ -64,7 +64,7 @@ int dp_ops_set(void **dev_ops, int ops_cb_offset,
 	return	DP_SUCCESS;
 }
 
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 static int dp_ndo_ptp_ioctl(struct net_device *dev,
 			    struct ifreq *ifr, int cmd)
 {
@@ -156,7 +156,7 @@ int dp_ops_reset(struct dp_dev *dp_dev,
 		dev->ethtool_ops = dp_dev->old_ethtool_ops;
 		dp_dev->old_ethtool_ops = NULL;
 	}
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_SWITCHDEV)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	if (dev->switchdev_ops == &dp_dev->new_swdev_ops) {
 		dev->switchdev_ops = dp_dev->old_swdev_ops;
 		dp_dev->old_swdev_ops = NULL;

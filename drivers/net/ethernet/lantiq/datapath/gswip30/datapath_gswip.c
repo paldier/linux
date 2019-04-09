@@ -10,7 +10,6 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/etherdevice.h>
-#include <net/lantiq_cbm_api.h>
 #include <net/datapath_api.h>
 #include "../datapath.h"
 #include "datapath_misc.h"
@@ -233,7 +232,7 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 
 			if (pmac_cfg->eg_pmac_flags & EG_PMAC_F_MPE2FLG)
 				egcfg.bMpe2Flag = pmac_cfg->eg_pmac.mpe2_flag;
-#if defined(CONFIG_LTQ_DATAPATH_DBG) && CONFIG_LTQ_DATAPATH_DBG
+#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 			if (dp_dbg_flag) {
 				DP_DEBUG(DP_DBG_FLAG_DBG,
 					 "\nPMAC %d egcfg configuration:\n",
