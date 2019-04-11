@@ -92,7 +92,7 @@ static void __init prom_init_cmdline(void)
 
 static void plat_early_init_devtree(void)
 {
-	void *dtb;
+	void *dtb = NULL;
 
 	/*
 	 * Load the builtin devicetree. This causes the chosen node to be
