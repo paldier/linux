@@ -1089,6 +1089,8 @@ int xpcs_reinit(struct device *dev, u32 mode)
 		return ret;
 	}
 
+	ret = phy_calibrate(phy);
+
 	return ret;
 }
 
