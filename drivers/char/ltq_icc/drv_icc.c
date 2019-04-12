@@ -64,7 +64,7 @@
 CREATE_TRACE_GROUP(ICC);
 /********************************Local functions*************************/
 
-#ifdef CONFIG_SOC_GRX500_BOOTCORE
+#ifdef CONFIG_SOC_GRX500_MKNOD
 
 #define SS_DEVICE_NAME "ltq_icc"
 static short ss_major_id ;
@@ -773,7 +773,7 @@ void pfn_icc_callback(void){
 int __init icc_init_module (void){
 	int result = 0;
 
-#ifdef CONFIG_SOC_GRX500_BOOTCORE
+#ifdef CONFIG_SOC_GRX500_MKNOD
 	ss_major_id = 0;
 	result = alloc_chrdev_region(&dev_no, 0, 1, SS_DEVICE_NAME);
 	if (result < 0) {
@@ -834,7 +834,7 @@ int __init icc_init_module (void){
 	sema_init(&icc_callback_sem,1);
 #endif
 finish:
-#ifdef CONFIG_SOC_GRX500_BOOTCORE
+#ifdef CONFIG_SOC_GRX500_MKNOD
 	if (result != 0) {
 		if (ss_major_id != 0)
 			unregister_chrdev_region(dev_no, 1);
@@ -848,7 +848,7 @@ void __exit icc_cleanup_module (void){
 	mps_close((struct inode *)1,NULL);
 	mps_unregister_callback();
 	icc_os_unregister ();
-#ifdef CONFIG_SOC_GRX500_BOOTCORE
+#ifdef CONFIG_SOC_GRX500_MKNOD
 	device_destroy(icc_class, dev_no);
 	cdev_del(icc_cdev);
 	class_destroy(icc_class);
