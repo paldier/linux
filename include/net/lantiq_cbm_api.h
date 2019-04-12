@@ -545,7 +545,7 @@ struct cbm_dp_alloc_data {
 	u32 tx_ring_offset;  /*next tx_ring_addr = current tx_ring_addr + tx_ring_offset */
 	void *tx_ring_addr_txpush; /* port ring physical base address/TXIN address  
 				    *  to configured to QOS TX Push register.
-	                            *  In falcon_mx, it needs to left
+	                            *  In PRX300, it needs to left
 				    *  shift some bits.
 				    *  In LGM,  ???
 				    */

@@ -9,7 +9,7 @@
 #ifndef DATAPATH_API_PRX300_H
 #define DATAPATH_API_PRX300_H
 
-#ifdef CONFIG_LITTLE_ENDIAN
+#if IS_ENABLED(CONFIG_LITTLE_ENDIAN)
 struct dma_rx_desc_0 {
 	/* DWORD 0 */
 	union {
@@ -41,7 +41,7 @@ struct dma_rx_desc_0 {
 } __packed;
 #endif
 
-#ifdef CONFIG_LITTLE_ENDIAN
+#if IS_ENABLED(CONFIG_LITTLE_ENDIAN)
 struct dma_rx_desc_1 {
 	/* DWORD 1 */
 	union {
@@ -83,7 +83,7 @@ struct dma_rx_desc_1 {
 } __packed;
 #endif
 
-#ifdef CONFIG_LITTLE_ENDIAN
+#if IS_ENABLED(CONFIG_LITTLE_ENDIAN)
 struct dma_rx_desc_2 {
 	/*DWORD 2 */
 	union {
@@ -106,7 +106,7 @@ struct dma_rx_desc_2 {
 } __packed;
 #endif
 
-#ifdef CONFIG_LITTLE_ENDIAN
+#if IS_ENABLED(CONFIG_LITTLE_ENDIAN)
 struct dma_rx_desc_3 {
 	/*DWORD 3 */
 	union {
@@ -153,7 +153,7 @@ struct dma_rx_desc_3 {
 #define dma_tx_desc_2 dma_rx_desc_2
 #define dma_tx_desc_3 dma_rx_desc_3
 
-#ifdef CONFIG_CPU_BIG_ENDIAN
+#if IS_ENABLED(CONFIG_CPU_BIG_ENDIAN)
 /*Note:pmac normally not DWORD aligned. Most time 2 bytes aligment */
 struct pmac_rx_hdr { /*Egress PMAC header*/
 	/*byte 0 */
@@ -234,7 +234,7 @@ struct pmac_rx_hdr { /*Egress PMAC header*/
 } __packed;
 #endif
 
-#ifdef CONFIG_CPU_BIG_ENDIAN
+#if IS_ENABLED(CONFIG_CPU_BIG_ENDIAN)
 struct pmac_tx_hdr { /*Ingress PMAC header*/
 	/*byte 0 */
 	u8 tcp_chksum:1;

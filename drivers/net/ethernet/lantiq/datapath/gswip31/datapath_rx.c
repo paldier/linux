@@ -206,7 +206,7 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 		goto RX_DROP;
 	}
 	dp_port = &dp_port_info[inst][port_id];
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_PTP1588)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	if (dp_port->f_ptp) {
 		ops = dp_port_prop[inst].mac_ops[port_id];
 		if (ops)

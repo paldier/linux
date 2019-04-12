@@ -10,7 +10,7 @@
 #ifndef DATAPATH_API_GRX500_H
 #define DATAPATH_API_GRX500_H
 
-#ifdef CONFIG_LITTLE_ENDIAN
+#if IS_ENABLED(CONFIG_LITTLE_ENDIAN)
 struct dma_rx_desc_0 {
 	/* DWORD 0 */
 	union {
@@ -271,7 +271,7 @@ struct dma_tx_desc_3 {
 } __packed;
 
 #endif
-#ifdef CONFIG_CPU_BIG_ENDIAN
+#if IS_ENABLED(CONFIG_CPU_BIG_ENDIAN)
 /*Note:pmac normally not DWORD aligned. Most time 2 bytes aligment */
 struct pmac_rx_hdr {
 	/*byte 0 */
