@@ -480,11 +480,11 @@
 #define SESSION_FLAG2_CPU_IN		 	0x00001000 /*session is locally terminating*/
 #define SESSION_FLAG2_CPU_OUT		 	0x00002000 /*session is locally generated*/
 #define SESSION_FLAG2_CPU_BOUND	(SESSION_FLAG2_CPU_IN | SESSION_FLAG2_CPU_OUT) /*local session*/
+
 /* Container Session Flags */
 #define SESSION_FLAG2_VETH 			0x00004000
 #define SESSION_FLAG2_CONTAINER 		0x00008000
 #define SESSION_FLAG2_NON_ETHWAN_SESSION 	0x00010000
-
 #define SESSION_FLAG2_DS_MPE_QOS		0x00020000 /* Flag for DS_QOS capability */
 
 /* Other flags */
@@ -492,7 +492,6 @@
 #define SESSION_FLAG_TC_REMARK		0x40000000 /*Flag to sepcify bit 30 in extmark which specifies packet classified by iptables when set to 1*/
 #define SESSION_FLAG_DSCP_REMARK	0x00000010 /*Flag to enable DSCP remark in Stack when packet is not classified using PAE Flow Rule*/
 #define SESSION_FLAG2_UPDATE_INFO_PROCESSED	0x10000000 /*Flag to specify ppa_update_session_info is complete*/
-
 #define MAX_DATA_FLOW_ENGINES 3 /* will be changed to runtime value*/
 
 #define MAX_SESSION_PRIORITY 3

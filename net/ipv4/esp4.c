@@ -155,11 +155,17 @@ static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
 	struct sk_buff *trailer;
 	uint16_t nexthdr;
 	
-	if(!ltq_get_len_param_hook) {
+	if (!ltq_get_len_param_hook) {
 		printk("param pointer is NULL\n");
 		return ;
 	}
-	ltq_get_len_param_hook(x->id.spi, &iv_len, &icv_len, &blk_size);
+
+	err = ltq_get_len_param_hook(x->id.spi, &iv_len, &icv_len, &blk_size);
+	if (err < 0) {
+		printk("Invalid IPSec params obtained, so returning\n");
+		return err;
+	}
+
 	trailer_len = icv_len + blk_size ;
 	err = skb_cow_data(skb, trailer_len, &trailer);
 	if (err < 0)
@@ -168,7 +174,7 @@ static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
 	skb_linearize(skb);
 	nexthdr = ip_hdr(skb)->protocol;
 	ip_hdr(skb)->protocol = IPPROTO_ESP;
-	if(!ltq_ipsec_enc_hook) {
+	if (!ltq_ipsec_enc_hook) {
 		printk("enc hook is NULL\n");
 		return ;
 	}
@@ -179,7 +185,7 @@ static int esp_output(struct xfrm_state *x, struct sk_buff *skb)
 	if (err == -EBUSY)
 		err = NET_XMIT_DROP;
 
-	if(err > 0) {
+	if (err > 0) {
 		skb->data = skb_transport_header(skb);
 		skb->len = err;
 		skb->tail = skb->data + skb->len;

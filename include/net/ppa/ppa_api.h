@@ -201,6 +201,7 @@ typedef struct ppa_hsel_cnode{
 #define FLAG_SESSION_HI_PRIO 0x0001
 #define FLAG_SESSION_SWAPPED 0x0002
 #define FLAG_SESSION_LOCK_FAIL 0x0004
+#define SESSION_FLAG2_VALID_IPSEC_TRANS		0x00040000 /* Flag for L2TP over IPSec Transport mode */
 /* tunnel table datastructures*/
 /* PPA default values */
 #define PPA_IPV4_HDR_LEN 20
