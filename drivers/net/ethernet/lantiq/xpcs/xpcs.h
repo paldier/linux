@@ -768,7 +768,7 @@ static inline void XPCS_RGWR(struct xpcs_prv_data *pdata, u32 reg, u32 val)
 	} while (0)
 
 int xpcs_sysfs_init(struct xpcs_prv_data *priv);
-void xpcs_ethtool_ksettings_get(struct device *dev,
+int xpcs_ethtool_ksettings_get(struct device *dev,
 				struct ethtool_link_ksettings *cmd);
 int xpcs_ethtool_ksettings_set(struct device *dev,
 			       const struct ethtool_link_ksettings *cmd);

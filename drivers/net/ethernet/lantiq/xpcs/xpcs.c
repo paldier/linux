@@ -988,22 +988,29 @@ static int xpcs_reset(struct device *dev)
 	return 0;
 }
 
-void xpcs_ethtool_ksettings_get(struct device *dev,
-				struct ethtool_link_ksettings *cmd)
+int xpcs_ethtool_ksettings_get(struct device *dev,
+			       struct ethtool_link_ksettings *cmd)
 {
 	struct xpcs_prv_data *pdata = dev_get_drvdata(dev);
 
 	if (!pdata) {
 		dev_err(dev, "XPCS is not initialized\n");
-		return;
+		return -ENODEV;
 	}
+
+	ethtool_link_ksettings_zero_link_mode(cmd, supported);
+	ethtool_link_ksettings_zero_link_mode(cmd, advertising);
+	ethtool_link_ksettings_zero_link_mode(cmd, lp_advertising);
+
+	ethtool_link_ksettings_add_link_mode(cmd, supported, 1000baseX_Full);
+	ethtool_link_ksettings_add_link_mode(cmd, supported, 10000baseKR_Full);
 
 	if (pdata->mode == TENG_KR_MODE)
 		cmd->base.speed = SPEED_10000;
 	else if (pdata->mode == ONEG_XAUI_MODE)
 		cmd->base.speed = SPEED_1000;
 
-	return;
+	return 0;
 }
 EXPORT_SYMBOL(xpcs_ethtool_ksettings_get);
 
