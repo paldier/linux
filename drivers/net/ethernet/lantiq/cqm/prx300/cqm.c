@@ -2247,11 +2247,11 @@ static void init_fsqm(void)
 
 	cbm_w32((fsqm + FSQM_IRNEN), 0x111101F);
 
-	cbm_w32((fsqm + FSQT0), fsqm_frm_num / 6 * 5);
-	cbm_w32((fsqm + FSQT1), fsqm_frm_num / 6 * 4);
-	cbm_w32((fsqm + FSQT2), fsqm_frm_num / 6 * 3);
-	cbm_w32((fsqm + FSQT3), fsqm_frm_num / 6 * 2);
-	cbm_w32((fsqm + FSQT4), fsqm_frm_num / 6);
+	cbm_w32((fsqm + FSQT0), fsqm_frm_num / 5);
+	cbm_w32((fsqm + FSQT1), fsqm_frm_num / 8);
+	cbm_w32((fsqm + FSQT2), fsqm_frm_num / 12);
+	cbm_w32((fsqm + FSQT3), fsqm_frm_num / 25);
+	cbm_w32((fsqm + FSQT4), fsqm_frm_num / 25);
 	cbm_w32(fsqm + IO_BUF_RD, 0);
 	cbm_w32(fsqm + IO_BUF_WR, 0);
 	cbm_w32(fsqm + FSQM_CTRL, 0x1);
