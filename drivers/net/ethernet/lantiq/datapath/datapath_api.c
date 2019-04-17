@@ -751,6 +751,7 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	memset(&port_info->subif_info[i].mib, 0,
 	       sizeof(port_info->subif_info[i].mib));
 	port_info->subif_info[i].flags = 0;
+	port_info->subif_info[i].netif = NULL;
 	port_info->num_subif--;
 	if (dp_port_prop[inst].info.subif_platform_set(inst,
 						       port_id, i,
