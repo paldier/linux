@@ -436,6 +436,10 @@ static int pmac_eg_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 					/* Pmac1, PCE bypass traffic to MAC2*/
 					/* Pmac0, PCE-Bypass Traf to MAC3-MAC4*/
 					else {
+						if (m == 3 || m == 4)
+							/* BSL priority to 1 for Dest port 3 and 4*/
+							/* support for above 3.0 GSWIP versions */
+							eg_cfg.nBslTrafficClass =1;
 						/* Every Pkt has Pmac header */
 						eg_cfg.bPmacEna = 1;
 						/* Pkt can be segmented. */
