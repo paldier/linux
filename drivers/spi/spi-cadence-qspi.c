@@ -332,17 +332,6 @@ static int cadence_qspi_of_get_pdata(struct platform_device *pdev)
 	return 0;
 }
 
-static void cadence_qspi_rst(struct struct_cqspi *cadence_qspi,
-	struct platform_device *pdev)
-{
-	cadence_qspi->reset = devm_reset_control_get(&pdev->dev, "qspi");
-	if (IS_ERR(cadence_qspi->reset))
-		dev_err(&pdev->dev, "qspi get reset fail.\n");
-
-	reset_control_assert(cadence_qspi->reset);
-	reset_control_deassert(cadence_qspi->reset);
-}
-
 static int cadence_qspi_probe(struct platform_device *pdev)
 {
 	struct spi_master *master;
@@ -424,7 +413,13 @@ static int cadence_qspi_probe(struct platform_device *pdev)
 		goto err_ahbremap;
 	}
 
-	cadence_qspi_rst(cadence_qspi, pdev);
+	cadence_qspi->reset = devm_reset_control_get(&pdev->dev, "qspi");
+	if (IS_ERR(cadence_qspi->reset)) {
+		dev_err(&pdev->dev, "qspi get reset fail.\n");
+		status = -EINVAL;
+		goto err_ahbremap;
+	}
+
 	cadence_qspi->workqueue =
 		create_singlethread_workqueue(dev_name(master->dev.parent));
 	if (!cadence_qspi->workqueue) {

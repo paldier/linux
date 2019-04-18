@@ -698,19 +698,28 @@ static int cadence_qspi_apb_indirect_write_execute(
 		goto failwr;
 	}
 
-	/* We observe issues in high frequency in which write transfer fail in
+	/* We observe issues in underrun condition (i.e. in high SPI clock
+	 * or low CPU clock) in which write transfer fail in
 	 * between, which eventually causes issues at higher layer (e.g. file
 	 * system corruption). To workaround, we check the sram fill level
-	 * after write. If it is not zero, we assume transfer failure, and
-	 * return -EAGAIN so that user layer can retry operation in a clean
-	 * way.
+	 * after write. If it is not zero, we assume transfer failure, do hard
+	 * recovery, and return -EAGAIN so that user layer can retry operation
+	 * in a clean way.
 	 */
 	fill_level = (((CQSPI_READL(reg_base + CQSPI_REG_SDRAMLEVEL)) >>
 		       CQSPI_REG_SDRAMLEVEL_WR_LSB) &
 		      CQSPI_REG_SDRAMLEVEL_WR_MASK);
 	if (fill_level) {
 		pr_debug("%s fill level is %u\n", __func__, fill_level);
-		ret = -EAGAIN;
+
+		CQSPI_WRITEL(0, reg_base + CQSPI_REG_IRQMASK);
+		CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_DONE_MASK,
+			     reg_base + CQSPI_REG_INDIRECTWR);
+		CQSPI_WRITEL(CQSPI_REG_INDIRECTWR_CANCEL_MASK,
+			     reg_base + CQSPI_REG_INDIRECTWR);
+
+		cadence_qspi_apb_controller_init(cadence_qspi);
+		return -EAGAIN;
 	}
 
 failwr:
@@ -754,6 +763,11 @@ void cadence_qspi_apb_controller_init(struct struct_cqspi *cadence_qspi)
 {
 	unsigned int reg;
 	int ret;
+
+	/* reset */
+	reset_control_assert(cadence_qspi->reset);
+	udelay(1);
+	reset_control_deassert(cadence_qspi->reset);
 
 	cadence_qspi_apb_controller_disable(cadence_qspi->iobase);
 
