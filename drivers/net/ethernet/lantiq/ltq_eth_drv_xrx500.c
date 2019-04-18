@@ -327,7 +327,7 @@ int serdes_ethtool_get_link_ksettings(struct net_device *dev,
 	if (pdev) {
 #ifdef CONFIG_INTEL_XPCS
 		/* Speed Get in Ethtool */
-		xpcs_ethtool_ksettings_get(&pdev->dev, cmd);
+		ret = xpcs_ethtool_ksettings_get(&pdev->dev, cmd);
 #endif
 	} else {
 		pr_err("Cannot get Xpcs pdev for %s\n", dev->name);
