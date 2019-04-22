@@ -1390,10 +1390,9 @@ static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 			 policy->min, policy->max, policy->cur);
 		return NOTIFY_DONE;
 	}
-	if (!dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event)
-		return NOTIFY_OK;
 	return
-	dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event(POLICY_NOTIFY, policy);
+	dp_port_prop[dp_coc_inst].info.
+		dp_handle_cpufreq_event(POLICY_NOTIFY, policy);
 }
 
 /* keep track of frequency transitions */
@@ -1402,15 +1401,11 @@ static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
 {
 	struct cpufreq_freqs *freq = data;
 	if (event == CPUFREQ_PRECHANGE) {
-		if (!dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event)
-			return NOTIFY_STOP_MASK;
 		return dp_port_prop[dp_coc_inst].info.
-					dp_handle_cpufreq_event(PRE_CHANGE, freq);
+				dp_handle_cpufreq_event(PRE_CHANGE, freq);
 	} else if (event == CPUFREQ_POSTCHANGE) {
-		if (!dp_port_prop[dp_coc_inst].info.dp_handle_cpufreq_event)
-			return NOTIFY_STOP_MASK;
 		return dp_port_prop[dp_coc_inst].info.
-					dp_handle_cpufreq_event(POST_CHANGE, freq);
+				dp_handle_cpufreq_event(POST_CHANGE, freq);
 	}
 	return NOTIFY_OK;
 }
@@ -1425,18 +1420,34 @@ static struct notifier_block dp_coc_cpufreq_policy_notifier_block = {
 
 int dp_cpufreq_notify_init(int inst)
 {
-	
 	dp_coc_inst = inst;
 	if (cpufreq_register_notifier
 	    (&dp_coc_cpufreq_transition_notifier_block,
 	    CPUFREQ_TRANSITION_NOTIFIER)) {
-		PR_ERR("cpufreq_register_notifier failed?\n");
+		PR_ERR("cpufreq transiiton register_notifier failed?\n");
 		return -1;
 	}
 	if (cpufreq_register_notifier
 	    (&dp_coc_cpufreq_policy_notifier_block,
 	    CPUFREQ_POLICY_NOTIFIER)) {
-		PR_ERR("cpufreq_register_notifier failed?\n");
+		PR_ERR("cpufreq policy register_notifier failed?\n");
+		return -1;
+	}
+	return 0;
+}
+
+int dp_cpufreq_notify_exit(void)
+{
+	if (cpufreq_unregister_notifier
+	    (&dp_coc_cpufreq_transition_notifier_block,
+	    CPUFREQ_TRANSITION_NOTIFIER)) {
+		PR_ERR("cpufreq transition unregister_notifier failed?\n");
+		return -1;
+	}
+	if (cpufreq_unregister_notifier
+	    (&dp_coc_cpufreq_policy_notifier_block,
+	    CPUFREQ_POLICY_NOTIFIER)) {
+		PR_ERR("cpufreq policy unregister_notifier failed?\n");
 		return -1;
 	}
 	return 0;

@@ -137,6 +137,10 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	dp_port_prop[i].cbm_inst = info->cbm_inst;
 	dp_port_prop[i].qos_inst = info->qos_inst;
 	dp_port_prop[i].valid = 1;
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+	dp_cpufreq_notify_init(i);
+	DP_DEBUG(DP_DBG_FLAG_COC, "DP registered CPUFREQ notifier\n");
+#endif
 	if (dp_port_prop[i].info.dp_platform_set(i, DP_PLATFORM_INIT) < 0) {
 		dp_port_prop[i].valid = 0;
 		PR_ERR("dp_platform_init failed for inst=%d\n", i);
@@ -147,9 +151,6 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	DP_DEBUG(DP_DBG_FLAG_INST,
 		 "dp_request_inst ok: inst=%d, dp_inst_num=%d\n",
 		 i, dp_inst_num);
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
-	dp_cpufreq_notify_init(i);
-#endif
 	return 0;
 }
 EXPORT_SYMBOL(dp_request_inst);

@@ -2912,7 +2912,7 @@ int dp_basic_proc(void)
 		dp_loop_eth_dev_exit();
 #endif
 #ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
-		dp_coc_cpufreq_exit();
+	dp_cpufreq_notify_exit();
 #endif
 		unregister_notifier(0);
 	}

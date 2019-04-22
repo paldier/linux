@@ -703,18 +703,21 @@ void dp_mib_exit(void);
 void print_parser_status(struct seq_file *s);
 void proc_mib_timer_read(struct seq_file *s);
 int mpe_fh_netfiler_install(void);
+#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
 int dp_coc_cpufreq_exit(void);
 int dp_coc_cpufreq_init(void);
 int dp_cpufreq_notify_init(int inst);
-int qos_dump_start(void);
-int qos_dump(struct seq_file *s, int pos);
-ssize_t proc_qos_write(struct file *file, const char *buf,
-		       size_t count, loff_t *ppos);
+int dp_cpufreq_notify_exit(void);
 int update_coc_up_sub_module(int new_state,
 			     int old_state, uint32_t flag);
 void proc_coc_read(struct seq_file *s);
 ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
 		       loff_t *ppos);
+#endif
+int qos_dump_start(void);
+int qos_dump(struct seq_file *s, int pos);
+ssize_t proc_qos_write(struct file *file, const char *buf,
+		       size_t count, loff_t *ppos);
 void dump_parser_flag(char *buf);
 
 //int dp_reset_sys_mib(u32 flag);
@@ -777,7 +780,6 @@ void dp_dump_raw_data(char *buf, int len, char *prefix_str);
 int ltq_tso_xmit(struct sk_buff *skb, void *hdr, int len, int flags);
 #endif
 
-//int dp_set_meter_rate(enum ltq_cpufreq_state stat, unsigned int rate);
 char *dp_skb_csum_str(struct sk_buff *skb);
 extern struct dentry *dp_proc_node;
 int get_dp_dbg_flag_str_size(void);

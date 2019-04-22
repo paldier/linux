@@ -452,8 +452,11 @@ static int dp_platform_set(int inst, u32 flag)
 		mib_init(0);
 	dp_get_gsw_parser_30(NULL, NULL, NULL, NULL);
 #ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
-	if (!inst)
+	if (!inst) {
 		dp_coc_cpufreq_init();
+		if (flag == DP_PLATFORM_DE_INIT)
+			dp_coc_cpufreq_exit();
+	}
 #endif
 
 	return 0;
@@ -579,7 +582,6 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		       dp_deq_port_tbl[inst][cqe_deq].ref_cnt);
 		return -1;
 	}
-	DP_DEBUG(DP_DBG_FLAG_DBG, "cid=%d pid=%d nid=%d\n", cid, pid, nid);
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt--;
 	if (port_info->num_dma_chan)
 		atomic_dec(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);
