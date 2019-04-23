@@ -691,8 +691,6 @@ int dp_del_br_if(struct net_device *dev, struct net_device *br_dev,
 	return 0;
 }
 
-//#define CONFIG_INTEL_DATAPATH_SWDEV_TEST
-
 static int dp_swdev_port_attr_set(struct net_device *dev,
 				  const struct switchdev_attr *attr,
 				  struct switchdev_trans *trans)
@@ -897,8 +895,7 @@ static int dp_swdev_port_fdb_dump(struct net_device *dev,
 #if 0
 	int err = 0;
 	struct fdb_tbl *fdb_d = NULL;
-	
-	extern struct list_head fdb_tbl_list_31;
+
 	list_for_each_entry(fdb_d, &fdb_tbl_list_31, fdb_list) {
 		if (fdb_d) {
 			if (fdb_d->port_dev != dev) {

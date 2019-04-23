@@ -19,8 +19,6 @@
 #include <net/ppa/qos_mgr_tc_hook.h>
 //#include "../cqm/cqm_common.h"
 
-//#define CONFIG_INTEL_DATAPATH_DUMMY_QOS
-//#define DUMMY_PPV4_QOS_API_OLD
 #define dp_vlan_dev_priv vlan_dev_priv
 #ifdef DUMMY_PPV4_QOS_API_OLD
 /*TODO:currently need to include both header file */
@@ -357,7 +355,7 @@ enum DP_DBG_FLAG {
 	DP_DBG_ENUM_OR_STRING(DP_DBG_FLAG_MAX, "")\
 }
 
-enum {
+enum QOS_FLAG {
 	NODE_LINK_ADD = 0, /*add a link node */
 	NODE_LINK_GET,     /*get a link node */
 	NODE_LINK_EN_GET,  /*Get link status: enable/disable */

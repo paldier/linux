@@ -335,7 +335,7 @@ s32 qos_node_config(struct qos_node_api_param *param)
 
 void init_qos_fn(void)
 {
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_QOS
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
 	qos_queue_remove = test_qos_queue_remove;
 	qos_queue_allocate = test_qos_queue_allocate;
 	qos_queue_info_get = test_qos_queue_info_get;
@@ -382,7 +382,7 @@ void init_qos_fn(void)
 #else
 	/*all NULL function pointer */
 	DP_DEBUG(DP_DBG_FLAG_QOS, "call QOS function pointer set to NULL\n");
-#endif /*CONFIG_LTQ_DATAPATH_DUMMY_QOS*/
+#endif /*CONFIG_INTEL_DATAPATH_DUMMY_QOS*/
 }
 
 #ifdef DUMMY_PPV4_QOS_API_OLD
@@ -585,7 +585,7 @@ int dp_pp_alloc_port(struct ppv4_port *info)
 	conf.ring_size = info->tx_ring_size;
 	conf.packet_credit_enable = 1;
 	conf.credit = info->tx_pkt_credit;
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (dp_dbg_flag & DP_DBG_FLAG_QOS) {
 		DP_DEBUG(DP_DBG_FLAG_QOS,
 			 "qos_port_set info for p[%d/%d] dp_port=%d:\n",
@@ -678,7 +678,7 @@ int init_ppv4_qos(int inst, int flag)
 	union qos_init *t = NULL;
 	int res = DP_FAILURE, i;
 	struct hal_priv *priv = HAL(inst);
-#ifdef CONFIG_INTEL_DATAPATH_QOS_HAL
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_QOS_HAL)
 	unsigned int q, idx;
 	struct cbm_tx_push *flush_port;
 	struct cbm_cpu_port_data cpu_data = {0};

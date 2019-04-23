@@ -1203,7 +1203,7 @@ static struct dp_proc_entry dp_proc_entries[] = {
 	{PROC_PARSER, proc_parser_read, NULL, NULL, proc_parser_write},
 	{PROC_RMON_PORTS, NULL, proc_gsw_port_rmon_dump,
 	 proc_gsw_rmon_port_start, proc_gsw_rmon_write},
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 	{PROC_COC, proc_coc_read_30, NULL, NULL, proc_coc_write_30},
 #endif
 	{PROC_EP, NULL, proc_ep_dump, NULL, ep_port_write},

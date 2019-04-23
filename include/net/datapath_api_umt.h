@@ -1,18 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  *  Copyright (C) 2018 Intel Corporation.
  *  Zhu YiXin <Yixin.zhu@intel.com>
  */
 
-//----define register and macro start
+/* ----define register and macro start */
 #define DP_UMT_NOT_SENDING_ZERO_COUNT	BIT(0)
 #define DP_UMT_SENDING_RX_COUNT_ONLY	BIT(1)
 #define DP_UMT_SUSPEND_SENDING_COUNT	BIT(2)
 #define DP_UMT_ENABLE			BIT(3)
 
-//----define register and macro end
+/* ----define register and macro end */
 
-//----define enum start
+/* ----define enum start*/
 enum dp_umt_rx_src {
 	DP_UMT_RX_FROM_CQEM,
 	DP_UMT_RX_FROM_DMA
@@ -29,9 +29,9 @@ enum dp_umt_sw_msg { /* for DP_UMG_USER_MSG_MODE only */
 	DP_UMT_MSG0_MSG1,
 };
 
-//----define enum end
+/* ----define enum end */
 
-//----define structure here start
+/* ----define structure here start*/
 /**
  * struct dp_umt_param
  * id: umt HW ID. (0 - 7)
@@ -98,9 +98,9 @@ struct dp_umt_entry {
 	struct dentry		*debugfs;
 };
 
-//----define structure here end
+/* ----define structure here end */
 
-//----declare APIs start
+/* ----declare APIs start */
 int dp_umt_request(struct dp_umt_param *umt, unsigned long flag);
 
 /* set flag for period  */
@@ -111,7 +111,7 @@ int dp_umt_enable(struct dp_umt_param *umt, unsigned long flag, int enable);
 int dp_umt_suspend_sending(struct dp_umt_param *umt,
 			   unsigned long flag, int halt);
 
-//----declare APIs end
+/* ----declare APIs end */
 
 /**
  * debug proc should support:

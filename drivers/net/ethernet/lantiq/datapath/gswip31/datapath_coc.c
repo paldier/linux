@@ -91,7 +91,7 @@ struct ltq_cpufreq_module_info dp_coc_feature_fss = {
 	.ltq_cpufreq_pwr_feature_switch = dp_coc_fss_ena,
 };
 
-#if defined(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG) && CONFIG_INTEL_DATAPATH_DBG
 static char *get_sub_module_str(uint32_t flag)
 {
 	if (flag == DP_COC_REQ_DP)

@@ -174,7 +174,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 		skb->mark |= FLG_PPA_PROCESSED;
 #endif
 	}
-#ifdef CONFIG_LTQ_DATAPATH_EXTRA_DEBUG
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 	/*Sanity check */
 	if (unlikely(dp_port_prop[inst].info.not_valid_rx_ep(ep))) {
 		DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "Wrong: why ep=%d??\n", ep);
@@ -261,7 +261,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 					desc_0, desc_1,
 					desc_2, desc_3);
 		}
-#ifdef CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_MPE_FASTHOOK_TEST)
 		if (unlikely(ltq_mpe_fasthook_rx_fn))
 			ltq_mpe_fasthook_rx_fn(skb, 1, NULL);	/*with pmac */
 #endif

@@ -1354,7 +1354,7 @@ static int dp_alloc_qos_port(struct dp_node_alloc *node, int flag)
 	if (port_cfg.credit)
 		port_cfg.packet_credit_enable = 1;
 	port_cfg.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WRR;
-#if IS_ENABLED(CONFIG_LTQ_DATAPATH_DBG)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (unlikely(dp_dbg_flag & DP_DBG_FLAG_QOS)) {
 		DP_DEBUG(DP_DBG_FLAG_QOS, "qos_port_set parameter: %d/%d\n",
 			 cqm_deq_port, qos_port);

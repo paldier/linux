@@ -45,8 +45,6 @@
 #include <net/switch_api/gsw_flow_ops.h>
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 #include <linux/cpufreq.h>
-#include <cpufreq/ltq_cpufreq.h>
-
 #endif /*CONFIG_INTEL_DATAPATH_CPUFREQ*/
 
 /*! @mainpage Datapath Manager API
@@ -438,7 +436,7 @@ typedef int32_t(*dp_get_mib_fn_t)(dp_subif_t *subif, dp_drv_mib_t *,
 typedef int32_t(*dp_get_netif_subifid_fn_t)(struct net_device *netif,
 	struct sk_buff *skb, void *subif_data, uint8_t dst_mac[DP_MAX_ETH_ALEN],
 	dp_subif_t *subif, uint32_t flags);	/*!< @brief   get subifid */
-#if defined(CONFIG_INTEL_DATAPATH_CPUFREQ) && defined(CONFIG_LTQ_CPUFREQ)
+#if defined(CONFIG_INTEL_DATAPATH_CPUFREQ)
 typedef int32_t(*dp_coc_confirm_stat)(int new_state,
 	int old_st, uint32_t f); /*!< @brief Confirm state
 				  *   by COC

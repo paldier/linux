@@ -1714,7 +1714,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 				   dma_ch_offset)->ref_cnt);
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan: (ref=%d)\n",
+		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan ref=%d\n",
 		 "subif_hw_set",
 		 "dp_port", portid,
 		 "vap", subif_ix,
@@ -1855,7 +1855,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		DP_DEBUG(DP_DBG_FLAG_QOS, "q_id[%d] dont need freed\n", qid);
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan: (ref=%d)\n",
+		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan ref=%d\n",
 		 "subif_hw_reset",
 		 "dp_port", portid,
 		 "vap", subif_ix,
@@ -1972,7 +1972,7 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 			    struct pmac_rx_hdr *pmac, char *decryp)
 {
 	//*ep = pmac->igp_egp; /*get the port_id from pmac's sppid */
-#ifdef DP_SKB_HACK
+#if defined(DP_SKB_HACK)
 	*ep = (skb->DW1 >> 4) & 0xF; /*get the port_id from pmac's sppid */
 #endif
 	if (dp_port_info[inst][*ep].alloc_flags & DP_F_LOOPBACK) {
@@ -1986,7 +1986,7 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 		*decryp = 1;
 	} else {
 		struct dma_rx_desc_1 *desc_1;
-#ifdef DP_SKB_HACK
+#if defined(DP_SKB_HACK)
 		desc_1 = (struct dma_rx_desc_1 *)&skb->DW1;
 #else
 	//error "Please add proper logic here"

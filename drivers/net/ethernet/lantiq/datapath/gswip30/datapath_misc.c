@@ -457,6 +457,12 @@ static int dp_platform_set(int inst, u32 flag)
 	return 0;
 }
 
+static int dev_platform_set(int inst, u8 ep, struct dp_dev_data *data,
+			     u32 flags)
+{
+	return 0;
+}
+
 static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			     u32 flags)
 {
@@ -472,6 +478,8 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 	dma_ch_base = port_info->dma_ch_base;
 	for (i = 0; i < port_info->deq_port_num; i++) {
 		dp_deq_port_tbl[inst][i + idx].dp_port = ep;
+
+		/* For G.INT num_dma_chan 8 or 16, for other 1 */
 		if (port_info->num_dma_chan > 1) {
 			dp_deq_port_tbl[inst][i + idx].dma_chan = dma_chan++;
 			dp_deq_port_tbl[inst][i + idx].dma_ch_offset =
@@ -531,7 +539,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
 	if (port_info->num_dma_chan)
 		atomic_inc(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);
-	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d tx_dma_chan: (ref=%d)\n",
+	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d tx_dma_chan ref=%d\n",
 		 cqe_deq,
 		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt,
 		 atomic_read(&(dp_dma_chan_tbl[inst] +
@@ -572,7 +580,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt--;
 	if (port_info->num_dma_chan)
 		atomic_dec(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);
-	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d tx_dma_chan: (ref=%d)\n",
+	DP_DEBUG(DP_DBG_FLAG_REG, "cbm[%d].ref_cnt=%d tx_dma_chan ref=%d\n",
 		 cqe_deq,
 		 dp_deq_port_tbl[inst][cqe_deq].ref_cnt,
 		 atomic_read(&(dp_dma_chan_tbl[inst] +
@@ -662,6 +670,7 @@ int register_dp_cap_gswip30(int flag)
 	cap.info.ver = GSWIP30_VER;
 	cap.info.dp_platform_set = dp_platform_set;
 	cap.info.port_platform_set = port_platform_set;
+	cap.info.dev_platform_set = dev_platform_set;
 	cap.info.subif_platform_set_unexplicit = subif_platform_set_unexplicit;
 	cap.info.proc_print_ctp_bp_info = NULL;
 	cap.info.init_dma_pmac_template = init_dma_pmac_template;

@@ -57,6 +57,7 @@ struct fdb_tbl {
 	__be16 vid;
 };
 
+extern struct list_head fdb_tbl_list;
 extern struct hlist_head
 	g_bridge_id_entry_hash_table[DP_MAX_INST][BR_ID_ENTRY_HASH_TABLE_SIZE];
 int dp_swdev_bridge_id_entry_free(int instance);

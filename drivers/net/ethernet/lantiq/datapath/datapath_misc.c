@@ -42,7 +42,7 @@
 #define dp_memcpy(x, y, z)   memcpy(x, y, z)
 #endif
 
-#ifdef CONFIG_INTEL_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 #include <linux/cpufreq.h>
 static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
 					      unsigned long event, void *data);
@@ -1381,7 +1381,7 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 	return 0;
 }
 
-#ifdef CONFIG_INTEL_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 					  unsigned long event, void *data)
 {

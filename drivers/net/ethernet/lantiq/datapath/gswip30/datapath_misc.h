@@ -30,7 +30,7 @@ struct gsw_itf {
 	u16 n;
 };
 
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 /* threshold data for D0:D3 */
 struct dp_coc_threshold {
 	int	th_d0;
@@ -88,7 +88,7 @@ int lookup_dump30(struct seq_file *s, int pos);
 int lookup_start30(void);
 ssize_t proc_get_qid_via_index30(struct file *file, const char *buf,
 				 size_t count, loff_t *ppos);
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 int dp_handle_cpufreq_event_30(int event_id, void *cfg);
 void proc_coc_read_30(struct seq_file *s);
 ssize_t proc_coc_write_30(struct file *file, const char *buf, size_t count,

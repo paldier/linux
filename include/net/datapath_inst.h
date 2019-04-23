@@ -148,7 +148,7 @@ struct inst_info {
 	int (*dp_tc_vlan_set)(struct core_ops *ops, struct dp_tc_vlan *vlan,
 			      struct dp_tc_vlan_info *info,
 			      int flag);
-#ifdef CONFIG_INTEL_DATAPATH_CPUFREQ
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_CPUFREQ)
 	int (*dp_handle_cpufreq_event)(int event_id, void *cfg);
 #endif
 	int (*dp_qos_get_q_logic)(int cmd_id, void *cfg, int flag);

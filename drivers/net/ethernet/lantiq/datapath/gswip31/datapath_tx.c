@@ -160,7 +160,7 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 			err_ret = DP_XMIT_ERR_NULL_IF;
 			goto lbl_err_ret;
 		}
-#ifdef CONFIG_LTQ_DATAPATH_MPE_FASTHOOK_TEST
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_MPE_FASTHOOK_TEST)
 		if (unlikely(ltq_mpe_fasthook_tx_fn))
 			ltq_mpe_fasthook_tx_fn(skb, 0, NULL);
 #endif
