@@ -27,16 +27,16 @@ config INTEL_DATAPATH_DDR_SIMULATE_GSWIP31
 
 config INTEL_DATAPATH_DUMMY_QOS
 	bool "datapath dummy QOS based on slim QOS driver or real QOS API with PRX300_test API"
-	default y
+	default n
 	depends on LTQ_PPV4_QOS_SLIM || (LTQ_PPV4_QOS || LTQ_PPV4)
 
 config INTEL_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST
 	bool "datapath dummy QOS via ppv4 qos driver's PRX300_test api, like slim driver"
-	default y
+	default n
 	depends on (LTQ_PPV4_QOS || LTQ_PPV4) && !LTQ_PPV4_QOS_SLIM && INTEL_DATAPATH_DUMMY_QOS
 
 config INTEL_DATAPATH_QOS_HAL
 	bool "datapath QOS hal"
-	default n
+	default y
 	depends on (LTQ_PPV4_QOS || LTQ_PPV4) && !INTEL_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST
 endif

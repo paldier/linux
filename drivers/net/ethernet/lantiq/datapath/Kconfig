@@ -61,6 +61,7 @@ config INTEL_DATAPATH_DBG_PROTOCOL_PARSE
 	  Datapath Debug Tool for hw checksum's protocol parsing
 	  Only for debugging purpose
 	  By default it should be disabled.
+
 config INTEL_DATAPATH_EXTRA_DEBUG
 	bool "extra debugging support"
 	default n
@@ -154,8 +155,8 @@ config LTQ_DATAPATH
 
 config LTQ_DATAPATH_ACA_CSUM_WORKAROUND
 	bool
-	default y
-	default LTQ_DATAPATH_ACA_CSUM_WORKAROUND
+	default n
+	default INTEL_DATAPATH_ACA_CSUM_WORKAROUND
 
 config LTQ_DATAPATH_MANUAL_PARSE
 	bool
@@ -164,22 +165,12 @@ config LTQ_DATAPATH_MANUAL_PARSE
 
 config LTQ_DATAPATH_SKB
 	bool
-	default y
+	default n
 	depends on INTEL_DATAPATH_SKB
-
-config LTQ_DATAPATH_PTP1588
-	bool
-	default y
-	depends on INTEL_DATAPATH_PTP1588
-
-config LTQ_DATAPATH_PTP1588_SW_WORKAROUND
-	bool
-	default y
-	depends on INTEL_DATAPATH_PTP1588_SW_WORKAROUND
 
 config LTQ_DATAPATH_CPUFREQ
 	bool
-	default y
+	default n
 	depends on INTEL_DATAPATH_CPUFREQ
 
 source "drivers/net/ethernet/lantiq/datapath/gswip31/Kconfig"
