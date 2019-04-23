@@ -14160,6 +14160,8 @@ static GSW_return_t GSW_RMON_Port_Get_Active(void *cdev, GSW_RMON_Port_cnt_t *pa
 	bmtbl_prog_t bmtable = {0};
 	u32 ret;
 	GSW_CTP_portAssignment_t ctp_get;
+	u32 subifidgroup;
+	ltq_bool_t pcebypass;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -14168,8 +14170,15 @@ static GSW_return_t GSW_RMON_Port_Get_Active(void *cdev, GSW_RMON_Port_cnt_t *pa
 
 	Portmode = parm->ePortType;
 	PortId = parm->nPortId;
+	subifidgroup = parm->nSubIfIdGroup;
+	pcebypass = parm->bPceBypass;
 	/*Clear the structure before using*/
 	memset(parm, 0, sizeof(GSW_RMON_Port_cnt_t));
+	/* recover input parameters */
+	parm->ePortType = Portmode;
+	parm->nPortId = PortId;
+	parm->nSubIfIdGroup = subifidgroup;
+	parm->bPceBypass = pcebypass;
 
 	switch (Portmode) {
 	case GSW_CTP_PORT:
