@@ -43,7 +43,6 @@
 
 #ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
 #include <linux/cpufreq.h>
-static int dp_coc_inst;
 static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
 					      unsigned long event, void *data);
 static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
@@ -1381,6 +1380,7 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 					  unsigned long event, void *data)
 {
+	int inst = 0;
 	struct cpufreq_policy *policy = data;
 	DP_DEBUG(DP_DBG_FLAG_COC,"%s; cpu=%d\n",
 		 event ? "CPUFREQ_NOTIFY" : "CPUFREQ_ADJUST",
@@ -1391,7 +1391,7 @@ static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 		return NOTIFY_DONE;
 	}
 	return
-	dp_port_prop[dp_coc_inst].info.
+	dp_port_prop[inst].info.
 		dp_handle_cpufreq_event(POLICY_NOTIFY, policy);
 }
 
@@ -1399,12 +1399,13 @@ static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
 					      unsigned long event, void *data)
 {
+	int inst = 0;
 	struct cpufreq_freqs *freq = data;
 	if (event == CPUFREQ_PRECHANGE) {
-		return dp_port_prop[dp_coc_inst].info.
+		return dp_port_prop[inst].info.
 				dp_handle_cpufreq_event(PRE_CHANGE, freq);
 	} else if (event == CPUFREQ_POSTCHANGE) {
-		return dp_port_prop[dp_coc_inst].info.
+		return dp_port_prop[inst].info.
 				dp_handle_cpufreq_event(POST_CHANGE, freq);
 	}
 	return NOTIFY_OK;
@@ -1420,7 +1421,6 @@ static struct notifier_block dp_coc_cpufreq_policy_notifier_block = {
 
 int dp_cpufreq_notify_init(int inst)
 {
-	dp_coc_inst = inst;
 	if (cpufreq_register_notifier
 	    (&dp_coc_cpufreq_transition_notifier_block,
 	    CPUFREQ_TRANSITION_NOTIFIER)) {

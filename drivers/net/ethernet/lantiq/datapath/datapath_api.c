@@ -1358,25 +1358,6 @@ EXIT:
 	return res;
 }
 
-#ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
-int update_coc_up_sub_module(int new_state,
-			     int old_state, uint32_t flag)
-{
-	int i;
-	dp_coc_confirm_stat fn;
-	int inst = 0;
-
-	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
-		fn = dp_port_info[inst][i].cb.dp_coc_confirm_stat_fn;
-
-		if (fn)
-			fn(new_state, old_state, flag);
-	}
-
-	return 0;
-}
-#endif
-
 /* return DP_SUCCESS -- found
  * return DP_FAILURE -- not found
  */
@@ -2912,7 +2893,7 @@ int dp_basic_proc(void)
 		dp_loop_eth_dev_exit();
 #endif
 #ifdef CONFIG_LTQ_DATAPATH_CPUFREQ
-	dp_cpufreq_notify_exit();
+		dp_cpufreq_notify_exit();
 #endif
 		unregister_notifier(0);
 	}

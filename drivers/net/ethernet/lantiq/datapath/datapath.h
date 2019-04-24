@@ -708,11 +708,6 @@ int dp_coc_cpufreq_exit(void);
 int dp_coc_cpufreq_init(void);
 int dp_cpufreq_notify_init(int inst);
 int dp_cpufreq_notify_exit(void);
-int update_coc_up_sub_module(int new_state,
-			     int old_state, uint32_t flag);
-void proc_coc_read(struct seq_file *s);
-ssize_t proc_coc_write(struct file *file, const char *buf, size_t count,
-		       loff_t *ppos);
 #endif
 int qos_dump_start(void);
 int qos_dump(struct seq_file *s, int pos);
