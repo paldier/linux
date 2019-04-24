@@ -550,4 +550,37 @@ struct tc_red_qopt_offload {
 	};
 };
 
+enum tc_drr_command {
+	TC_DRR_REPLACE,
+	TC_DRR_DESTROY,
+	TC_DRR_STATS,
+	TC_DRR_GRAFT,
+};
+
+struct tc_drr_qopt_offload_params {
+	int quantum;
+	struct gnet_stats_queue *qstats;
+};
+
+struct tc_drr_qopt_offload_stats {
+	struct gnet_stats_basic_packed *bstats;
+	struct gnet_stats_queue *qstats;
+};
+
+struct tc_drr_qopt_offload_graft_params {
+	u8 id;
+	u32 child_handle;
+};
+
+struct tc_drr_qopt_offload {
+	enum tc_drr_command command;
+	u32 handle;
+	u32 parent;
+	union {
+		struct tc_drr_qopt_offload_params set_params;
+		struct tc_drr_qopt_offload_stats stats;
+		struct tc_drr_qopt_offload_graft_params graft_params;
+	};
+};
+
 #endif

@@ -39,6 +39,43 @@ struct drr_sched {
 	struct Qdisc_class_hash		clhash;
 };
 
+static int drr_offload(struct Qdisc *sch, enum tc_drr_command cmd)
+{
+	struct net_device *dev = qdisc_dev(sch);
+	struct tc_drr_qopt_offload opt = {
+		.command = cmd,
+		.parent = sch->parent,
+		.handle = sch->handle,
+	};
+	struct tc_to_netdev tc = {.type = TC_SETUP_DRR,
+				  { .sch_drr = &opt } };
+
+	if (!(dev->features & NETIF_F_HW_TC) || !dev->netdev_ops->ndo_setup_tc)
+		return -EOPNOTSUPP;
+
+	return dev->netdev_ops->ndo_setup_tc(dev, sch->handle, 0, &tc);
+}
+
+static int drr_cl_offload(struct Qdisc *sch, struct drr_class *cl,
+			  enum tc_drr_command cmd)
+{
+	struct net_device *dev = qdisc_dev(sch);
+	struct tc_drr_qopt_offload opt = {
+		.command = cmd,
+		.parent = sch->handle,
+		.handle = cl->common.classid,
+	};
+	struct tc_to_netdev tc = {.type = TC_SETUP_DRR,
+				  { .sch_drr = &opt } };
+
+	if (!(dev->features & NETIF_F_HW_TC) || !dev->netdev_ops->ndo_setup_tc)
+		return -EOPNOTSUPP;
+
+	opt.set_params.quantum = cl->quantum;
+
+	return dev->netdev_ops->ndo_setup_tc(dev, cl->common.classid, 0, &tc);
+}
+
 static struct drr_class *drr_find_class(struct Qdisc *sch, u32 classid)
 {
 	struct drr_sched *q = qdisc_priv(sch);
@@ -136,6 +173,8 @@ static int drr_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
 
 	qdisc_class_hash_grow(sch, &q->clhash);
 
+	drr_cl_offload(sch, cl, TC_DRR_REPLACE);
+
 	*arg = (unsigned long)cl;
 	return 0;
 }
@@ -144,6 +183,7 @@ static void drr_destroy_class(struct Qdisc *sch, struct drr_class *cl)
 {
 	gen_kill_estimator(&cl->bstats, &cl->rate_est);
 	qdisc_destroy(cl->qdisc);
+	drr_cl_offload(sch, cl, TC_DRR_DESTROY);
 	kfree(cl);
 }
 
@@ -432,6 +472,9 @@ static int drr_init_qdisc(struct Qdisc *sch, struct nlattr *opt)
 	if (err < 0)
 		return err;
 	INIT_LIST_HEAD(&q->active);
+
+	drr_offload(sch, TC_DRR_REPLACE);
+
 	return 0;
 }
 
@@ -467,6 +510,8 @@ static void drr_destroy_qdisc(struct Qdisc *sch)
 			drr_destroy_class(sch, cl);
 	}
 	qdisc_class_hash_destroy(&q->clhash);
+
+	drr_offload(sch, TC_DRR_DESTROY);
 }
 
 static const struct Qdisc_class_ops drr_class_ops = {
