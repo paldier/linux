@@ -63,6 +63,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 			    int subif_index, u32 flag);
 	struct pmac_port_info *port = get_port_info(tmp_inst, pos);
 	u16 start = 0;
+	u32 cid, pid, nid;
 	int loop;
 	struct inst_info *info = NULL;
 
@@ -218,12 +219,18 @@ int proc_port_dump(struct seq_file *s, int pos)
 			   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
 		seq_printf(s, "          : mac_learn_dis:    %d\n",
 			   port->subif_info[i].mac_learn_dis);
+		cid = _DMA_CONTROLLER(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
+		pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
+		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
-		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst])
+		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst]) {
 			seq_printf(s, "          : tx_dma_ch:    0x%x(ref=%d)\n",
 			   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
 			   atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
 				       dma_ch_offset)->ref_cnt));
+			seq_printf(s, "          : dma-ctrl/port/channel:%d/%d/%d\n",
+				cid, pid, nid);
+		}
 		seq_printf(s, "          : gpid:           %d\n",
 			   port->subif_info[i].gpid);
 		if (port->subif_info[i].ctp_dev &&
@@ -365,10 +372,12 @@ ssize_t proc_port_write(struct file *file, const char *buf, size_t count,
 	int len;
 	char str[64];
 	int num, i;
+	/*later need to put real inst value */
+	struct inst_info *info = &dp_port_prop[0].info;
 	u8 index_start = 0;
 	u8 index_end = MAX_DP_PORTS;
 	int vap_start = 0;
-	int vap_end = MAX_SUBIFS;
+	int vap_end = info->cap.max_num_subif_per_port;
 	char *param_list[10];
 	int inst;
 
@@ -396,7 +405,7 @@ ssize_t proc_port_write(struct file *file, const char *buf, size_t count,
 		return count;
 	}
 
-	if (vap_start >= MAX_SUBIFS) {
+	if (vap_start >= info->cap.max_num_subif_per_port) {
 		PR_ERR("wrong VAP: 0 ~ 15\n");
 		return count;
 	}

@@ -3918,7 +3918,8 @@ int dp_queue_map_get_31(struct dp_queue_map_get *cfg, int flag)
 		PR_ERR("Invalid Queue ID:%d\n", cfg->q_id);
 		return DP_FAILURE;
 	}
-	if (priv->qos_queue_stat[cfg->q_id].flag == PP_NODE_FREE) {
+	if ((priv->qos_queue_stat[cfg->q_id].flag == PP_NODE_FREE) &&
+			(cfg->q_id != priv->ppv4_drop_q)) {
 		PR_ERR("Invalid Queue flag:%d\n",
 		       priv->qos_queue_stat[cfg->q_id].flag);
 		return DP_FAILURE;
@@ -4494,8 +4495,8 @@ FREE_EXIT:
 	return res;
 }
 
-/* dp_children_get_31 API
- * Get direct chldren and type of given node and return DP_SUCCESS
+/* dp_qos_global_info_get_31 API
+ * Get global qos config information return DP_SUCCESS
  * else return DP_FAILURE
  */
 int dp_qos_global_info_get_31(struct dp_qos_cfg_info *info, int flag)

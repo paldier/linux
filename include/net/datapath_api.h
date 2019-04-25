@@ -14,13 +14,6 @@
 #include <linux/etherdevice.h>
 #include <linux/atmdev.h>
 
-#if IS_ENABLED(CONFIG_PRX300_CQM) || \
-	IS_ENABLED(CONFIG_GRX500_CBM)
-	#include <net/lantiq_cbm_api.h>
-#else
-	#include <net/intel_cbm_api.h>
-#endif
-
 #ifndef DATAPATH_HAL_LAYER
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SIMULATE_GSWIP32) || \
 	IS_ENABLED(CONFIG_SOC_LGM) || \

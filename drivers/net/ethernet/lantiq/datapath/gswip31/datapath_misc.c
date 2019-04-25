@@ -1066,7 +1066,7 @@ int dp_platform_queue_set(int inst, u32 flag)
 	struct hal_priv *priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
 	struct pmac_port_info *port_info;
 
-	port_info = &dp_port_info[inst][0]; /*CPU*/
+	port_info = &dp_port_info[inst][CPU_PORT];
 	if ((flag & DP_PLATFORM_DE_INIT) == DP_PLATFORM_DE_INIT) {
 		PR_ERR("Need to free resoruce in the future\n");
 		return 0;

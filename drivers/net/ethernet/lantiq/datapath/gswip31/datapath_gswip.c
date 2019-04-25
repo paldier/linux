@@ -46,6 +46,7 @@ struct ctp_assign {
 
 static struct ctp_assign ctp_assign_info[] = {
 	/*note: multiple flags must put first */
+	{DP_F_CPU, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 8, 0xF, CQE_LU_MODE0, 8},
 	{DP_F_GPON, GSW_LOGICAL_PORT_GPON, 256, 0, 0xFF, CQE_LU_MODE1, 1},
 	{DP_F_EPON, GSW_LOGICAL_PORT_EPON, 256, 0, 0xFF, CQE_LU_MODE1, 1},
 	{DP_F_GINT, GSW_LOGICAL_PORT_GINT, 16, 0, 0xFF, CQE_LU_MODE1, 1},
@@ -616,7 +617,6 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 		num = data->max_ctp;
 	else
 		num = assign->num;
-
 	ctp_assign.nLogicalPortId = ep;
 	ctp_assign.eMode = assign->emode;
 	ctp_assign.nBridgePortId = bp_default;

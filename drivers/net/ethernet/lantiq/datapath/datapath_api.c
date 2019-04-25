@@ -495,7 +495,7 @@ static int32_t dp_alloc_port_private(int inst,
 	/*only 1st dp instance support real CPU path traffic */
 	if (!inst && dp_port_prop[inst].info.init_dma_pmac_template)
 		dp_port_prop[inst].info.init_dma_pmac_template(port_id, flags);
-	for (i = 0; i < MAX_SUBIFS; i++)
+	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_subif_per_port; i++)
 		INIT_LIST_HEAD(&dp_port_info[inst][port_id].
 			subif_info[i].logic_dev);
 	dp_inst_insert_mod(owner, port_id, inst, 0);

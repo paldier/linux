@@ -980,6 +980,7 @@ struct dp_q_map {
 	u32	dec; /*!< VPN Decrypt flag: 1 bit*/
 	u32	enc; /*!< VPN Encrypt flag: 1 bit*/
 	u32	class; /*!< Traffic Class: 4 bits*/
+	u32	egflag; /*!< egflag: 1 bits */
 };
 
 /*! @brief dp_q_map_mask*/

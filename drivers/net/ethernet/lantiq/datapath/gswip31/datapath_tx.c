@@ -27,7 +27,7 @@ void dp_xmit_dbg(
 	int gso,
 	int checksum)
 {
-#ifdef DP_SKB_HACK
+#if defined(DP_SKB_HACK)
 	DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 		 "%s: dp_xmit:skb->data/len=0x%p/%d data_ptr=%x from port=%d and subitf=%d\n",
 		 title,	skb->data, len,
@@ -73,7 +73,7 @@ void dp_xmit_dbg(
 			 skb_network_header(skb)));
 
 	if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DESCRIPTOR)
-#ifdef DP_SKB_HACK
+#if defined(DP_SKB_HACK)
 		dp_port_prop[0].info.dump_tx_dma_desc(
 				(struct dma_tx_desc_0 *)&skb->DW0,
 				(struct dma_tx_desc_1 *)&skb->DW1,
@@ -176,7 +176,7 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 		 *Must put these 4 lines after INSERT_PMAC
 		 *since INSERT_PMAC will change skb if needed
 		 *********************************************/
-#ifdef DP_SKB_HACK
+#if defined(DP_SKB_HACK)
 		desc_0 = (struct dma_tx_desc_0 *)&skb->DW0;
 		desc_1 = (struct dma_tx_desc_1 *)&skb->DW1;
 		desc_2 = (struct dma_tx_desc_2 *)&skb->DW2;

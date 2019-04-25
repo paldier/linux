@@ -29,7 +29,7 @@ int request_dp(u32 flag)
 	u32 mac_ifcnt = gsw_get_mac_subifcnt(0);
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SIMULATE_GSWIP32) || \
-	defined(DP_SKB_HACK)
+	IS_ENABLED(CONFIG_LGM_CQM)
 	info.type = GSWIP32_TYPE;
 	info.ver = GSWIP32_VER;
 	info.ops[0] = gsw_get_swcore_ops(0);

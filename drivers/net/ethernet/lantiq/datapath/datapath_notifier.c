@@ -70,6 +70,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 	}
 	inst = dp_dev->inst;
 	port = &dp_port_info[inst][dp_dev->ep];
+	prop = &dp_port_prop[inst];
 	switch (event) {
 	case NETDEV_GOING_DOWN:
 		DP_DEBUG(DP_DBG_FLAG_NOTIFY,
@@ -79,8 +80,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 			 "dev:", dev ? dev->name : "NULL",
 			 "MAC:", addr[0], addr[1], addr[2],
 			 addr[3], addr[4], addr[5]);
-		prop = &dp_port_prop[inst];
-		for (i = 0; i < MAX_SUBIFS; i++) {
+		for (i = 0; i < prop->info.cap.max_num_subif_per_port; i++) {
 			if (port->subif_info[i].netif == dev) {
 				vap = i;
 				DP_DEBUG(DP_DBG_FLAG_NOTIFY, "vap:%d\n", vap);
@@ -140,7 +140,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 				dp_dev->fid = 0;
 			}
 		}
-		for (i = 0; i < MAX_SUBIFS; i++) {
+		for (i = 0; i < prop->info.cap.max_num_subif_per_port; i++) {
 			if (port->subif_info[i].netif == dev) {
 				vap = i;
 				DP_DEBUG(DP_DBG_FLAG_NOTIFY, "vap:%d\n", vap);
@@ -157,7 +157,6 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 				 "dev:", dev ? dev->name : "NULL",
 				 "MAC:", addr[0], addr[1], addr[2],
 				 addr[3], addr[4], addr[5]);
-			prop = &dp_port_prop[inst];
 			/* Note: For Linux network device's mac address,
 			 *       its bridge port should be CPU port, not its
 			 *       mapped bridge port in GSWIP
@@ -180,7 +179,6 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 			 "dev:", dev ? dev->name : "NULL",
 			 "MAC:", addr[0], addr[1], addr[2],
 			 addr[3], addr[4], addr[5]);
-		prop = &dp_port_prop[inst];
 		prop->info.dp_mac_set(0,
 				      dp_dev->fid,
 				      dp_dev->inst, addr);

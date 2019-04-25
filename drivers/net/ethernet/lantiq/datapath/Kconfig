@@ -2,9 +2,9 @@
 # Datapath Lib
 #
 menuconfig INTEL_DATAPATH
-	bool "Datapath LIB"
+	bool "Datapath Manager/Core/LIB"
 	default y
-	depends on LTQ_CBM
+	depends on LTQ_CBM || INTEL_CBM
 	---help---
 	  Datapath Lib is to provide common rx/tx wrapper Lib without taking
 	  care of much HW knowledge and also provide common interface for legacy
@@ -89,17 +89,6 @@ config INTEL_DATAPATH_SKB
 	  For Ethernet OAM and MPE FW purpose testing purpose,
 	  It needs to hack SKB
 
-config INTEL_DATAPATH_MPE_FASTHOOK_TEST
-	bool "MPE Fast Hook Test"
-	default n
-	depends on  INTEL_DATAPATH_SKB
-	---help---
-	  MPE FW Fast Hook is used to quick verify MPE FW Functionality without
-	  full PPA support. Once it is enabled, it will add some fields in skb structure
-	  in order to support MPE FAST HOOK. The reason is that some network driver is
-	  pre-build out of this build system.
-	  The testing code by default is not checked in.
-
 config INTEL_DATAPATH_ETH_OAM
 	bool "ETH OAM SUPPORT"
 	default n
@@ -150,28 +139,19 @@ config INTEL_DATAPATH_CPUFREQ
 #
 config LTQ_DATAPATH
 	bool
-	default y
-	depends on INTEL_DATAPATH
+	default INTEL_DATAPATH
 
 config LTQ_DATAPATH_ACA_CSUM_WORKAROUND
 	bool
-	default n
 	default INTEL_DATAPATH_ACA_CSUM_WORKAROUND
-
-config LTQ_DATAPATH_MANUAL_PARSE
-	bool
-	default y
-	depends on INTEL_DATAPATH_MANUAL_PARSE
 
 config LTQ_DATAPATH_SKB
 	bool
-	default n
-	depends on INTEL_DATAPATH_SKB
+	default INTEL_DATAPATH_SKB
 
 config LTQ_DATAPATH_CPUFREQ
 	bool
-	default n
-	depends on INTEL_DATAPATH_CPUFREQ
+	default INTEL_DATAPATH_CPUFREQ
 
 source "drivers/net/ethernet/lantiq/datapath/gswip31/Kconfig"
 source "drivers/net/ethernet/lantiq/datapath/gswip30/Kconfig"
