@@ -6,7 +6,6 @@
  *
  * Based on the Xilinx PCIe driver
  */
-
 #include <linux/clk.h>
 #include <linux/gpio/consumer.h>
 #include <linux/interrupt.h>
@@ -15,9 +14,9 @@
 #include <linux/msi.h>
 #endif
 #include <linux/mfd/syscon.h>
+#include <linux/of_irq.h>
 #include <linux/of_pci.h>
 #include <linux/of_platform.h>
-#include <linux/of_irq.h>
 #include <linux/pci.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
@@ -386,6 +385,7 @@ struct intel_pcie_port {
 #endif /* CONFIG_PCIE_INTEL_MSI_PIC */
 	struct clk *core_clk;
 	struct reset_control *core_rst;
+	struct reset_control *rcu_rst;
 	struct phy *phy;
 	struct list_head resources;
 	u8 root_bus_nr;
@@ -794,12 +794,10 @@ static int intel_pcie_wait_phy_link_up(struct intel_pcie_port *lpp)
 				 val, ((val & PCIE_DBR1_PHY_LINK_UP) &&
 				 (!(val & PCIE_DBR1_PHY_IN_TRAINING))),
 				 50, 1000 * USEC_PER_MSEC);
-	if (err) {
+	if (err)
 		dev_err(dev, "%s port %d timeout\n", __func__, lpp->id);
-		return err;
-	}
 
-	return 0;
+	return err;
 }
 
 static void intel_pcie_bridge_class_code_setup(struct intel_pcie_port *lpp)
@@ -1070,12 +1068,31 @@ static int intel_pcie_ep_rst_init(struct intel_pcie_port *lpp)
 	int err;
 	struct device *dev = lpp->dev;
 
-	lpp->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_LOW);
+	lpp->reset_gpio = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_LOW);
 	if (IS_ERR(lpp->reset_gpio)) {
 		err = PTR_ERR(lpp->reset_gpio);
 		dev_err(dev, "failed to request PCIe GPIO: %d\n", err);
 		return err;
 	}
+
+	lpp->rcu_rst = devm_reset_control_get_optional(lpp->dev, "rcu_rst");
+	if (IS_ERR(lpp->rcu_rst)) {
+		err = PTR_ERR(lpp->rcu_rst);
+		if (err == -ENOENT) {
+			lpp->rcu_rst = NULL;
+		} else {
+			dev_err(dev, "failed to get rcu reset: %d\n", err);
+			return err;
+		}
+	}
+
+	/* Only one of them is needed */
+	if ((lpp->reset_gpio && lpp->rcu_rst) ||
+	    (!lpp->reset_gpio && !lpp->rcu_rst))
+		return -EINVAL;
+
+	if (lpp->rcu_rst)
+		reset_control_deassert(lpp->rcu_rst);
 
 	msleep(100);
 	return 0;
@@ -1151,13 +1168,22 @@ static void intel_pcie_core_rst_deassert(struct intel_pcie_port *lpp)
 
 static void intel_pcie_device_rst_assert(struct intel_pcie_port *lpp)
 {
-	gpiod_set_value_cansleep(lpp->reset_gpio, 1);
+	if (lpp->reset_gpio)
+		gpiod_set_value_cansleep(lpp->reset_gpio, 1);
+
+	if (lpp->rcu_rst)
+		reset_control_assert(lpp->rcu_rst);
 }
 
 static void intel_pcie_device_rst_deassert(struct intel_pcie_port *lpp)
 {
 	msleep(lpp->rst_interval);
-	gpiod_set_value_cansleep(lpp->reset_gpio, 0);
+
+	if (lpp->reset_gpio)
+		gpiod_set_value_cansleep(lpp->reset_gpio, 0);
+
+	if (lpp->rcu_rst)
+		reset_control_deassert(lpp->rcu_rst);
 }
 
 static int intel_pcie_enable_clks(struct intel_pcie_port *lpp)

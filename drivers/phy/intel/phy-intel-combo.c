@@ -846,10 +846,8 @@ static int intel_phy_dt_parse(struct intel_combo_phy *priv,
 
 	if (iphy->id == 0) {
 		/* Dual lane configuration only required on PHY 0 */
-		if (!device_property_read_u32(dev, "intel,aggregation", &prop))
-			aggregated = !!prop;
-		else
-			aggregated = false;
+		aggregated = device_property_read_bool(dev,
+						       "intel,aggregation");
 
 		if (aggregated) {
 			priv->aggr_mode = PHY_DL_MODE;

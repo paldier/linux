@@ -3,7 +3,6 @@
  * Copyright (C) 2017 Intel Corporation.
  * Lei Chuanhua <Chuanhua.lei@intel.com>
  */
-
 #include <linux/bitops.h>
 #include <linux/io.h>
 #include <linux/init.h>
@@ -48,7 +47,7 @@ static int intel_assert_device(struct reset_controller_dev *rcdev,
 	u32 val;
 	struct intel_reset_data *data = to_reset_data(rcdev);
 	u32 regoff = id >> 8;
-	u32 regbit = id & 0x3f;
+	u32 regbit = id & 0x1f;
 	u32 regstoff;
 
 	ret = regmap_update_bits(data->regmap, regoff,
@@ -70,7 +69,7 @@ static int intel_deassert_device(struct reset_controller_dev *rcdev,
 	u32 val;
 	struct intel_reset_data *data = to_reset_data(rcdev);
 	u32 regoff = id >> 8;
-	u32 regbit = id & 0x3f;
+	u32 regbit = id & 0x1f;
 	u32 regstoff;
 
 	ret = regmap_update_bits(data->regmap, regoff,
@@ -90,7 +89,7 @@ static int intel_reset_device(struct reset_controller_dev *rcdev,
 {
 	struct intel_reset_data *data = to_reset_data(rcdev);
 	u32 regoff = id >> 8;
-	u32 regbit = id & 0x3f;
+	u32 regbit = id & 0x1f;
 	u32 regstoff;
 	unsigned int val = 0;
 	int ret;
@@ -109,7 +108,7 @@ static int intel_reset_status(struct reset_controller_dev *rcdev,
 {
 	struct intel_reset_data *data = to_reset_data(rcdev);
 	u32 regoff = id >> 8;
-	u32 regbit = id & 0x3f;
+	u32 regbit = id & 0x1f;
 	u32 regstoff;
 	unsigned int val;
 	int ret;
@@ -137,7 +136,7 @@ static int intel_reset_xlate(struct reset_controller_dev *rcdev,
 	offset = spec->args[0];
 	bit = spec->args[1];
 
-	return (offset << 8) | bit;
+	return (offset << 8) | (bit & 0x1f);
 }
 
 static int intel_reset_restart_handler(struct notifier_block *nb,
