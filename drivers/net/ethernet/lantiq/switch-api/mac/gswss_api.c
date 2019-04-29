@@ -440,7 +440,6 @@ int gswss_set_interrupt(void *pdev, u32 mod, u32 idx, u32 enable)
 		//	   enable ? "ENABLED" : "DISABLED");
 
 		mac_int_en0 = GSWSS_RGRD(pdata, GSWIPSS_IER0);
-		idx += GSWIPSS_IER0_XGMAC2_POS;
 		SET_N_BITS(mac_int_en0, idx, GSWIPSS_IER0_XGMAC2_WIDTH, enable);
 		GSWSS_RGWR(pdata, GSWIPSS_IER0, mac_int_en0);
 		break;
@@ -450,7 +449,6 @@ int gswss_set_interrupt(void *pdev, u32 mod, u32 idx, u32 enable)
 			   enable ? "ENABLED" : "DISABLED");
 
 		mac_int_en1 = GSWSS_RGRD(pdata, GSWIPSS_IER1);
-		idx += GSWIPSS_IER1_LINK2_POS;
 		SET_N_BITS(mac_int_en1, idx, GSWIPSS_IER1_LINK2_WIDTH, enable);
 		GSWSS_RGWR(pdata, GSWIPSS_IER1, mac_int_en1);
 		break;
