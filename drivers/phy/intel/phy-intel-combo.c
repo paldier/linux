@@ -846,7 +846,7 @@ static int intel_phy_dt_parse(struct intel_combo_phy *priv,
 	}
 
 	iphy->calibrate.rx_auto_adapt =
-		device_property_read_bool(dev, "intel-rx-auto-adapt");
+		device_property_read_bool(dev, "intel,rx-auto-adapt");
 
 	if (!(BIT(iphy->phy_mode) & priv->phy_cap)) {
 		dev_err(dev,
