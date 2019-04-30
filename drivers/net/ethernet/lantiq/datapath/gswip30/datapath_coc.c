@@ -73,10 +73,12 @@ int dp_set_meter_rate(int stat, unsigned int rate)
 
 int dp_set_rmon_threshold(uint32_t *threshold)
 {
+	int i;
+
 	if (!threshold)
 		return -1;
-	memcpy((void *)&rmon_threshold,	(void *)threshold,
-	       sizeof(rmon_threshold));
+	for (i = 0 ; i < ARRAY_SIZE(rmon_threshold); i++)
+		rmon_threshold[i] = threshold[i];
 	return	0;
 }
 EXPORT_SYMBOL(dp_set_rmon_threshold);
@@ -132,6 +134,7 @@ void proc_coc_read_30(struct seq_file *s)
 		   dp_coc_init_stat ? "initialized ok" : "Not initialized");
 	seq_printf(s, "    dp_coc_ps_curr=%d (%s) @ 0x%p\n", dp_coc_ps_curr,
 		   get_coc_stat_string(dp_coc_ps_curr), &dp_coc_ps_curr);
+	seq_printf(s, "    dp_coc_ps_new=%d\n", dp_coc_ps_new);
 	seq_printf(s, "    last_rmon_rx=%llu pkts@ 0x%p (%s)\n", last_rmon_rx,
 		   &last_rmon_rx, rmon_timer_en ? "Valid" : "Not valid");
 
@@ -232,6 +235,12 @@ ssize_t proc_coc_write_30(struct file *file, const char *buf, size_t count,
 			rmon_threshold[3] = 1;
 
 		coc_unlock();
+	} else if (dp_strncmpi(param_list[0], "D0", strlen("D0") + 1) == 0) {
+		dp_coc_ps_new = dp_coc_ps_max;
+		schedule_work(&coc_work_q);
+	} else if (dp_strncmpi(param_list[0], "D3", strlen("D3") + 1) == 0) {
+		dp_coc_ps_new = dp_coc_ps_min;
+		schedule_work(&coc_work_q);
 	} else if (dp_strncmpi(param_list[0], "rate",
 					strlen("rate") + 1) == 0) {
 		/*meter rate */
@@ -497,27 +506,6 @@ int meter_set_default(void)
 	return 0;
 }
 
-static int dp_coc_policy_notify(struct cpufreq_policy *policy)
-{
-	DP_DEBUG(DP_DBG_FLAG_COC, "policy (min, max, cur):%u, %u, %u\n",
-		 policy->min, policy->max, policy->cur);
-	if (dp_coc_ps_curr == -1) {
-		dp_coc_ps_curr = policy->max;
-		dp_coc_ps_max = policy->max;
-		dp_coc_ps_min = policy->min;
-	} else if (intr == 1) {
-		DP_DEBUG(DP_DBG_FLAG_COC,
-			 "no down scaling, limit to freq=%d dp_freq_new=%d\n",
-			 dp_coc_ps_max, dp_coc_ps_new);
-		dp_coc_ps_new = dp_coc_ps_max;
-		intr = 0;
-		/*No down scaling allowed, limit the frequency to max */
-		cpufreq_verify_within_limits(policy, policy->max, policy->max);
-	}
-	DP_DEBUG(DP_DBG_FLAG_COC, "dp curr freq=%d\n", dp_coc_ps_curr);
-	return NOTIFY_OK;
-}
-
 static void dp_rmon_polling(unsigned long data)
 {
 	GSW_RMON_Port_cnt_t curr;
@@ -529,8 +517,8 @@ static void dp_rmon_polling(unsigned long data)
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	for (i = 0; i < PMAC_MAX_NUM; i++) {
 		memset(&curr, 0, sizeof(curr));
-		gsw_core_api((dp_gsw_cb)gsw_handle
-				->gsw_rmon_ops.RMON_Port_Get,
+		gsw_core_api((dp_gsw_cb)gsw_handle->
+			     gsw_rmon_ops.RMON_Port_Get,
 				gsw_handle, &curr);
 
 		coc_lock();
@@ -551,25 +539,34 @@ static void dp_rmon_polling(unsigned long data)
 		coc_unlock();
 	}
 	last_rmon_rx = rx;
+	DP_DEBUG(DP_DBG_FLAG_COC, "last rmon:%d\n", last_rmon_rx);
 	if (dp_coc_ps_curr != -1) {
 		if (rx < rmon_threshold[3]) {
-			schedule_work(&coc_work_q);
+			dp_coc_ps_new = dp_coc_ps_min;
 			coc_lock();
 			rmon_timer_en = 0;
 			coc_unlock();
+			schedule_work(&coc_work_q);
 			DP_DEBUG(DP_DBG_FLAG_COC,
 				 "Request to D3:rx (%u) < th_d3 %d\n",
 				 (unsigned int)rx, rmon_threshold[3]);
 		} else if (rx < rmon_threshold[2]) {
+			dp_coc_ps_new = dp_coc_ps_min;
 			schedule_work(&coc_work_q);
 			DP_DEBUG(DP_DBG_FLAG_COC,
 				 "req to D2: rx (%u) < th_d2 %d\n",
 				 (unsigned int)rx, rmon_threshold[2]);
 		} else if (rx < rmon_threshold[1]) {
+			dp_coc_ps_new = dp_coc_ps_min;
 			schedule_work(&coc_work_q);
 			DP_DEBUG(DP_DBG_FLAG_COC,
 				 "req to D1 since rx (%u) < th_d1 %d\n",
 				 (unsigned int)rx, rmon_threshold[1]);
+		} else {
+			DP_DEBUG(DP_DBG_FLAG_COC,
+				 "Stat no change:rx(%u)>=thresholds %d_%d_%d\n",
+				 (unsigned int)rx, rmon_threshold[3],
+				 rmon_threshold[2], rmon_threshold[1]);
 		}
 	} else {
 		DP_DEBUG(DP_DBG_FLAG_COC,
@@ -600,6 +597,9 @@ void update_rmon_last(void)
 
 int update_coc_rmon_timer(uint32_t new_state)
 {
+	DP_DEBUG(DP_DBG_FLAG_COC, "DP (min, max, new):%u, %u, %u\n",
+		 dp_coc_ps_min, dp_coc_ps_max, new_state);
+
 	if (new_state == dp_coc_ps_max) {
 		/*enable rmon timer */
 		if (!rmon_timer_en)
@@ -610,20 +610,6 @@ int update_coc_rmon_timer(uint32_t new_state)
 
 		/*disable meter */
 		apply_meter_rate(0, 0);
-	} else if (new_state < dp_coc_ps_max ||
-		   new_state > dp_coc_ps_min) {
-		/*enable rmon timer */
-		if (!rmon_timer_en)
-			update_rmon_last();
-		mod_timer(&dp_coc_timer,
-			  jiffies + msecs_to_jiffies(polling_period * 1000));
-		rmon_timer_en = 1;
-
-		/*enable meter, but first disable to fix red color issue
-		 * if last already triggered
-		 */
-		apply_meter_rate(0, 0);
-		apply_meter_rate(-1, new_state);	/*enable again */
 	} else if (new_state == dp_coc_ps_min) {
 		/*disable rmon timer */
 		del_timer(&dp_coc_timer);
@@ -639,6 +625,38 @@ int update_coc_rmon_timer(uint32_t new_state)
 	}
 
 	return 0;
+}
+
+static int dp_coc_policy_notify(struct cpufreq_policy *policy)
+{
+	if (dp_coc_ps_curr == -1) {
+		dp_coc_ps_curr = policy->max;
+		dp_coc_ps_max = policy->max;
+		dp_coc_ps_min = policy->min;
+	}
+	/* Datapath COC supports only in conservative governor */
+	if (dp_strncmpi(policy->governor->name, "conservative",
+			strlen("conservative") + 1) == 0) {
+		DP_DEBUG(DP_DBG_FLAG_COC, "policy (min, max, cur):%u, %u, %u\n",
+			 policy->min, policy->max, policy->cur);
+		if (dp_coc_ps_new >= dp_coc_ps_max) {
+			DP_DEBUG(DP_DBG_FLAG_COC,
+				 "Up scale-limit to freq=%d dp_freq_new=%d\n",
+				 dp_coc_ps_max, dp_coc_ps_new);
+			coc_lock();
+			update_coc_rmon_timer(dp_coc_ps_max);
+			coc_unlock();
+			/*No down scaling allowed, limit the frequency to max */
+			cpufreq_verify_within_limits(policy, dp_coc_ps_max,
+						     policy->max);
+		} else if ((dp_coc_ps_new == dp_coc_ps_min) ||
+						(dp_coc_ps_new == -1)) {
+			coc_lock();
+			update_coc_rmon_timer(dp_coc_ps_min);
+			coc_unlock();
+		}
+	}
+	return NOTIFY_OK;
 }
 
 static int dp_coc_prechange(struct cpufreq_freqs *freq)
@@ -660,11 +678,8 @@ static int dp_coc_postchange(struct cpufreq_freqs *freq)
 {
 	if (!dp_coc_init_stat || !dp_coc_ena)
 		return NOTIFY_OK;
-	coc_lock();
+
 	dp_coc_ps_curr = freq->new;
-	dp_coc_ps_new = -1;
-	update_coc_rmon_timer(freq->new);
-	coc_unlock();
 	DP_DEBUG(DP_DBG_FLAG_COC,
 		 "dp_coc_postchange:to switch from %d to %d\n",
 		 freq->old, freq->new);
@@ -709,7 +724,7 @@ void dp_meter_interrupt_cb(void *param)
 	DP_DEBUG(DP_DBG_FLAG_COC,
 		 "triggered meter intr with dp curr freq=%d\n",
 		 dp_coc_ps_curr);
-	intr = 1;
+	dp_coc_ps_new = dp_coc_ps_max;
 	schedule_work(&coc_work_q); /* schedule work queue */
 }
 
@@ -760,6 +775,7 @@ int dp_coc_cpufreq_exit(void)
 			PR_ERR("The timer is still in use...\n");
 		dp_coc_init_stat = 0;
 		dp_coc_ena = 0;
+		dp_coc_ps_curr = -1; /* reset current state*/
 		coc_unlock();
 	}
 
