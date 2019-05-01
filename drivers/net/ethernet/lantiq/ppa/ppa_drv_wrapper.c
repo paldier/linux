@@ -44,6 +44,7 @@
 #include <net/ppa/ppa_api.h>
 #include <net/ppa/ppa_hal_api.h>
 #include <net/ppa/ppa_drv_wrapper.h>
+#include <net/ppa/qos_hal_api.h>
 
 #if IS_ENABLED(CONFIG_SOC_GRX500)
 #include <net/datapath_api.h>
