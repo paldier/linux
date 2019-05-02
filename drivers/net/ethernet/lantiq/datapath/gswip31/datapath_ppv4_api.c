@@ -3991,7 +3991,7 @@ int dp_queue_map_set_31(struct dp_queue_map_set *cfg, int flag)
 		PR_ERR("Invalid Queue ID:%d\n", cfg->q_id);
 		return DP_FAILURE;
 	}
-	if (priv->qos_queue_stat[cfg->q_id].flag == PP_NODE_FREE) {
+	if ((priv->qos_queue_stat[cfg->q_id].flag == PP_NODE_FREE)  && (cfg->q_id != priv->ppv4_drop_q)) {
 		PR_ERR("Invalid Queue flag:%d\n",
 		       priv->qos_queue_stat[cfg->q_id].flag);
 		return DP_FAILURE;
