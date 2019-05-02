@@ -517,6 +517,7 @@ static void dp_rmon_polling(unsigned long data)
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	for (i = 0; i < PMAC_MAX_NUM; i++) {
 		memset(&curr, 0, sizeof(curr));
+		curr.nPortId = i;
 		gsw_core_api((dp_gsw_cb)gsw_handle->
 			     gsw_rmon_ops.RMON_Port_Get,
 				gsw_handle, &curr);
@@ -590,6 +591,7 @@ void update_rmon_last(void)
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	memset(rmon_last, 0, sizeof(rmon_last));
 	for (i = 0; i < PMAC_MAX_NUM; i++) {
+		rmon_last[i].nPortId = i;
 		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
 			     gsw_handle, &rmon_last[i]);
 	}
@@ -655,7 +657,16 @@ static int dp_coc_policy_notify(struct cpufreq_policy *policy)
 			update_coc_rmon_timer(dp_coc_ps_min);
 			coc_unlock();
 		}
+		return NOTIFY_OK;
 	}
+	/* to handle other CPU governor transition after conservative governor*/
+	coc_lock();
+	/* disable timer */
+	rmon_timer_en = 0;
+	/*disable meter */
+	apply_meter_rate(0, 0);
+	last_rmon_rx = 0;
+	coc_unlock();
 	return NOTIFY_OK;
 }
 
