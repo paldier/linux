@@ -17,6 +17,10 @@
 #include <linux/mfd/syscon.h>
 #include <lantiq.h>
 
+#define FIRMWARE_P11G_XRX500 "ltq_fw_PHY11G_IP_xRx5xx_A21.bin"
+#define FIRMWARE_P31G_PRX300_A "ltq_fw_PHY31G_IP_prx3xx_A11.bin"
+#define FIRMWARE_P31G_PRX300_B "ltq_fw_PHY31G_IP_prx3xx_Bxx.bin"
+
 #define XRX500_GPHY_NUM 5 /* phy2-5 + phyf */
 struct xrx500_reset_control {
 	struct reset_control *phy[XRX500_GPHY_NUM];
@@ -35,6 +39,7 @@ struct xway_gphy_data {
 	struct clk *clk;
 
 	dma_addr_t dma_addr;
+	const char *fw_name;
 
 	/* Number of resets and names are SoC specific. Hence we place it as
 	 * union here.
@@ -182,6 +187,8 @@ static int xrx500_dt_parse(struct xway_gphy_data *priv)
 			return PTR_ERR(rst->phy[i]);
 		}
 	}
+
+	priv->fw_name = FIRMWARE_P11G_XRX500;
 
 	return 0;
 }
@@ -458,24 +465,25 @@ static int prx300_dt_parse(struct xway_gphy_data *priv)
 		return PTR_ERR(rst->gphy_pwr_down);
 	}
 
+	/* Check SoC version and set firmware name accordingly */
+	if (ltq_get_soc_rev() == 1)
+		priv->fw_name = FIRMWARE_P31G_PRX300_B;
+	else
+		priv->fw_name = FIRMWARE_P31G_PRX300_A;
+
 	return 0;
 }
 
 static int xway_gphy_load(struct xway_gphy_data *priv)
 {
 	const struct firmware *fw;
-	const char *fw_name;
 	void *virt_addr;
 	size_t size;
 
-	if (of_property_read_string(priv->dev->of_node, "firmware", &fw_name)) {
-		dev_err(priv->dev, "failed to load firmware filename\n");
-		return -EINVAL;
-	}
-
-	dev_info(priv->dev, "requesting %s\n", fw_name);
-	if (request_firmware(&fw, fw_name, priv->dev)) {
-		dev_err(priv->dev, "failed to load firmware: %s\n", fw_name);
+	dev_info(priv->dev, "requesting %s\n", priv->fw_name);
+	if (request_firmware(&fw, priv->fw_name, priv->dev)) {
+		dev_err(priv->dev, "failed to load firmware: %s\n",
+			priv->fw_name);
 		return -EIO;
 	}
 
