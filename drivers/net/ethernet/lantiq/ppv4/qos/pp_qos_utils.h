@@ -517,6 +517,9 @@ void node_phy_delete(struct pp_qos_dev *qdev, unsigned int phy);
 
 void release_rlm(struct pp_pool *rlms, unsigned int rlm);
 
+/* Return id to pool */
+void release_id(struct pp_qos_dev *qdev, unsigned int id);
+
 int node_flush(struct pp_qos_dev *qdev, struct qos_node *node);
 
 /**

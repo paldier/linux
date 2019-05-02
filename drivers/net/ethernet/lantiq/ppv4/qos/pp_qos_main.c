@@ -140,6 +140,28 @@ struct qos_node *get_conform_node(const struct pp_qos_dev *qdev,
 	return node;
 }
 
+static int is_node_configured(const struct pp_qos_dev *qdev,
+			      unsigned int id, bool *configured)
+{
+	unsigned int phy;
+
+	if (!QOS_ID_VALID(id)) {
+		QOS_LOG_ERR("Illegal id %u\n", id);
+		return -EINVAL;
+	}
+
+	phy = get_phy_from_id(qdev->mapping, id);
+	if (QOS_PHY_UNKNOWN(phy)) {
+		*configured = false;
+	} else if (QOS_PHY_VALID(phy)) {
+		*configured = true;
+	} else {
+		QOS_LOG_ERR("Illegal phy %u\n", phy);
+		return -EINVAL;
+	}
+
+	return 0;
+}
 /******************************************************************************/
 /*                                 API                                        */
 /******************************************************************************/
@@ -266,12 +288,19 @@ out:
 
 int pp_qos_port_block(struct pp_qos_dev *qdev, unsigned int id)
 {
-	int rc;
 	const struct qos_node *node;
+	bool node_configured;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -294,12 +323,19 @@ out:
 
 int pp_qos_port_unblock(struct pp_qos_dev *qdev, unsigned int id)
 {
-	int rc;
 	const struct qos_node *node;
+	bool node_configured;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -322,8 +358,9 @@ out:
 
 int pp_qos_port_flush(struct pp_qos_dev *qdev, unsigned int id)
 {
-	int rc;
 	const struct qos_node *node;
+	bool node_configured;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
@@ -331,6 +368,13 @@ int pp_qos_port_flush(struct pp_qos_dev *qdev, unsigned int id)
 		rc = -EINVAL;
 		goto out;
 	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
+		rc = -EINVAL;
+		goto out;
+	}
+
 	node = get_conform_node(qdev, id, node_port);
 	if (!node) {
 		rc = -EINVAL;
@@ -346,9 +390,10 @@ out:
 
 int pp_qos_port_remove(struct pp_qos_dev *qdev, unsigned int id)
 {
-	int rc;
 	const struct qos_node *node;
+	bool node_configured;
 	unsigned int phy;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
@@ -356,6 +401,17 @@ int pp_qos_port_remove(struct pp_qos_dev *qdev, unsigned int id)
 		rc = -EINVAL;
 		goto out;
 	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc)
+		goto out;
+
+	/* If node is not configured just release id */
+	if (!node_configured) {
+		release_id(qdev, id);
+		goto out;
+	}
+
 	node = get_conform_node(qdev, id, node_port);
 	if (!node) {
 		rc = -EINVAL;
@@ -376,8 +432,14 @@ static int _pp_qos_port_conf_get(
 		struct pp_qos_port_conf *conf)
 {
 	const struct qos_node *node;
+	bool node_configured;
+	int rc;
 
 	if (conf == NULL)
+		return -EINVAL;
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured)
 		return -EINVAL;
 
 	node = get_conform_node(qdev, id, node_port);
@@ -425,9 +487,10 @@ int pp_qos_port_info_get(
 		unsigned int id,
 		struct pp_qos_port_info *info)
 {
-	int rc;
 	const struct qos_node *node;
+	bool node_configured;
 	unsigned int phy;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
@@ -440,6 +503,13 @@ int pp_qos_port_info_get(
 		rc = -EINVAL;
 		goto out;
 	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
+		rc = -EINVAL;
+		goto out;
+	}
+
 	node = get_conform_node(qdev, id, node_port);
 	if (!node) {
 		rc = -EINVAL;
@@ -464,13 +534,20 @@ int pp_qos_port_get_queues(
 		unsigned int size,
 		unsigned int *queues_num)
 {
-	int rc;
-	unsigned int phy;
 	const struct qos_node *node;
+	bool node_configured;
+	unsigned int phy;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -642,12 +719,19 @@ int pp_qos_port_stat_get(
 		unsigned int id,
 		struct pp_qos_port_stat *stat)
 {
-	int rc;
 	struct qos_node *node;
+	bool node_configured;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -964,9 +1048,15 @@ static int _pp_qos_queue_conf_get(
 		unsigned int id,
 		struct pp_qos_queue_conf *conf)
 {
+	bool node_configured;
 	const struct qos_node *node;
+	int rc;
 
 	if (conf == NULL)
+		return -EINVAL;
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured)
 		return -EINVAL;
 
 	node = get_conform_node(qdev, id, node_queue);
@@ -1016,6 +1106,7 @@ int pp_qos_queue_conf_get(
 		rc = -EINVAL;
 		goto out;
 	}
+
 	rc = _pp_qos_queue_conf_get(qdev, id, conf);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
@@ -1069,6 +1160,7 @@ static int _pp_qos_queue_remove(struct pp_qos_dev *qdev, int id)
  */
 int pp_qos_queue_remove(struct pp_qos_dev *qdev, unsigned int id)
 {
+	bool node_configured;
 	int rc;
 
 	QOS_LOCK(qdev);
@@ -1077,6 +1169,17 @@ int pp_qos_queue_remove(struct pp_qos_dev *qdev, unsigned int id)
 		rc = -EINVAL;
 		goto out;
 	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc)
+		goto out;
+
+	/* If node is not configured just release id */
+	if (!node_configured) {
+		release_id(qdev, id);
+		goto out;
+	}
+
 	rc = _pp_qos_queue_remove(qdev, id);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
@@ -1365,6 +1468,7 @@ int _pp_qos_queue_flush(struct pp_qos_dev *qdev, unsigned int id)
  */
 int pp_qos_queue_flush(struct pp_qos_dev *qdev, unsigned int id)
 {
+	bool node_configured;
 	int rc;
 
 	QOS_LOCK(qdev);
@@ -1373,6 +1477,13 @@ int pp_qos_queue_flush(struct pp_qos_dev *qdev, unsigned int id)
 		rc = -EINVAL;
 		goto out;
 	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
+		rc = -EINVAL;
+		goto out;
+	}
+
 	rc = _pp_qos_queue_flush(qdev, id);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
@@ -1393,8 +1504,9 @@ out:
 int pp_qos_queue_info_get(struct pp_qos_dev *qdev, unsigned int id,
 			  struct pp_qos_queue_info *info)
 {
-	int rc;
 	struct qos_node *node;
+	bool node_configured;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
@@ -1408,8 +1520,13 @@ int pp_qos_queue_info_get(struct pp_qos_dev *qdev, unsigned int id,
 		goto out;
 	}
 
-	node = get_conform_node(qdev, id, node_queue);
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
+		rc = -EINVAL;
+		goto out;
+	}
 
+	node = get_conform_node(qdev, id, node_queue);
 	if (!node) {
 		rc = -EINVAL;
 		goto out;
@@ -1438,12 +1555,19 @@ out:
 int pp_qos_queue_stat_get(struct pp_qos_dev *qdev, unsigned int id,
 			  struct pp_qos_queue_stat *stat)
 {
-	int rc;
 	struct qos_node *node;
+	bool node_configured;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -1600,6 +1724,7 @@ out:
 int pp_qos_sched_remove(struct pp_qos_dev *qdev, unsigned int id)
 {
 	struct qos_node *node;
+	bool node_configured;
 	int rc;
 
 	QOS_LOCK(qdev);
@@ -1608,6 +1733,17 @@ int pp_qos_sched_remove(struct pp_qos_dev *qdev, unsigned int id)
 		rc = -EINVAL;
 		goto out;
 	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc)
+		goto out;
+
+	/* If node is not configured just release id */
+	if (!node_configured) {
+		release_id(qdev, id);
+		goto out;
+	}
+
 	node = get_conform_node(qdev, id, node_sched);
 	if (!node)  {
 		rc = -EINVAL;
@@ -1774,6 +1910,7 @@ int pp_qos_sched_conf_get(
 		unsigned int id,
 		struct pp_qos_sched_conf *conf)
 {
+	bool node_configured;
 	int rc;
 
 	QOS_LOCK(qdev);
@@ -1782,6 +1919,13 @@ int pp_qos_sched_conf_get(
 		rc = -EINVAL;
 		goto out;
 	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
+		rc = -EINVAL;
+		goto out;
+	}
+
 	rc = _pp_qos_sched_conf_get(qdev, id, conf);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
@@ -1795,9 +1939,10 @@ int pp_qos_sched_info_get(
 		unsigned int id,
 		struct pp_qos_sched_info *info)
 {
-	int rc;
 	struct qos_node *node;
+	bool node_configured;
 	unsigned int phy;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
@@ -1807,6 +1952,12 @@ int pp_qos_sched_info_get(
 	}
 
 	if (info == NULL) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -1834,13 +1985,20 @@ int pp_qos_sched_get_queues(struct pp_qos_dev *qdev, unsigned int id,
 			    uint16_t *queue_ids, unsigned int size,
 			    unsigned int *queues_num)
 {
-	int rc;
-	unsigned int phy;
 	const struct qos_node *node;
+	bool node_configured;
+	unsigned int phy;
+	int rc;
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
+		rc = -EINVAL;
+		goto out;
+	}
+
+	rc = is_node_configured(qdev, id, &node_configured);
+	if (rc || !node_configured) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -2207,7 +2365,7 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 		if (rc)
 			goto err;
 		qos_devs[id] = qdev;
-		
+
 		QOS_LOG_DEBUG("Initialized qos instance\nmax_port:\t\t%u\n",
 				qdev->max_port);
 		QOS_LOG_DEBUG("fw_logger_start:\t0x%08X\n",

@@ -584,12 +584,22 @@ void map_invalidate_id(struct pp_mapping *map, unsigned int id)
 {
 	unsigned int phy;
 
-	QOS_ASSERT(QOS_ID_VALID(id), "invalid id %u\n", id);
+	if (!QOS_ID_VALID(id)) {
+		QOS_LOG_ERR("invalid id %u\n", id);
+		return;
+	}
 	phy = get_phy_from_id(map, id);
-	QOS_ASSERT(QOS_PHY_VALID(phy), "invalid phy is mapped to id %u\n", id);
+
+	/* If phy is not unknown verify it is valid */
+	if (!QOS_PHY_UNKNOWN(phy)) {
+		if (QOS_PHY_VALID(phy)) {
+			map->phy2id[phy] = PP_QOS_INVALID_ID;
+		} else {
+			QOS_LOG_ERR("invalid phy is mapped to id %u\n", id);
+		}
+	}
 
 	map->id2phy[id] = QOS_INVALID_PHY;
-	map->phy2id[phy] = QOS_INVALID_ID;
 }
 
 /******************************************************************************/
@@ -1255,6 +1265,12 @@ void release_rlm(struct pp_pool *rlms, unsigned int rlm)
 	pp_pool_put(rlms, rlm);
 }
 
+void release_id(struct pp_qos_dev *qdev, unsigned int id)
+{
+	map_invalidate_id(qdev->mapping, id);
+	pp_pool_put(qdev->ids, id);
+}
+
 static void release_node_id(struct pp_qos_dev *qdev, unsigned int phy)
 {
 	unsigned int id;
@@ -1262,8 +1278,7 @@ static void release_node_id(struct pp_qos_dev *qdev, unsigned int phy)
 	id = get_id_from_phy(qdev->mapping, phy);
 	QOS_LOG_DEBUG("Deleting id %u phy %u\n", id, phy);
 	QOS_ASSERT(QOS_ID_VALID(id), "Invalid id for phy %u\n", phy);
-	map_invalidate_id(qdev->mapping, id);
-	pp_pool_put(qdev->ids, id);
+	release_id(qdev, id);
 }
 
 int node_remove(struct pp_qos_dev *qdev, struct qos_node *node)
@@ -2225,7 +2240,7 @@ static int set_child(struct pp_qos_dev *qdev,
 
 	if (node->child_prop.priority != child->priority) {
 		if (QOS_PHY_VALID(node->child_prop.parent_phy)) {
-			parent = get_node_from_phy(qdev->nodes, 
+			parent = get_node_from_phy(qdev->nodes,
 						   node->child_prop.parent_phy);
 			if (parent->parent_prop.arbitration ==
 			    PP_QOS_ARBITRATION_WSP) {

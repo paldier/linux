@@ -60,30 +60,35 @@ extern struct device *cur_dev;
 #define QOS_LOG_CRIT(format, arg...) \
 do { \
 	if (cur_dev) \
-		dev_crit(cur_dev, format, ##arg); \
+		dev_crit(cur_dev, "%s:%d: " format, __func__, __LINE__, \
+			##arg); \
 	else \
-		pr_crit(format, ##arg); \
+		pr_crit("%s:%d: " format, __func__, __LINE__, \
+			##arg); \
 } while (0)
 #define QOS_LOG_ERR(format, arg...) \
 do { \
 	if (cur_dev) \
-		dev_err(cur_dev, format, ##arg); \
+		dev_err(cur_dev, "%s:%d: " format, __func__, __LINE__, \
+			##arg); \
 	else \
-		pr_err(format, ##arg); \
+		pr_err("%s:%d: " format, __func__, __LINE__, ##arg); \
 } while (0)
 #define QOS_LOG_INFO(format, arg...) \
 do { \
 	if (cur_dev) \
-		dev_info(cur_dev, format, ##arg); \
+		dev_info(cur_dev, "%s:%d: " format, __func__, __LINE__, \
+			##arg); \
 	else \
-		pr_info(format, ##arg); \
+		pr_info("%s:%d: " format, __func__, __LINE__, ##arg); \
 } while (0)
 #define QOS_LOG_DEBUG(format, arg...) \
 do { \
 	if (cur_dev) \
-		dev_dbg(cur_dev, format, ##arg); \
+		dev_dbg(cur_dev, "%s:%d: " format, __func__, __LINE__, \
+			##arg); \
 	else \
-		pr_debug(format, ##arg); \
+		pr_debug("%s:%d: " format, __func__, __LINE__, ##arg); \
 } while (0)
 
 #endif
