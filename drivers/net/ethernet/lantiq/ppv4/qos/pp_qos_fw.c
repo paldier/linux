@@ -299,6 +299,52 @@ int do_load_firmware(struct pp_qos_dev *qdev, const struct ppv4_qos_fw *fw,
 	return 0;
 }
 
+static void swap_msg(char *msg, unsigned int len)
+{
+	unsigned int i;
+	uint32_t *cur;
+
+	cur = (uint32_t *)msg;
+
+	for (i = 0; i < len; ++i)
+		cur[i] = le32_to_cpu(cur[i]);
+}
+
+void print_fw_log(struct platform_device *pdev)
+{
+	char		msg[PPV4_QOS_LOGGER_MSG_SIZE];
+	unsigned int	num;
+	unsigned int	i;
+	uint32_t	*addr;
+	uint32_t	read;
+	char		*cur;
+	struct device	*dev;
+	struct pp_qos_drv_data	*pdata;
+
+	pdata = platform_get_drvdata(pdev);
+	addr = (uint32_t *)(pdata->dbg.fw_logger_addr);
+	num = qos_u32_from_uc(addr[0]);
+	read = qos_u32_from_uc(addr[1]);
+	dev = &pdev->dev;
+	cur = (char *)(pdata->dbg.fw_logger_addr + 8);
+
+	dev_info(dev, "addr is 0x%08X num of messages is %u, read index is %u",
+		 (unsigned int)(uintptr_t)cur,
+		 num,
+		 read);
+
+	for (i = read; i < num; ++i) {
+		memcpy((char *)msg, 
+		       (char *)(cur + PPV4_QOS_LOGGER_MSG_SIZE * i),
+		       PPV4_QOS_LOGGER_MSG_SIZE);
+		swap_msg(msg, (PPV4_QOS_LOGGER_MSG_SIZE / sizeof(uint32_t)));
+		msg[PPV4_QOS_LOGGER_MSG_SIZE - 1] = '\0';
+		dev_info(dev, "[ARC]: %s\n", msg);
+	}
+
+	addr[1] = num;
+}
+
 /******************************************************************************/
 /*                         Driver commands structures	                      */
 /******************************************************************************/
@@ -2682,6 +2728,7 @@ void check_completion(struct pp_qos_dev *qdev)
 			val = qos_u32_from_uc(*pos);
 			++i;
 			if (i == NUM_OF_POLLS) {
+				print_fw_log(qdev->pdev);
 				QOS_ASSERT(
 					0,
 					"FW is not responding, polling offset 0x%04tX for cmd type %s\n",
@@ -2692,6 +2739,7 @@ void check_completion(struct pp_qos_dev *qdev)
 			}
 		}
 		if (val & UC_CMD_FLAG_UC_ERROR) {
+			print_fw_log(qdev->pdev);
 			QOS_ASSERT(0,
 				   "FW signaled error, polling offset 0x%04tX, cmd type %s\n",
 				   (void *)pos - (void *)(qdev->fwcom.cmdbuf),
@@ -2744,12 +2792,13 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 	u16 *rlm_ids;
 	u32 num_queues = 0;
 	u32 max_allowed_addr_phy;
+	u32 cmdbuf_sz;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
 
 	start = qdev->fwcom.cmdbuf;
-	remain = qdev->fwcom.cmdbuf_sz;
+	cmdbuf_sz = qdev->fwcom.cmdbuf_sz;
 
 	pushed = 0;
 	cur = start;
@@ -2761,8 +2810,8 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 				4 + FW_CMD_BUFFER_DCCM_START) & 0xFFFFFFFF);
 	++cur;
 
+	remain = cmdbuf_sz - ((uintptr_t)cur - (uintptr_t)start);
 	internals = qdev->fwbuf;
-	remain -= 16;
 	flags = UC_CMD_FLAG_IMMEDIATE;
 
 	cmd_init(
@@ -2796,7 +2845,7 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 						&cmd_internal,
 						cmd_internal.base.len);
 				++pushed;
-				remain -= (uintptr_t)cur - (uintptr_t)prev;
+				remain = cmdbuf_sz - ((uintptr_t)cur - (uintptr_t)start);
 			}
 		}
 		if (pushed)
@@ -2991,7 +3040,7 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 					&dcmd.stub,
 					dcmd.stub.cmd.len);
 			++pushed;
-			remain -= (uintptr_t)cur - (uintptr_t)prev;
+			remain = cmdbuf_sz - ((uintptr_t)cur - (uintptr_t)start);
 		}
 	}
 
@@ -3016,7 +3065,7 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 					&cmd_internal);
 			if (cur != prev) {
 				pushed += 2;
-				remain -= (uintptr_t)cur - (uintptr_t)prev;
+				remain = cmdbuf_sz - ((uintptr_t)cur - (uintptr_t)start);
 			}
 		}
 
@@ -3099,7 +3148,7 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 						&cmd_internal,
 						cmd_internal.base.len);
 				++pushed;
-				remain -= (uintptr_t)cur - (uintptr_t)prev;
+				remain = cmdbuf_sz - ((uintptr_t)cur - (uintptr_t)start);
 			}
 		}
 		/* No pending suspended ports/moving nodes - Reset counters */

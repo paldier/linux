@@ -38,6 +38,7 @@ struct ppv4_qos_fw {
 };
 
 int load_firmware(struct pp_qos_dev *qdev, const char *name);
+void print_fw_log(struct platform_device *pdev);
 
 #ifndef PP_QOS_DISABLE_CMDQ
 void create_move_cmd(struct pp_qos_dev *qdev, uint16_t dst, uint16_t src,

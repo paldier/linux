@@ -140,7 +140,11 @@ struct pp_qos_parent_node_properties {
  * @parent:		parent's id
  * @priority:		strict priority, relevant only if parent uses wsp
  *                      arbitration
- * @bandwidth_share:	bandwidth percentage from parent
+ * @bandwidth_share:	For WRR, child's weight.
+ *                      For example, in case parent has 3 childs - Setting
+ *                      weights of 2-1-1 for the childs means that the first
+ *                      child will have double credits to transmit comparing to
+ *                      other two childs 
  */
 struct pp_qos_child_node_properties {
 	unsigned int	parent;

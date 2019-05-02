@@ -1345,50 +1345,6 @@ static const struct file_operations debug_cmd_fops = {
 	.write = dbg_cmd_write,
 };
 
-static void swap_msg(char *msg)
-{
-	unsigned int i;
-	uint32_t *cur;
-
-	cur = (uint32_t *)msg;
-
-	for (i = 0; i < 32; ++i)
-		cur[i] = le32_to_cpu(cur[i]);
-}
-
-static void print_fw_log(struct platform_device *pdev)
-{
-	char		msg[128];
-	unsigned int	num;
-	unsigned int    i;
-	uint32_t	*addr;
-	uint32_t	read;
-	char		*cur;
-	struct device	*dev;
-	struct pp_qos_drv_data *pdata;
-
-	pdata = platform_get_drvdata(pdev);
-	addr = (uint32_t *)(pdata->dbg.fw_logger_addr);
-	num = qos_u32_from_uc(*addr);
-	read = qos_u32_from_uc(addr[1]);
-	dev = &pdev->dev;
-	cur = (char *)(pdata->dbg.fw_logger_addr + 8);
-
-	dev_info(dev, "addr is 0x%08X num of messages is %u, read index is %u",
-		 (unsigned int)(uintptr_t)cur,
-		 num,
-		 read);
-
-	for (i = read; i < num; ++i) {
-		memcpy((char *)msg, (char *)(cur + 128 * i), 128);
-		swap_msg(msg);
-		msg[127] = '\0';
-		dev_info(dev, "[ARC]: %s\n", msg);
-	}
-
-	addr[1] = num;
-}
-
 static int phy2id_get(void *data, u64 *val)
 {
 	u16 id;
