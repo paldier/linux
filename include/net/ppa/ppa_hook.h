@@ -789,6 +789,11 @@ extern int32_t (*ppa_check_if_netif_l2nat_fn)(PPA_NETIF *netif, char *ifname, ui
 extern int32_t ppa_check_if_netif_l2nat_fn(PPA_NETIF *netif, char *ifname, uint32_t flags);
 #endif
 #endif /* CONFIG_L2NAT*/
+#ifdef NO_DOXY
+extern struct net_device* (*ppa_get_bond_xmit_xor_intrf_hook)(struct sk_buff *skb, struct net_device *bond_dev);
+#else
+extern struct net_device* ppa_get_bond_xmit_xor_intrf_hook(struct sk_buff *skb, struct net_device *bond_dev);
+#endif
 #endif /*end of __KERNEL__*/
 /* @} */
 #endif  /*  __PPA_HOOK_H__20081103_1736__*/

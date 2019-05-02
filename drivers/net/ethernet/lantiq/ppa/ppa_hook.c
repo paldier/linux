@@ -380,7 +380,7 @@ int32_t (*ppa_if_is_ipoa_fn)(struct net_device *netdev, char *ifname) = NULL;
 int32_t (*ppa_if_is_br2684_fn)(struct net_device *netdev, char *ifname) = NULL;
 int32_t (*ppa_br2684_get_vcc_fn)(struct net_device *netdev, struct atm_vcc **pvcc) = NULL;
 int32_t (*ppa_if_ops_veth_xmit_fn)(struct net_device *dev) = NULL;
-
+struct net_device* (*ppa_get_bond_xmit_xor_intrf_hook)(struct sk_buff *skb, struct net_device *bond_dev) = NULL;
 
 #if IS_ENABLED(CONFIG_PPA_QOS)
 int32_t (*ppa_hook_get_qos_qnum)(uint32_t portid, uint32_t flag) = NULL;
@@ -522,7 +522,7 @@ EXPORT_SYMBOL(ppa_if_is_ipoa_fn);
 EXPORT_SYMBOL(ppa_if_is_br2684_fn);
 EXPORT_SYMBOL(ppa_br2684_get_vcc_fn);
 EXPORT_SYMBOL(ppa_if_ops_veth_xmit_fn);
-
+EXPORT_SYMBOL(ppa_get_bond_xmit_xor_intrf_hook);
 #if IS_ENABLED(CONFIG_PPA_QOS)
 EXPORT_SYMBOL(ppa_hook_get_qos_qnum);
 EXPORT_SYMBOL(ppa_hook_get_qos_mib);
