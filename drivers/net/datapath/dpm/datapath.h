@@ -18,33 +18,6 @@
 #include <linux/version.h>
 #include <net/ppa/qos_mgr_tc_hook.h>
 
-/* Note: In LGM kernel (4.19) branch,
- * DMA driver already adapted to linux kernel
- * DMA framework and some DMA macro (like
- * _DMA_CONTROLLER/_DMA_PORT/_DMA_CHANNEL)
- * was removed. In order to keep the interface between DP and CQM/UMT driver
- * same, DP has defined DMA macro accordingly
- */
-#if !defined(CONFIG_LGM_CQM)
-#define _DMA_CHANBITS   16
-#define _DMA_PORTBITS   8
-#define _DMA_CTRLBITS   8
-
-#define _DMA_CHANMASK   ((1 << _DMA_CHANBITS) - 1)
-#define _DMA_PORTMASK   ((1 << _DMA_PORTBITS) - 1)
-#define _DMA_CTRLMASK   ((1 << _DMA_CTRLBITS) - 1)
-
-#define _DMA_CHANSHIFT  0
-#define _DMA_PORTSHIFT  (_DMA_CHANSHIFT + _DMA_CHANBITS)
-#define _DMA_CTRLSHIFT  (_DMA_PORTSHIFT + _DMA_PORTBITS)
-
-#define _DMA_CONTROLLER(nr)     (((nr) >> _DMA_CTRLSHIFT) & _DMA_CTRLMASK)
-#define _DMA_PORT(nr)           (((nr) >> _DMA_PORTSHIFT) & _DMA_PORTMASK)
-#define _DMA_CHANNEL(nr)        (((nr) >> _DMA_CHANSHIFT) & _DMA_CHANMASK)
-#else
-#include "../cqm/cqm_common.h"
-#endif
-
 #if IS_ENABLED(CONFIG_PRX300_CQM) || \
 	IS_ENABLED(CONFIG_GRX500_CBM)
 	#include <net/lantiq_cbm_api.h>
