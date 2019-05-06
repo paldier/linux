@@ -31,7 +31,7 @@
  * For Falcon-Mx device ID is 0
  */
 struct gswss {
-	/* Product ID, GRX500, FALCONMX, ..... */
+	/* Product ID, GRX500, PRX300, ..... */
 	u32 prod_id;
 	/* Adaption layer Operations Structure */
 	struct adap_ops *adap_ops;
@@ -50,7 +50,7 @@ struct gswss {
  */
 enum {
 	GRX500     = 0x01,
-	FALCONMX   = 0x02,
+	PRX300     = 0x02,
 };
 
 /* This function returns the Adaptions Operations registered.

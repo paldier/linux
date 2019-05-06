@@ -125,7 +125,7 @@ static struct gsw_cell gsw_dev_cells[] = {
 		.name = MAC_DEV_NAME,
 		.cell_id = 0,
 		.device_id = 0,
-		.prod_id = FALCONMX,
+		.prod_id = PRX300,
 		.of_compatible = "intel,gsw_mac",
 		.num_resources = ARRAY_SIZE(falc_mac_res),
 		.resources = &falc_mac_res;
@@ -135,7 +135,7 @@ static struct gsw_cell gsw_dev_cells[] = {
 		.name = MAC_DEV_NAME,
 		.cell_id = 1,
 		.device_id = 0,
-		.prod_id = FALCONMX,
+		.prod_id = PRX300,
 		.of_compatible = "intel,gsw_mac",
 		.num_resources = ARRAY_SIZE(falc_mac_res),
 		.resources = &falc_mac_res;
@@ -145,7 +145,7 @@ static struct gsw_cell gsw_dev_cells[] = {
 		.name = MAC_DEV_NAME,
 		.cell_id = 2,
 		.device_id = 0,
-		.prod_id = FALCONMX,
+		.prod_id = PRX300,
 		.of_compatible = "intel,gsw_mac",
 		.num_resources = ARRAY_SIZE(falc_mac_res),
 		.resources = &falc_mac_res;
@@ -156,7 +156,7 @@ static struct gsw_cell gsw_dev_cells[] = {
 		.name = CORE_DEV_NAME,
 		.cell_id = 3,
 		.device_id = 0,
-		.prod_id = FALCONMX,
+		.prod_id = PRX300,
 		.of_compatible = "intel,gsw_core",
 		.num_resources = ARRAY_SIZE(falc_core_res),
 		.resources = &falc_core_res;
@@ -253,7 +253,7 @@ static int gsw_add_macdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 				   &mac_pdata->phy_speed);
 #else
 
-	if (gsw_dev[devid].prod_id & FALCONMX) {
+	if (gsw_dev[devid].prod_id & PRX300) {
 		gsw_dev_cell->num_resources = ARRAY_SIZE(falc_mac_res);
 		gsw_dev_cell->resources = falc_mac_res;
 	}
@@ -306,10 +306,12 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 	of_property_read_u32(gsw_dev_cell->of_node, "gsw_mode",
 			     &switch_pdata->gsw_mode);
 	gsw_dpu = of_find_node_by_name(NULL, "gint_eth");
+
 	if (!gsw_dpu)
 		pr_err("Unable to get node from gint_eth\n");
+
 	of_property_read_u32(gsw_dpu, GSW_DPU,
-				     &switch_pdata->dpu);
+			     &switch_pdata->dpu);
 #ifndef CONFIG_OF
 
 	if (gsw_dev[devid].prod_id == GRX500) {
@@ -324,7 +326,7 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 		}
 	}
 
-	if (gsw_dev[devid].prod_id == FALCONMX) {
+	if (gsw_dev[devid].prod_id == PRX300) {
 		gsw_dev_cell->num_resources = ARRAY_SIZE(falc_core_res);
 		gsw_dev_cell->resources = falc_core_res;
 	}
@@ -416,7 +418,7 @@ static int gsw_parse_dt(struct device_node *base_node)
 		prod_id |= GRX500;
 
 	if (of_machine_is_compatible(FALC_MACH_NAME))
-		prod_id |= FALCONMX;
+		prod_id |= PRX300;
 
 	if (!prod_id) {
 		printk("Cannot find the Product ID\n");
@@ -676,7 +678,7 @@ static int gsw_dev_probe(struct platform_device *pdev)
 	/* Store the device id in parent device ID */
 	dev->id = devid;
 
-	if (prod_id == FALCONMX) {
+	if (prod_id == PRX300) {
 
 		gswss_rst = gsw_reset_get(pdev);
 
