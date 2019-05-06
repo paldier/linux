@@ -1831,9 +1831,11 @@ s32 cqm_cpu_port_get(struct cbm_cpu_port_data *data, u32 flags)
 	data->dq_tx_flush_info.deq_port = DMA_PORT_FOR_FLUSH;
 	data->dq_tx_flush_info.tx_ring_size = 1;
 	data->dq_tx_flush_info.tx_b_credit = 0;
-	data->dq_tx_flush_info.tx_ring_addr = (u32)(cqm_ctrl->txpush +
+	data->dq_tx_flush_info.txpush_addr_qos = (u32)(cqm_ctrl->txpush +
 				  (TXPUSH_CMD_RX_EGP_1 * DMA_PORT_FOR_FLUSH)) &
 				  0x7FFFFF;
+	data->dq_tx_flush_info.txpush_addr = (u32)(cqm_ctrl->txpush +
+				  (TXPUSH_CMD_RX_EGP_1 * DMA_PORT_FOR_FLUSH));
 	data->dq_tx_flush_info.tx_ring_offset = TXPUSH_CMD_RX_EGP_1;
 	data->dq_tx_flush_info.tx_pkt_credit =
 				dqm_port_info[DMA_PORT_FOR_FLUSH].dq_txpush_num;
@@ -1843,7 +1845,7 @@ s32 cqm_cpu_port_get(struct cbm_cpu_port_data *data, u32 flags)
 		data->dq_tx_flush_info.deq_port,
 		data->dq_tx_flush_info.tx_ring_size,
 		data->dq_tx_flush_info.tx_b_credit,
-		data->dq_tx_flush_info.tx_ring_addr,
+		data->dq_tx_flush_info.txpush_addr_qos,
 		data->dq_tx_flush_info.tx_ring_offset,
 		data->dq_tx_flush_info.tx_pkt_credit);
 
@@ -1857,9 +1859,11 @@ s32 cqm_cpu_port_get(struct cbm_cpu_port_data *data, u32 flags)
 		ptr->deq_port = i;
 		ptr->tx_ring_size = 1;
 		ptr->tx_b_credit = 0;
-		ptr->tx_ring_addr = (u32)(cqm_ctrl->txpush +
+		ptr->txpush_addr_qos = (u32)(cqm_ctrl->txpush +
 					  (TXPUSH_CMD_RX_EGP_1 * i)) &
 					  0x7FFFFF;
+		ptr->txpush_addr = (u32)(cqm_ctrl->txpush +
+					  (TXPUSH_CMD_RX_EGP_1 * i));
 		ptr->tx_ring_offset = TXPUSH_CMD_RX_EGP_1;
 		ptr->tx_pkt_credit = dqm_port_info[i].dq_txpush_num;
 	}
@@ -1918,8 +1922,10 @@ static void fill_dp_alloc_data(struct cbm_dp_alloc_data *data, int dp,
 	data->num_dma_chan = idx;
 	data->deq_port_num = (data->deq_port == DQM_PON_TYPE) ? 64 : idx;
 	/*Lower 22 bits*/
-	data->tx_ring_addr = (u32)(cqm_ctrl->txpush +
+	data->txpush_addr_qos = (u32)(cqm_ctrl->txpush +
 	(TXPUSH_CMD_RX_EGP_1 * port)) & 0x7FFFFF;
+	data->txpush_addr = (u32)(cqm_ctrl->txpush +
+	(TXPUSH_CMD_RX_EGP_1 * port));
 	data->tx_ring_offset = TXPUSH_CMD_RX_EGP_1;
 }
 

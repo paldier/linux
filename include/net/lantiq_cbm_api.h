@@ -544,7 +544,8 @@ struct cbm_dp_alloc_data {
 	u32 dma_chan; /* its dma channel, -1 means no DMA channel used */
 	u32 tx_pkt_credit;  /*port tx packet credit */
 	u32 tx_b_credit;  /*port tx bytes credit */
-	u32 tx_ring_addr;  /*port ring address. should follow HW defintion*/
+	u32 txpush_addr_qos; /* QOS push address after shift or mask from QOS HW point of view */
+	u32 txpush_addr;  /*port ring address. should follow HW defintion*/
 	u32 tx_ring_size; /*ring size */
 	u32 tx_ring_offset;  /*next tx_ring_addr = current tx_ring_addr + tx_ring_offset */
 	void *tx_ring_addr_txpush; /* port ring physical base address/TXIN address  
@@ -575,7 +576,8 @@ struct cbm_tx_push {
 	s32 deq_port;
 	u32 tx_pkt_credit;  /*port tx packet credit */
 	u32 tx_b_credit;  /*port tx bytes credit */
-	u32 tx_ring_addr;  /*port ring address. should follow HW defintion*/
+	u32 txpush_addr_qos; /* QOS push address after shift or mask from QOS HW point of view */
+	u32 txpush_addr;  /*port ring address. should follow HW defintion*/
 	u32 tx_ring_size; /*ring size */
 	u32 tx_ring_offset;  /*next tx_ring_addr = current tx_ring_addr + tx_ring_offset */
 };
