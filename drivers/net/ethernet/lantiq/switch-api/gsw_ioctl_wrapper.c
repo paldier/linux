@@ -57,7 +57,7 @@ ioctl_cmd_handle_t *gsw_api_alloc_cmd_handle(void)
 
 /** searching for Switch API IOCTL  command */
 int gsw_command_search(void *phandle, u32 command,
-		       void *arg, ethsw_api_type_t apitype)
+		       unsigned long arg, ethsw_api_type_t apitype)
 {
 	int retvalue;
 	ioctl_cmd_handle_t *pdrv = (ioctl_cmd_handle_t *) phandle;
@@ -146,7 +146,8 @@ int gsw_command_search(void *phandle, u32 command,
 	}
 
 	if (pdrv->default_handler != NULL) {
-		retvalue = pdrv->default_handler(pdrv->pLlHandle, command, arg);
+		retvalue = pdrv->default_handler(pdrv->pLlHandle, command,
+						 (void *)arg);
 		/*pr_err(" %s[%d]:  retvalue:%d\n", __func__, __LINE__, retvalue);*/
 		return retvalue;
 	}
@@ -259,7 +260,7 @@ int gsw_api_drv_register(u32 major)
 	}
 
 	pr_debug("SWAPI: Registered char device [%s] with major no [%d]\n",
-		ETHSW_API_DEV_NAME, major);
+		 ETHSW_API_DEV_NAME, major);
 	return 0;
 }
 
@@ -449,7 +450,8 @@ int gsw_api_kioctl(GSW_API_HANDLE handle, u32 command, void *arg)
 		return -1;
 	}
 
-	ret = gsw_command_search(cmd_handle, command, arg, ETHSW_API_KERNEL);
+	ret = gsw_command_search(cmd_handle, command, (unsigned long)arg,
+				 ETHSW_API_KERNEL);
 
 #ifdef __KERNEL__
 	kfree(cmd_handle);
