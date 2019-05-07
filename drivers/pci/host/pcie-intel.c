@@ -1070,7 +1070,7 @@ static int intel_pcie_ep_rst_init(struct intel_pcie_port *lpp)
 	int err;
 	struct device *dev = lpp->dev;
 
-	lpp->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+	lpp->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_LOW);
 	if (IS_ERR(lpp->reset_gpio)) {
 		err = PTR_ERR(lpp->reset_gpio);
 		dev_err(dev, "failed to request PCIe GPIO: %d\n", err);
@@ -1151,13 +1151,13 @@ static void intel_pcie_core_rst_deassert(struct intel_pcie_port *lpp)
 
 static void intel_pcie_device_rst_assert(struct intel_pcie_port *lpp)
 {
-	gpiod_set_value_cansleep(lpp->reset_gpio, 0);
+	gpiod_set_value_cansleep(lpp->reset_gpio, 1);
 }
 
 static void intel_pcie_device_rst_deassert(struct intel_pcie_port *lpp)
 {
 	msleep(lpp->rst_interval);
-	gpiod_set_value_cansleep(lpp->reset_gpio, 1);
+	gpiod_set_value_cansleep(lpp->reset_gpio, 0);
 }
 
 static int intel_pcie_enable_clks(struct intel_pcie_port *lpp)
