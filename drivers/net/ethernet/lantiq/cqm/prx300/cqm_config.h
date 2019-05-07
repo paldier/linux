@@ -64,6 +64,16 @@ struct dqm_pon_port {
 	u32 txpush_desc;
 };
 
+struct dqm_aca_port {
+	u32 port;
+	u32 aca_port_type;
+	u32 dma_ctrl;
+	u32 dma_chan;
+	u32 num_desc;
+	u32 txpush_desc;
+	u32 num_free_burst;
+};
+
 struct dqm_cpu_port {
 	u32 port;
 	u32 queue;
@@ -93,6 +103,7 @@ struct cqm_config {
 	union {
 		struct dqm_dma_port dqm_dma;
 		struct dqm_cpu_port dqm_cpu;
+		struct dqm_aca_port dqm_aca;
 		struct eqm_dma_port eqm_dma;
 		struct eqm_cpu_port eqm_cpu;
 	} data;

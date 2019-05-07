@@ -586,6 +586,7 @@ struct cqm_ctrl {
 	void __iomem *ls;
 	void __iomem *enq;
 	void __iomem *deq;
+	void __iomem *deq_phy;
 	void __iomem *qid2ep;
 	void __iomem *fsqm;
 	void __iomem *pib;

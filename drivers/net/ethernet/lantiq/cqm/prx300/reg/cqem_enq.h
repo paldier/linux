@@ -5401,6 +5401,80 @@
 
 //! @}
 
+//! \defgroup EPON_EPON_MODE_REG Register EPON_EPON_MODE_REG - EPON Queue range register
+//! @{
+
+//! Register Offset (relative)
+#define EPON_EPON_MODE_REG 0x1F0
+//! Register Offset (absolute) for 1st Instance CQEM_ENQ
+#define CQEM_ENQ_EPON_EPON_MODE_REG 0x190801F0u
+
+//! Register Reset Value
+#define EPON_EPON_MODE_REG_RST 0x00000000u
+
+//! Field STARTQ - Start Queue
+#define EPON_EPON_MODE_REG_STARTQ_POS 0
+//! Field STARTQ - Start Queue
+#define EPON_EPON_MODE_REG_STARTQ_MASK 0x1FFu
+
+//! Field ENDQ - End Queue
+#define EPON_EPON_MODE_REG_ENDQ_POS 10
+//! Field ENDQ - End Queue
+#define EPON_EPON_MODE_REG_ENDQ_MASK 0x7FC00u
+
+//! Field EPONBASEPORT - EPON Base Port Value
+#define EPON_EPON_MODE_REG_EPONBASEPORT_POS 20
+//! Field EPONBASEPORT - EPON Base Port Value
+#define EPON_EPON_MODE_REG_EPONBASEPORT_MASK 0xFF00000u
+
+//! Field EPONPKTSIZADJ - EPON Packet size Adjustment enable
+#define EPON_EPON_MODE_REG_EPONPKTSIZADJ_POS 30
+//! Field EPONPKTSIZADJ - EPON Packet size Adjustment enable
+#define EPON_EPON_MODE_REG_EPONPKTSIZADJ_MASK 0x40000000u
+
+//! Field EPONCHKEN - EPON Mode Check Enable
+#define EPON_EPON_MODE_REG_EPONCHKEN_POS 31
+//! Field EPONCHKEN - EPON Mode Check Enable
+#define EPON_EPON_MODE_REG_EPONCHKEN_MASK 0x80000000u
+
+//! @}
+
+//! \defgroup EPON_PORTBP_REG_0 Register EPON_PORTBP_REG_0 - EPON Mode backpressure enable register
+//! @{
+
+//! Register Offset (relative)
+#define EPON_PORTBP_REG_0 0x1F4
+//! Register Offset (absolute) for 1st Instance CQEM_ENQ
+#define CQEM_ENQ_EPON_PORTBP_REG_0 0x190801F4u
+
+//! Register Reset Value
+#define EPON_PORTBP_REG_0_RST 0x00000000u
+
+//! Field PORTBPEN - Port Back Pressure Enable
+#define EPON_PORTBP_REG_0_PORTBPEN_POS 0
+//! Field PORTBPEN - Port Back Pressure Enable
+#define EPON_PORTBP_REG_0_PORTBPEN_MASK 0xFFFFFFFFu
+
+//! @}
+
+//! \defgroup EPON_PORTBP_REG_1 Register EPON_PORTBP_REG_1 - EPON Mode backpressure enable register
+//! @{
+
+//! Register Offset (relative)
+#define EPON_PORTBP_REG_1 0x1F8
+//! Register Offset (absolute) for 1st Instance CQEM_ENQ
+#define CQEM_ENQ_EPON_PORTBP_REG_1 0x190801F8u
+
+//! Register Reset Value
+#define EPON_PORTBP_REG_1_RST 0x00000000u
+
+//! Field PORTBPEN - Port Back Pressure Enable
+#define EPON_PORTBP_REG_1_PORTBPEN_POS 0
+//! Field PORTBPEN - Port Back Pressure Enable
+#define EPON_PORTBP_REG_1_PORTBPEN_MASK 0xFFFFFFFFu
+
+//! @}
+
 //! \defgroup CFG_CPU_IGP_0 Register CFG_CPU_IGP_0 - CPU Ingress Port Configuration
 //! @{
 

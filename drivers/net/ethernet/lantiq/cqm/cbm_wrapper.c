@@ -16,6 +16,15 @@ int cbm_turn_on_DMA_p2p(void)
 }
 EXPORT_SYMBOL(cbm_turn_on_DMA_p2p);
 
+s32 cbm_enable_backpressure(s32 port_id, bool flag)
+{
+	if (g_cbm_ops->cbm_enable_backpressure)
+		return g_cbm_ops->cbm_enable_backpressure(port_id, flag);
+	else
+		return CBM_FAILURE;
+}
+EXPORT_SYMBOL(cbm_enable_backpressure);
+
 s32 cbm_queue_map_get(int cbm_inst, s32 queue_id, s32 *num_entries,
 		      cbm_queue_map_entry_t **entries, u32 flags)
 {
@@ -197,6 +206,19 @@ s32 cbm_dp_port_alloc(struct module *owner, struct net_device *dev,
 		return CBM_FAILURE;
 }
 EXPORT_SYMBOL(cbm_dp_port_alloc);
+
+s32 cbm_dp_port_alloc_complete(struct module *owner, struct net_device *dev,
+			       u32 dev_port, s32 dp_port,
+			       struct cbm_dp_alloc_complete_data *data,
+			       u32 flags)
+{
+	if (g_cbm_ops && g_cbm_ops->cbm_dp_port_alloc_complete)
+		return g_cbm_ops->cbm_dp_port_alloc_complete(
+		owner, dev, dev_port, dp_port, data, flags);
+	else
+		return CBM_FAILURE;
+}
+EXPORT_SYMBOL(cbm_dp_port_alloc_complete);
 
 int cbm_get_wlan_umt_pid(u32 ep_id, u32 *cbm_pid)
 {

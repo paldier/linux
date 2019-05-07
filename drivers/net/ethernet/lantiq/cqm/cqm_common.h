@@ -136,6 +136,11 @@ struct cbm_ops {
 	s32 (*cbm_dp_port_alloc)(struct module *owner, struct net_device *dev,
 				 u32 dev_port, s32 dp_port,
 				 struct cbm_dp_alloc_data *data, u32 flags);
+	s32 (*cbm_dp_port_alloc_complete)(struct module *owner,
+					  struct net_device *dev,
+					  u32 dev_port, s32 dp_port,
+				  struct cbm_dp_alloc_complete_data *data,
+					  u32 flags);
 	int (*cbm_get_wlan_umt_pid)(u32 ep_id, u32 *cbm_pid);
 	s32 (*cbm_dp_enable)(struct module *owner, u32 dp_port,
 			     struct cbm_dp_en_data *data, u32 flags,
@@ -206,6 +211,7 @@ struct cbm_ops {
 	s32 (*pon_deq_cntr_get)(int port, u32 *count);
 	void (*cbm_setup_DMA_p2p)(void);
 	int (*cbm_turn_on_DMA_p2p)(void);
+	s32 (*cbm_enable_backpressure)(s32 port_id, bool flag);
 };
 
 static inline void set_val(void __iomem *reg, u32 val, u32 mask, u32 offset)

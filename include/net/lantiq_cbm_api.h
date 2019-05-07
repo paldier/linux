@@ -66,6 +66,8 @@
 */
 /* @} */
 
+#include "datapath_api.h"
+
 #define SINGLE_RX_CH0_ONLY 1
 
 /** \addtogroup CBM_Driver_Global_Defines */
@@ -493,6 +495,8 @@ typedef struct cbm_dq_info {
 						 */
 	int32_t		dma_tx_chan;	/*! PMAC DMA Tx Channel */
 	uint32_t	num_desc; /*!< Number of Descriptors at port base */
+	u32 num_free_burst; /*!< Number of free burst size */
+	u32 *pkt_base; /*!<packet list base physical address */
 } cbm_dq_info_t;
 
 /*!
@@ -560,6 +564,11 @@ struct cbm_dp_en_data {
 	u32 deq_port; /*input: -1 means not valid*/
 	u32 dma_chnl_init;/*input :0 - no init, 1:- init DMA channel*/
 	u32 num_dma_chan;
+	int tx_ring_size;  /*!< [in] ACA TXIN Ring size.
+			      *   if 0, then change, otherwise try to tune
+			      *   down the pre-allocated TXIN ring buffer size.
+			      *   Only allowed to tune down.
+			      */
 };
 
 struct cbm_tx_push {
@@ -812,6 +821,49 @@ s32 cbm_dp_port_alloc(
 	u32 dev_port,
 	s32 dp_port,
 	struct cbm_dp_alloc_data *data,
+	u32 flags
+);
+
+
+struct cbm_dp_alloc_complete_data {
+	u8 num_rx_ring;   /*!< [in] number of rx ring from DC device to Host.
+			    *   num_rx_ring requirement:
+			    *   @num_rings <= @DP_RX_RING_NUM
+			    *   GRX350/Falcon_MX:1 rx ring
+			    *   LGM: up to 2 rx ring, like Docsis can use 2 rings
+			    *   For two ring case:
+			    *    1st rxout ring without qos
+			    *    2nd rxout ring with qos
+			    */
+	u8 num_tx_ring;   /*!< [in] number of tx ring from Host to DC device
+			    *   num_rx_ring requirement:
+			    *   @num_rings <= @DP_TX_RING_NUM
+			    *   Normally it is 1 TX ring only.
+			    *   But for 5G, it can support up to 8 TX ring
+			    *   For docsis, alhtough it is 16 dequeue port to WIB.
+			    *   But the final ring only 1, ie, WIB to Dcosis
+			    */
+	u8 num_umt_port;   /*!< [in] number of UMT port.
+			     *    Normally is 1 only. But Docsis can use up to 2
+			     */
+	struct dp_rx_ring rx_ring[DP_RX_RING_NUM]; /*!< [in/out] DC rx ring info
+						    */
+	struct dp_tx_ring tx_ring[DP_TX_RING_NUM]; /*!< [in/out] DC tx ring info
+						    */
+	struct dp_umt umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+	u32 enable_cqm_meta : 1; /*!< enable CQM buffer meta data marking */
+	int alloc_flags; /*!< original alloc flags used in the dp_alloc_port */
+	u32 deq_port;	/* [in] port id which was returned in the alloc */
+	u32 qid_base; /* [in] EPON baseport */
+	u32 num_qid; /* [in] EPON num qid */
+};
+
+s32 cbm_dp_port_alloc_complete(
+	struct module *owner,
+	struct net_device *dev,
+	u32 dev_port,
+	s32 dp_port,
+	struct cbm_dp_alloc_complete_data *data,
 	u32 flags
 );
 

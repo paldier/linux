@@ -3799,6 +3799,24 @@
 
 //! @}
 
+//! \defgroup CBM_EPON_BASE Register CBM_EPON_BASE - EPON Descriptor Write Base Address
+//! @{
+
+//! Register Offset (relative)
+#define CBM_EPON_BASE 0x250
+//! Register Offset (absolute) for 1st Instance CQEM_CTRL
+#define CQEM_CTRL_CBM_EPON_BASE 0x19010250u
+
+//! Register Reset Value
+#define CBM_EPON_BASE_RST 0x00000000u
+
+//! Field BASE - Base Address
+#define CBM_EPON_BASE_BASE_POS 0
+//! Field BASE - Base Address
+#define CBM_EPON_BASE_BASE_MASK 0xFFFFFFFFu
+
+//! @}
+
 //! \defgroup CBM_CPU_POOL_BUF_RTRN_START_ADDR Register CBM_CPU_POOL_BUF_RTRN_START_ADDR - CPU Pool Buffer Return Start Address
 //! @{
 

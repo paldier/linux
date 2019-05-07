@@ -3023,6 +3023,14 @@ RET_PORT:
 	return CBM_SUCCESS;
 }
 
+static s32 dp_port_alloc_complete(struct module *owner, struct net_device *dev,
+				  u32 dev_port, s32 dp_port,
+				  struct cbm_dp_alloc_complete_data *data,
+				  u32 flags)
+{
+	return CBM_SUCCESS;
+}
+
 static s32
 dp_port_dealloc(
 	struct module *owner,
@@ -5141,6 +5149,7 @@ static const struct cbm_ops l_cbm_ops = {
 	.cbm_port_quick_reset = port_quick_reset,
 	.cbm_dp_enable = dp_enable,
 	.cbm_dp_port_alloc = dp_port_alloc,
+	.cbm_dp_port_alloc_complete = dp_port_alloc_complete,
 	.cbm_dp_q_enable = dp_q_enable,
 	.set_lookup_qid_via_index = set_lookup_qid_via_index_grx500,
 	.get_lookup_qid_via_index = get_lookup_qid_via_idx_grx500,
