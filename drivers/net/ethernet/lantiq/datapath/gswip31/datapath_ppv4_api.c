@@ -3059,10 +3059,7 @@ int dp_queue_conf_set_31(struct dp_queue_conf *cfg, int flag)
 		conf->queue_wred_min_guaranteed = cfg->wred_min_guaranteed;
 		conf->queue_wred_max_allowed = cfg->wred_max_allowed;
 	} else if (flag & (cfg->drop == DP_QUEUE_DROP_TAIL)) {
-		PR_ERR("Further check PPv4 Tail Drop Capability.\n");
 		conf->wred_enable = 0;
-		conf->queue_wred_min_avg_green = cfg->min_size[0];
-		conf->queue_wred_min_avg_yellow = cfg->min_size[1];
 		conf->queue_wred_min_guaranteed = cfg->wred_min_guaranteed;
 		conf->queue_wred_max_allowed = cfg->wred_max_allowed;
 	}
@@ -4503,7 +4500,7 @@ int dp_qos_global_info_get_31(struct dp_qos_cfg_info *info, int flag)
 {
 	struct hal_priv *priv;
 	unsigned int quanta = 0;
-	
+
 	if (!info) {
 		PR_ERR("info cannot be NULL\n");
 		return DP_FAILURE;
