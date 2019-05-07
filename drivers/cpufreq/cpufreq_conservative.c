@@ -112,7 +112,7 @@ static unsigned int cs_dbs_timer(struct cpufreq_policy *policy)
 		/*
 		 * if we cannot reduce the frequency anymore, break out early
 		 */
-		if (requested_freq == policy->min)
+		if ((requested_freq == policy->min) && (requested_freq == policy->cur))
 			goto out;
 
 		freq_target = get_freq_target(cs_tuners, policy);
