@@ -1770,5 +1770,31 @@ struct dp_spl_conn {
  */
 int dp_connect_spl_path(int inst, struct dp_spl_conn *conn);
 
-#endif /*DATAPATH_API_H */
+/*! @brief Enumerator DP_OPS_TYPE */
+enum DP_OPS_TYPE {
+	DP_OPS_BM, /*!< BM ops type */
+	DP_OPS_QOS, /*!< QOS ops type */
+	DP_OPS_GSW, /*!< GSWIP ops type */
+	DP_OPS_UMT, /*!< UMT ops type */
+	DP_OPS_LRO, /*!< LRO ops type */
+	DP_OPS_CNT,  /*!< total ops type count */
+};
 
+/*!
+ *@brief Datapath Manager ops registration
+ *@param[in] inst: DP instance ID
+ *@param[in] type: ops type
+ *@param[in] ops: pointer to ops structure
+ *@note  set to NULL to deregister
+ */
+void dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops);
+
+/*!
+ *@brief get ops registration
+ *@param[in] inst: DP instance ID
+ *@param[in] type: ops type
+ *@return ops pointer if registered, or NULL if not registered
+ */
+void *dp_get_ops(int inst, enum DP_OPS_TYPE type);
+
+#endif /*DATAPATH_API_H */

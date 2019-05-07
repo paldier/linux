@@ -117,6 +117,28 @@ static struct net_device aca_dev;
 int aca_portid = -1;
 #endif
 
+static void *dp_ops[DP_MAX_INST][DP_OPS_CNT];
+
+void dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops)
+{
+	if (inst < 0 || inst >= DP_MAX_INST || type >= DP_OPS_CNT) {
+		DP_DEBUG(DP_DBG_FLAG_REG, "wrong index\n");
+		return DP_FAILURE;
+	}
+	dp_ops[inst][type] = ops;
+}
+EXPORT_SYMBOL(dp_register_ops);
+
+void *dp_get_ops(int inst, enum DP_OPS_TYPE type)
+{
+	if (inst < 0 || inst >= DP_MAX_INST || type >= DP_OPS_CNT) {
+		DP_DEBUG(DP_DBG_FLAG_REG, "wrong index\n");
+		return NULL;
+	}
+	return dp_ops[inst][type];
+}
+EXPORT_SYMBOL(dp_get_ops);
+
 char *get_dp_port_type_str(int k)
 {
 	return dp_port_type_str[k];
