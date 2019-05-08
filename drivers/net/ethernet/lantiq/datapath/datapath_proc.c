@@ -495,9 +495,10 @@ ssize_t proc_dbg_write(struct file *file, const char *buf, size_t count,
 	}
 
 	for (i = 1; i < num; i++) {
-		for (j = 0; j < get_dp_dbg_flag_str_size(); j++)
-			if (dp_strncmpi(param_list[i], dp_dbg_flag_str[j], strlen(dp_dbg_flag_str[j])) ==
-			    0) {
+		for (j = 0; j < get_dp_dbg_flag_str_size()-1; j++)
+			if (dp_strncmpi(param_list[i],
+				dp_dbg_flag_str[j],
+				strlen(dp_dbg_flag_str[j]) + 1) == 0) {
 				set_ltq_dbg_flag(dp_dbg_flag, f_enable,
 						 dp_dbg_flag_list[j]);
 				break;
