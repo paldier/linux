@@ -37,6 +37,7 @@
 #include "../datapath_instance.h"
 #include "datapath_proc.h"
 #include "datapath_ppv4.h"
+#include "datapath_tx.h"
 #include "datapath_misc.h"
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
@@ -1352,6 +1353,10 @@ static int dp_platform_set(int inst, u32 flag)
 		}
 		if (cpu_vlan_mod_dis_32(inst)) {
 			PR_ERR("cpu_vlan_mod_dis_32 fail\n");
+			return -1;
+		}
+		if (dp_tx_init_32(inst)) {
+			PR_ERR("dp_tx_init_32 fail\n");
 			return -1;
 		}
 		return 0;

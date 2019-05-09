@@ -12,8 +12,72 @@
 #include <linux/etherdevice.h>
 #include <net/datapath_api.h>
 #include "../datapath.h"
+#include "../datapath_tx.h"
 #include "datapath_misc.h"
 #include "../datapath_instance.h"
+
+struct dp_tx_32 {
+	struct dp_tx_common cmn;
+	struct pmac_port_info *port;
+	struct dp_subif_info *sif;
+	struct dma_rx_desc_1 *desc_1;
+};
+
+static int cqm_preprocess(struct sk_buff *skb, struct dp_tx_common *cmn,
+			  void *p)
+{
+	struct dp_tx_32 *tx = container_of(cmn, struct dp_tx_32, cmn);
+
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
+	if (unlikely(!cmn->gpid)) {
+		PR_INFO("Why after get_dma_pmac_templ ep is zero\n");
+		return DP_XMIT_ERR_EP_ZERO;
+	}
+#endif
+
+	tx->desc_1->field.pmac = !!(cmn->flags & DP_TX_FLAG_INSERT_PMAC);
+	if (is_stream_port(tx->port->alloc_flags))
+		cmn->flags |= DP_TX_FLAG_STREAM_PORT;
+	return DP_TX_FN_CONTINUE;
+}
+
+static int pp_tx(struct sk_buff *skb, struct dp_tx_common *cmn, void *p)
+{
+	pp_tx_pkt_hook(skb, cmn->gpid);
+	return DP_TX_FN_CONTINUE;
+}
+
+static int cqm_tx(struct sk_buff *skb, struct dp_tx_common *cmn, void *p)
+{
+	struct cbm_tx_data data;
+	int ret;
+
+	/*No PMAC for WAVE500 and DSL by default except bonding case */
+	if (likely(cmn->flags & DP_TX_FLAG_INSERT_PMAC)) {
+		data.pmac = cmn->pmac;
+		data.pmac_len = cmn->len;
+	} else {
+		data.pmac = NULL;
+		data.pmac_len = 0;
+	}
+	data.dp_inst = 0;
+	data.f_byqos = !(cmn->flags & DP_TX_FLAG_STREAM_PORT);
+	ret = cbm_cpu_pkt_tx(skb, &data, 0);
+	UP_STATS(cmn->mib->tx_cbm_pkt);
+	return ret;
+}
+
+int dp_tx_init_32(int inst)
+{
+	dp_tx_register_preprocess(DP_TX_CQM, cqm_preprocess, NULL, false);
+#if IS_ENABLED(CONFIG_PPV4)
+	dp_tx_register_process(DP_TX_PP, pp_tx, NULL);
+#endif /* CONFIG_PPV4 */
+#if IS_ENABLED(CONFIG_INTEL_CBM)
+	dp_tx_register_process(DP_TX_CQM, cqm_tx, NULL);
+#endif /* CONFIG_INTEL_CBM */
+	return dp_tx_update_list();
+}
 
 void dp_xmit_dbg(
 	char *title,
@@ -118,21 +182,23 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 	struct dma_rx_desc_1 *desc_1;
 	struct dma_rx_desc_2 *desc_2;
 	struct dma_rx_desc_3 *desc_3;
-	struct pmac_port_info *dp_info;
 	struct pmac_tx_hdr pmac = {0};
 	u32 ip_offset, tcp_h_offset, tcp_type;
 	char tx_chksum_flag = 0; /*check csum cal can be supported or not */
-	char insert_pmac_f = 1;	/*flag to insert one pmac */
-	int res = DP_SUCCESS;
-	int ep, vap;
 	enum dp_xmit_errors err_ret = 0;
 	int inst = 0;
-	struct cbm_tx_data data;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	struct mac_ops *ops;
 	int rec_id = 0;
 #endif
-	struct dp_subif_info *sif;
+	struct dp_tx_32 tx = {
+		.cmn = {
+			.pmac = (u8 *)&pmac,
+			.len = sizeof(struct pmac_tx_hdr),
+			.dpid = rx_subif->port_id,
+			.flags = DP_TX_FLAG_INSERT_PMAC,
+		},
+	};
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 	if (unlikely(!dp_init_ok)) {
@@ -151,9 +217,8 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 	}
 
 #endif
-	ep = rx_subif->port_id;
-
-	if (unlikely(ep >= dp_port_prop[inst].info.cap.max_num_dp_ports)) {
+	if (unlikely(tx.cmn.dpid >=
+		     dp_port_prop[inst].info.cap.max_num_dp_ports)) {
 		err_ret = DP_XMIT_ERR_PORT_TOO_BIG;
 		goto lbl_err_ret;
 	}
@@ -165,23 +230,24 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 	}
 
 #endif
-	dp_info = get_dp_port_info(inst, ep);
-	vap = GET_VAP(rx_subif->subif, dp_info->vap_offset, dp_info->vap_mask);
-	sif = get_dp_port_subif(dp_info, vap);
+	tx.port = get_dp_port_info(inst, tx.cmn.dpid);
+	tx.cmn.vap = GET_VAP(rx_subif->subif, tx.port->vap_offset,
+			     tx.port->vap_mask);
+	tx.sif = get_dp_port_subif(tx.port, tx.cmn.vap);
+	tx.cmn.mib = get_dp_port_subif_mib(tx.sif);
+
+	if (unlikely(NO_NEED_PMAC(tx.port->alloc_flags)))
+		tx.cmn.flags &= ~DP_TX_FLAG_INSERT_PMAC;
 
 	if (unlikely(!rx_if && /*For atm pppoa case, rx_if is NULL now */
-		     !(dp_info->alloc_flags & DP_F_FAST_DSL))) {
+		     !(tx.port->alloc_flags & DP_F_FAST_DSL))) {
 		err_ret = DP_XMIT_ERR_NULL_IF;
 		goto lbl_err_ret;
 	}
 
 	if (unlikely(dp_dbg_flag))
-		dp_xmit_dbg("\nOrig", skb, ep, len, flags,
+		dp_xmit_dbg("\nOrig", skb, tx.cmn.dpid, len, flags,
 			    NULL, rx_subif, 0, 0, flags & DP_TX_CAL_CHKSUM);
-
-	/*No PMAC for WAVE500 and DSL by default except bonding case */
-	if (unlikely(NO_NEED_PMAC(dp_info->alloc_flags)))
-		insert_pmac_f = 0;
 
 	/**********************************************
 	 *Must put these 4 lines after INSERT_PMAC
@@ -189,7 +255,7 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 	 *********************************************/
 #if defined(DP_SKB_HACK)
 	desc_0 = (struct dma_tx_desc_0 *)&skb->DW0;
-	desc_1 = (struct dma_tx_desc_1 *)&skb->DW1;
+	desc_1 = tx.desc_1 = (struct dma_tx_desc_1 *)&skb->DW1;
 	desc_2 = (struct dma_tx_desc_2 *)&skb->DW2;
 	desc_3 = (struct dma_tx_desc_3 *)&skb->DW3;
 #endif
@@ -215,7 +281,8 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 #endif
 	}
 
-        desc_3->all = (desc_3->all & dp_info->dma3_mask_template[TEMPL_NORMAL].all);
+	desc_3->all = (desc_3->all &
+		       tx.port->dma3_mask_template[TEMPL_NORMAL].all);
 
 	if (desc_3->field.dic) {
 		desc_3->field.dic = 1;
@@ -226,33 +293,33 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 	desc_3->field.haddr = (((uintptr_t)skb->data) >> 8) & 0xF;
 
 	/*for ETH LAN/WAN */
-	if (dp_info->alloc_flags & (DP_F_FAST_ETH_LAN | DP_F_FAST_ETH_WAN |
+	if (tx.port->alloc_flags & (DP_F_FAST_ETH_LAN | DP_F_FAST_ETH_WAN |
 				    DP_F_GPON | DP_F_EPON)) {
 		/*always with pmac*/
 		if (likely(tx_chksum_flag)) {
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		} else {
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		}
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588_SW_WORKAROUND)
 
-		if (dp_info->f_ptp)
+		if (tx.port->f_ptp)
 #else
-		if (dp_info->f_ptp &&
+		if (tx.port->f_ptp &&
 		    (skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
 #endif
 		{
-			ops = dp_port_prop[inst].mac_ops[dp_info->port_id];
+			ops = dp_port_prop[inst].mac_ops[tx.port->port_id];
 
 			if (!ops) {
 				err_ret = DP_XMIT_PTP_ERR;
@@ -268,69 +335,49 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_PTP, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			pmac.record_id_msb = rec_id;
 		}
 
 #endif
-	} else if (dp_info->alloc_flags & DP_F_FAST_DSL) { /*some with pmac*/
+	} else if (tx.port->alloc_flags & DP_F_FAST_DSL) { /*some with pmac*/
 		if (unlikely(flags & DP_TX_CAL_CHKSUM)) { /* w/ pmac*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
-
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-
-#endif
 		} else if (flags & DP_TX_DSL_FCS) {/* after checksum check */
 			/* w/ pmac for FCS purpose*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-			insert_pmac_f = 1;
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
-
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-
-#endif
 		} else { /*no pmac */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 		}
-	} else if (dp_info->alloc_flags & DP_F_FAST_WLAN) {/*some with pmac*/
+	} else if (tx.port->alloc_flags & DP_F_FAST_WLAN) {/*some with pmac*/
 		/*normally no pmac. But if need checksum, need pmac*/
 		if (unlikely(tx_chksum_flag)) { /*with pmac*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
-
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-
-#endif
 		} else { /*no pmac*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 		}
-	} else if (dp_info->alloc_flags & DP_F_DIRECTLINK) { /*always w/ pmac*/
+	} else if (tx.port->alloc_flags & DP_F_DIRECTLINK) { /*always w/ pmac*/
 		if (unlikely(flags & DP_TX_CAL_CHKSUM)) { /* w/ pmac*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
@@ -340,12 +387,12 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 			 */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		} else { /*do like normal directpath with pmac */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		}
 	} else { /*normal directpath: always w/ pmac */
@@ -354,70 +401,32 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 							&pmac,
 							desc_0,
 							desc_1,
-							dp_info);
+							tx.port);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		} else { /*w/ pmac */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
 							desc_0, desc_1,
-							dp_info);
+							tx.port);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		}
 	}
 
 	desc_3->field.data_len = skb->len;
-	desc_1->field.ep = sif->gpid; /* use gpid */
+	tx.cmn.gpid = desc_1->field.ep = tx.sif->gpid; /* use gpid */
 
 	if (unlikely(dp_dbg_flag)) {
-		if (insert_pmac_f)
-			dp_xmit_dbg("After", skb, ep, len, flags, &pmac,
-				    rx_subif, insert_pmac_f, skb_is_gso(skb),
-				    tx_chksum_flag);
-		else
-			dp_xmit_dbg("After", skb, ep, len, flags, NULL,
-				    rx_subif, insert_pmac_f, skb_is_gso(skb),
-				    tx_chksum_flag);
+		bool insert = tx.cmn.flags & DP_TX_FLAG_INSERT_PMAC;
+
+		dp_xmit_dbg("After", skb, tx.cmn.dpid, len, flags,
+			    insert ? &pmac : NULL, rx_subif, insert,
+			    skb_is_gso(skb), tx_chksum_flag);
 	}
 
-	pp_tx_pkt_hook(skb, desc_1->field.ep);
-#if IS_ENABLED(CONFIG_LTQ_TOE_DRIVER)
-	if (skb_is_gso(skb)) {
-		res = ltq_tso_xmit(skb, &pmac, sizeof(pmac), 0);
-		UP_STATS(get_dp_port_subif_mib(sif)->tx_tso_pkt);
-		return res;
-	}
-#endif /* CONFIG_LTQ_TOE_DRIVER */
-
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
-
-	if (unlikely(!desc_1->field.ep)) {
-		PR_INFO("Why after get_dma_pmac_templ ep is zero\n");
-		err_ret = DP_XMIT_ERR_EP_ZERO;
-		goto lbl_err_ret;
-	}
-#endif
-
-	if (insert_pmac_f) {
-		data.pmac = (u8 *)&pmac;
-		data.pmac_len = sizeof(pmac);
-		data.dp_inst = inst;
-		data.dp_inst = 0;
-		desc_1->field.pmac = 1;
-	} else {
-		data.pmac = NULL;
-		data.pmac_len = 0;
-		data.dp_inst = inst;
-		data.dp_inst = 0;
-		desc_1->field.pmac = 0;
-	}
-	if (is_stream_port(dp_info->alloc_flags))
-		data.f_byqos = 0;
-	else
-		data.f_byqos = 1;
-	res = cbm_cpu_pkt_tx(skb, &data, 0);
-	UP_STATS(get_dp_port_subif_mib(sif)->tx_cbm_pkt);
-	return res;
+	err_ret = dp_tx_start(skb, &tx.cmn);
+	if (!err_ret)
+		return 0;
 
 lbl_err_ret:
 
@@ -442,12 +451,11 @@ lbl_err_ret:
 
 	case DP_XMIT_ERR_NULL_SKB:
 		PR_RATELIMITED("skb NULL");
-		UP_STATS(get_dp_port_info(inst, rx_subif->port_id)->
-			 tx_err_drop);
+		UP_STATS(tx.port->tx_err_drop);
 		break;
 
 	case DP_XMIT_ERR_NULL_IF:
-		UP_STATS(get_dp_port_subif_mib(sif)->tx_pkt_dropped);
+		UP_STATS(tx.cmn.mib->tx_pkt_dropped);
 		PR_RATELIMITED("rx_if NULL");
 		break;
 
@@ -472,8 +480,8 @@ lbl_err_ret:
 		break;
 
 	default:
-		UP_STATS(get_dp_port_subif_mib(sif)->tx_pkt_dropped);
-		PR_INFO_ONCE("Why come to here:%x\n", dp_info->status);
+		UP_STATS(tx.cmn.mib->tx_pkt_dropped);
+		PR_INFO_ONCE("Why come to here:%x\n", tx.port->status);
 	}
 
 	if (skb)
