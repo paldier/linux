@@ -24,6 +24,7 @@
 #include <net/ip.h>
 #include <net/datapath_api.h>
 #include "datapath.h"
+#include "datapath_tx.h"
 #include "datapath_instance.h"
 #include "datapath_swdev_api.h"
 
@@ -2258,6 +2259,8 @@ int dp_basic_proc(void)
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	dp_switchdev_init();
 #endif
+	if (dp_tx_init(0))
+		return -ENOMEM;
 	return 0;
 }
 
