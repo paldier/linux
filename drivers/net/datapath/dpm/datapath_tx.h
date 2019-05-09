@@ -17,4 +17,8 @@ int dp_tx_start(struct sk_buff *skb, struct dp_tx_common *cmn);
 
 int dp_tx_err(struct sk_buff *skb, struct dp_tx_common *cmn, int ret);
 
+void dp_tx_dbg(char *title, struct sk_buff *skb, s32 ep, s32 len, u32 flags,
+	       struct pmac_tx_hdr *pmac, struct dp_subif *rx_subif,
+	       int need_pmac, int gso, int checksum);
+
 #endif /* end of include guard: DATAPATH_TX_H_7PAJCKO6 */

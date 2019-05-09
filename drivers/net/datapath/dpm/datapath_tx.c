@@ -46,6 +46,94 @@ struct dp_tx_context {
 
 static struct dp_tx_context *dp_tx_ctx;
 
+void dp_tx_dbg(char *title, struct sk_buff *skb, s32 ep, s32 len, u32 flags,
+	       struct pmac_tx_hdr *pmac, struct dp_subif *rx_subif,
+	       int need_pmac, int gso, int checksum)
+{
+#if defined(DP_SKB_HACK)
+	DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
+		 "%s: dp_xmit:skb->data/len=0x%px/%d data_ptr=%x from port=%d and subitf=%d\n",
+		 title,
+		 skb->data, len,
+		 ((struct dma_tx_desc_2 *)&skb->DW2)->field.data_ptr,
+		 ep, rx_subif->subif);
+#endif
+	if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DATA) {
+		if (pmac) {
+			dp_dump_raw_data((char *)pmac, PMAC_SIZE, "Tx Data");
+			dp_dump_raw_data(skb->data,
+					 skb->len,
+					 "Tx Data");
+		} else
+			dp_dump_raw_data(skb->data,
+					 skb->len,
+					 "Tx Data");
+	}
+
+	DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
+		 "ip_summed=%s(%d) encapsulation=%s\n",
+		 dp_skb_csum_str(skb), skb->ip_summed,
+		 skb->encapsulation ? "Yes" : "No");
+
+	if (skb->encapsulation)
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
+			 "inner ip start=0x%lx(%d), transport=0x%lx(%d)\n",
+			 (unsigned long)skb_inner_network_header(skb),
+			 (int)(skb_inner_network_header(skb) -
+			       skb->data),
+			 (unsigned long)
+			 skb_inner_transport_header(skb),
+			 (int)(skb_inner_transport_header(skb) -
+			       skb_inner_network_header(skb)));
+	else
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
+			 "ip start=0x%lx(%d), transport=0x%lx(%d)\n",
+			 (unsigned long) skb_network_header(skb),
+			 (int)(skb_network_header(skb) - skb->data),
+			 (unsigned long)skb_transport_header(skb),
+			 (int)(skb_transport_header(skb) -
+			       skb_network_header(skb)));
+
+	if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DESCRIPTOR)
+#if defined(DP_SKB_HACK)
+		dp_port_prop[0].info.dump_tx_dma_desc(
+			(struct dma_tx_desc_0 *)&skb->DW0,
+			(struct dma_tx_desc_1 *)&skb->DW1,
+			(struct dma_tx_desc_2 *)&skb->DW2,
+			(struct dma_tx_desc_3 *)&skb->DW3);
+#else
+	;
+#endif
+
+	DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "flags=0x%x skb->len=%d\n",
+		 flags, skb->len);
+	DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
+		 "skb->data=0x%px with pmac hdr size=%zu\n", skb->data,
+		 sizeof(struct pmac_tx_hdr));
+
+	if (need_pmac) { /*insert one pmac header */
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
+			 "need pmac\n");
+
+		if (pmac && (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DESCRIPTOR))
+			dp_port_prop[0].info.dump_tx_pmac(pmac);
+	} else {
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "no pmac\n");
+	}
+
+	if (gso)
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "GSO pkt\n");
+	else
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "Non-GSO pkt\n");
+
+	if (checksum)
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "Need checksum offload\n");
+	else
+		DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "No need checksum offload pkt\n");
+
+	DP_DEBUG(DP_DBG_FLAG_DUMP_TX, "\n\n");
+}
+
 int dp_tx_err(struct sk_buff *skb, struct dp_tx_common *cmn, int ret)
 {
 	switch (ret) {
