@@ -722,13 +722,13 @@ static unsigned int ppa_postrt_hook_fn(void *priv,
 	packet which will eventually take the IPSec Path */
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
 	struct iphdr *hdr = ip_hdr(skb);
-	if (hdr->protocol == IPPROTO_ESP || skb_dst(skb)->flags & (DST_XFRM_TUNNEL | DST_HOST) || !ppa_hook_session_add_fn)
+	if (hdr->protocol == IPPROTO_ESP || skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn)
 		return NF_ACCEPT;
 	/* In the Second call (After Encryption) we skip again for
 	ESP type since we call this hook in xfrm_output_resume before
 	old conntrack reset, based on which the p_item was created */
 #else
-	if (skb_dst(skb)->flags & (DST_XFRM_TUNNEL | DST_HOST) || !ppa_hook_session_add_fn)
+	if (skb_dst(skb)->flags & DST_XFRM_TUNNEL || !ppa_hook_session_add_fn)
 		return NF_ACCEPT;
 #endif
 
