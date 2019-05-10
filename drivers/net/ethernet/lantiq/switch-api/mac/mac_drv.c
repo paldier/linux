@@ -187,6 +187,12 @@ static int mac_probe(struct platform_device *pdev)
 	/* Init function fointers */
 	mac_init_fn_ptrs(&pdata->ops);
 
+	/* Disable unused MAC */
+	if (pdata->mac_en == MAC_DIS) {
+		mac_reset(&pdata->ops, RESET_OFF);
+		return 0;
+	}
+
 	/* Request IRQ for MAC */
 	mac_irq_init(pdata);
 
@@ -224,7 +230,7 @@ static int mac_probe(struct platform_device *pdev)
 		dp = "AUTO";
 
 	pr_debug("XGMAC Init %d: Speed: %s Link: %s Duplex: %s\n",
-		pdata->mac_idx, load, ls, dp);
+		 pdata->mac_idx, load, ls, dp);
 
 	return 0;
 }

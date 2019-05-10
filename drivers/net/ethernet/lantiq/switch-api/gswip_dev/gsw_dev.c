@@ -239,6 +239,10 @@ static int gsw_add_macdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 	/* Copy the initial values of MAC Private Data */
 	xgmac_init_pdata(mac_pdata, (int)gsw_dev[devid].mac_subdevs_cnt);
 
+	/* Get the status of mac node */
+	if (!of_device_is_available(gsw_dev_cell->of_node))
+		mac_pdata->mac_en = MAC_DIS;
+
 #ifdef CONFIG_OF
 	/* Retrieve the phymode */
 	ret = of_property_read_string(gsw_dev_cell->of_node, "phy-mode",

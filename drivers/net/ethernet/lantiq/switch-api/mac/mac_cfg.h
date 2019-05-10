@@ -15,9 +15,6 @@
 #define RESET_OFF 	0
 #define RESET_ON 	1
 
-#define MAC_EN		1
-#define MAC_DIS		0
-
 /* MAC Interface API's */
 int mac_config_loopback(void *pdev, u32 loopback);
 int mac_config_ipg(void *pdev, u32 ipg);

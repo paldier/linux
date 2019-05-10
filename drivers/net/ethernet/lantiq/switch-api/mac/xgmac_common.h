@@ -112,6 +112,8 @@ extern int pc_uart_datawrite_32(u32 Offset, u32 value);
 
 #define UPTIME 0
 #define MAX_RETRY 2000
+#define MAC_EN		1
+#define MAC_DIS		0
 
 #if defined(PC_UTILITY) && PC_UTILITY
 #define NANOSEC_IN_ONESEC 550000
