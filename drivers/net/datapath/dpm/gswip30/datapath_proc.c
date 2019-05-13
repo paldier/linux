@@ -12,7 +12,7 @@
 #include <net/drv_tmu_ll.h>
 #include <linux/list.h>
 #include <net/lantiq_cbm_api.h>
-#include "../../cqm/grx500/reg/fsqm.h" /* hardcoded path*/
+#include "../../../ethernet/lantiq/cqm/grx500/reg/fsqm.h" /* hardcoded path*/
 
 #include <linux/list.h>
 
