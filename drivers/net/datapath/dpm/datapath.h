@@ -128,12 +128,6 @@
 #define STATS_SET(atomic, val) atomic_set(&(atomic), val)
 #define DP_CB(i, x) dp_port_prop[i].info.x
 
-#define PORT(inst, ep) &dp_port_info[inst][ep]
-#define PORT_INFO(inst, ep, x) dp_port_info[inst][ep].x
-#define PORT_SUBIF(inst, ep, ix, x) dp_port_info[inst][ep].subif_info[ix].x
-#define PORT_VAP_MIB(i, ep, vap, x) dp_port_info[i][ep].subif_info[vap].mib.x
-#define PORT_VAP(i, ep, vap, x) dp_port_info[i][ep].subif_info[vap].x
-
 #define dp_set_val(reg, val, mask, offset) do {\
 	(reg) &= ~(mask);\
 	(reg) |= (((val) << (offset)) & (mask));\
@@ -743,6 +737,32 @@ extern struct dp_sched_info dp_sched_tbl[DP_MAX_INST][DP_MAX_SCHED_NUM];
 extern struct cqm_port_info dp_deq_port_tbl[DP_MAX_INST][DP_MAX_CQM_DEQ];
 extern struct bp_pmapper_dev dp_bp_dev_tbl[DP_MAX_INST][DP_MAX_BP_NUM];
 extern struct dma_chan_info *dp_dma_chan_tbl[DP_MAX_INST];
+
+static inline struct inst_property *get_dp_port_prop(int inst)
+{
+	if (inst >= 0)
+		return &dp_port_prop[inst];
+	return NULL;
+}
+
+static inline struct pmac_port_info *get_dp_port_info(int inst, int index)
+{
+	if (index < dp_port_prop[inst].info.cap.max_num_dp_ports)
+		return &dp_port_info[inst][index];
+	return NULL;
+}
+
+static inline struct dp_subif_info *get_dp_port_subif(
+	const struct pmac_port_info *port, u16 subif_id)
+{
+	return &port->subif_info[subif_id];
+}
+
+static inline struct dev_mib *get_dp_port_subif_mib(struct dp_subif_info *sif)
+{
+	return &sif->mib;
+}
+
 extern u32 dp_dbg_flag;
 extern unsigned int dp_dbg_err;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
@@ -839,8 +859,6 @@ int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo);
 int dp_basic_proc(void);
 
 struct inst_property *get_dp_port_prop(int inst);
-struct pmac_port_info *get_dp_port_info(int inst, int index);
-struct pmac_port_info *get_port_info(int inst, int index);
 struct pmac_port_info *get_port_info_via_dp_port(int inst, int dp_port);
 
 void set_dp_dbg_flag(uint32_t flags);

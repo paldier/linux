@@ -61,7 +61,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	int (*print_ctp_bp)(struct seq_file *s, int inst,
 			    struct pmac_port_info *port,
 			    int subif_index, u32 flag);
-	struct pmac_port_info *port = get_port_info(tmp_inst, pos);
+	struct pmac_port_info *port = get_dp_port_info(tmp_inst, pos);
 	u16 start = 0;
 	u32 cid, pid, nid;
 	int loop;
@@ -79,6 +79,8 @@ int proc_port_dump(struct seq_file *s, int pos)
 
 	if (port->status == PORT_FREE) {
 		if (pos == 0) {
+			struct dp_subif_info *sif = get_dp_port_subif(port, 0);
+
 			seq_printf(s,
 				   "Reserved Port: rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
 				   STATS_GET(port->rx_err_drop),
@@ -88,14 +90,13 @@ int proc_port_dump(struct seq_file *s, int pos)
 						  * CPU port no ctp/bridge port
 						  */
 				print_ctp_bp(s, tmp_inst, port, 0, 0);
-			i = 0;
 			seq_printf(s, "          : qid/node:    %d/%d\n",
-				   port->subif_info[i].qid,
-				   port->subif_info[i].q_node);
+				   sif->qid,
+				   sif->q_node);
 			seq_printf(s, "          : port/node:    %d/%d\n",
-				   port->subif_info[i].cqm_deq_port,
-				   port->subif_info[i].qos_deq_port);
-			
+				   sif->cqm_deq_port,
+				   sif->qos_deq_port);
+
 
 		} else
 			seq_printf(s,
@@ -136,13 +137,11 @@ int proc_port_dump(struct seq_file *s, int pos)
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	seq_printf(s, "    Swdev:             %d\n", port->swdev_en);
 #endif
-	seq_printf(s, "    cb->rx_fn:         0x%0x\n", (u32)port->cb.rx_fn);
-	seq_printf(s, "    cb->restart_fn:    0x%0x\n",
-		   (u32)port->cb.restart_fn);
-	seq_printf(s, "    cb->stop_fn:       0x%0x\n",
-		   (u32)port->cb.stop_fn);
-	seq_printf(s, "    cb->get_subifid_fn:0x%0x\n",
-		   (u32)port->cb.get_subifid_fn);
+	seq_printf(s, "    cb->rx_fn:         0x%px\n", port->cb.rx_fn);
+	seq_printf(s, "    cb->restart_fn:    0x%px\n", port->cb.restart_fn);
+	seq_printf(s, "    cb->stop_fn:       0x%px\n", port->cb.stop_fn);
+	seq_printf(s, "    cb->get_subifid_fn:0x%px\n",
+		   port->cb.get_subifid_fn);
 	seq_printf(s, "    num_subif:         %d\n", port->num_subif);
 	seq_printf(s, "    vap_offset/mask:   %d/0x%x\n", port->vap_offset,
 		   port->vap_mask);
@@ -167,58 +166,61 @@ int proc_port_dump(struct seq_file *s, int pos)
 	else 
 		loop = port->ctp_max;
 	for (i = 0; i < loop; i++) {
-		if (!port->subif_info[i].flags)
+		struct dp_subif_info *sif = get_dp_port_subif(port, i);
+		struct dev_mib *mib = get_dp_port_subif_mib(sif);
+
+		if (!sif->flags)
 			continue;
 		seq_printf(s,
 			   "      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
 			i,
 			"subif",
-			port->subif_info[i].subif,
+			sif->subif,
 			"netif",
-			(uintptr_t)port->subif_info[i].netif,
+			(uintptr_t)sif->netif,
 			"netif",
-			port->subif_info[i].netif ?
-			port->subif_info[i].netif->name : "NULL/DSL",
+			sif->netif ?
+			sif->netif->name : "NULL/DSL",
 			"device_name",
-			port->subif_info[i].device_name);
+			sif->device_name);
 		seq_puts(s, "          : subif_flag = ");
 		for (j = 0; j < get_dp_port_type_str_size(); j++) {
-			if (!port->subif_info[i].subif_flag) {
+			if (!sif->subif_flag) {
 				seq_printf(s, "%s ", "NULL");
 				break;
 			}
-			if (port->subif_info[i].subif_flag & dp_port_flag[j])
+			if (sif->subif_flag & dp_port_flag[j])
 				seq_printf(s, "%s ", dp_port_type_str[j]);
 		}
 		seq_puts(s, "\n");
 		seq_printf(s, "          : rx_fn_rxif_pkt =0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.rx_fn_rxif_pkt));
+			   STATS_GET(mib->rx_fn_rxif_pkt));
 		seq_printf(s, "          : rx_fn_txif_pkt =0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.rx_fn_txif_pkt));
+			   STATS_GET(mib->rx_fn_txif_pkt));
 		seq_printf(s, "          : rx_fn_dropped  =0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.rx_fn_dropped));
+			   STATS_GET(mib->rx_fn_dropped));
 		seq_printf(s, "          : tx_cbm_pkt     =0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.tx_cbm_pkt));
+			   STATS_GET(mib->tx_cbm_pkt));
 		seq_printf(s, "          : tx_tso_pkt     =0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.tx_tso_pkt));
+			   STATS_GET(mib->tx_tso_pkt));
 		seq_printf(s, "          : tx_pkt_dropped =0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.tx_pkt_dropped));
+			   STATS_GET(mib->tx_pkt_dropped));
 		seq_printf(s, "          : tx_clone_pkt   =0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.tx_clone_pkt));
+			   STATS_GET(mib->tx_clone_pkt));
 		seq_printf(s, "          : tx_hdr_room_pkt=0x%08x\n",
-			   STATS_GET(port->subif_info[i].mib.tx_hdr_room_pkt));
+			   STATS_GET(mib->tx_hdr_room_pkt));
 		if (print_ctp_bp)
 			print_ctp_bp(s, tmp_inst, port, i, 0);
 		seq_printf(s, "          : qid/node:    %d/%d\n",
-			   port->subif_info[i].qid,
-			   port->subif_info[i].q_node);
-		cqm_p = port->subif_info[i].cqm_deq_port;
+			   sif->qid,
+			   sif->q_node);
+		cqm_p = sif->cqm_deq_port;
 		seq_printf(s, "          : port/node:    %d/%d(ref=%d)\n",
 			   cqm_p,
-			   port->subif_info[i].qos_deq_port,
+			   sif->qos_deq_port,
 			   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
 		seq_printf(s, "          : mac_learn_dis:    %d\n",
-			   port->subif_info[i].mac_learn_dis);
+			   sif->mac_learn_dis);
 		cid = _DMA_CONTROLLER(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
@@ -232,15 +234,15 @@ int proc_port_dump(struct seq_file *s, int pos)
 				cid, pid, nid);
 		}
 		seq_printf(s, "          : gpid:           %d\n",
-			   port->subif_info[i].gpid);
-		if (port->subif_info[i].ctp_dev &&
-		    port->subif_info[i].ctp_dev->name)
+			   sif->gpid);
+		if (sif->ctp_dev &&
+		    sif->ctp_dev->name)
 			seq_printf(s, "          : ctp_dev = %s\n",
-				   port->subif_info[i].ctp_dev->name);
+				   sif->ctp_dev->name);
 		else
 			seq_puts(s, "          : ctp_dev = NULL\n");
 		seq_printf(s, "          : rx_en_flag = %d\n",
-			   STATS_GET(port->subif_info[i].rx_flag));
+			   STATS_GET(sif->rx_flag));
 	}
 	seq_printf(s, "    rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
 		   STATS_GET(port->rx_err_drop),
@@ -261,7 +263,7 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 {
 	int i;
 	int ret;
-	struct pmac_port_info *port = get_port_info(inst, pos);
+	struct pmac_port_info *port = get_dp_port_info(inst, pos);
 	u16 start = 0;
 
 	if (!port) {
@@ -321,41 +323,38 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 	}
 
 	for (i = start_vap; i < end_vap; i++) {
-		if (port->subif_info[i].flags) {
+		struct dp_subif_info *sif = get_dp_port_subif(port, i);
+		struct dev_mib *mib = get_dp_port_subif_mib(sif);
+
+		if (sif->flags) {
 			PR_INFO
 			    ("      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
 			     i,
 			     "subif",
-			     port->subif_info[i].subif,
+			     sif->subif,
 			     "netif",
-			     (uintptr_t)port->subif_info[i].netif,
+			     (uintptr_t)sif->netif,
 			     "device_name",
-			     port->subif_info[i].netif ? port->subif_info[i].
+			     sif->netif ? sif->
 			     netif->name : "NULL/DSL",
 			     "name",
-			     port->subif_info[i].device_name);
+			     sif->device_name);
 			PR_INFO("          : rx_fn_rxif_pkt =0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.
-				rx_fn_rxif_pkt));
+				STATS_GET(mib->rx_fn_rxif_pkt));
 			PR_INFO("          : rx_fn_txif_pkt =0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.
-				rx_fn_txif_pkt));
+				STATS_GET(mib->rx_fn_txif_pkt));
 			PR_INFO("          : rx_fn_dropped  =0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.
-				rx_fn_dropped));
+				STATS_GET(mib->rx_fn_dropped));
 			PR_INFO("          : tx_cbm_pkt     =0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.tx_cbm_pkt));
+				STATS_GET(mib->tx_cbm_pkt));
 			PR_INFO("          : tx_tso_pkt     =0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.tx_tso_pkt));
+				STATS_GET(mib->tx_tso_pkt));
 			PR_INFO("          : tx_pkt_dropped =0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.
-				tx_pkt_dropped));
+				STATS_GET(mib->tx_pkt_dropped));
 			PR_INFO("          : tx_clone_pkt   =0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.
-				tx_clone_pkt));
+				STATS_GET(mib->tx_clone_pkt));
 			PR_INFO("          : tx_hdr_room_pkt=0x%08x\n",
-				STATS_GET(port->subif_info[i].mib.
-				tx_hdr_room_pkt));
+				STATS_GET(mib->tx_hdr_room_pkt));
 		}
 	}
 

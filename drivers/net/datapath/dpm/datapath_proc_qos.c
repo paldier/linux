@@ -660,7 +660,7 @@ static char *port_flag_str(int inst, int dp_port)
 	int i;
 	struct pmac_port_info *port_info;
 
-	port_info = get_port_info(inst, dp_port);
+	port_info = get_dp_port_info(inst, dp_port);
 	if (!port_info)
 		return "";
 	for (i = 0; i < get_dp_port_type_str_size(); i++) {
@@ -677,15 +677,17 @@ char *dp_port_flag_str(int cqm_deq_port, int flag)
 
 	port_flag[0] = 0;
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
-		if ((cqm_deq_port >= dp_port_info[inst][i].deq_port_base) &&
-		    (cqm_deq_port < (dp_port_info[inst][i].deq_port_base +
-		     dp_port_info[inst][i].deq_port_num)))  {
+		struct pmac_port_info *pi = get_dp_port_info(inst, i);
+
+		if ((cqm_deq_port >= pi->deq_port_base) &&
+		    (cqm_deq_port < (pi->deq_port_base +
+		     pi->deq_port_num)))  {
 			if (i == 0) {
 				snprintf(port_flag, sizeof(port_flag),
 					 "CPU:%d", i);
 				return port_flag;
 			}
-			if (!dp_port_info[inst][i].alloc_flags)
+			if (!pi->alloc_flags)
 				continue;
 
 			snprintf(port_flag, sizeof(port_flag),
@@ -706,14 +708,16 @@ char *dp_port_dma_tx_str(int cqm_deq_port, int flag)
 
 	dma_flag[0] = 0;
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
-		if ((cqm_deq_port >= dp_port_info[inst][i].deq_port_base) &&
-		    (cqm_deq_port < (dp_port_info[inst][i].deq_port_base +
-		     dp_port_info[inst][i].deq_port_num))) {
+		struct pmac_port_info *pi = get_dp_port_info(inst, i);
+
+		if ((cqm_deq_port >= pi->deq_port_base) &&
+		    (cqm_deq_port < (pi->deq_port_base +
+		     pi->deq_port_num))) {
 			if (i == 0) {
 				snprintf(dma_flag, sizeof(dma_flag), "-");
 				return dma_flag;
 			}
-			if (!dp_port_info[inst][i].alloc_flags)
+			if (!pi->alloc_flags)
 				continue;
 			snprintf(dma_flag, sizeof(dma_flag), "CH%x",
 				 dp_deq_port_tbl[inst][cqm_deq_port].dma_chan);

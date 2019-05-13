@@ -48,6 +48,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 	u32 idx;
 	struct pmac_port_info *port;
 	struct inst_property *prop;
+	struct dp_subif_info *sif;
 
 	dev = netdev_notifier_info_to_dev(ptr);
 	if (!dev)
@@ -69,22 +70,24 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		return 0;
 	}
 	inst = dp_dev->inst;
-	port = &dp_port_info[inst][dp_dev->ep];
+	port = get_dp_port_info(inst, dp_dev->ep);
 	prop = &dp_port_prop[inst];
+	sif = get_dp_port_subif(port, vap);
 	switch (event) {
 	case NETDEV_GOING_DOWN:
 		DP_DEBUG(DP_DBG_FLAG_NOTIFY,
 			 "%s%d %s%d %s%s %s%02x%02x%02x%02x%02x%02x\n",
 			 "Rem MAC with BP:",
-			 port->subif_info[vap].bp, "FID:", dp_dev->fid,
+			 sif->bp, "FID:", dp_dev->fid,
 			 "dev:", dev ? dev->name : "NULL",
 			 "MAC:", addr[0], addr[1], addr[2],
 			 addr[3], addr[4], addr[5]);
 		for (i = 0; i < prop->info.cap.max_num_subif_per_port; i++) {
-			if (port->subif_info[i].netif == dev) {
+			if (get_dp_port_subif(port, i)->netif == dev) {
 				vap = i;
+				sif = get_dp_port_subif(port, vap);
 				DP_DEBUG(DP_DBG_FLAG_NOTIFY, "vap:%d\n", vap);
-				port->subif_info[vap].fid = 0;
+				sif->fid = 0;
 			}
 		}
 		prop->info.dp_mac_reset(0,
@@ -100,7 +103,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		DP_DEBUG(DP_DBG_FLAG_NOTIFY,
 			 "%s%d %s%d %s%s %s%02x%02x%02x%02x%02x%02x\n",
 			 "Rem MAC with BP:",
-			 port->subif_info[vap].bp, "FID:", dp_dev->fid,
+			 sif->bp, "FID:", dp_dev->fid,
 			 "dev:", dev ? dev->name : "NULL",
 			 "MAC:", addr[0], addr[1], addr[2],
 			 addr[3], addr[4], addr[5]);
@@ -116,7 +119,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 				 * bport
 				 */
 			dp_dev->fid = 0;
-			port->subif_info[vap].fid = dp_dev->fid;
+			sif->fid = dp_dev->fid;
 			goto dev_status;
 		}
 		/* Get respective FID when bport attached to bridge
@@ -141,10 +144,11 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 			}
 		}
 		for (i = 0; i < prop->info.cap.max_num_subif_per_port; i++) {
-			if (port->subif_info[i].netif == dev) {
+			if (get_dp_port_subif(port, i)->netif == dev) {
 				vap = i;
+				sif = get_dp_port_subif(port, vap);
 				DP_DEBUG(DP_DBG_FLAG_NOTIFY, "vap:%d\n", vap);
-				port->subif_info[vap].fid = dp_dev->fid;
+				sif->fid = dp_dev->fid;
 			}
 		}
  dev_status:
@@ -153,7 +157,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 				 "%s%s%d%s%d %s%s %s%02x%02x%02x%02x%02x%02x\n",
 				 "link UP,",
 				 "ADD MAC with BP:",
-				 port->subif_info[vap].bp, " FID:", dp_dev->fid,
+				 sif->bp, " FID:", dp_dev->fid,
 				 "dev:", dev ? dev->name : "NULL",
 				 "MAC:", addr[0], addr[1], addr[2],
 				 addr[3], addr[4], addr[5]);
@@ -175,7 +179,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 		DP_DEBUG(DP_DBG_FLAG_NOTIFY,
 			 "%s%d %s%d %s%s %s%02x%02x%02x%02x%02x%02x\n",
 			 "ADD MAC with BP:",
-			 port->subif_info[vap].bp, "FID:", dp_dev->fid,
+			 sif->bp, "FID:", dp_dev->fid,
 			 "dev:", dev ? dev->name : "NULL",
 			 "MAC:", addr[0], addr[1], addr[2],
 			 addr[3], addr[4], addr[5]);

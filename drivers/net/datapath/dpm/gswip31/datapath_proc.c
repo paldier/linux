@@ -268,13 +268,13 @@ int proc_print_ctp_bp_info(struct seq_file *s, int inst,
 			   int subif_index, u32 flag)
 {
 	struct logic_dev *tmp;
-	int bp = port->subif_info[subif_index].bp;
+	struct dp_subif_info *sif = get_dp_port_subif(port, subif_index);
+	int bp = sif->bp;
 	unsigned char *buf = kmalloc(MAX_BP_NUM * 5 + 1, GFP_KERNEL);
 
 	seq_printf(s, "          : bp=%d(member:%s)\n", bp,
 		   get_bp_member_string(inst, bp, buf));
-	list_for_each_entry(tmp, &port->subif_info[subif_index].logic_dev,
-			    list) {
+	list_for_each_entry(tmp, &sif->logic_dev, list) {
 		seq_printf(s, "             %s: bp=%d(member:%s\n",
 			   tmp->dev->name, tmp->bp,
 			   get_bp_member_string(inst, tmp->bp, buf));
@@ -328,10 +328,11 @@ char *get_dma_flags_str31(u32 epn, char *buf, int buf_len)
 	tmp[0] = '\0';
 	f_found = 0;
 	for (i = 0; i < ARRAY_SIZE(dp_port_info); i++) {
-		if ((dp_port_info[inst][i].flag_other &
-		    CBM_PORT_DMA_CHAN_SET) &&
-		    (dp_port_info[inst][i].deq_port_base == epn)) {
-			tx_ch = dp_port_info[inst][i].dma_chan;
+		struct pmac_port_info *port = get_dp_port_info(inst, i);
+
+		if ((port->flag_other & CBM_PORT_DMA_CHAN_SET) &&
+		    (port->deq_port_base == epn)) {
+			tx_ch = port->dma_chan;
 			break;
 		}
 	}
@@ -369,7 +370,7 @@ char *get_dma_flags_str31(u32 epn, char *buf, int buf_len)
 
 		for (i = 3; i <= 4; i++) {	/*2 LAN port */
 			num = 0;
-			port = get_port_info(inst, i);
+			port = get_dp_port_info(inst, i);
 			if (!port)
 				continue;
 			if (cbm_dp_port_resources_get

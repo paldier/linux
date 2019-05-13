@@ -587,10 +587,11 @@ struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
 	int i, alloc_flag;
 	u16 num;
 	struct core_ops *gsw_handle;
+	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
 	memset(&ctp_assign, 0, sizeof(ctp_assign));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
-	alloc_flag = get_dp_port_info(inst, ep)->alloc_flags;
+	alloc_flag = port_info->alloc_flags;
 
 	if (flags & DP_F_DEREGISTER) {
 		PR_ERR("Need to Free CTP Port here for ep=%d\n", ep);
@@ -642,11 +643,11 @@ struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
 	itf_assign[ep].end = ctp_assign.nFirstCtpPortId +
 		 ctp_assign.nNumberOfCtpPort - 1;
 	itf_assign[ep].ep = ep;
-	get_dp_port_info(inst, ep)->ctp_max = ctp_assign.nNumberOfCtpPort;
-	get_dp_port_info(inst, ep)->vap_offset = assign->vap_offset;
-	get_dp_port_info(inst, ep)->vap_mask = assign->vap_mask;
+	port_info->ctp_max = ctp_assign.nNumberOfCtpPort;
+	port_info->vap_offset = assign->vap_offset;
+	port_info->vap_mask = assign->vap_mask;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
-	get_dp_port_info(inst, ep)->swdev_en = assign->swdev_enable;
+	port_info->swdev_en = assign->swdev_enable;
 #endif
 	return &itf_assign[ep];
 }
@@ -655,8 +656,9 @@ int set_port_lookup_mode_32(int inst, u8 ep, u32 flags)
 {
 	int i, alloc_flag;
 	struct ctp_assign *assign = &ctp_assign_def;
+	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
-	alloc_flag = get_dp_port_info(inst, ep)->alloc_flags;
+	alloc_flag = port_info->alloc_flags;
 	for (i = 0; i < ARRAY_SIZE(ctp_assign_info); i++) {
 		if ((ctp_assign_info[i].flag & alloc_flag) ==
 		    ctp_assign_info[i].flag) {
@@ -664,9 +666,9 @@ int set_port_lookup_mode_32(int inst, u8 ep, u32 flags)
 			break;
 		}
 	}
-	get_dp_port_info(inst, ep)->cqe_lu_mode = assign->lookup_mode;
-	get_dp_port_info(inst, ep)->gsw_mode = (u32)assign->emode;
-	return	0;
+	port_info->cqe_lu_mode = assign->lookup_mode;
+	port_info->gsw_mode = (u32)assign->emode;
+	return 0;
 }
 
 /*Allocate a bridge port with specified FID and hardcoded CPU port member */

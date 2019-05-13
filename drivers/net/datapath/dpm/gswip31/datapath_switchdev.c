@@ -271,9 +271,10 @@ int dp_gswip_ext_vlan(int inst, int vap, int ep)
 	struct logic_dev *tmp = NULL;
 	int flag = 0, ret, i = 0;
 	int v1 = 0, v2 = 0;
+	struct dp_subif_info *sif;
 
 	gsw_handle = dp_port_prop[inst].ops[0];
-	port = &dp_port_info[inst][ep];
+	port = get_dp_port_info(inst, ep);
 	vlan = kzalloc(sizeof(*vlan), GFP_KERNEL);
 	if (!vlan) {
 		PR_ERR("failed to alloc ext_vlan of %d bytes\n", sizeof(*vlan));
@@ -291,8 +292,8 @@ int dp_gswip_ext_vlan(int inst, int vap, int ep)
 		       sizeof(*vlan->vlan1_list));
 		goto EXIT;
 	}
-	list_for_each_entry(tmp, &dp_port_info[inst][ep].
-			    subif_info[vap].logic_dev, list) {
+	sif = get_dp_port_subif(port, vap);
+	list_for_each_entry(tmp, &sif->logic_dev, list) {
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "tmp dev name:%s\n",
 			 tmp->dev ? tmp->dev->name : "NULL");
 		if (!tmp->dev) {
@@ -335,17 +336,17 @@ int dp_gswip_ext_vlan(int inst, int vap, int ep)
 		 v1, v2, i);
 	vlan->n_vlan1 = v1;
 	vlan->n_vlan2 = v2;
-	vlan->bp = port->subif_info[vap].bp;
+	vlan->bp = sif->bp;
 	vlan->logic_port = port->port_id;
-	vlan->subif_grp = port->subif_info[vap].subif;/*subif value*/
+	vlan->subif_grp = sif->subif;/*subif value*/
 
-	if (port->subif_info[vap].swdev_priv)
-		vlan->priv = port->subif_info[vap].swdev_priv;
+	if (sif->swdev_priv)
+		vlan->priv = sif->swdev_priv;
 	else
 		vlan->priv = NULL;
 	ret = set_gswip_ext_vlan(gsw_handle, vlan, flag);
 	if (ret == 0)
-		port->subif_info[vap].swdev_priv = vlan->priv;
+		sif->swdev_priv = vlan->priv;
 	else
 		PR_ERR("set gswip ext vlan return error\n");
 

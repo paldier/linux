@@ -1536,14 +1536,14 @@ u32 alloc_dp_port_subif_info(int inst)
 		return DP_FAILURE;
 	}
 	for (port_id = 0; port_id < max_dp_ports; port_id++) {
-		dp_port_info[inst][port_id].subif_info =
+		get_dp_port_info(inst, port_id)->subif_info =
 			kzalloc(sizeof(struct dp_subif_info) * max_subif,
 				GFP_KERNEL);
-		if (!dp_port_info[inst][port_id].subif_info) {
+		if (!get_dp_port_info(inst, port_id)->subif_info) {
 			PR_ERR("Failed for kmalloc: %zu bytes\n",
 			       max_subif * sizeof(struct dp_subif_info));
 			while (--port_id >= 0)
-				kfree(dp_port_info[inst][port_id].subif_info);
+				kfree(get_dp_port_info(inst, port_id)->subif_info);
 			return DP_FAILURE;
 		}
 	}
@@ -1577,7 +1577,7 @@ void free_dp_port_subif_info(int inst)
 
 	if (dp_port_info[inst]) {
 		for (port_id = 0; port_id < max_dp_ports; port_id++) {
-			port_info = &dp_port_info[inst][port_id];
+			port_info = get_dp_port_info(inst, port_id);
 			kfree(port_info->subif_info);
 		}
 		kfree(dp_port_info[inst]);

@@ -332,10 +332,11 @@ char *get_dma_flags_str32(u32 epn, char *buf, int buf_len)
 	tmp[0] = '\0';
 	f_found = 0;
 	for (i = 0; i < ARRAY_SIZE(dp_port_info); i++) {
-		if ((get_dp_port_info(inst, i)->flag_other &
-		    CBM_PORT_DMA_CHAN_SET) &&
-		    (get_dp_port_info(inst, i)->deq_port_base == epn)) {
-			tx_ch = get_dp_port_info(inst, i)->dma_chan;
+		struct pmac_port_info *port = get_dp_port_info(inst, i);
+
+		if ((port->flag_other & CBM_PORT_DMA_CHAN_SET) &&
+		    (port->deq_port_base == epn)) {
+			tx_ch = port->dma_chan;
 			break;
 		}
 	}

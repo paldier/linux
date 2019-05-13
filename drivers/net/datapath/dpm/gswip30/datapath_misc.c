@@ -69,7 +69,7 @@ static void init_dma_desc_mask(void)
 static void init_dma_pmac_template(int portid, u32 flags)
 {
 	int i;
-	struct pmac_port_info *dp_info = &dp_port_info[0][portid];
+	struct pmac_port_info *dp_info = get_dp_port_info(0, portid);
 
 	/*Note:
 	 * final tx_dma0 = (tx_dma0 & dma0_mask_template) | dma0_template
@@ -468,11 +468,11 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 {
 	int idx, i;
 	u32 dma_chan, dma_ch_base;
-	struct pmac_port_info *port_info = &dp_port_info[inst][ep];
+	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
-	dp_port_info[inst][ep].ctp_max = MAX_SUBIF_PER_PORT;
-	dp_port_info[inst][ep].vap_offset = 8;
-	dp_port_info[inst][ep].vap_mask = 0xF;
+	port_info->ctp_max = MAX_SUBIF_PER_PORT;
+	port_info->vap_offset = 8;
+	port_info->vap_mask = 0xF;
 	idx = port_info->deq_port_base;
 	dma_chan =  port_info->dma_chan;
 	dma_ch_base = port_info->dma_ch_base;
@@ -498,7 +498,7 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 		return 0;
 	}
 
-	dp_port_info[inst][ep].itf_info = get_free_itf(ep, flags);
+	port_info->itf_info = get_free_itf(ep, flags);
 	return 0;
 #else
 	return 0;
@@ -525,7 +525,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
 		return DP_FAILURE;
 	}
-	port_info = &dp_port_info[inst][portid];
+	port_info = get_dp_port_info(inst, portid);
 	if (data->subif_data)
 		deq_port_idx = data->subif_data->deq_port_idx;
 	if (port_info->deq_port_num < deq_port_idx + 1) {
@@ -535,7 +535,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	}
 	cqe_deq = port_info->deq_port_base + deq_port_idx;
 	dma_ch_offset = dp_deq_port_tbl[inst][cqe_deq].dma_ch_offset;
-	port_info->subif_info[subif_ix].cqm_deq_port = cqe_deq;
+	get_dp_port_subif(port_info, subif_ix)->cqm_deq_port = cqe_deq;
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
 	if (port_info->num_dma_chan)
 		atomic_inc(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);
@@ -561,7 +561,7 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
 		return DP_FAILURE;
 	}
-	port_info = &dp_port_info[inst][portid];
+	port_info = get_dp_port_info(inst, portid);
 	if (data->subif_data)
 		deq_port_idx = data->subif_data->deq_port_idx;
 	if (port_info->deq_port_num < deq_port_idx + 1) {
@@ -618,19 +618,20 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 			    struct sk_buff *skb,
 			    struct pmac_rx_hdr *pmac, char *decryp)
 {
+	struct pmac_port_info *pi;
+
 	*ep = pmac->sppid; /*get the port_id from pmac's sppid */
-	if (dp_port_info[inst][*ep].alloc_flags & DP_F_LOOPBACK) {
+	pi = get_dp_port_info(inst, *ep);
+	if (pi->alloc_flags & DP_F_LOOPBACK) {
 		*ep = GET_VAP((u32)pmac->src_sub_inf_id2 +
 			(u32)(pmac->src_sub_inf_id << 8),
-			PORT_INFO(inst, *ep, vap_offset),
-			PORT_INFO(inst, *ep, vap_mask));
+			pi->vap_offset, pi->vap_mask);
 		*vap = 0;
 		*decryp = 1;
 	} else
 		*vap = GET_VAP((u32)pmac->src_sub_inf_id2 +
 			(u32)(pmac->src_sub_inf_id << 8),
-			PORT_INFO(inst, *ep, vap_offset),
-			PORT_INFO(inst, *ep, vap_mask));
+			pi->vap_offset, pi->vap_mask);
 }
 
 static void get_dma_pmac_templ(int index, struct pmac_tx_hdr *pmac,

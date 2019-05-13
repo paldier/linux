@@ -88,15 +88,19 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 			 struct sk_buff *skb, dp_rx_fn_t rx_fn)
 {
 	struct sk_buff *lct_skb;
+	struct dp_subif_info *sif;
+	struct dev_mib *mib;
 	int vap, ret;
 
 	vap = dp_port->lct_idx;
-	skb->dev = dp_port->subif_info[vap].netif;
+	sif = get_dp_port_subif(dp_port, vap);
+	mib = get_dp_port_subif_mib(sif);
+	skb->dev = sif->netif;
 	if (skb->data[PMAC_SIZE] & 0x1) {
 		/* multicast/broadcast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT mcast or broadcast\n");
-		if((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
+		if((STATS_GET(sif->rx_flag) <= 0)) {
+			UP_STATS(mib->rx_fn_dropped);
 			return 1;
 		}
 		lct_skb = skb_clone(skb, GFP_ATOMIC);
@@ -104,8 +108,8 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 			PR_ERR("LCT mcast/bcast skb clone fail\n");
 			return -1;
 		}
-		lct_skb->dev = dp_port->subif_info[vap].netif;	
-		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
+		lct_skb->dev = sif->netif;
+		UP_STATS(mib->rx_fn_rxif_pkt);
 		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s) ret(%d)\n",
 			 lct_skb->dev->name ? lct_skb->dev->name : "NULL",
 			 ret);
@@ -116,13 +120,13 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
 		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s) ret(%d)\n",
 				 skb->dev->name ? skb->dev->name : "NULL", ret);
-		if((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
+		if((STATS_GET(sif->rx_flag) <= 0)) {
+			UP_STATS(mib->rx_fn_dropped);
 			dev_kfree_skb_any(skb);
 			return 0;
 		}
 		rx_fn(skb->dev, NULL, skb, skb->len);
-		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_rxif_pkt);
+		UP_STATS(mib->rx_fn_rxif_pkt);
 		return 0;
 	}
 	return 1;
@@ -149,8 +153,10 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 	struct pmac_port_info *dp_port;
 	struct mac_ops *ops;
 	int ret_lct = 1;
+	struct dp_subif_info *sif;
+	struct dev_mib *mib;
 
-	dp_port = &dp_port_info[inst][0];
+	dp_port = get_dp_port_info(inst, 0);
 	if (!skb) {
 		PR_ERR("skb NULL\n");
 		return DP_FAILURE;
@@ -197,15 +203,17 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 	} else {		/*GSWIP-R already know the destination */
 		rx_tx_flag = 1;
 		vap = GET_VAP(desc_0->field.dest_sub_if_id,
-			      dp_port_info[inst][port_id].vap_offset,
-			      dp_port_info[inst][port_id].vap_mask);
+			      get_dp_port_info(inst, port_id)->vap_offset,
+			      get_dp_port_info(inst, port_id)->vap_mask);
 	}
 	if (unlikely(!port_id)) { /*Normally shouldnot go to here */
 		rx_dbg_zero_port(skb, desc_0, desc_1, desc_2, desc_3, parser,
 				 pmac, paser_exist, ep, port_id, vap);
 		goto RX_DROP;
 	}
-	dp_port = &dp_port_info[inst][port_id];
+	dp_port = get_dp_port_info(inst, port_id);
+	sif = get_dp_port_subif(dp_port, vap);
+	mib = get_dp_port_subif_mib(sif);
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	if (dp_port->f_ptp) {
 		ops = dp_port_prop[inst].mac_ops[port_id];
@@ -230,15 +238,15 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 		//desc_1->all &= dma_rx_desc_mask1.all;
 		desc_3->all &= dma_rx_desc_mask3.all;
 		skb->priority = desc_1->field.classid;
-		skb->dev = dp_port->subif_info[vap].netif;
-		dev = dp_port->subif_info[vap].netif;
+		skb->dev = sif->netif;
+		dev = sif->netif;
 		if (decryp) { /*workaround mark for bypass xfrm policy*/
 			desc_1->field.dec = 1;
 			desc_1->field.enc = 1;
 		}
 		if (!dev &&
 		    ((dp_port->alloc_flags & DP_F_FAST_DSL) == 0)) {
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
+			UP_STATS(mib->rx_fn_dropped);
 			goto RX_DROP;
 		}
 
@@ -275,31 +283,27 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 		 *avoid forwarding duplicate packets from linux
 		 */
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
-			if (dp_port->subif_info[vap].fid > 0)
+			if (sif->fid > 0)
 				skb->offload_fwd_mark = 1;
 #endif
 		if (rx_tx_flag == 0) {
 			if (dp_port->lct_idx > 0)
 				ret_lct = dp_handle_lct(dp_port, skb, rx_fn);
 			if (ret_lct) {
-				if((STATS_GET(dp_port->subif_info[vap].
-								rx_flag) <= 0)) {
-					UP_STATS(dp_port->subif_info[vap].
-							mib.rx_fn_dropped);
+				if((STATS_GET(sif->rx_flag) <= 0)) {
+					UP_STATS(mib->rx_fn_dropped);
 					goto RX_DROP2;
 				}
 				rx_fn(dev, NULL, skb, skb->len);
-				UP_STATS(dp_port->subif_info[vap].mib.
-								rx_fn_rxif_pkt);
+				UP_STATS(mib->rx_fn_rxif_pkt);
 			}
 		} else {
-			if((STATS_GET(dp_port->subif_info[vap].rx_flag) <= 0)) {
-				UP_STATS(dp_port->subif_info[vap].mib.
-						rx_fn_dropped);
+			if((STATS_GET(sif->rx_flag) <= 0)) {
+				UP_STATS(mib->rx_fn_dropped);
 				goto RX_DROP2;
 			}
 			rx_fn(NULL, dev, skb, skb->len);
-			UP_STATS(dp_port->subif_info[vap].mib.rx_fn_txif_pkt);
+			UP_STATS(mib->rx_fn_txif_pkt);
 		}
 
 		return DP_SUCCESS;
@@ -318,7 +322,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 		DP_DEBUG(DP_DBG_FLAG_DUMP_RX,
 			 "Drop for subif of port %u not registered yet\n",
 			 port_id);
-		UP_STATS(dp_port->subif_info[vap].mib.rx_fn_dropped);
+		UP_STATS(mib->rx_fn_dropped);
 		goto RX_DROP2;
 	} else {
 		pr_info("Unknown issue\n");

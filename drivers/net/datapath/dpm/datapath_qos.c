@@ -165,7 +165,7 @@ int dp_deq_port_res_get(struct dp_dequeue_res *res, int flag)
 		kfree(subif);
 		subif = NULL;
 	}
-	port_info = &dp_port_info[res->inst][res->dp_port];
+	port_info = get_dp_port_info(res->inst, res->dp_port);
 	DP_DEBUG(DP_DBG_FLAG_QOS_DETAIL,
 		 "dp_deq_port_res_get: dp_port=%d tconf_idx=%d\n",
 		 res->dp_port, res->cqm_deq_idx);

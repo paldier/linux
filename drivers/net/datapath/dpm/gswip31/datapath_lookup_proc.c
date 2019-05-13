@@ -331,7 +331,7 @@ int find_pattern(int port_id, struct seq_file *s, int qid)
 	int arr[] = {13, 12, 11, 10, 9, 8, /*7,6,5,4, */ 3, 2, 1, 0 };
 	int inst = 0;
 	struct hal_priv *priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
-	u32 mode = dp_port_info[inst][port_id].cqe_lu_mode;
+	u32 mode = get_dp_port_info(inst, port_id)->cqe_lu_mode;
 
 	left_n = 1 << (LOOKUP_FIELD_BITS - 4);	/*maximum lookup entried */
 	lookup_match_num = 0;

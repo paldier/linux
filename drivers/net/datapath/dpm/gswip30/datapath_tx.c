@@ -113,7 +113,7 @@ int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 		struct dma_tx_desc_1 *desc_1;
 		struct dma_tx_desc_2 *desc_2;
 		struct dma_tx_desc_3 *desc_3;
-		struct pmac_port_info *dp_info = NULL;
+		struct pmac_port_info *dp_info;
 		struct pmac_tx_hdr pmac = {0};
 		u32 ip_offset, tcp_h_offset, tcp_type;
 		char tx_chksum_flag = 0; /*check csum cal can be supported or not */
@@ -127,6 +127,7 @@ int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 		struct mac_ops *ops;
 		int rec_id = 0;
 #endif
+		struct dev_mib *mib;
 	
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 		if (unlikely(!dp_init_ok)) {
@@ -153,8 +154,9 @@ int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 			goto lbl_err_ret;
 		}
 #endif
-		dp_info = &dp_port_info[inst][ep];
+		dp_info = get_dp_port_info(inst, ep);
 		vap = GET_VAP(rx_subif->subif, dp_info->vap_offset, dp_info->vap_mask);
+		mib = get_dp_port_subif_mib(get_dp_port_subif(dp_info, vap));
 		if (unlikely(!rx_if && /*For atm pppoa case, rx_if is NULL now */
 			     !(dp_info->alloc_flags & DP_F_FAST_DSL))) {
 			err_ret = DP_XMIT_ERR_NULL_IF;
@@ -359,7 +361,7 @@ int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 #if IS_ENABLED(CONFIG_LTQ_TOE_DRIVER)
 		if (skb_is_gso(skb)) {
 			res = ltq_tso_xmit(skb, &pmac, sizeof(pmac), 0);
-			UP_STATS(dp_info->subif_info[vap].mib.tx_tso_pkt);
+			UP_STATS(mib->tx_tso_pkt);
 			return res;
 		}
 #endif /* CONFIG_LTQ_TOE_DRIVER */
@@ -382,7 +384,7 @@ int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 			data.dp_inst = 0;
 		}
 		res = cbm_cpu_pkt_tx(skb, &data, 0);
-		UP_STATS(dp_info->subif_info[vap].mib.tx_cbm_pkt);
+		UP_STATS(mib->tx_cbm_pkt);
 		return res;
 	
 	lbl_err_ret:
@@ -395,18 +397,19 @@ int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 			break;
 		case DP_XMIT_ERR_NULL_SUBIF:
 			PR_RATELIMITED("dp_xmit failed for rx_subif null\n");
-			UP_STATS(PORT_INFO(inst, 0, tx_err_drop));
+			UP_STATS(get_dp_port_info(inst, 0)->tx_err_drop);
 			break;
 		case DP_XMIT_ERR_PORT_TOO_BIG:
-			UP_STATS(PORT_INFO(inst, 0, tx_err_drop));
+			UP_STATS(get_dp_port_info(inst, 0)->tx_err_drop);
 			PR_RATELIMITED("rx_subif->port_id >= max_ports");
 			break;
 		case DP_XMIT_ERR_NULL_SKB:
 			PR_RATELIMITED("skb NULL");
-			UP_STATS(PORT_INFO(inst, rx_subif->port_id, tx_err_drop));
+			UP_STATS(get_dp_port_info(inst, rx_subif->port_id)->
+				 tx_err_drop);
 			break;
 		case DP_XMIT_ERR_NULL_IF:
-			UP_STATS(PORT_VAP_MIB(inst, ep, vap, tx_pkt_dropped));
+			UP_STATS(mib->tx_pkt_dropped);
 			PR_RATELIMITED("rx_if NULL");
 			break;
 		case DP_XMIT_ERR_REALLOC_SKB:
@@ -425,9 +428,8 @@ int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 		case DP_XMIT_PTP_ERR:
 			break;
 		default:
-			UP_STATS(dp_info->subif_info[vap].mib.tx_pkt_dropped);
-			PR_INFO_ONCE("Why come to here:%x\n",
-				     dp_port_info[inst][ep].status);
+			UP_STATS(mib->tx_pkt_dropped);
+			PR_INFO_ONCE("Why come to here:%x\n", dp_info->status);
 		}
 		if (skb)
 			dev_kfree_skb_any(skb);

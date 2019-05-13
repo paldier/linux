@@ -167,35 +167,10 @@ int parser_enabled(int ep, struct dma_rx_desc_1 *desc_1)
 	return 0;
 }
 
-struct inst_property *get_dp_port_prop(int inst)
-{
-	if (!((inst < 0) || (inst >= DP_MAX_INST)))
-		return &dp_port_prop[inst];
-	return NULL;
-}
-EXPORT_SYMBOL(get_dp_port_prop);
-
-struct pmac_port_info *get_dp_port_info(int inst, int index)
-{
-	if (!((inst < 0) || (inst >= DP_MAX_INST)) &&
-	    (index < dp_port_prop[inst].info.cap.max_num_dp_ports))
-		return &dp_port_info[inst][index];
-	return NULL;
-}
-EXPORT_SYMBOL(get_dp_port_info);
-
-struct pmac_port_info *get_port_info(int inst, int index)
-{
-	if (index < dp_port_prop[inst].info.cap.max_num_dp_ports)
-		return &dp_port_info[inst][index];
-
-	return NULL;
-}
-
 u32 *get_port_flag(int inst, int index)
 {
 	if (index < dp_port_prop[inst].info.cap.max_num_dp_ports)
-		return &dp_port_info[inst][index].alloc_flags;
+		return &get_dp_port_info(inst, index)->alloc_flags;
 
 	return NULL;
 }
@@ -206,9 +181,11 @@ struct pmac_port_info *get_port_info_via_dp_port(int inst, int dp_port)
 	int i;
 
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
-		if ((dp_port_info[inst][i].status & PORT_DEV_REGISTERED) &&
-		    (dp_port_info[inst][i].port_id == dp_port))
-			return &dp_port_info[inst][i];
+		struct pmac_port_info *port = get_dp_port_info(inst, i);
+
+		if ((port->status & PORT_DEV_REGISTERED) &&
+		    (port->port_id == dp_port))
+			return port;
 	}
 
 	return NULL;
@@ -220,9 +197,10 @@ struct pmac_port_info *get_port_info_via_dev(struct net_device *dev)
 	int inst = dp_get_inst_via_dev(dev, NULL, 0);
 
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
-		if ((dp_port_info[inst][i].status & PORT_DEV_REGISTERED) &&
-		    (dp_port_info[inst][i].dev == dev))
-			return &dp_port_info[inst][i];
+		struct pmac_port_info *port = get_dp_port_info(inst, i);
+
+		if ((port->status & PORT_DEV_REGISTERED) && (port->dev == dev))
+			return port;
 	}
 	return NULL;
 }
@@ -344,6 +322,7 @@ static int32_t dp_alloc_port_private(int inst,
 {
 	int i;
 	struct cbm_dp_alloc_data cbm_data = {0};
+	struct pmac_port_info *port;
 
 	if (!owner) {
 		PR_ERR("Allocate port failed for owner NULL\n");
@@ -370,32 +349,32 @@ static int32_t dp_alloc_port_private(int inst,
 #endif
 	cbm_data.dp_inst = inst;
 	cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
+	port = get_dp_port_info(inst, port_id);
 
 	if (flags & DP_F_DEREGISTER) {	/*De-register */
-		if (dp_port_info[inst][port_id].status != PORT_ALLOCATED) {
+		if (port->status != PORT_ALLOCATED) {
 			PR_ERR
 			    ("No Deallocate for module %s w/o deregistered\n",
 			     owner->name);
 			return DP_FAILURE;
 		}
-		cbm_data.deq_port = dp_port_info[inst][port_id].deq_port_base;
-		cbm_data.dma_chan = dp_port_info[inst][port_id].dma_chan;
+		cbm_data.deq_port = port->deq_port_base;
+		cbm_data.dma_chan = port->dma_chan;
 		cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data, flags);
 		dp_inst_insert_mod(owner, port_id, inst, 0);
 		DP_DEBUG(DP_DBG_FLAG_REG, "de-alloc port %d\n", port_id);
 		DP_CB(inst, port_platform_set)(inst, port_id, data, flags);
 		/* Only clear those fields we need to clear */
-		memset(&dp_port_info[inst][port_id], 0,
-		       offsetof(struct pmac_port_info, tail));
+		memset(port, 0, offsetof(struct pmac_port_info, tail));
 		return DP_SUCCESS;
 	}
 	if (port_id) { /*with specified port_id */
-		if (dp_port_info[inst][port_id].status != PORT_FREE) {
+		if (port->status != PORT_FREE) {
 			PR_ERR("%s %s(%s %d) fail: port %d used by %s %d\n",
 			       "module", owner->name,
 			       "dev_port", dev_port, port_id,
-			       dp_port_info[inst][port_id].owner->name,
-			       dp_port_info[inst][port_id].dev_port);
+			       port->owner->name,
+			       port->dev_port);
 			return DP_FAILURE;
 		}
 	}
@@ -417,30 +396,30 @@ static int32_t dp_alloc_port_private(int inst,
 		 "cbm alloc dpport:%d deq:%d dmachan=0x%x deq_num:%d\n",
 		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.dma_chan,
 		 cbm_data.deq_port_num);
-	
+
 	port_id = cbm_data.dp_port;
 	/* Only clear those fields we need to clear */
-	memset(&dp_port_info[inst][port_id], 0,
-	       offsetof(struct pmac_port_info, tail));
+	port = get_dp_port_info(inst, port_id);
+	memset(port, 0, offsetof(struct pmac_port_info, tail));
 	/*save info from caller */
-	dp_port_info[inst][port_id].owner = owner;
-	dp_port_info[inst][port_id].dev = dev;
-	dp_port_info[inst][port_id].dev_port = dev_port;
-	dp_port_info[inst][port_id].alloc_flags = flags;
-	dp_port_info[inst][port_id].status = PORT_ALLOCATED;
+	port->owner = owner;
+	port->dev = dev;
+	port->dev_port = dev_port;
+	port->alloc_flags = flags;
+	port->status = PORT_ALLOCATED;
 	/*save info from cbm_dp_port_alloc*/
-	dp_port_info[inst][port_id].flag_other = cbm_data.flags;
-	dp_port_info[inst][port_id].port_id = cbm_data.dp_port;
-	dp_port_info[inst][port_id].deq_port_base = cbm_data.deq_port;
-	dp_port_info[inst][port_id].deq_port_num = cbm_data.deq_port_num;
+	port->flag_other = cbm_data.flags;
+	port->port_id = cbm_data.dp_port;
+	port->deq_port_base = cbm_data.deq_port;
+	port->deq_port_num = cbm_data.deq_port_num;
 	DP_DEBUG(DP_DBG_FLAG_REG,
 		 "cbm alloc dp_port:%d deq:%d deq_num:%d\n",
 		 cbm_data.dp_port, cbm_data.deq_port, cbm_data.deq_port_num);
 
-	dp_port_info[inst][port_id].num_dma_chan = cbm_data.num_dma_chan;
+	port->num_dma_chan = cbm_data.num_dma_chan;
 #if 1  /* TODO: Hardcorded currently, later need to align with CQM */
-	dp_port_info[inst][port_id].policy_base = 0;
-	dp_port_info[inst][port_id].policy_num = 4;
+	port->policy_base = 0;
+	port->policy_num = 4;
 #endif
 	if (cbm_data.num_dma_chan) {
 		u16 dma_ch_base;
@@ -451,30 +430,30 @@ static int32_t dp_alloc_port_private(int inst,
 			cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data,
 					    flags | DP_F_DEREGISTER);
 			/* Only clear those fields we need to clear */
-			memset(&dp_port_info[inst][port_id], 0,
+			memset(port, 0,
 			       offsetof(struct pmac_port_info, tail));
 			return DP_FAILURE;
 		}
-		dp_port_info[inst][port_id].dma_ch_base = dma_ch_base;
+		port->dma_ch_base = dma_ch_base;
 	}
 	/*save info to port data*/
-	data->deq_port_base = dp_port_info[inst][port_id].deq_port_base;
-	data->deq_num = dp_port_info[inst][port_id].deq_port_num;
+	data->deq_port_base = port->deq_port_base;
+	data->deq_num = port->deq_port_num;
 	if (cbm_data.flags & CBM_PORT_DMA_CHAN_SET)
-		dp_port_info[inst][port_id].dma_chan = cbm_data.dma_chan;
+		port->dma_chan = cbm_data.dma_chan;
 	if (cbm_data.flags & CBM_PORT_PKT_CRDT_SET)
-		dp_port_info[inst][port_id].tx_pkt_credit =
+		port->tx_pkt_credit =
 				cbm_data.tx_pkt_credit;
 	if (cbm_data.flags & CBM_PORT_BYTE_CRDT_SET)
-		dp_port_info[inst][port_id].tx_b_credit = cbm_data.tx_b_credit;
+		port->tx_b_credit = cbm_data.tx_b_credit;
 	if (cbm_data.flags & CBM_PORT_RING_ADDR_SET) {
-		dp_port_info[inst][port_id].tx_ring_addr = cbm_data.tx_ring_addr;
-		dp_port_info[inst][port_id].tx_ring_addr_push = cbm_data.tx_ring_addr_txpush;
+		port->tx_ring_addr = cbm_data.tx_ring_addr;
+		port->tx_ring_addr_push = cbm_data.tx_ring_addr_txpush;
 	}
 	if (cbm_data.flags & CBM_PORT_RING_SIZE_SET)
-	dp_port_info[inst][port_id].tx_ring_size = cbm_data.tx_ring_size;
+	port->tx_ring_size = cbm_data.tx_ring_size;
 	if (cbm_data.flags & CBM_PORT_RING_OFFSET_SET)
-		dp_port_info[inst][port_id].tx_ring_offset =
+		port->tx_ring_offset =
 				cbm_data.tx_ring_offset;
 	if((cbm_data.num_dma_chan > 1) && (cbm_data.deq_port_num !=
 	   cbm_data.num_dma_chan)) {
@@ -490,7 +469,7 @@ static int32_t dp_alloc_port_private(int inst,
 		cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data,
 				    flags | DP_F_DEREGISTER);
 		/* Only clear those fields we need to clear */
-		memset(&dp_port_info[inst][port_id], 0,
+		memset(port, 0,
 		       offsetof(struct pmac_port_info, tail));
 		return DP_FAILURE;
 	}
@@ -500,8 +479,7 @@ static int32_t dp_alloc_port_private(int inst,
 	if (!inst && dp_port_prop[inst].info.init_dma_pmac_template)
 		dp_port_prop[inst].info.init_dma_pmac_template(port_id, flags);
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_subif_per_port; i++)
-		INIT_LIST_HEAD(&dp_port_info[inst][port_id].
-			subif_info[i].logic_dev);
+		INIT_LIST_HEAD(&get_dp_port_subif(port, i)->logic_dev);
 	dp_inst_insert_mod(owner, port_id, inst, 0);
 
 	DP_DEBUG(DP_DBG_FLAG_REG,
@@ -522,9 +500,10 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 	struct pmac_port_info *port_info;
 	struct cbm_dp_en_data cbm_data = {0};
 	struct subif_platform_data platfrm_data = {0};
+	struct dp_subif_info *sif;
 
 	port_id = subif_id->port_id;
-	port_info = &dp_port_info[inst][port_id];
+	port_info = get_dp_port_info(inst, port_id);
 	subif_id->inst = inst;
 	subif_id->subif_num = 1;
 	platfrm_data.subif_data = data;
@@ -572,7 +551,8 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		u32 cqm_deq_port;
 		u32 dma_ch_offset;
 
-		if (port_info->subif_info[i].flags) /*used already & not free*/
+		sif = get_dp_port_subif(port_info, i);
+		if (sif->flags) /*used already & not free*/
 			continue;
 
 		/*now find a free subif or valid subif
@@ -593,30 +573,30 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			PR_ERR("port info status fail for 0\n");
 			return res;
 		}
-		cqm_deq_port = port_info->subif_info[i].cqm_deq_port;
+		cqm_deq_port = sif->cqm_deq_port;
 		dma_ch_offset =
 			dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
 
-		port_info->subif_info[i].flags = 1;
-		port_info->subif_info[i].netif = dev;
+		sif->flags = 1;
+		sif->netif = dev;
 		port_info->port_id = port_id;
 
 		if (subif_id->subif < 0) /*dynamic:shift bits as HW defined*/
-			port_info->subif_info[i].subif =
+			sif->subif =
 				SET_VAP(i, port_info->vap_offset,
 					port_info->vap_mask);
 		else /*provided by caller since it is alerady shifted properly*/
-			port_info->subif_info[i].subif =
+			sif->subif =
 			    subif_id->subif;
-		strncpy(port_info->subif_info[i].device_name,
+		strncpy(sif->device_name,
 			subif_name,
-		       sizeof(port_info->subif_info[i].device_name) - 1);
-		port_info->subif_info[i].flags = PORT_SUBIF_REGISTERED;
-		port_info->subif_info[i].subif_flag = flags;
-		STATS_SET(port_info->subif_info[i].rx_flag, 1);
+		       sizeof(sif->device_name) - 1);
+		sif->flags = PORT_SUBIF_REGISTERED;
+		sif->subif_flag = flags;
+		STATS_SET(sif->rx_flag, 1);
 		port_info->status = PORT_SUBIF_REGISTERED;
 		subif_id->port_id = port_id;
-		subif_id->subif = port_info->subif_info[i].subif;
+		subif_id->subif = sif->subif;
 		/* set port as LCT port */
 		if (data->flag_ops & DP_F_DATA_LCT_SUBIF)
 			port_info->lct_idx = i;
@@ -669,12 +649,11 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 
 	if (i < end) {
 		res = DP_SUCCESS;
-		if (dp_bp_dev_tbl[inst][port_info->subif_info[i].bp].
-		    ref_cnt > 1)
+		if (dp_bp_dev_tbl[inst][sif->bp].ref_cnt > 1)
 			return res;
 		dp_inst_add_dev(dev, subif_name,
 				subif_id->inst, subif_id->port_id,
-				port_info->subif_info[i].bp,
+				sif->bp,
 				subif_id->subif, flags);
 	} else {
 		DP_DEBUG(DP_DBG_FLAG_REG,
@@ -696,9 +675,10 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	struct pmac_port_info *port_info;
 	struct cbm_dp_en_data cbm_data = {0};
 	struct subif_platform_data platfrm_data = {0};
+	struct dp_subif_info *sif;
 
 	port_id = subif_id->port_id;
-	port_info = &dp_port_info[inst][port_id];
+	port_info = get_dp_port_info(inst, port_id);
 	platfrm_data.subif_data = data;
 	platfrm_data.dev = dev;
 
@@ -718,8 +698,8 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	}
 
 	for (i = 0; i < port_info->ctp_max; i++) {
-		if (port_info->subif_info[i].subif ==
-		    subif_id->subif) {
+		sif = get_dp_port_subif(port_info, i);
+		if (sif->subif == subif_id->subif) {
 			find = 1;
 			break;
 		}
@@ -730,28 +710,27 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	DP_DEBUG(DP_DBG_FLAG_REG,
 		 "Found matched subif: port_id=%d subif=%x vap=%d\n",
 		 subif_id->port_id, subif_id->subif, i);
-	if (port_info->subif_info[i].netif != dev) {
+	if (sif->netif != dev) {
 		/* device not match. Maybe it is unexplicit logical dev */
-		res = del_logic_dev(inst, &port_info->subif_info[i].logic_dev,
+		res = del_logic_dev(inst, &sif->logic_dev,
 				    dev, flags);
 		return res;
 	}
 	/* reset LCT port */
 	if (data->flag_ops & DP_F_DATA_LCT_SUBIF)
 		port_info->lct_idx = 0;
-	if (!list_empty(&port_info->subif_info[i].logic_dev)) {
+	if (!list_empty(&sif->logic_dev)) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
 			 "Unregister fail: logic_dev of %s not empty yet!\n",
 			 subif_name);
 		return res;
 	}
-	cqm_port = port_info->subif_info[i].cqm_deq_port;
-	bp = port_info->subif_info[i].bp;
+	cqm_port = sif->cqm_deq_port;
+	bp = sif->bp;
 	/* reset mib, flag, and others */
-	memset(&port_info->subif_info[i].mib, 0,
-	       sizeof(port_info->subif_info[i].mib));
-	port_info->subif_info[i].flags = 0;
-	port_info->subif_info[i].netif = NULL;
+	memset(&sif->mib, 0, sizeof(sif->mib));
+	sif->flags = 0;
+	sif->netif = NULL;
 	port_info->num_subif--;
 	if (dp_port_prop[inst].info.subif_platform_set(inst,
 						       port_id, i,
@@ -939,7 +918,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 
 		return DP_FAILURE;
 	}
-	port_info = &dp_port_info[inst][port_id];
+	port_info = get_dp_port_info(inst, port_id);
 
 	DP_LIB_LOCK(&dp_lock);
 	if (flags & DP_F_DEREGISTER) {	/*de-register */
@@ -1056,7 +1035,7 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 		return DP_FAILURE;
 	}
 	port_id = subif_id->port_id;
-	port_info = &dp_port_info[inst][port_id];
+	port_info = get_dp_port_info(inst, port_id);
 
 	if (((!dev) && !(port_info->alloc_flags & DP_F_FAST_DSL)) ||
 	    !subif_name) {
@@ -1088,7 +1067,7 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 					  subif_id, data, flags);
 	if (!(flags & DP_F_SUBIF_LOGICAL))
 		subifid_fn_t = port_info->cb.get_subifid_fn;
-	
+
 	subif_id_sync = kmalloc(sizeof(*subif_id_sync) * 2, GFP_KERNEL);
 	if (!subif_id_sync) {
 		PR_ERR("Failed to alloc %zu bytes\n",
@@ -1240,42 +1219,42 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 #endif
 	subif->flag_pmapper = 0;
 	for (k = start; k < end; k++) {
-		if (dp_port_info[inst][k].status != PORT_SUBIF_REGISTERED)
+		struct pmac_port_info *port = get_dp_port_info(inst, k);
+
+		if (port->status != PORT_SUBIF_REGISTERED)
 			continue;
 
 		/*Workaround for VRX318 */
-		if (subif_data &&
-		    (dp_port_info[inst][k].alloc_flags & DP_F_FAST_DSL)) {
+		if (subif_data && (port->alloc_flags & DP_F_FAST_DSL)) {
 			/*VRX318 should overwritten them later if necessary */
 			port_id = k;
 			break;
 		}
 
 		/*search sub-interfaces/VAP */
-		for (i = 0; i < dp_port_info[inst][k].ctp_max; i++) {
-			if (!dp_port_info[inst][k].subif_info[i].flags)
+		for (i = 0; i < port->ctp_max; i++) {
+			struct dp_subif_info *sif = get_dp_port_subif(port, i);
+
+			if (!sif->flags)
 				continue;
-			if (dp_port_info[inst][k].subif_info[i].ctp_dev ==
-				netif) { /*for PON pmapper case*/
+			if (sif->ctp_dev == netif) { /*for PON pmapper case*/
 				match = 1;
 				port_id = k;
 				if (num > 0) {
 					PR_ERR("Multiple same ctp_dev exist\n");
 					goto EXIT;
 				}
-				subifs[num] = PORT_SUBIF(inst, k, i, subif);
-				subif_flag[num] = PORT_SUBIF(inst, k, i,
-							subif_flag);
-				bport = PORT_SUBIF(inst, k, i, bp);
+				subifs[num] = sif->subif;
+				subif_flag[num] = sif->subif_flag;
+				bport = sif->bp;
 				subif->flag_bp = 0;
-				gpid = PORT_SUBIF(inst, k, i, gpid);
-				subif->def_qid = PORT_SUBIF(inst, k, i, qid);
+				gpid = sif->gpid;
+				subif->def_qid = sif->qid;
 				num++;
 				break;
 			}
 
-			if (dp_port_info[inst][k].subif_info[i].netif ==
-			    netif) {
+			if (sif->netif == netif) {
 				if ((subif->port_id > 0) &&
 				    (subif->port_id != k)) {
 					DP_DEBUG(DP_DBG_FLAG_REG,
@@ -1294,45 +1273,32 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					/* some dev may have multiple
 					 * subif,like pon
 					 */
-					subifs[num] = PORT_SUBIF(inst, k, i,
-								 subif);
-					gpid = PORT_SUBIF(inst, k, i, gpid);
-					subif->def_qid = PORT_SUBIF(inst, k, i,
-							     qid);
-					subif_flag[num] = PORT_SUBIF(inst, k, i,
-								subif_flag);
-					if (dp_port_info[inst][k].subif_info[i].
-						ctp_dev)
+					subifs[num] = sif->subif;
+					gpid = sif->gpid;
+					subif->def_qid = sif->qid;
+					subif_flag[num] = sif->subif_flag;
+					if (sif->ctp_dev)
 						subif->flag_pmapper = 1;
-					bport = PORT_SUBIF(inst, k, i, bp);
-					if (num &&
-					    (bport != dp_port_info[inst][k].
-					     subif_info[i].bp)) {
+					bport = sif->bp;
+					if (num && (bport != sif->bp)) {
 						PR_ERR("%s:Why many bp:%d %d\n",
 						       netif ? netif->name : "",
-						       dp_port_info[inst][k].
-							  subif_info[i].bp,
-						       bport);
+						       sif->bp, bport);
 						goto EXIT;
 					}
 					num++;
 				}
 			}
 			/*continue search non-explicate logical device */
-			list_for_each_entry(tmp,
-					    &dp_port_info[inst][k].
-					    subif_info[i].logic_dev,
-					    list) {
+			list_for_each_entry(tmp, &sif->logic_dev, list) {
 				if (tmp->dev == netif) {
 					subif->subif_num = 1;
 					subif->subif_list[0] = tmp->ctp;
 					subif->inst = inst;
 					subif->port_id = k;
 					subif->bport = tmp->bp;
-					subif->gpid = dp_port_info[inst][k].
-					    subif_info[i].gpid;
-					subif->def_qid = dp_port_info[inst][k].
-					    subif_info[i].qid;
+					subif->gpid = sif->gpid;
+					subif->def_qid = sif->qid;
 					res = 0;
 					/*note: logical device no callback */
 					goto EXIT;
@@ -1359,7 +1325,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	subif->port_id = port_id;
 	subif->bport = bport;
 	subif->gpid = gpid;
-	subif->alloc_flag = dp_port_info[inst][port_id].alloc_flags;
+	subif->alloc_flag = get_dp_port_info(inst, port_id)->alloc_flags;
 	subif->subif_num = num;
 	for (i = 0; i < num; i++) {
 		subif->subif_list[i] = subifs[i];
@@ -1382,22 +1348,24 @@ int dp_get_port_subitf_via_dev_private(struct net_device *dev,
 	int inst;
 
 	inst = dp_get_inst_via_dev(dev, NULL, 0);
-	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++)
-		for (j = 0; j < dp_port_info[inst][i].ctp_max; j++) {
-			if (!dp_port_info[inst][i].subif_info[j].flags)
+	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
+		struct pmac_port_info *port = get_dp_port_info(inst, i);
+
+		for (j = 0; j < port->ctp_max; j++) {
+			struct dp_subif_info *sif = get_dp_port_subif(port, j);
+
+			if (!sif->flags)
 				continue;
-			if (dp_port_info[inst][i].subif_info[j].netif != dev)
+			if (sif->netif != dev)
 				continue;
 			subif->port_id = i;
-			subif->subif =
-				SET_VAP(j,
-					PORT_INFO(inst, i, vap_offset),
-					PORT_INFO(inst, i, vap_mask));
+			subif->subif = SET_VAP(j, port->vap_offset,
+					       port->vap_mask);
 			subif->inst = inst;
-			subif->bport = dp_port_info[inst][i].
-				subif_info[j].bp;
+			subif->bport = sif->bp;
 			return DP_SUCCESS;
 		}
+	}
 	return DP_FAILURE;
 }
 
@@ -1420,18 +1388,17 @@ int dp_get_port_subitf_via_ifname_private(char *ifname, dp_subif_t *subif)
 	inst = dp_get_inst_via_dev(NULL, ifname, 0);
 
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
-		for (j = 0; j < dp_port_info[inst][i].ctp_max; j++) {
-			if (strcmp
-			    (dp_port_info[inst][i].subif_info[j].device_name,
-			     ifname) == 0) {
+		struct pmac_port_info *port = get_dp_port_info(inst, i);
+
+		for (j = 0; j < port->ctp_max; j++) {
+			struct dp_subif_info *sif = get_dp_port_subif(port, j);
+
+			if (strcmp(sif->device_name, ifname) == 0) {
 				subif->port_id = i;
-				subif->subif =
-					SET_VAP(j,
-						PORT_INFO(inst, i, vap_offset),
-						PORT_INFO(inst, i, vap_mask));
+				subif->subif = SET_VAP(j, port->vap_offset,
+						       port->vap_mask);
 				subif->inst = inst;
-				subif->bport = dp_port_info[inst][i].
-					subif_info[j].bp;
+				subif->bport = sif->bp;
 				return DP_SUCCESS;
 			}
 		}
@@ -1480,7 +1447,7 @@ int32_t dp_check_if_netif_fastpath_fn(struct net_device *netif,
 	if (tmp_subif.port_id <= 0 && tmp_subif.port_id >=
 	    dp_port_prop[tmp_subif.inst].info.cap.max_num_dp_ports)
 		res = 0;
-	else if (!(dp_port_info[tmp_subif.inst][tmp_subif.port_id].alloc_flags &
+	else if (!(get_dp_port_info(tmp_subif.inst, tmp_subif.port_id)->alloc_flags &
 		 (DP_F_FAST_DSL || DP_F_FAST_ETH_LAN ||
 		 DP_F_FAST_ETH_WAN || DP_F_FAST_WLAN)))
 		res = 0;
@@ -1501,7 +1468,7 @@ struct module *dp_get_module_owner(int ep)
 	}
 
 	if ((ep >= 0) && (ep < dp_port_prop[inst].info.cap.max_num_dp_ports))
-		return dp_port_info[inst][ep].owner;
+		return get_dp_port_info(inst, ep)->owner;
 
 	return NULL;
 }
@@ -1521,7 +1488,7 @@ void dp_clear_mib(dp_subif_t *subif, uint32_t flag)
 	}
 
 	i = subif->port_id;
-	port_info = &dp_port_info[subif->inst][i];
+	port_info = get_dp_port_info(subif->inst, i);
 
 	if (subif->subif == -1) {
 		start_vap = 0;
@@ -1533,10 +1500,12 @@ void dp_clear_mib(dp_subif_t *subif, uint32_t flag)
 	}
 
 	for (j = start_vap; j < end_vap; j++) {
+		struct dp_subif_info *sif = get_dp_port_subif(port_info, i);
+		struct dev_mib *mib = get_dp_port_subif_mib(sif);
+
 		STATS_SET(port_info->tx_err_drop, 0);
 		STATS_SET(port_info->rx_err_drop, 0);
-		memset(&port_info->subif_info[j].mib, 0,
-		       sizeof(port_info->subif_info[j].mib));
+		memset(mib, 0, sizeof(struct dev_mib));
 		reset_mib_fn = port_info->cb.reset_mib_fn;
 
 		if (reset_mib_fn)
@@ -1563,6 +1532,7 @@ int dp_get_drv_mib(dp_subif_t *subif, dp_drv_mib_t *mib, uint32_t flag)
 	dp_drv_mib_t tmp;
 	int i, vap;
 	struct pmac_port_info *port_info;
+	struct dp_subif_info *sif;
 
 	if (unlikely(!dp_init_ok)) {
 		DP_DEBUG(DP_DBG_FLAG_DBG,
@@ -1573,7 +1543,7 @@ int dp_get_drv_mib(dp_subif_t *subif, dp_drv_mib_t *mib, uint32_t flag)
 	if (!subif || !mib)
 		return -1;
 	memset(mib, 0, sizeof(*mib));
-	port_info = &dp_port_info[subif->inst][subif->port_id];
+	port_info = get_dp_port_info(subif->inst, subif->port_id);
 	vap = GET_VAP(subif->subif, port_info->vap_offset,
 		      port_info->vap_mask);
 	get_mib_fn = port_info->cb.get_mib_fn;
@@ -1584,11 +1554,11 @@ int dp_get_drv_mib(dp_subif_t *subif, dp_drv_mib_t *mib, uint32_t flag)
 	if (!(flag & DP_F_STATS_SUBIF)) {
 		/*get all VAP's  mib counters if it is -1 */
 		for (i = 0; i < port_info->ctp_max; i++) {
-			if (!port_info->subif_info[i].flags)
+			sif = get_dp_port_subif(port_info, i);
+			if (!sif->flags)
 				continue;
 
-			subif->subif =
-			    port_info->subif_info[i].subif;
+			subif->subif = sif->subif;
 			memset(&tmp, 0, sizeof(tmp));
 			get_mib_fn(subif, &tmp, flag);
 			mib->rx_drop_pkts += tmp.rx_drop_pkts;
@@ -1597,7 +1567,8 @@ int dp_get_drv_mib(dp_subif_t *subif, dp_drv_mib_t *mib, uint32_t flag)
 			mib->tx_error_pkts += tmp.tx_error_pkts;
 		}
 	} else {
-		if (port_info->subif_info[vap].flags)
+		sif = get_dp_port_subif(port_info, vap);
+		if (sif->flags)
 			get_mib_fn(subif, mib, flag);
 	}
 
@@ -1870,6 +1841,7 @@ int dp_lan_wan_bridging(int port_id, struct sk_buff *skb)
 	struct net_device *dev;
 	static int lan_port = 4;
 	int inst = 0;
+	struct dp_subif_info *sif;
 
 	if (!skb)
 		return DP_FAILURE;
@@ -1890,9 +1862,10 @@ int dp_lan_wan_bridging(int port_id, struct sk_buff *skb)
 		return DP_FAILURE;
 	}
 
-	dev = dp_port_info[inst][subif.port_id].subif_info[0].netif;
+	sif = get_dp_port_subif(get_dp_port_info(inst, subif.port_id), 0);
+	dev = sif->netif;
 
-	if (!dp_port_info[inst][subif.port_id].subif_info[0].flags || !dev) {
+	if (!sif->flags || !dev) {
 		dev_kfree_skb_any(skb);
 		return DP_FAILURE;
 	}
@@ -1976,11 +1949,11 @@ int dp_rx_enable(struct net_device *netif, char *ifname, uint32_t flags)
 			 netif ? netif->name : "NULL");
 		return DP_FAILURE;
 	}
-	port_info = PORT(subif.inst, subif.port_id);
+	port_info = get_dp_port_info(subif.inst, subif.port_id);
 	vap = GET_VAP(subif.subif, port_info->vap_offset,
 		      port_info->vap_mask);
-	
-	STATS_SET(port_info->subif_info[vap].rx_flag, flags ? 1 : 0);
+
+	STATS_SET(get_dp_port_subif(port_info, vap)->rx_flag, flags ? 1 : 0);
 
 	return DP_SUCCESS;
 }
@@ -1994,14 +1967,14 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 
 	if (dp_get_netif_subifid(vlan->dev, NULL, NULL, NULL, &subif, 0))
 		return DP_FAILURE;
-	port_info = PORT(subif.inst, subif.port_id);
+	port_info = get_dp_port_info(subif.inst, subif.port_id);
 	info.subix = GET_VAP(subif.subif, port_info->vap_offset,
 			     port_info->vap_mask);
 	info.bp = subif.bport;
 	info.dp_port = subif.port_id;
 	info.inst = subif.inst;
-	
-	if ((vlan->def_apply == DP_VLAN_APPLY_CTP) && 
+
+	if ((vlan->def_apply == DP_VLAN_APPLY_CTP) &&
 				(subif.flag_pmapper == 1)) {
 		PR_ERR("cannot apply VLAN rule for pmapper device\n");
 		return DP_FAILURE;
@@ -2010,7 +1983,7 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 	} else {
 		info.dev_type |= subif.flag_bp;
 	}
-	if (vlan->mcast_flag == DP_MULTICAST_SESSION) 
+	if (vlan->mcast_flag == DP_MULTICAST_SESSION)
 		info.dev_type |= 0x02;
 	DP_DEBUG(DP_DBG_FLAG_PAE, "dev_type:0x%x\n", info.dev_type);
 	if (DP_CB(subif.inst, dp_tc_vlan_set))

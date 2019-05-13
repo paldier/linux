@@ -2599,7 +2599,7 @@ int dp_deq_port_res_get_31(struct dp_dequeue_res *res, int flag)
 		PR_ERR("priv cannot be NULL\n");
 		return DP_FAILURE;
 	}
-	port_info = &dp_port_info[res->inst][res->dp_port];
+	port_info = get_dp_port_info(res->inst, res->dp_port);
 	if (!port_info->deq_port_num)
 		return DP_FAILURE;
 	if (res->cqm_deq_idx == DEQ_PORT_OFFSET_ALL) {
@@ -4094,7 +4094,7 @@ int dp_queue_map_set_31(struct dp_queue_map_set *cfg, int flag)
 		cqm_flags |= CBM_QUEUE_MAP_F_EP_DONTCARE;
 	if (cfg->mask.subif) {
 		cqm_flags |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
-		if (dp_port_info[cfg->inst][cfg->map.dp_port].gsw_mode ==
+		if (get_dp_port_info(cfg->inst, cfg->map.dp_port)->gsw_mode ==
 				GSW_LOGICAL_PORT_9BIT_WLAN)
 			cqm_flags |= CBM_QUEUE_MAP_F_SUBIF_LSB_DONTCARE;
 	}
@@ -4195,7 +4195,7 @@ int ppv4_queue_port_example(int inst, int dp_port, int t_cont, int q_node)
 	int cqm_deq_port;
 	struct pmac_port_info *port_info;
 
-	port_info = &dp_port_info[inst][dp_port];
+	port_info = get_dp_port_info(inst, dp_port);
 	cqm_deq_port = port_info->deq_port_base + t_cont;
 
 	/* Allocate qos dequeue port's node id via cqm_deq_port */
@@ -4269,7 +4269,7 @@ int ppv4_queue_scheduler(int inst, int dp_port, int t_cont, int q_node,
 	int cqm_deq_port;
 	struct pmac_port_info *port_info;
 
-	port_info = &dp_port_info[inst][dp_port];
+	port_info = get_dp_port_info(inst, dp_port);
 	cqm_deq_port = port_info->deq_port_base + t_cont;
 
 	/* Allocate qos dequeue port's node id via cqm_deq_port */

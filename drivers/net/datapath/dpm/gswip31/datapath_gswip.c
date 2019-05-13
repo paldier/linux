@@ -584,10 +584,11 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	int i, alloc_flag;
 	u16 num;
 	struct core_ops *gsw_handle;
+	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
 	memset(&ctp_assign, 0, sizeof(ctp_assign));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
-	alloc_flag = dp_port_info[inst][ep].alloc_flags;
+	alloc_flag = port_info->alloc_flags;
 
 	if (flags & DP_F_DEREGISTER) {
 		PR_ERR("Need to Free CTP Port here for ep=%d\n", ep);
@@ -639,11 +640,11 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	itf_assign[ep].end = ctp_assign.nFirstCtpPortId +
 		 ctp_assign.nNumberOfCtpPort - 1;
 	itf_assign[ep].ep = ep;
-	dp_port_info[inst][ep].ctp_max = ctp_assign.nNumberOfCtpPort;
-	dp_port_info[inst][ep].vap_offset = assign->vap_offset;
-	dp_port_info[inst][ep].vap_mask = assign->vap_mask;
+	port_info->ctp_max = ctp_assign.nNumberOfCtpPort;
+	port_info->vap_offset = assign->vap_offset;
+	port_info->vap_mask = assign->vap_mask;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
-	dp_port_info[inst][ep].swdev_en = assign->swdev_enable;
+	port_info->swdev_en = assign->swdev_enable;
 #endif
 	return &itf_assign[ep];
 }
@@ -652,8 +653,9 @@ int set_port_lookup_mode_31(int inst, u8 ep, u32 flags)
 {
 	int i, alloc_flag;	
 	struct ctp_assign *assign = &ctp_assign_def;
+	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
-	alloc_flag = dp_port_info[inst][ep].alloc_flags;
+	alloc_flag = port_info->alloc_flags;
 	for (i = 0; i < ARRAY_SIZE(ctp_assign_info); i++) {
 		if ((ctp_assign_info[i].flag & alloc_flag) ==
 			ctp_assign_info[i].flag) {
@@ -661,8 +663,8 @@ int set_port_lookup_mode_31(int inst, u8 ep, u32 flags)
 			break;
 		}
 	}
-	dp_port_info[inst][ep].cqe_lu_mode = assign->lookup_mode;
-	dp_port_info[inst][ep].gsw_mode = (u32)assign->emode;
+	port_info->cqe_lu_mode = assign->lookup_mode;
+	port_info->gsw_mode = (u32)assign->emode;
 	return 0;
 }
 
@@ -694,8 +696,8 @@ int alloc_bridge_port(int inst, int port_id, int subif_ix,
 	/* By default Disable src mac learning for registered
 	 * non CPU bridge port with DP
 	 */
-	if (dp_port_info[inst][port_id].subif_info[subif_ix].mac_learn_dis ==
-							DP_MAC_LEARNING_DIS)
+	if (get_dp_port_subif(get_dp_port_info(inst, port_id), subif_ix)->
+	    mac_learn_dis == DP_MAC_LEARNING_DIS)
 		bp_cfg.bSrcMacLearningDisable = 1;
 	else
 		bp_cfg.bSrcMacLearningDisable = 0;
@@ -905,7 +907,7 @@ int dp_set_gsw_pmapper_31(int inst, int bport, int lport,
 	GSW_return_t ret;
 	int i, index;
 	int ctp;
-	struct pmac_port_info *port_info = &dp_port_info[inst][lport];
+	struct pmac_port_info *port_info = get_dp_port_info(inst, lport);
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
 
@@ -971,7 +973,7 @@ int dp_get_gsw_pmapper_31(int inst, int bport, int lport,
 	int i, index;
 	struct hal_priv *priv;
 	u16 dest;
-	struct pmac_port_info *info = &dp_port_info[inst][lport];
+	struct pmac_port_info *info = get_dp_port_info(inst, lport);
 
 	priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
@@ -1091,8 +1093,8 @@ static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
 			PR_ERR("can't use CTP,pmapper is enable\n");
 			return -1;
 		}
-		port_info = &dp_port_info[mtr_subif->subif.inst]
-					[mtr_subif->subif.port_id];
+		port_info = get_dp_port_info(mtr_subif->subif.inst,
+					     mtr_subif->subif.port_id);
 		ctp_cfg.nLogicalPortId = mtr_subif->subif.port_id;
 		ctp_cfg.nSubIfIdGroup  = GET_VAP(mtr_subif->subif.subif,
 						 port_info->vap_offset,
@@ -1242,7 +1244,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			goto err;
 		}
 		port_info =
-		&dp_port_info[mtr_subif->subif.inst][mtr_subif->subif.port_id];
+		get_dp_port_info(mtr_subif->subif.inst, mtr_subif->subif.port_id);
 		if (!port_info) {
 			PR_ERR(" port_info is NULL\n");
 			bret = -1;
@@ -1437,8 +1439,8 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		port_info = &dp_port_info[mtr_subif->subif.inst]
-					[mtr_subif->subif.port_id];
+		port_info = get_dp_port_info(mtr_subif->subif.inst,
+					     mtr_subif->subif.port_id);
 		if (!port_info) {
 			PR_ERR(" port_info is NULL\n");
 			bret = -1;

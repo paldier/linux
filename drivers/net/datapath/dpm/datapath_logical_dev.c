@@ -127,6 +127,7 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 	dp_subif_t subif;
 	int masked_subif;
 	struct pmac_port_info *port_info;
+	struct dp_subif_info *sif;
 
 	if (!dev) {
 		PR_ERR("dev NULL\n");
@@ -145,14 +146,13 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 			 "Not registered base dev %s in DP\n", dev->name);
 		return -1;
 	}
-	port_info = &dp_port_info[inst][port_id];
+	port_info = get_dp_port_info(inst, port_id);
 	masked_subif = GET_VAP(subif.subif,
 			       port_info->vap_offset,
 			       port_info->vap_mask);
 	DP_DEBUG(DP_DBG_FLAG_LOGIC, "masked_subif=%x\n", masked_subif);
-	logic_dev_tmp = logic_list_lookup(
-		&port_info->subif_info[masked_subif].logic_dev,
-		dev);
+	sif = get_dp_port_subif(port_info, masked_subif);
+	logic_dev_tmp = logic_list_lookup(&sif->logic_dev, dev);
 	if (logic_dev_tmp) {
 		DP_DEBUG(DP_DBG_FLAG_LOGIC, "Device already exist: %s\n",
 			 dev->name);
@@ -175,8 +175,7 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 		return -1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_LOGIC, "add logic dev list\n");
-	list_add(&logic_dev_tmp->list,
-		 &port_info->subif_info[masked_subif].logic_dev);
+	list_add(&logic_dev_tmp->list, &sif->logic_dev);
 
 	subif_id->bport = logic_dev_tmp->bp;
 	subif_id->subif = subif.subif;

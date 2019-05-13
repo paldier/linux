@@ -271,7 +271,7 @@ int dp_gswip_ext_vlan_32(int inst, int vap, int ep)
 	struct logic_dev *tmp = NULL;
 	int flag = 0, ret, i = 0;
 	int v1 = 0, v2 = 0;
-	struct pmac_subif_info *sif;
+	struct dp_subif_info *sif;
 
 	gsw_handle = dp_port_prop[inst].ops[0];
 	port = get_dp_port_info(inst, ep);

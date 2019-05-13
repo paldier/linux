@@ -814,72 +814,65 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 		u64 other_rx = 0, other_tx = 0;
 		int i, j;
 		struct pmac_port_info *port;
+		struct dev_mib *mib;
 
 		for (i = 1; i < PMAC_MAX_NUM; i++) {
-			port = get_port_info(tmp_inst, i);
+			port = get_dp_port_info(tmp_inst, i);
 
 			if (!port)
 				continue;
 
 			if (i < 6) {
 				for (j = 0; j < 16; j++) {
+					mib = get_dp_port_subif_mib(
+						get_dp_port_subif(port, j));
 					eth0_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_rxif_pkt);
+					    STATS_GET(mib->rx_fn_rxif_pkt);
 					eth0_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_txif_pkt);
+					    STATS_GET(mib->rx_fn_txif_pkt);
 					eth0_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_cbm_pkt);
+					    STATS_GET(mib->tx_cbm_pkt);
 					eth0_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_tso_pkt);
+					    STATS_GET(mib->tx_tso_pkt);
 				}
 			} else if (i == 15) {
 				for (j = 0; j < 16; j++) {
+					mib = get_dp_port_subif_mib(
+						get_dp_port_subif(port, j));
 					eth1_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_rxif_pkt);
+					    STATS_GET(mib->rx_fn_rxif_pkt);
 					eth1_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_txif_pkt);
+					    STATS_GET(mib->rx_fn_txif_pkt);
 					eth1_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_cbm_pkt);
+					    STATS_GET(mib->tx_cbm_pkt);
 					eth1_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_tso_pkt);
+					    STATS_GET(mib->tx_tso_pkt);
 				}
 			} else if (port->alloc_flags & DP_F_FAST_DSL) {
 				for (j = 0; j < 16; j++) {
+					mib = get_dp_port_subif_mib(
+						get_dp_port_subif(port, j));
 					dsl_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_rxif_pkt);
+					    STATS_GET(mib->rx_fn_rxif_pkt);
 					dsl_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_txif_pkt);
+					    STATS_GET(mib->rx_fn_txif_pkt);
 					dsl_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_cbm_pkt);
+					    STATS_GET(mib->tx_cbm_pkt);
 					dsl_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_tso_pkt);
+					    STATS_GET(mib->tx_tso_pkt);
 				}
 			} else {
 				for (j = 0; j < 16; j++) {
+					mib = get_dp_port_subif_mib(
+						get_dp_port_subif(port, j));
 					other_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_rxif_pkt);
+					    STATS_GET(mib->rx_fn_rxif_pkt);
 					other_rx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    rx_fn_txif_pkt);
+					    STATS_GET(mib->rx_fn_txif_pkt);
 					other_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_cbm_pkt);
+					    STATS_GET(mib->tx_cbm_pkt);
 					other_tx +=
-					    STATS_GET(port->subif_info[j].mib.
-					    tx_tso_pkt);
+					    STATS_GET(mib->tx_tso_pkt);
 				}
 			}
 		}
@@ -1055,7 +1048,7 @@ int proc_ep_dump(struct seq_file *s, int pos)
 	cbm_tmu_res_t *res = NULL;
 	u32 flag = 0;
 	int i;
-	struct pmac_port_info *port = get_port_info(0, pos);
+	struct pmac_port_info *port = get_dp_port_info(0, pos);
 #endif
 	if (!capable(CAP_NET_ADMIN))
 		return -EPERM;

@@ -254,7 +254,7 @@ static int dp_swdev_clr_gswip_cfg(struct bridge_id_entry_item *br_item,
 	if (!br_info)
 		return 0;
 	if (dp_swdev_del_bport_from_list(br_info, br_item->portid)) {
-		if (dp_port_info[br_item->inst][br_item->dp_port].
+		if (get_dp_port_info(br_item->inst, br_item->dp_port)->
 							swdev_en == 1) {
 			ret = dp_port_prop[br_item->inst].info.
 				swdev_bridge_port_cfg_reset(br_info,
@@ -296,8 +296,8 @@ static int dp_swdev_cfg_vlan(struct bridge_id_entry_item *br_item,
 		}
 		inst = br_item->inst;
 		vap = GET_VAP(dp_dev->ctp,
-			      dp_port_info[inst][dp_dev->ep].vap_offset,
-			      dp_port_info[inst][dp_dev->ep].vap_mask);
+			      get_dp_port_info(inst, dp_dev->ep)->vap_offset,
+			      get_dp_port_info(inst, dp_dev->ep)->vap_mask);
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "vap=%d ep=%d bp=%d\n",
 			 vap, dp_dev->ep, dp_dev->bp);
 		dp_port_prop[br_item->inst].info.dp_cfg_vlan(br_item->inst,
@@ -355,7 +355,7 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "britem flags:%x\n", br_item->flags);
 	if (br_item->flags & ADD_BRENTRY) {
-		if (dp_port_info[br_item->inst][br_item->dp_port].
+		if (get_dp_port_info(br_item->inst, br_item->dp_port)->
 							swdev_en == 0) {
 			DP_DEBUG(DP_DBG_FLAG_SWDEV, "swdev disable for bp %d\n",
 				 br_item->portid);
@@ -411,7 +411,7 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 		if (br_item->flags & LOGIC_DEV_REGISTER)
 			br_info->flag = LOGIC_DEV_REGISTER;
 		dp_swdev_add_bport_to_list(br_info, br_item->portid);
-		if (dp_port_info[br_item->inst][br_item->dp_port].
+		if (get_dp_port_info(br_item->inst, br_item->dp_port)->
 							swdev_en == 1) {
 			dp_port_prop[br_item->inst].info.
 				swdev_bridge_port_cfg_set(br_info,
@@ -468,8 +468,7 @@ static int dp_swdev_add_if(struct net_device *dev,
 				port = subif.port_id;
 				inst = subif.inst;
 				subif.subif = -1;
-				if (dp_register_subif(dp_port_info[inst][port]
-						      .owner,
+				if (dp_register_subif(get_dp_port_info(inst, port)->owner,
 						      dev, dev->name, &subif,
 						      DP_F_SUBIF_LOGICAL)) {
 					PR_ERR("dp_register_subif fail: %s\n",
@@ -501,8 +500,8 @@ static int dp_swdev_add_if(struct net_device *dev,
 			br_item->flags = flag;
 		} else {
 			br_item->flags = ADD_BRENTRY | flag;
-			if (dp_port_info[br_item->inst]
-					[br_item->dp_port].swdev_en == 1) {
+			if (get_dp_port_info(br_item->inst, br_item->dp_port)->
+			    swdev_en == 1) {
 				br_id = dp_port_prop[br_item->inst].info.
 					swdev_alloc_bridge_id(br_item->inst);
 				if (br_id) {
@@ -634,8 +633,7 @@ static int dp_swdev_del_if(struct net_device *dev,
 			}
 			port = subif.port_id;
 			inst = subif.inst;
-			if (dp_register_subif(dp_port_info[inst][port]
-						.owner,
+			if (dp_register_subif(get_dp_port_info(inst, port)->owner,
 						dev, dev->name, &subif,
 						DP_F_DEREGISTER)) {
 				PR_ERR("dp_register_subif fail: %s\n",

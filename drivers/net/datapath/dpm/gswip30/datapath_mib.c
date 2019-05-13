@@ -406,9 +406,9 @@ static int vap_mib_wraparound(dp_subif_t *subif,
 } while (0)
 
 	int ep = subif->port_id;
-	int vap = GET_VAP(subif->subif,
-			  PORT_INFO(0, subif->port_id, vap_offset),
-			  PORT_INFO(0, subif->port_id, vap_mask));
+	struct dp_port_info *pi = get_dp_port_info(0, subif->port_id);
+	int vap = GET_VAP(subif->subif, pi->vap_offset, pi->vap_mask);
+
 	if ((ep <= 0) ||
 	    (ep >= PMAC_MAX_NUM))
 		return -1;
@@ -516,7 +516,7 @@ int get_gsw_interface_base(int port_id)
 		return -1;
 	}
 
-	port_info = get_port_info(port_id);
+	port_info = get_dp_port_info(0, port_id);
 	if (!port_info)
 		return -1;
 	if (!port_info->itf_info)
@@ -616,14 +616,14 @@ static int update_port_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB)
 	/* collect all mib per VAP for TMU and MPE MIB */
 	tmu_hal_get_qos_m_local = tmu_hal_get_qos_mib_hook_fn;
-	port = get_port_info(tmp.port_id);
+	port = get_dp_port_info(0, tmp.port_id);
 	if (tmu_hal_get_qos_m_local &&
 	    port && port->status) { /*get all VAP's TMU MIB*/
 		for (i = 0; i < MAX_SUBIF_PER_PORT; i++) {
 			DP_DEBUG(DP_DBG_FLAG_MIB,
 				 "tmu_hal_get_qos_m_local: %d/%d\n",
 				 tmp.port_id, tmp.subif);
-			if (!port->subif_info[i].flags) {
+			if (!get_dp_port_subif(port, i)->flags) {
 				ret = -1;
 			} else {
 				tmp.subif = SET_VAP(i, port->vap_offset,
@@ -703,9 +703,9 @@ static void mib_wraparound_timer_poll(unsigned long data)
 	/* update vap if necessary */
 	if (port) {
 		for (i = 0; i < MAX_SUBIF_PER_PORT; i++) {
-			subif.subif = SET_VAP(i,
-					      PORT_INFO(0, port, vap_offset),
-					      PORT_INFO(0, port, vap_mask));
+			struct dp_port_info *pi = get_dp_port_info(0, port);
+
+			subif.subif = SET_VAP(i, pi->vap_offset, pi->vap_mask);
 			/* update sub-interface/vap mib only */
 			if (update_vap_mib_lower_lvl(&subif, 0))
 				break;
@@ -729,6 +729,7 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 	int itf_base;
 	struct mibs_low_lvl_vap *curr;
 	int port_id;
+	struct dp_port_info *pi;
 
 	/*update struct pmac_port_info[subif->ep].net_mib */
 	if (!subif || (subif->port_id <= 0) || (subif->port_id >= PMAC_MAX_NUM))
@@ -739,9 +740,8 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 		return -1;
 	memset(curr, 0, sizeof(*curr));
 	port_id = subif->port_id;
-	vap = GET_VAP(subif->subif,
-		      PORT_INFO(0, subif->port_id, vap_offset),
-		      PORT_INFO(0, subif->port_id, vap_mask));
+	pi = get_dp_port_info(0, subif->port_id);
+	vap = GET_VAP(subif->subif, pi->vap_offset, pi->vap_mask);
 	/* get gsw PAE interface mib counter */
 	itf_base = get_gsw_interface_base(port_id);
 	if (itf_base < 0) {
@@ -1053,10 +1053,8 @@ int dp_get_port_vap_mib_30(dp_subif_t *subif, void *priv,
 		return -1;
 	spin_lock_bh(&dp_mib_lock);
 	port_id = subif->port_id;
-	vap = GET_VAP(subif->subif,
-		      PORT_INFO(0, subif->port_id, vap_offset),
-		      PORT_INFO(0, subif->port_id, vap_mask));
-	port_info = get_port_info(port_id);
+	port_info = get_dp_port_info(0, port_id);
+	vap = GET_VAP(subif->subif, port_info->vap_offset, port_info->vap_mask);
 	memset(net_mib, 0, sizeof(*net_mib));
 
 	if ((flag & DP_F_STATS_SUBIF)) {	/*only sub-interface/VAP's
@@ -1576,13 +1574,12 @@ int clear_gsw_itf_mib(dp_subif_t *subif, u32 flag)
 	}
 
 	if (subif) {
-		port_info = get_port_info(subif->port_id);
+		port_info = get_dp_port_info(0, subif->port_id);
 		if (!port_info || !port_info->itf_info)
 			return 0;
 		start = port_info->itf_info->start +
-			GET_VAP(subif->subif,
-				PORT_INFO(0, subif->port_id, vap_offset),
-				PORT_INFO(0, subif->port_id, vap_mask));
+			GET_VAP(subif->subif, port_info->vap_offset,
+				port_info->vap_mask);
 		end = start + 1;
 	}
 	rmon.eRmonType = GSW_RMON_IF_TYPE;
@@ -1607,6 +1604,7 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 	int i;
 	dp_subif_t tmp_subif;
 	struct core_ops *gsw_l, *gsw_r;
+	struct dp_port_info *pi;
 
 	gsw_l = dp_port_prop[inst].ops[GSWIP_L];
 	gsw_r = dp_port_prop[inst].ops[GSWIP_R];
@@ -1644,9 +1642,8 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 		return -1;
 
 	port_id = subif->port_id;
-	vap = GET_VAP(subif->subif,
-		      PORT_INFO(0, port_id, vap_offset),
-		      PORT_INFO(0, port_id, vap_mask));
+	pi = get_dp_port_info(0, port_id);
+	vap = GET_VAP(subif->subif, pi->vap_offset, pi->vap_mask);
 	if ((flag & DP_F_STATS_SUBIF)) {
 		spin_lock_bh(&dp_mib_lock);
 		/*clear the specific subif mib counter */
@@ -1682,12 +1679,11 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 	 */
 	tmp_subif = *subif;
 	for (i = 0; i < MAX_SUBIF_PER_PORT; i++) {
+		pi = get_dp_port_info(0, tmp_subif.port_id);
 		DP_DEBUG(DP_DBG_FLAG_MIB, "dp_clear_netif_mib: %d/%d\n",
 			 tmp_subif.port_id, i);
 		tmp_subif.subif =
-			SET_VAP(i,
-				PORT_INFO(0, tmp_subif.port_id, vap_offset),
-				PORT_INFO(0, tmp_subif.port_id, vap_mask));
+			SET_VAP(i, pi->vap_offset, pi->vap_mask);
 		dp_clear_netif_mib_30(&tmp_subif, NULL, DP_F_STATS_SUBIF);
 	}
 
@@ -1858,11 +1854,11 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 		}
 		for (k = 0; k < ARRAY_SIZE(port_list); k++) {
 			tmp.port_id = port_list[k];
-			port = get_port_info(tmp.port_id);
+			port = get_dp_port_info(0, tmp.port_id);
 			if (!port)
 				continue;
 			for (i = 0; i < MAX_SUBIF_PER_PORT; i++) {
-				if (!port->subif_info[i].flags)
+				if (!get_dp_port_subif(port, i)->flags)
 					continue;
 				tmp.subif = SET_VAP(i, port->vap_offset,
 						    port->vap_mask);
@@ -1990,20 +1986,18 @@ int proc_mib_vap_dump(struct seq_file *s, int pos)
 			   "VAP", "IfID", "Rx_PKTS", "Tx_PKTS",
 			   "Rx_DROP_PKTS", "Tx_DROP_PKTS\n");
 	}
-	port = get_port_info(pos);
+	port = get_dp_port_info(0, pos);
 
 	if (!port || !port->status)		/*not allocated yet*/
 		goto EXIT;
 
 	for (j = 0; j <= (MAX_SUBIF_PER_PORT - 1); j++) {
 		subif.port_id = pos;
-		subif.subif = SET_VAP(j,
-				      PORT_INFO(0, pos, vap_offset),
-				      PORT_INFO(0, pos, vap_mask));
+		subif.subif = SET_VAP(j, port->vap_offset, port->vap_mask);
 		itf_base = get_gsw_interface_base(pos);
 		if (itf_base < 0)	/*no GSW itf assigned*/
 			continue;
-		if (!port->subif_info[j].flags)	/*not registered yet*/
+		if (!get_dp_port_subif(port, j)->flags)	/*not registered yet*/
 			continue;
 		if (dp_get_port_vap_mib_30
 		    (&subif, NULL, &stats_mib,
