@@ -113,16 +113,19 @@ char *get_dp_port_type_str(int k)
 {
 	return dp_port_type_str[k];
 }
+EXPORT_SYMBOL(get_dp_port_type_str);
 
 u32 get_dp_port_flag(int k)
 {
 	return dp_port_flag[k];
 }
+EXPORT_SYMBOL(get_dp_port_flag);
 
 int get_dp_port_type_str_size(void)
 {
 	return ARRAY_SIZE(dp_port_type_str);
 }
+EXPORT_SYMBOL(get_dp_port_type_str_size);
 
 int get_dp_dbg_flag_str_size(void)
 {
@@ -196,6 +199,7 @@ u32 *get_port_flag(int inst, int index)
 
 	return NULL;
 }
+EXPORT_SYMBOL(get_port_flag);
 
 struct pmac_port_info *get_port_info_via_dp_port(int inst, int dp_port)
 {

@@ -15,7 +15,7 @@
 #include "../cqm/grx500/reg/cbm_eqm.h"
 #include "../cqm/grx500/reg/cbm_desc64b.h"
 #include "../cqm/grx500/reg/fsqm.h"
-#include "../../../datapath/dpm/datapath.h"
+#include <net/datapath_api.h>
 #include <lantiq.h>		/*clk_get_ppe */
 #include <net/datapath_proc_api.h>
 #include <linux/clk.h>

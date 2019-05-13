@@ -863,10 +863,7 @@ char *dp_skb_csum_str(struct sk_buff *skb);
 extern struct dentry *dp_proc_node;
 int get_dp_dbg_flag_str_size(void);
 int get_dp_port_status_str_size(void);
-int get_dp_port_type_str_size(void);
-char *get_dp_port_type_str(int k);
 
-u32 *get_port_flag(int inst, int index);
 int dp_request_inst(struct dp_inst_info *info, u32 flag);
 int register_dp_cap(u32 flag);
 typedef GSW_return_t(*dp_gsw_cb)(void *, void *);

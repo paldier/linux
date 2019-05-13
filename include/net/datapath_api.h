@@ -1476,6 +1476,9 @@ int dp_coc_new_stat_req(int new_state, uint32_t flag);
 
 /*! get port flag. for TMU proc file cat /proc/tmu/queue1 and /proc/tmu/eqt */
 u32 get_dp_port_flag(int k);
+char *get_dp_port_type_str(int k);
+int get_dp_port_type_str_size(void);
+u32 *get_port_flag(int inst, int index);
 
 /*! @brief set parser: to enable/disable pmac header
  *@param[in] flag flag
