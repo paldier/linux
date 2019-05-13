@@ -174,5 +174,6 @@ int ltq_ipsec_dec(u32 spi, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_co
 int ltq_get_length_params(u32 spi, unsigned int *ivsize, unsigned int *ICV_length,
 			unsigned int *blksize);
 struct ltq_crypto_ipsec_params *ltq_ipsec_get_params(u32); 
+extern struct ltq_crypto_ipsec_params *(*ltq_ipsec_get_param_hook)(u32 spi);
 #endif /* CONFIG_PPA_MPE_IP97 */ 
 #endif /* _LTQ_IPSEC_INS_H */

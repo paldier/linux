@@ -27,7 +27,16 @@
 #include <linux/kernel.h>
 
 #include "xfrm_hash.h"
-
+#if IS_ENABLED(CONFIG_PPA_MPE_IP97)
+#include <net/ppa/ppa_api.h>
+#include <net/ppa/ppa_stack_al.h>
+#include <net/ppa/ppa_hook.h>
+#include <crypto/ltq_ipsec_ins.h>
+struct ltq_crypto_ipsec_params *(*ltq_ipsec_get_param_hook)(u32 spi) = NULL;
+EXPORT_SYMBOL(ltq_ipsec_get_param_hook);
+void (*ltq_destroy_ipsec_sa_hook)(struct ltq_crypto_ipsec_params *req) = NULL;
+EXPORT_SYMBOL(ltq_destroy_ipsec_sa_hook);
+#endif
 #define xfrm_state_deref_prot(table, net) \
 	rcu_dereference_protected((table), lockdep_is_held(&(net)->xfrm.xfrm_state_lock))
 
@@ -404,6 +413,9 @@ static enum hrtimer_restart xfrm_timer_handler(struct hrtimer *me)
 	long next = LONG_MAX;
 	int warn = 0;
 	int err = 0;
+#if defined(CONFIG_PPA_MPE_IP97)
+	struct ltq_crypto_ipsec_params *params = NULL;
+#endif
 
 	spin_lock(&x->lock);
 	if (x->km.state == XFRM_STATE_DEAD)
@@ -477,6 +489,21 @@ expired:
 		km_state_expired(x, 1, 0);
 
 	xfrm_audit_state_delete(x, err ? 0 : 1, true);
+
+#if defined(CONFIG_PPA_MPE_IP97)
+/* PPA Del SA callback needs to be invoked after re-keyed timeout, where older SA is removed */
+	if (ppa_hook_session_ipsec_del_fn)
+		ppa_hook_session_ipsec_del_fn(x);
+
+	if (ltq_ipsec_get_param_hook && ltq_destroy_ipsec_sa_hook) {
+		params = ltq_ipsec_get_param_hook(x->id.spi);
+		if (!params) {
+			pr_err("No entry found for spi = 0x%08x, unable to remove SA after rekeyed timeout\n", x->id.spi);
+			goto out;
+		}
+		ltq_destroy_ipsec_sa_hook(params);
+	}
+#endif /* CONFIG_PPA_MPE_IP97 */
 
 out:
 	spin_unlock(&x->lock);
