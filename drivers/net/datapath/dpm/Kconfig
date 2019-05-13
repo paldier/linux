@@ -153,7 +153,8 @@ config LTQ_DATAPATH_CPUFREQ
 	bool
 	default INTEL_DATAPATH_CPUFREQ
 
-source "drivers/net/ethernet/lantiq/datapath/gswip31/Kconfig"
-source "drivers/net/ethernet/lantiq/datapath/gswip30/Kconfig"
+source "drivers/net/datapath/dpm/gswip32/Kconfig"
+source "drivers/net/datapath/dpm/gswip31/Kconfig"
+source "drivers/net/datapath/dpm/gswip30/Kconfig"
 endif
 

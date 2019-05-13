@@ -96,7 +96,7 @@ config INTEL_XPCS
 	  This driver provides support for Xpcs for 10G.
 
 
-source "drivers/net/ethernet/lantiq/datapath/Kconfig"
+source "drivers/net/datapath/dpm/Kconfig"
 source "drivers/net/ethernet/lantiq/switch-api/Kconfig"
 source "drivers/net/ethernet/lantiq/cqm/Kconfig"
 source "drivers/net/ethernet/lantiq/tmu/Kconfig"

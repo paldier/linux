@@ -465,7 +465,7 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 	if (priv->deq_port_stat[info->cqe_deq].flag == PP_NODE_FREE) {
 		port.cqm_deq_port = info->cqe_deq;
 		port.tx_pkt_credit = info->tx_pkt_credit;
-		port.tx_ring_addr = info->tx_ring_addr;
+		port.tx_ring_addr = info->tx_ring_addr_push;
 		port.tx_ring_size = info->tx_ring_size;
 		port.inst = inst;
 		port.dp_port = info->dp_port;
