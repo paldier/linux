@@ -571,12 +571,16 @@ struct debug_ops {
 	GSW_return_t (*Lmac)(void *, GSW_MAC_Cli_t *);
 	/* Command: GSW_MACSEC_CFG ; Index: 0x13 */
 	GSW_return_t (*Macsec)(void *, GSW_MAC_cfg_t *);
-	/* Command: GSW_DUMP_MEM ; Index: 0x14 */
+	/* Command: GSW_PMACBR_CFG ; Index: 0x14 */
+	GSW_return_t (*Pmacbr)(void *, GSW_MAC_cfg_t *);
+	/* Command: GSW_DUMP_MEM ; Index: 0x15 */
 	GSW_return_t (*DumpMem)(void *, GSW_table_t *);
 	/* Command: GSW_DEBUG_PRINT_PCEIRQ_LIST ; Index: 0x15 */
 	GSW_return_t (*DEBUG_PrintPceIrqList)(void *);
 	/* Command: GSW_DEBUG_RMON_PORT_GET ; Index: 0x16 */
 	GSW_return_t (*DEBUG_RMON_Port_Get)(void *, GSW_Debug_RMON_Port_cnt_t *);
+	/* Command: GSW_DEBUG_TUNNELTEMP_STATUS ; Index: 0x18 */
+	GSW_return_t (*DEBUG_TunnelTempTableStatus)(void *, GSW_debug_t *);
 };
 
 struct irq_ops {
@@ -592,6 +596,31 @@ struct irq_ops {
 	GSW_return_t (*IRQ_Disable)(void *, GSW_Irq_Op_t *);
 };
 
+struct pbb_ops {
+	/* Command: (NULL); Index: 0x00 */
+	GSW_return_t (*null)(void);
+	/* Command: GSW_PBB_TUNNEL_TEMPLATE_ALLOC ; Index: 0x01 */
+	GSW_return_t (*PBB_TemplateAlloc)(void *, GSW_PBB_Tunnel_Template_Config_t *);
+	/* Command: GSW_PBB_TUNNEL_TEMPLATE_FREE ; Index: 0x02 */
+	GSW_return_t (*PBB_TemplateFree)(void *, GSW_PBB_Tunnel_Template_Config_t *);
+	/* Command: GSW_PBB_TUNNEL_TEMPLATE_SET ; Index: 0x03 */
+	GSW_return_t (*PBB_TemplateSet)(void *, GSW_PBB_Tunnel_Template_Config_t *);
+	/* Command: GSW_PBB_TUNNEL_TEMPLATE_GET ; Index: 0x04 */
+	GSW_return_t (*PBB_TemplateGet)(void *, GSW_PBB_Tunnel_Template_Config_t *);
+};
+
+struct gpid_ops {
+	/* Command: (NULL); Index: 0x00 */
+	GSW_return_t (*null)(void);
+	/* Command: GSW_LPID_TO_GPID_ASSIGNMENT_SET ; Index: 0x01 */
+	GSW_return_t (*LpidToGpid_AssignmentSet)(void *, GSW_LPID_to_GPID_Assignment_t *);
+	/* Command: GSW_LPID_TO_GPID_ASSIGNMENT_GET ; Index: 0x02 */
+	GSW_return_t (*LpidToGpid_AssignmentGet)(void *, GSW_LPID_to_GPID_Assignment_t *);
+	/* Command: GSW_GPID_TO_LPID_ASSIGNMENT_SET ; Index: 0x03 */
+	GSW_return_t (*GpidToLpid_AssignmentSet)(void *, GSW_GPID_to_LPID_Assignment_t *);
+	/* Command: GSW_GPID_TO_LPID_ASSIGNMENT_GET ; Index: 0x04 */
+	GSW_return_t (*GpidToLpid_AssignmentGet)(void *, GSW_GPID_to_LPID_Assignment_t *);
+};
 
 struct core_ops {
 	/**Switch Opertations**/
@@ -698,10 +727,21 @@ struct core_ops {
 	 NOTE: Applicable for GSWIP 3.1/GSWIP 3.0/GSWIP 2.2*/
 
 	struct common_ops			gsw_common_ops;
+
 	/*Debug Purpose for GSWIP 3.1*/
 	struct debug_ops			gsw_debug_ops;
 
 	struct irq_ops			gsw_irq_ops;
+
+	/*PBB Tunnel template configuration ops
+	 applicable for GSWIP-3.2*/
+	struct pbb_ops gsw_pbb_ops;
+
+	/*logical port to global port assignment
+	  global port to logical port assignment
+	  configuration ops
+	  applicable for GSWIP-3.2*/
+	struct gpid_ops gsw_gpid_ops;
 };
 
 

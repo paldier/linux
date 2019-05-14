@@ -472,6 +472,60 @@ typedef struct {
 	ltq_bool_t bInsertionFlag_Enable;
 	/** Inserted packet by CPU to data path. For GSWIP-3.1 only */
 	u16 nInsertionFlag;
+
+	/*The below flexible field are Applicable for GSWIP 3.2 only*/
+
+	ltq_bool_t bFlexibleField4Enable;
+	/** Flexible Field 4 exclude mode 1 enable and 0 disable**/
+	ltq_bool_t bFlexibleField4_ExcludeEnable;
+	/** Flexible Field 4 parser mask or range selction - 0 mask/1 range**/
+	ltq_bool_t bFlexibleField4_RangeEnable;
+	/** Flexible Field 4 parser out put index 0-127**/
+	u8 nFlexibleField4_ParserIndex;
+	/** Flexible Field 4 value. 16 bit value for pattern match**/
+	u16 nFlexibleField4_Value;
+	/** Flexible Field 4 mask or range value.If bFlexibleField4_MaskEnable is 1 then
+		 this 16 bit feid will be Mask or it will be Range**/
+	u16 nFlexibleField4_MaskOrRange;
+
+	ltq_bool_t bFlexibleField3Enable;
+	/** Flexible Field 3 exclude mode 1 enable and 0 disable**/
+	ltq_bool_t bFlexibleField3_ExcludeEnable;
+	/** Flexible Field 3 parser mask or range selction - 0 mask/1 range**/
+	ltq_bool_t bFlexibleField3_RangeEnable;
+	/** Flexible Field 3 parser out put index 0-127**/
+	u8 nFlexibleField3_ParserIndex;
+	/** Flexible Field 3 value. 16 bit value for pattern match**/
+	u16 nFlexibleField3_Value;
+	/** Flexible Field 3 mask or range value.If bFlexibleField4_MaskEnable is 1 then
+	  this 16 bit feid will be Mask or it will be Range**/
+	u16 nFlexibleField3_MaskOrRange;
+
+	ltq_bool_t bFlexibleField2Enable;
+	/** Flexible Field 2 exclude mode 1 enable and 0 disable**/
+	ltq_bool_t bFlexibleField2_ExcludeEnable;
+	/** Flexible Field 2 parser mask or range selction - 0 mask/1 range**/
+	ltq_bool_t bFlexibleField2_RangeEnable;
+	/** Flexible Field 2 parser out put index 0-127**/
+	u8 nFlexibleField2_ParserIndex;
+	/** Flexible Field 2 value. 16 bit value for pattern match**/
+	u16 nFlexibleField2_Value;
+	/** Flexible Field 2 mask or range value.If bFlexibleField4_MaskEnable is 1 then
+		  this 16 bit feid will be Mask or it will be Range**/
+	u16 nFlexibleField2_MaskOrRange;
+
+	ltq_bool_t bFlexibleField1Enable;
+	/** Flexible Field 1 exclude mode 1 enable and 0 disable**/
+	ltq_bool_t bFlexibleField1_ExcludeEnable;
+	/** Flexible Field 1 parser mask or range selction - 0 mask/1 range**/
+	ltq_bool_t bFlexibleField1_RangeEnable;
+	/** Flexible Field 1 parser out put index 0-127**/
+	u8 nFlexibleField1_ParserIndex;
+	/** Flexible Field 1 value. 16 bit value for pattern match**/
+	u16 nFlexibleField1_Value;
+	/** Flexible Field 1 mask or range value.If bFlexibleField4_MaskEnable is 1 then
+		  this 16 bit feid will be Mask or it will be Range**/
+	u16 nFlexibleField1_MaskOrRange;
 } GSW_PCE_pattern_t;
 
 /** \brief IGMP Snooping Control.
@@ -710,6 +764,127 @@ typedef enum {
 	GSW_PCE_PROCESSING_PATH_BOTH = 3,
 } GSW_PCE_ProcessingPathAction_t;
 
+typedef enum {
+	/** No change in packet. */
+	GSW_PCE_I_HEADER_OPERATION_NOCHANGE = 0,
+	/** Insert I-Header for Non-PBB packet */
+	GSW_PCE_I_HEADER_OPERATION_INSERT = 1,
+	/** Remove I-Header for PBB packet
+	   (Removes both I-Header and B-Tag)*/
+	GSW_PCE_I_HEADER_OPERATION_REMOVE = 2,
+	/** Replace the I-Header Fields for PBB packet */
+	GSW_PCE_I_HEADER_OPERATION_REPLACE = 3,
+} GSW_PCE_IheaderOperationMode;
+
+typedef enum {
+	/** No change in B-TAG for PBB packet. */
+	GSW_PCE_B_TAG_OPERATION_NOCHANGE = 0,
+	/** Insert B-TAG for PBB packet */
+	GSW_PCE_B_TAG_OPERATION_INSERT = 1,
+	/** Remove B-TAG for PBB packet */
+	GSW_PCE_B_TAG_OPERATION_REMOVE = 2,
+	/** Replace B-TAG fields for PBB packet */
+	GSW_PCE_B_TAG_OPERATION_REPLACE = 3,
+} GSW_PCE_BtagOperationMode;
+
+typedef enum {
+	/** Outer Mac address is selected for learning
+		non-PBB packet or PBB encapsulation*/
+	GSW_PCE_OUTER_MAC_SELECTED = 0,
+	/** inner Mac address is selected for learning
+		PBB decapsulation*/
+	GSW_PCE_INNER_MAC_SELECTED = 1,
+} GSW_PCE_MacTableMacinMacSelect;
+
+typedef struct {
+	/** Destination Sub IF ID Group Field Action Enable*/
+	ltq_bool_t bDestSubIFIDActionEnable;
+	/** Destination Sub IF ID Group Field Assignment Enable*/
+	ltq_bool_t bDestSubIFIDAssignmentEnable;
+	/** Destination Sub IF ID Group Field Assignment*/
+	u8	nDestSubIFGrp_Field;
+
+} GSW_PCE_ActionDestSubIF_t;
+
+typedef struct {
+	/** Action enable I-Header*/
+	ltq_bool_t bIheaderActionEnable;
+	/** I-Header Operation Mode*/
+	GSW_PCE_IheaderOperationMode eIheaderOpMode;
+
+	/** Enable Tunnel Id for I-Header Known traffic*/
+	ltq_bool_t bTunnelIdKnownTrafficEnable;
+	/** Tunnel Template Index for I-Header Known traffic
+		this field should be valid ID returned by
+	    \ref GSW_PBB_TunnelTempate_Alloc and
+	     Configured Using GSW_PBB_TunnelTempate_Config_Set*/
+	u8 nTunnelIdKnownTraffic;
+
+	/** Enable Tunnel Id for I-Header UnKnown traffic*/
+	ltq_bool_t bTunnelIdUnKnownTrafficEnable;
+	/** Tunnel Template Index for I-Header UnKnown traffic
+		this field should be valid ID returned by
+	    \ref GSW_PBB_TunnelTempate_Alloc and
+	     Configured Using GSW_PBB_TunnelTempate_Config_Set*/
+	u8 nTunnelIdUnKnownTraffic;
+
+	/** Incase of I-Header operation mode is Insertion
+	    and bB_DstMac_FromMacTableEnable is enabled,
+	    the B-DA is from Mac table instead of tunnel template*/
+	ltq_bool_t bB_DstMac_FromMacTableEnable;
+
+	/** Replace B-SA from tunnel template*/
+	ltq_bool_t bReplace_B_SrcMacEnable;
+	/** Replace B-DA from tunnel template*/
+	ltq_bool_t bReplace_B_DstMacEnable;
+	/** Replace I-Tag Res from tunnel template*/
+	ltq_bool_t bReplace_I_TAG_ResEnable;
+	/** Replace I-Tag UAC from tunnel template*/
+	ltq_bool_t bReplace_I_TAG_UacEnable;
+	/** Replace I-Tag DEI from tunnel template*/
+	ltq_bool_t bReplace_I_TAG_DeiEnable;
+	/** Replace I-Tag PCP from tunnel template*/
+	ltq_bool_t bReplace_I_TAG_PcpEnable;
+	/** Replace I-Tag SID from tunnel template*/
+	ltq_bool_t bReplace_I_TAG_SidEnable;
+	/** Replace I-Tag TPID from tunnel template*/
+	ltq_bool_t bReplace_I_TAG_TpidEnable;
+
+	/** Action enable B-TAG*/
+	ltq_bool_t bBtagActionEnable;
+	/** B-Tag Operation Mode*/
+	GSW_PCE_BtagOperationMode eBtagOpMode;
+	/** Enable Process Id for B-TAG Known traffic*/
+	ltq_bool_t bProcessIdKnownTrafficEnable;
+	/** Tunnel Template Index for B-TAG Known traffic
+		this field should be valid ID returned by
+	    \ref GSW_PBB_TunnelTempate_Alloc and
+	     Configured Using GSW_PBB_TunnelTempate_Config_Set*/
+	u8 nProcessIdKnownTraffic;
+
+	/** Enable Process Id for B-TAG UnKnown traffic*/
+	ltq_bool_t bProcessIdUnKnownTrafficEnable;
+	/** Tunnel Template Index for B-TAG UnKnown traffic
+		this field should be valid ID returned by
+	    \ref GSW_PBB_TunnelTempate_Alloc and
+	     Configured Using GSW_PBB_TunnelTempate_Config_Set*/
+	u8 nProcessIdUnKnownTraffic;
+
+	/** Replace B-Tag DEI from tunnel template*/
+	ltq_bool_t bReplace_B_TAG_DeiEnable;
+	/** Replace B-Tag PCP from tunnel template*/
+	ltq_bool_t bReplace_B_TAG_PcpEnable;
+	/** Replace B-Tag SID from tunnel template*/
+	ltq_bool_t bReplace_B_TAG_VidEnable;
+	/** Replace B-Tag TPID from tunnel template*/
+	ltq_bool_t bReplace_B_TAG_TpidEnable;
+
+	/**Action enable Mac Table MacinMac*/
+	ltq_bool_t bMacTableMacinMacActionEnable;
+	/**Select Mac Table MacinMac Action */
+	GSW_PCE_MacTableMacinMacSelect eMacTableMacinMacSelect;
+} GSW_PCE_ActionPBB_t;
+
 /** \brief Packet Classification Engine Action Configuration.
     GSWIP-3.0 extension actions are explicitly indicated.
     Used by \ref GSW_PCE_rule_t. */
@@ -891,6 +1066,14 @@ typedef struct {
 	    and/or OAM process (bOamEnable is set). For GSWIP-3.1 only. Refer to
 	    GSWIP-3.1 Hardware Architecture Spec (HAS) for more detail. */
 	u32 nRecordId;
+
+	/** Configure PBB action. For GSWIP-3.2 only*/
+	ltq_bool_t	bPBB_Action_Enable;
+	GSW_PCE_ActionPBB_t sPBB_Action;
+
+	/** For Enabling Dest SubIF ID Group field in TFLOW.Valid only For GSWIP-3.2 only*/
+	ltq_bool_t	bDestSubIf_Action_Enable;
+	GSW_PCE_ActionDestSubIF_t sDestSubIF_Action;
 } GSW_PCE_action_t;
 
 /** \brief Parameter to add/read a rule to/from the packet classification engine.

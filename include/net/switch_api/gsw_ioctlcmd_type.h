@@ -56,6 +56,10 @@ this software module.
 #define GSW_DEBUG_MAGIC				('V')
 /* IRQ */
 #define GSW_IRQ_MAGIC				('T')
+/* PBB - GSWIP-3.2 */
+#define GSW_PBB_MAGIC				('X')
+/* GPID - GSWIP-3.2 */
+#define GSW_GPID_MAGIC				('M')
 
 #endif
 

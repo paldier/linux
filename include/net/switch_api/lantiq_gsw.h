@@ -22,6 +22,7 @@
 /* Local Macros & Definitions    */
 /* ============================= */
 #include "gsw_types.h"
+#include "gsw_ioctlcmd_type.h"
 #include "mac_ops.h"
 
 /** \defgroup GSW_GROUP GSWIP Functional APIs
@@ -139,6 +140,9 @@ typedef struct {
 	1: the entry is changed and not accessed yet */
 
 	ltq_bool_t bEntryChanged;
+
+	/** Associated Mac address -(GSWIP-3.2)*/
+	u8 nAssociatedMAC[GSW_MAC_ADDR_LEN];
 } GSW_MAC_tableRead_t;
 
 /** \brief Search for a MAC address entry in the address table.
@@ -200,15 +204,15 @@ typedef struct {
 	    "Source MAC Address Filtering and Destination MAC Address Filtering"
 	    for more detail. */
 	u8 nFilterFlag;
-
 	/** Packet is marked as IGMP controlled if destination MAC address matches
 	    MAC in this entry. (GSWIP-3.1 only) */
 	ltq_bool_t bIgmpControlled;
-
 	/** Changed
 	0: the entry is not changed
 	1: the entry is changed and not accessed yet */
 	ltq_bool_t bEntryChanged;
+	/** Associated Mac address -(GSWIP-3.2)*/
+	u8 nAssociatedMAC[GSW_MAC_ADDR_LEN];
 } GSW_MAC_tableQuery_t;
 
 /** \brief MAC Table Entry to be added.
@@ -270,6 +274,9 @@ typedef struct {
 	/** Packet is marked as IGMP controlled if destination MAC address matches
 	    MAC in this entry. (GSWIP-3.1 only) */
 	ltq_bool_t bIgmpControlled;
+
+	/** Associated Mac address -(GSWIP-3.2)*/
+	u8 nAssociatedMAC[GSW_MAC_ADDR_LEN];
 } GSW_MAC_tableAdd_t;
 
 /** \brief MAC Table Entry to be removed.
@@ -1189,6 +1196,13 @@ typedef struct {
 //   u32	nPbs;
 	/** Meter colour mode **/
 	u32 nColourBlindMode;
+	/** Enable/Disable Packet Mode. 0- Byte, 1 - Pkt */
+	ltq_bool_t bPktMode;
+	/** Enable/Disable local overhead for metering rate calculation. */
+	ltq_bool_t	bLocalOverhd;
+	/** Local overhead for metering rate calculation when
+	    \ref GSW_QoS_meterCfg_t::bLocalOverhd is TRUE. */
+	u32 nLocaloverhd;
 } GSW_QoS_meterCfg_t;
 
 /** \brief Specifies the direction for ingress and egress.
@@ -1347,6 +1361,12 @@ typedef struct {
 	    If there is no redirection required, it should be same as "nPortId".
 	    GSWIP-3.0/3.1 only. */
 	u8	nRedirectPortId;
+
+	/**To enable Ingress PCE Bypass.Applicable for GSWIP 3.2*/
+	ltq_bool_t	bEnableIngressPceBypass;
+	/*Internal purpose only - user not allowed to use it
+	  Applicable for GSWIP 3.2 only*/
+	ltq_bool_t	bReservedPortMode;
 } GSW_QoS_queuePort_t;
 
 /** \brief Reserved egress queue buffer segments.
@@ -1803,7 +1823,7 @@ typedef enum {
 	/** Link down. */
 	GSW_PORT_LINK_DOWN	= 1,
 	/** Link Auto. */
-	GSW_PORT_LINK_AUTO	= 2,	
+	GSW_PORT_LINK_AUTO	= 2,
 } GSW_portLink_t;
 
 /** \brief Enumeration used for Switch capability types. GSWIP-3.0 only capabilities are explicitly indicated.
@@ -2149,6 +2169,16 @@ typedef struct {
 	GSW_CPU_ParserHeaderCfg_t  eMPE1MPE2ParserCfg;
 	/** GSWIP-3.1 FCS tx Operations. */
 	GSW_FCS_TxOps_t bFcsTxOps;
+	/** GSWIP-3.2 Time Stamp Field Removal for PTP Packet
+	    0 - DIS Removal is disabled
+	    1 - EN Removal is enabled
+	*/
+	ltq_bool_t	bTsPtp;
+	/** GSWIP-3.2 Time Stamp Field Removal for Non-PTP Packet
+	    0 - DIS Removal is disabled
+	    1 - EN Removal is enabled
+	*/
+	ltq_bool_t	bTsNonptp;
 } GSW_CPU_PortCfg_t;
 
 /** \brief Ethernet layer-2 header selector, when adding or removing on
@@ -2389,6 +2419,17 @@ typedef struct {
 	ltq_bool_t	bMonitorPort;
 	/* Monitoring Sub-IF id */
 	u16	nSubIfId;
+	/**Enable Ingress Mirror Constants.Only valid when ingress PCE bypass
+	is enabled.Applicable for GSWIP 3.2*/
+	ltq_bool_t	bEnableIngressMirror;
+	/**Enable Egress Mirror Constants.Applicable for GSWIP 3.2*/
+	ltq_bool_t	bEnableEgressMirror;
+	/**Monitor Lpid, if Ingress or Egress Mirroring enabled.
+	   Applicable for GSWIP 3.2*/
+	u16 nMonitorLpId;
+	ltq_bool_t	bEnableMonitorQmap;
+	u16 nMonitorQid;
+	u16 nRedirectPortId;
 } GSW_monitorPortCfg_t;
 
 /** \brief MDIO Interface Configuration.
@@ -2423,6 +2464,24 @@ typedef struct {
 	/** Argument values */
 	u8 argv[15][30];
 } GSW_MAC_cfg_t;
+
+/** \brief MACSec Cli struct.
+     MACSec Cli struct for passing args and argument values. */
+typedef struct {
+	/** Command Type */
+	u32 cmdType;
+	/** Devid=0 Ingress, Devid=1 Egress */
+	u32 devid;
+	/** RegAddr */
+	u32 nRegAddr;
+	/** RegValue */
+	u32 nData;
+	u32 sa_st;
+	u32 sa_end;
+	u32 sptagen;
+	u32 mtinfoen;
+	u32 val;
+} GSW_MACSec_cfg_t;
 
 /** \brief MMD Register Access. The 'nData' value is directly written
     to the device register or read from the device. Some PHY
@@ -3061,6 +3120,18 @@ typedef struct {
 	u32 nEgressPktsCount;
 	/** Total Engress Bytes Count in Applicable only for GSWIP 3.1 (32-bits) */
 	u32 nEgressBytesCount;
+	/** Ingress header Packet Count Applicable only for GSWIP 3.2 (32-bits) */
+	u32 nIngressHdrPktsCount;
+	/** Ingress header Byte Count Applicable only for GSWIP 3.2 (32-bits) */
+	u32 nIngressHdrBytesCount;
+	/** Egress header Packet Count Applicable only for GSWIP 3.2 (32-bits) */
+	u32 nEgressHdrPktsCount;
+	/** Egress header Byte Count Applicable only for GSWIP 3.2 (32-bits) */
+	u32 nEgressHdrBytesCount;
+	/** Egress header Discard Packet Count Applicable only for GSWIP 3.2 (32-bits) */
+	u32 nEgressHdrDiscPktsCount;
+	/** Egress header Discard Byte Count Applicable only for GSWIP 3.2 (32-bits) */
+	u32 nEgressHdrDiscBytesCount;
 } GSW_PMAC_Cnt_t;
 
 
@@ -3190,6 +3261,27 @@ typedef struct {
 	u64	nRxBadBytes;
 	/** Transmit Good Byte Count (64 bit). */
 	u64	nTxGoodBytes;
+	/**For GSWIP V32 only **/
+	/** Receive Unicast Packet Count for Yellow & Red packet. */
+	u32	nRxUnicastPktsYellowRed;
+	/** Receive Broadcast Packet Count for Yellow & Red packet. */
+	u32	nRxBroadcastPktsYellowRed;
+	/** Receive Multicast Packet Count for Yellow & Red packet. */
+	u32	nRxMulticastPktsYellowRed;
+	/** Receive Good Byte Count (64 bit) for Yellow & Red packet. */
+	u64 nRxGoodBytesYellowRed;
+	/** Receive Packet Count for Yellow & Red packet.  */
+	u32 nRxGoodPktsYellowRed;
+	/** Transmit Unicast Packet Count for Yellow & Red packet. */
+	u32	nTxUnicastPktsYellowRed;
+	/** Transmit Broadcast Packet Count for Yellow & Red packet. */
+	u32	nTxBroadcastPktsYellowRed;
+	/** Transmit Multicast Packet Count for Yellow & Red packet. */
+	u32	nTxMulticastPktsYellowRed;
+	/** Transmit Good Byte Count (64 bit) for Yellow & Red packet. */
+	u64 nTxGoodBytesYellowRed;
+	/** Transmit Packet Count for Yellow & Red packet.  */
+	u32 nTxGoodPktsYellowRed;
 } GSW_Debug_RMON_Port_cnt_t;
 
 
@@ -3242,6 +3334,13 @@ typedef enum {
 	GSW_EXTENDEDVLAN_FILTER_TPID_VTETYPE = 2
 } GSW_ExtendedVlanFilterTpid_t;
 
+typedef enum {
+	GSW_EXTENDEDVLAN_TPID_VTETYPE_1 = 0,
+	GSW_EXTENDEDVLAN_TPID_VTETYPE_2 = 1,
+	GSW_EXTENDEDVLAN_TPID_VTETYPE_3 = 2,
+	GSW_EXTENDEDVLAN_TPID_VTETYPE_4 = 3
+} GSW_ExtendedVlan_4_Tpid_Mode_t;
+
 /** \brief Extended VLAN Filter DEI Field.
     Used by \ref GSW_EXTENDEDVLAN_filterVLAN_t. */
 typedef enum {
@@ -3292,6 +3391,9 @@ typedef struct {
 /** \brief Extended VLAN Filter.
     Used by \ref GSW_EXTENDEDVLAN_config_t. */
 typedef struct {
+	/** Filter on Original Packet. */
+	ltq_bool_t bOriginalPacketFilterMode;
+	GSW_ExtendedVlan_4_Tpid_Mode_t eFilter_4_Tpid_Mode;
 	/** Filter for outer VLAN tag. */
 	GSW_EXTENDEDVLAN_filterVLAN_t sOuterVlan;
 	/** Filter for inner VLAN tag. */
@@ -3389,6 +3491,8 @@ typedef struct {
 typedef struct {
 	/** Number of VLAN tag(s) to remove. */
 	GSW_ExtendedVlanTreatmentRemoveTag_t eRemoveTag;
+
+	GSW_ExtendedVlan_4_Tpid_Mode_t eTreatment_4_Tpid_Mode;
 
 	/** Enable outer VLAN tag add/modification. */
 	ltq_bool_t bAddOuterVlan;
@@ -4264,6 +4368,39 @@ typedef struct {
 	u32 nBridgePortId;
 } GSW_CTP_portAssignment_t;
 
+/** \brief GPID Assignment/association with logical port.
+    Used by \ref GSW_LPID_TO_GPID_ASSIGNMENT_SET
+    and \ref GSW_LPID_TO_GPID_ASSIGNMENT_GET. */
+typedef struct {
+	/** Logical Port Id. The valid range is hardware dependent. */
+	u32 nLogicalPortId;
+
+	/** First Global Port ID mapped to above logical port ID.
+	    */
+	u32 nFirstGlobalPortId;
+	/** Total number of Global Ports mapped above logical port ID. */
+	u32 nNumberOfGlobalPort;
+	/** To configure Valid bits for SunInterface id LP mode: others. */
+	u32 nValidBits;
+}  GSW_LPID_to_GPID_Assignment_t;
+
+/** \brief Logical port and subif Assignment/association with global port.
+    Used by \ref GSW_GPID_TO_LPID_ASSIGNMENT_SET
+    and \ref GSW_GPID_TO_LPID_ASSIGNMENT_GET. */
+typedef struct {
+	u32 nGlobalPortId;
+	/** Logical Port Id. The valid range is hardware dependent. */
+	u32 nLogicalPortId;
+
+	/** Sub Interface Group field.
+	    */
+	u8 nSubIf_GroupField;
+	/** Sub-interface ID override bit and sub-interface ID group field:
+	If it is set, sub-interface group ID is from the table.
+		Otherwise, it is from the descriptor. */
+	ltq_bool_t nSubIf_GroupField_OverRide;
+} GSW_GPID_to_LPID_Assignment_t;
+
 /** \brief Color Marking Table.
     There are standards to define the marking table. User should use
     \ref GSW_QOS_COLOR_MARKING_TABLE_SET to initialize the table before color
@@ -4338,6 +4475,79 @@ typedef struct {
 	    only index 0-7 is valid. */
 	u16 nPortmap[16];
 } GSW_MACFILTER_default_t;
+
+/** \brief I-TAG header defintion .GSWIP-3.2 only
+	Used by \ref GSW_PBB_Tunnel_Template_Config_t*/
+typedef struct {
+	/**I-TAG TPID -2 bytes field*/
+	ltq_bool_t bTpidEnable;
+	u16 nTpid;
+
+	/**I-TAG PCP -3 Bit field*/
+	ltq_bool_t bPcpEnable;
+	u8 nPcp;
+
+	/**I-TAG DEI -1 Bit field*/
+	ltq_bool_t bDeiEnable;
+	u8 nDei;
+
+	/**I-TAG UAC -1 Bit field*/
+	ltq_bool_t bUacEnable;
+	u8 nUac;
+
+	/**I-TAG RES -3 Bit field*/
+	ltq_bool_t bResEnable;
+	u8 nRes;
+
+	/**I-TAG SID -24 Bit field*/
+	ltq_bool_t bSidEnable;
+	u32 nSid;
+} GSW_I_TAG_Config_t;
+
+/** \brief B-TAG header defintion .GSWIP-3.2 only
+	Used by \ref GSW_PBB_Tunnel_Template_Config_t*/
+typedef struct {
+	/**B-TAG TPID -2 bytes field*/
+	ltq_bool_t bTpidEnable;
+	u16 nTpid;
+
+	/**B-TAG PCP -3 Bit field*/
+	ltq_bool_t bPcpEnable;
+	u8 nPcp;
+
+	/**B-TAG DEI -1 Bit field*/
+	ltq_bool_t bDeiEnable;
+	u8 nDei;
+
+	/**B-TAG VID -12 Bit field*/
+	ltq_bool_t bVidEnable;
+	u16 nVid;
+} GSW_B_TAG_Config_t;
+
+/** \brief Tunnel Template Configuration.GSWIP-3.2 only
+    Used by \ref GSW_PBB_TunnelTempate_Config_Set and \ref GSW_PBB_TunnelTempate_Config_Get
+    For \ref GSW_PBB_TunnelTempate_Free, this field should be valid ID returned by
+	    \ref GSW_PBB_TunnelTempate_Alloc.*/
+typedef struct {
+	u32 nTunnelTemplateId;
+
+	/** I-Header Destination Address*/
+	ltq_bool_t bIheaderDstMACEnable;
+	u8 nIheaderDstMAC[GSW_MAC_ADDR_LEN];
+
+	/** I-Header source Address*/
+	ltq_bool_t bIheaderSrcMACEnable;
+	u8 nIheaderSrcMAC[GSW_MAC_ADDR_LEN];
+
+	/** I-Tag*/
+	ltq_bool_t bItagEnable;
+	GSW_I_TAG_Config_t sItag;
+
+	/** B-Tag*/
+	ltq_bool_t bBtagEnable;
+	GSW_B_TAG_Config_t sBtag;
+} GSW_PBB_Tunnel_Template_Config_t;
+
 /*@}*/ /* GSW_IOCTL_GSWIP31 */
 
 /* -------------------------------------------------------------------------- */
@@ -7451,7 +7661,18 @@ typedef struct {
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-#define GSW_MACSEC_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x13, GSW_MAC_cfg_t)
+#define GSW_MACSEC_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x13, GSW_MACSec_cfg_t)
+/**
+   \brief PMACBR Cfg Commands to Read and write operation
+   GSW_PMACBR_CFG.
+   \remarks The function returns an error code in case an error occurs.
+            The error code is described in \ref GSW_return_t.
+   \return Return value as follows:
+   - GSW_statusOk: if successful
+   - An error code in case an error occurs
+*/
+#define GSW_PMACBR_CFG	_IOWR(GSW_DEBUG_MAGIC, 0x14, GSW_MAC_cfg_t)
+
 /**
    \brief DUMP MEM operation
    GSW_DUMP_MEM.
@@ -7461,20 +7682,42 @@ typedef struct {
    - GSW_statusOk: if successful
    - An error code in case an error occurs
 */
-#define GSW_DUMP_MEM	_IOWR(GSW_DEBUG_MAGIC, 0x14, GSW_table_t)
+#define GSW_DUMP_MEM	_IOWR(GSW_DEBUG_MAGIC, 0x15, GSW_table_t)
 
-#define GSW_DEBUG_PRINT_PCEIRQ_LIST 		_IO(GSW_DEBUG_MAGIC, 0x15)
-#define GSW_DEBUG_RMON_PORT_GET				_IOWR(GSW_DEBUG_MAGIC, 0x16, GSW_Debug_RMON_Port_cnt_t)
+#define GSW_DEBUG_PRINT_PCEIRQ_LIST 		_IO(GSW_DEBUG_MAGIC, 0x16)
+#define GSW_DEBUG_RMON_PORT_GET				_IOWR(GSW_DEBUG_MAGIC, 0x17, GSW_Debug_RMON_Port_cnt_t)
+#define GSW_DEBUG_TUNNELTEMP_STATUS 		_IOWR(GSW_DEBUG_MAGIC, 0x18, GSW_debug_t)
 
 /**
-	\brief Following are for GSWIP IRQ operation
+   \brief Following are for GSWIP IRQ operation
 
-	\param GSW_Irq_Op_t Pointer to \ref GSW_Irq_Op_t.
+   \param GSW_Irq_Op_t Pointer to \ref GSW_Irq_Op_t.
 */
-
 #define GSW_IRQ_REGISTER 	_IOWR(GSW_IRQ_MAGIC, 0x01, GSW_Irq_Op_t)
 #define GSW_IRQ_UNREGISTER 	_IOWR(GSW_IRQ_MAGIC, 0x02, GSW_Irq_Op_t)
 #define GSW_IRQ_ENABLE 		_IOWR(GSW_IRQ_MAGIC, 0x03, GSW_Irq_Op_t)
 #define GSW_IRQ_DISBALE 	_IOWR(GSW_IRQ_MAGIC, 0x04, GSW_Irq_Op_t)
+
+/**
+   \brief Following are for GSWIP 3.2 PBB Tunnel template operation
+
+   \param GSW_PBB_Tunnel_Template_Config_t Pointer to \ref GSW_PBB_Tunnel_Template_Config_t.
+*/
+#define GSW_PBB_TUNNEL_TEMPLATE_ALLOC 	_IOWR(GSW_PBB_MAGIC, 0x01, GSW_PBB_Tunnel_Template_Config_t)
+#define GSW_PBB_TUNNEL_TEMPLATE_FREE 	_IOWR(GSW_PBB_MAGIC, 0x02, GSW_PBB_Tunnel_Template_Config_t)
+#define GSW_PBB_TUNNEL_TEMPLATE_SET 	_IOWR(GSW_PBB_MAGIC, 0x03, GSW_PBB_Tunnel_Template_Config_t)
+#define GSW_PBB_TUNNEL_TEMPLATE_GET 	_IOWR(GSW_PBB_MAGIC, 0x04, GSW_PBB_Tunnel_Template_Config_t)
+
+/**
+   \brief Following are for GSWIP 3.2 LPID->GPID/GPID->LPID operation
+
+   \param GSW_LPID_to_GPID_Assignment_t Pointer to \ref GSW_LPID_to_GPID_Assignment_t.
+   \param GSW_GPID_to_LPID_Assignment_t Pointer to \ref GSW_GPID_to_LPID_Assignment_t.
+
+*/
+#define GSW_LPID_TO_GPID_ASSIGNMENT_SET 	_IOWR(GSW_GPID_MAGIC, 0x01, GSW_LPID_to_GPID_Assignment_t)
+#define GSW_LPID_TO_GPID_ASSIGNMENT_GET 	_IOWR(GSW_GPID_MAGIC, 0x02, GSW_LPID_to_GPID_Assignment_t)
+#define GSW_GPID_TO_LPID_ASSIGNMENT_SET 	_IOWR(GSW_GPID_MAGIC, 0x03, GSW_GPID_to_LPID_Assignment_t)
+#define GSW_GPID_TO_LPID_ASSIGNMENT_GET 	_IOWR(GSW_GPID_MAGIC, 0x04, GSW_GPID_to_LPID_Assignment_t)
 
 #endif    /* _LANTIQ_GSW_H_ */
