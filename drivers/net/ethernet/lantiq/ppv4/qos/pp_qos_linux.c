@@ -55,8 +55,9 @@ void stop_run(void)
 	struct pp_qos_drv_data *pdata;
 
 	if (cur_dev) {
-		dev_err(cur_dev, "!!!!! Qos driver in unstable mode !!!!!\n");
+		dev_err(cur_dev, "QoS Assertion\n");
 		pdata = dev_get_drvdata(cur_dev);
+		qos_dbg_tree_show(pdata->qdev, NULL);
 		QOS_BITS_SET(pdata->qdev->flags, PP_QOS_FLAGS_ASSERT);
 	}
 }

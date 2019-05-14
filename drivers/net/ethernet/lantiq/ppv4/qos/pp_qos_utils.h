@@ -42,6 +42,7 @@
 #define QOS_MAX_SHARED_BW_GRP QOS_MAX_SHARED_BANDWIDTH_GROUP
 
 #define MAX_QOS_INSTANCES 1U
+#define PP_QOS_DBG_MAX_INPUT (64)
 
 /* for calculating number of ddr pages for qm from resource size */
 #define PPV4_QOS_DESC_SIZE (16U)
@@ -141,6 +142,8 @@ struct qos_node {
 			int		disable;
 		} port;
 		struct {
+			uint16_t	new_child_phy;
+			uint8_t		new_child_skipped;
 		} sched;
 		struct _queue {
 			uint32_t	green_min;
@@ -279,6 +282,7 @@ struct qos_dev_init_info {
 /******************************************************************************/
 #define QOS_LOG(format, arg...) QOS_LOG_DEBUG(format, ##arg)
 void stop_run(void);
+void qos_dbg_tree_show(struct pp_qos_dev *qdev, struct seq_file *s);
 
 #ifdef __KERNEL__
 #define QOS_ASSERT(condition, format... )				\

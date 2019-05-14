@@ -44,7 +44,6 @@ static struct {
 
 #define PP_QOS_DEBUGFS_DIR "ppv4_qos"
 #define PP_QOS_DBG_MAX_BUF	(1024)
-#define PP_QOS_DBG_MAX_INPUT	(64)
 
 static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
 				    size_t count, loff_t *pos)
@@ -1180,56 +1179,6 @@ static const struct file_operations debug_pstat_fops = {
 	.release = single_release,
 };
 
-#define ARB_STR(a)                             \
-	((a) == PP_QOS_ARBITRATION_WSP ? "WSP" : \
-	 (a) == PP_QOS_ARBITRATION_WRR ? "WRR" :  \
-	 (a) == PP_QOS_ARBITRATION_WFQ ? "WFQ" :  \
-	 "Unknown")
-
-static void __dbg_dump_subtree(struct pp_qos_dev *qdev,
-			       struct qos_node *node,
-			       u32 depth,
-			       struct seq_file *s)
-{
-	u32 idx, tab_idx, n = 0;
-	u32 child_phy, node_id;
-	char tabs_str[PP_QOS_DBG_MAX_INPUT];
-	bool last_child;
-	struct qos_node *child;
-
-	if (depth > 6) {
-		pr_err("Maximum depth of 6 exceeded\n");
-		return;
-	}
-
-	tabs_str[0] = '\0';
-	for (tab_idx = 0 ; tab_idx < depth ; tab_idx++)
-		n += snprintf(tabs_str + n, PP_QOS_DBG_MAX_INPUT - n, "|\t");
-
-	for (idx = 0; idx < node->parent_prop.num_of_children ; ++idx) {
-		last_child = (idx == (node->parent_prop.num_of_children - 1));
-		child_phy = node->parent_prop.first_child_phy + idx;
-		node_id = get_id_from_phy(qdev->mapping, child_phy);
-		child = get_node_from_phy(qdev->nodes, child_phy);
-
-		if (last_child)
-			seq_printf(s, "%s'-- ", tabs_str);
-		else
-			seq_printf(s, "%s|-- ", tabs_str);
-
-		if (node_sched(child)) {
-			seq_printf(s, "Sched-%u(%u)-%s\n",
-				   node_id, child_phy,
-				   ARB_STR(child->parent_prop.arbitration));
-			__dbg_dump_subtree(qdev, child, depth + 1, s);
-		} else if (node_queue(child)) {
-			seq_printf(s, "Queue-%u(%u)-rlm-%u\n",
-				   node_id, child_phy,
-				   child->data.queue.rlm);
-		}
-	}
-}
-
 /**
  * @brief dump complete qos tree
  */
@@ -1238,8 +1187,6 @@ static int pp_qos_dbg_tree_show(struct seq_file *s, void *unused)
 	struct platform_device *pdev;
 	struct pp_qos_drv_data *pdata;
 	struct pp_qos_dev *qdev;
-	struct qos_node *node;
-	u32 node_id, node_phy;
 
 	pdev = s->private;
 
@@ -1257,18 +1204,7 @@ static int pp_qos_dbg_tree_show(struct seq_file *s, void *unused)
 		return 0;
 	}
 
-	/* Iterate through all port nodes */
-	for (node_phy = 0; node_phy < NUM_OF_NODES; ++node_phy) {
-		node = get_node_from_phy(qdev->nodes, node_phy);
-		node_id = get_id_from_phy(qdev->mapping, node_phy);
-		if (node_port(node)) {
-			seq_printf(s, "|-- Port-%u(%u)-%s\n",
-				   node_id,
-				   get_phy_from_id(qdev->mapping, node_id),
-				   ARB_STR(node->parent_prop.arbitration));
-			__dbg_dump_subtree(qdev, node, 1, s);
-		}
-	}
+	qos_dbg_tree_show(qdev, s);
 
 	return 0;
 }

@@ -1609,6 +1609,8 @@ static void node_sched_init(struct pp_qos_dev *qdev, struct qos_node *node)
 {
 	node_init(qdev, node, 1, 1, 1);
 	node->type = TYPE_SCHED;
+	node->data.sched.new_child_phy = QOS_UNKNOWN_PHY;
+	node->data.sched.new_child_skipped = 0;
 }
 
 STATIC_UNLESS_TEST int sched_cfg_valid(
@@ -2297,7 +2299,7 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	}
 
 	QOS_LOG_DEBUG("wred total resources\t%u\n",
-			qdev->hwconf.wred_total_avail_resources);
+		      qdev->hwconf.wred_total_avail_resources);
 	QOS_LOG_DEBUG("qm_ddr_start\t\t0x%08X\n", qdev->hwconf.qm_ddr_start);
 	QOS_LOG_DEBUG("qm_num_of_pages\t\t%u\n", qdev->hwconf.qm_num_pages);
 	QOS_LOG_DEBUG("clock\t\t\t%u\n", qdev->hwconf.qos_clock);
