@@ -127,6 +127,16 @@ const struct cqm_config prx300_cqm_config[] = {
 	.data.dqm_dma.txpush_desc = 8,
 	},
 	{
+	.type = DQM_VUNI_TYPE,
+	.data.dqm_dma.port = 24,
+	.data.dqm_dma.port_range = 0,
+	.data.dqm_dma.dma_ctrl = 2,
+	.data.dqm_dma.dma_chan = 1,
+	.data.dqm_dma.port_enable = 1,
+	.data.dqm_dma.num_desc = 8,
+	.data.dqm_dma.txpush_desc = 8,
+	},
+	{
 	.type = DQM_DMA_TYPE,
 	.data.dqm_dma.port = DMA_PORT_FOR_FLUSH,
 	.data.dqm_dma.port_range = 0,

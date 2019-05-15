@@ -60,6 +60,7 @@ static struct tasklet_struct cbm_debug_tasklet;
 #define FLAG_LAN (DP_F_FAST_ETH_LAN | DP_F_GINT)
 #define FLAG_ACA (DP_F_FAST_WLAN | DP_F_FAST_DSL)
 #define FLAG_LSB_DONT_CARE 0x80000000
+#define FLAG_VUNI (DP_F_VUNI)
 
 struct cqm_egp_map epg_lookup_table[] = {
 	{0,	0,			0},
@@ -69,6 +70,7 @@ struct cqm_egp_map epg_lookup_table[] = {
 	{4,	CBM_PMAC_DYNAMIC,	FLAG_ACA},
 	{5,	CBM_PMAC_DYNAMIC,	FLAG_ACA},
 	{6,	CBM_PMAC_DYNAMIC,	FLAG_ACA},
+	{24,	CBM_PMAC_DYNAMIC,	FLAG_VUNI},
 };
 
 struct cqm_buf_dbg_cnt cqm_dbg_cntrs[CQM_MAX_POLICY_NUM][CQM_MAX_POOL_NUM];
@@ -95,6 +97,8 @@ int find_dqm_port_type(int port)
 		return DQM_DMA_TYPE;
 	else if ((port >= DQM_PON_START_ID) && (port <= DQM_PON_END_ID))
 		return DQM_PON_TYPE;
+	else if ((port >= DQM_VUNI_START_ID) && (port <= DQM_VUNI_END_ID))
+		return DQM_VUNI_TYPE;
 	else
 		return CBM_FAILURE;
 }
@@ -2482,6 +2486,7 @@ static s32 dp_enable(struct module *owner, u32 port_id,
 		}
 		break;
 	case DQM_DMA_TYPE:
+	case DQM_VUNI_TYPE:
 		break;
 	default:
 		dev_err(cqm_ctrl->dev, "Unknown port type %d\n", type);
@@ -3915,6 +3920,7 @@ static int configure_ports(const struct cqm_config *port_config)
 		switch (port_config->type) {
 		case DQM_DMA_TYPE:
 		case DQM_PON_TYPE:
+		case DQM_VUNI_TYPE:
 			result = conf_deq_dma_port(&port_config->data.dqm_dma);
 			break;
 		case DQM_CPU_TYPE:
