@@ -451,6 +451,7 @@ static int gpiolib_reg(struct intel_pinctrl_drv_data *drvdata)
 			return -ENXIO;
 		}
 		spin_lock_init(&desc->lock);
+		writel(0x0, desc->membase + GPIO_DIR);
 
 		ret = gpiochip_setup(dev, desc);
 		if (ret)
@@ -1505,8 +1506,6 @@ static void pinctrl_pin_reset(struct intel_pinctrl_drv_data *drvdata)
 				continue;
 			eqbr_set_pin_mux(drvdata, EQBR_MUX_GPIO,
 					 pin + gdesc->bank->pin_base);
-			intel_eqbr_gpio_dir_input(&gdesc->chip, pin);
-
 			spin_lock_irqsave(&drvdata->lock, flags);
 			eqbr_set_val(gdesc->bank->membase + REG_PUEN,
 				     pin, 1, 0, NULL);
