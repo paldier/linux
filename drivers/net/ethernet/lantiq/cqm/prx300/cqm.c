@@ -3982,30 +3982,11 @@ static int conf_bm(struct cqm_data *pdata)
 		}
 
 		/* Config pool size */
-		switch (i) {
-		case CQM_SIZE0_BUF_SIZE:
-			p_param[i].max_allowed = cqm_ctrl->prx300_pool_ptrs[i];
-			p_param[i].min_guaranteed = 0x40;
-			break;
-		case CQM_SIZE1_BUF_SIZE:
-			p_param[i].max_allowed = (cqm_ctrl->prx300_pool_ptrs[i]
-						  * 4) / 5;
-			p_param[i].min_guaranteed = 0x100;
-			break;
-		case CQM_SIZE2_BUF_SIZE:
-			p_param[i].max_allowed = (cqm_ctrl->prx300_pool_ptrs[i]
-						  * 4) / 5;
-			p_param[i].min_guaranteed = 0x80;
-			break;
-		case CQM_SIZE3_BUF_SIZE:
-			p_param[i].max_allowed = (cqm_ctrl->prx300_pool_ptrs[i]
-						  * 4) / 5;
-			p_param[i].min_guaranteed = 0x40;
-			break;
-		}
+		p_param[i].max_allowed = cqm_ctrl->prx300_pool_ptrs[i];
+		p_param[i].min_guaranteed = 0x40;
 
 		/* Config no of policy */
-		p_param[i].num_pools_in_policy = cqm_ctrl->num_pools - i;
+		p_param[i].num_pools_in_policy = 1;
 
 		/* group_id default value */
 		p_param[i].group_id = 0;
