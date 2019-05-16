@@ -733,6 +733,7 @@ static struct pci_driver dc_ep_driver = {
 	.id_table = dc_ep_id_table,
 	.probe = dc_ep_probe,
 	.remove = dc_ep_remove,
+	.shutdown = dc_ep_remove,
 	/* PM not supported */
 	/* AER is controlled by RC */
 };
