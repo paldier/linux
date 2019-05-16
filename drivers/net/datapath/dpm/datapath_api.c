@@ -73,6 +73,13 @@ int dp_init_ok;
 DP_DEFINE_LOCK(dp_lock);
 unsigned int dp_dbg_err = 1; /*print error */
 EXPORT_SYMBOL(dp_dbg_err);
+static int dp_register_dc(int inst, uint32_t port_id,
+			  struct cbm_dp_alloc_complete_data *cbm_data,
+			  struct dp_dev_data *data, uint32_t flags);
+
+static int dp_build_cqm_data(int inst, uint32_t port_id,
+			     struct cbm_dp_alloc_complete_data *cbm_data,
+			     struct dp_dev_data *data);
 
 /*port 0 is reserved and never assigned to any one */
 int dp_inst_num;
@@ -898,10 +905,8 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 {
 	int res = DP_FAILURE;
 	struct pmac_port_info *port_info;
-#if 0
-	struct cbm_dp_alloc_complete_data cbm_data = {0};
-#endif
 	struct dp_dev_data tmp_data = {0};
+	struct cbm_dp_alloc_complete_data *cbm_data = NULL;
 
 	if (unlikely(!dp_init_ok)) {
 		PR_ERR("dp_register_dev failed for datapath not init yet\n");
@@ -934,6 +939,10 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 			port_info->status = PORT_ALLOCATED;
 			DP_CB(inst, dev_platform_set)(inst, port_id, data,
 						      flags);
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)			
+			if (port_info->umt_param.id)
+				dp_umt_release(&port_info->umt_param, flags);
+#endif
 			res = DP_SUCCESS;
 		} else {
 			DP_DEBUG(DP_DBG_FLAG_REG,
@@ -945,17 +954,12 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 		return res;
 	}
 
-#if 0
 	/*register a device */
-	if (cbm_dp_port_alloc_complete(owner, port_info->dev,
-		port_info->dev_port, port_id, &cbm_data, flags)) {
-		;
-	}
-#endif
 	if (port_info->status != PORT_ALLOCATED) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
 			 "No de-register for %s for unknown status:%d\n",
 			 owner->name, port_info->status);
+		DP_LIB_UNLOCK(&dp_lock);
 		return DP_FAILURE;
 	}
 
@@ -965,12 +969,55 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 		DP_LIB_UNLOCK(&dp_lock);
 		return res;
 	}
+
+	DP_CB(inst, dev_platform_set)(inst, port_id, data, flags);
+
+	cbm_data = kzalloc(sizeof(*cbm_data), GFP_KERNEL);
+	if (!cbm_data) {
+		DP_LIB_UNLOCK(&dp_lock);
+		return res;
+	}
+
+	res = dp_build_cqm_data(inst, port_id, cbm_data, data);
+	if (res == DP_FAILURE) {
+		kfree(cbm_data);
+		DP_LIB_UNLOCK(&dp_lock);
+		return res;
+	}
+
+	/*register a device */
+	if (cbm_dp_port_alloc_complete(owner,
+				       port_info->dev,
+				       port_info->dev_port,
+				       port_id,
+				       cbm_data,
+				       port_info->alloc_flags)) {
+
+		DP_DEBUG(DP_DBG_FLAG_REG, "CBM port alloc failed\n");
+		kfree(cbm_data);
+		DP_LIB_UNLOCK(&dp_lock);
+		return DP_FAILURE;
+	}
+
+	if (data->num_rx_ring || data->num_tx_ring) {
+		res = dp_register_dc(inst, port_id, cbm_data, data, flags);
+		if (res == DP_FAILURE) {
+			kfree(cbm_data);
+			DP_LIB_UNLOCK(&dp_lock);
+			return res;
+		}
+	}
+
+	/* TODO: Need a HAL layer API for CQM and DMA Setup for CQM QoS path
+	 * especially for LGM 4 Ring case
+	 */
 	port_info->status = PORT_DEV_REGISTERED;
 	if (dp_cb)
 		port_info->cb = *dp_cb;
 
-	DP_CB(inst, dev_platform_set)(inst, port_id, data, flags);
 	DP_LIB_UNLOCK(&dp_lock);
+	kfree(cbm_data);
+
 	return DP_SUCCESS;
 }
 EXPORT_SYMBOL(dp_register_dev_ext);
@@ -1340,6 +1387,114 @@ EXIT:
 	return res;
 }
 
+static int dp_build_cqm_data(int inst, uint32_t port_id,
+			     struct cbm_dp_alloc_complete_data *cbm_data,
+			     struct dp_dev_data *data)
+{
+	int i = 0;
+	struct pmac_port_info *port = get_dp_port_info(inst, port_id);
+
+	if ((data->num_rx_ring > DP_RX_RING_NUM) ||
+	    (data->num_tx_ring > DP_TX_RING_NUM)) {
+		PR_ERR("Error RxRing = %d TxRing = %d\n",
+		       data->num_rx_ring, data->num_tx_ring);
+		return DP_FAILURE;
+	}
+
+	/* HOST -> ACA */
+	/* For PRX300 No: of Tx Ring is 1 */
+	cbm_data->num_tx_ring = data->num_tx_ring;
+
+	/* TX Ring */
+	for (i = 0; i < data->num_tx_ring; i++) {
+		memcpy(&cbm_data->tx_ring[i], &data->tx_ring[i],
+		       sizeof(struct dp_tx_ring));
+	}
+
+	cbm_data->deq_port = port->deq_port_base;
+
+	/* ACA -> HOST */
+	/* For PRX300 No: of Rx Ring is 1 */
+	cbm_data->num_rx_ring = data->num_rx_ring;
+
+	/* RX ring */
+	for (i = 0; i < data->num_rx_ring; i++) {
+		memcpy(&cbm_data->rx_ring[i], &data->rx_ring[i],
+		       sizeof(struct dp_rx_ring));
+	}
+
+	return 0;
+}
+
+static int dp_register_dc(int inst, uint32_t port_id,
+			  struct cbm_dp_alloc_complete_data *cbm_data,
+			  struct dp_dev_data *data, uint32_t flags)
+{
+	struct dp_umt_param umt_param = {0};
+	int i = 0;
+	struct pmac_port_info *port = get_dp_port_info(inst, port_id);
+
+	/* Fill in the output data to the the DCDP driver for the RX rings
+	 * and Save Info for debugging
+	 */
+	for (i = 0; i < data->num_rx_ring; i++) {
+		memcpy(&data->rx_ring[i], &cbm_data->rx_ring[i],
+		       sizeof(struct dp_rx_ring));
+		memcpy(&port->rx_ring[i], &cbm_data->rx_ring[i],
+		       sizeof(struct dp_rx_ring));
+	}
+
+	for (i = 0; i < data->num_tx_ring; i++) {
+		memcpy(&data->tx_ring[i], &cbm_data->tx_ring[i],
+		       sizeof(struct dp_tx_ring));
+		memcpy(&port->tx_ring[i], &cbm_data->tx_ring[i],
+		       sizeof(struct dp_tx_ring));
+	}
+
+	/* Save info for debugging */
+	port->num_rx_ring = data->num_rx_ring;
+	port->num_tx_ring = data->num_tx_ring;
+
+	/* UMT Interface is not supported for old products */
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
+	umt_param.id = 0xFF;
+
+	/* For PRX300, RXOUT is to DMA Channel,
+	 * For LGM, RXOUT is to CQEM Deq port
+	 */
+	umt_param.rx_src = DP_UMT_RX_FROM_DMA;
+	umt_param.dma_id = data->rx_ring[0].out_dma_ch_to_gswip;
+	umt_param.dma_ch_num = data->rx_ring[0].num_out_tx_dma_ch;
+
+	/* For PRX300/LGM, TXIN counter is from CQM Deq port,
+	 * Message Mode is SelfCounting
+	 */
+	umt_param.cqm_dq_pid = port->deq_port_base;
+	umt_param.msg_mode = data->umt->umt_mode;
+	umt_param.period =  data->umt->umt_msg_timer;
+	umt_param.sw_msg = DP_UMT_MSG0_MSG1;
+	umt_param.daddr = (u32)data->umt->umt_msg_paddr;
+
+	if (dp_umt_request(&umt_param, 0)) {
+		PR_ERR("UMT request Fail!! DMA ID %x CQM_PID %d MSG_MODE %d"
+		       "PERIOD %d SW_MSG %d DADDR 0x%08x\n", umt_param.dma_id,
+		       umt_param.cqm_dq_pid, umt_param.msg_mode,
+		       umt_param.period, umt_param.sw_msg, umt_param.daddr);
+		return DP_FAILURE;
+	}
+	if (dp_umt_set(&umt_param, 0)) {
+		PR_ERR("UMT port set fail !! DMA ID %x CQM_PID %d MSG_MODE %d"
+		       "PERIOD %d SW_MSG %d DADDR 0x%08x\n", umt_param.dma_id,
+		       umt_param.cqm_dq_pid, umt_param.msg_mode,
+		       umt_param.period, umt_param.sw_msg, umt_param.daddr);
+		return DP_FAILURE;
+	}
+
+	/* Save umt params */
+	memcpy(&port->umt_param, &umt_param, sizeof(struct dp_umt_param));
+#endif
+	return DP_SUCCESS;
+}
 /* return DP_SUCCESS -- found
  * return DP_FAILURE -- not found
  */

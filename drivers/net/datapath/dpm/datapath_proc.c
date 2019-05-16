@@ -53,6 +53,69 @@ int proc_port_init(void)
 	return 0;
 }
 
+int dump_dc_info(struct seq_file *s, struct pmac_port_info *port)
+{
+	int i = 0;
+	u32 cid, pid, nid;
+	for (i = 0; i < port->num_tx_ring; i++) {
+		seq_printf(s, "    DC TxRing:      %d\n", i);
+		seq_printf(s, "      TXIN  DeqRingSize/paddr:      %d/0x%p\n",
+			   port->tx_ring[i].in_deq_ring_size,
+			   port->tx_ring[i].in_deq_paddr);
+		seq_printf(s, "      TXOUT FreeRingSize/paddr:     %d/0x%p\n",
+			   port->tx_ring[i].out_free_ring_size,
+			   port->tx_ring[i].out_free_paddr);
+		seq_printf(s, "      TXOUT PolicyBase/Poolid:      %d/%d\n",
+			   port->tx_ring[i].txout_policy_base,
+			   port->tx_ring[i].tx_poolid);
+		seq_printf(s, "      PolicyNum:                    %d\n",
+			   port->tx_ring[i].policy_num);
+		seq_printf(s, "      NumOfTxPkt/TxPktSize:         %d/%d\n",
+			   port->tx_ring[i].num_tx_pkt,
+			   port->tx_ring[i].tx_pkt_size);
+	}
+
+	for (i = 0; i < port->num_rx_ring; i++) {
+		seq_printf(s, "    DC RxRing:      %d\n", i);
+		seq_printf(s, "      RXOUT EnqRingSize/paddr/pid:  %d/0x%p/%d\n",
+			   port->rx_ring[i].out_enq_ring_size,
+			   port->rx_ring[i].out_enq_paddr,
+			   port->rx_ring[i].out_enq_port_id);
+		seq_printf(s, "      RXOUT NumOfDmaCh:             %d\n",
+			   port->rx_ring[i].num_out_tx_dma_ch);
+		cid = _DMA_CONTROLLER(port->rx_ring[i].out_dma_ch_to_gswip);
+		pid = _DMA_PORT(port->rx_ring[i].out_dma_ch_to_gswip);
+		nid = _DMA_CHANNEL(port->rx_ring[i].out_dma_ch_to_gswip);
+		seq_printf(s, "      RXOUT dma-ctrl/port/chan:     %d/%d/%d\n",
+			   cid, pid, nid);
+		seq_printf(s, "      RXOUT NumOfCqmDqPort/pid:     %d/%d\n",
+			   port->rx_ring[i].num_out_cqm_deq_port,
+			   port->rx_ring[i].out_cqm_deq_port_id);
+		seq_printf(s, "      RXIN  InAllocRingSize/Paddr:  %d/0x%p\n",
+			   port->rx_ring[i].in_alloc_ring_size,
+			   port->rx_ring[i].in_alloc_paddr);
+		seq_printf(s, "      NumPkt/Pktsize/Policybase:    %d/%d/%d\n",
+			   port->rx_ring[i].num_pkt,
+			   port->rx_ring[i].rx_pkt_size,
+			   port->rx_ring[i].rx_policy_base);
+		seq_printf(s, "      PreFillPktNum/PktBase:        %d/0x%p\n",
+			   port->rx_ring[i].prefill_pkt_num,
+			   port->rx_ring[i].pkt_base_paddr);
+	}
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
+	seq_printf(s, "    UMT id/CqmDeqPid/msg_mode:      %d/%d/%d\n",
+		   port->umt_param.id,
+		   port->umt_param.cqm_dq_pid,
+		   port->umt_param.msg_mode);
+	seq_printf(s, "    UMT period/daddr:               %d/0x%08x\n",
+		   port->umt_param.period,
+		   port->umt_param.daddr);
+#endif
+
+	return 0;
+}
+
+
 int proc_port_dump(struct seq_file *s, int pos)
 {
 	int i, j;
@@ -159,6 +222,10 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_printf(s, "    tx_ring_size:      %d\n", port->tx_ring_size);
 	seq_printf(s, "    tx_ring_offset:    %d(to next dequeue port)\n",
 		   port->tx_ring_offset);
+
+	if (port->num_rx_ring || port->num_tx_ring)
+		dump_dc_info(s, port);
+
 	if (pos == 0)
 		loop = info->cap.max_num_subif_per_port;
 	else

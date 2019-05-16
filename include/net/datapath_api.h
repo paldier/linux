@@ -29,7 +29,7 @@
 #error "wrong DP HAL selected"
 #endif
 #endif /*DATAPATH_HAL_LAYER */
-#include <net/datapath_api_umt.h>
+#include <net/intel_datapath_umt.h>
 #include <net/datapath_api_vlan.h>
 #include <net/switch_api/lantiq_gsw_api.h>
 #include <net/switch_api/lantiq_gsw_flow.h>
@@ -979,7 +979,6 @@ enum DP_UMT_MODE {
 	DP_UMT_MODE_HW_SELF, /*!< HW UMT self couting mode */
 	DP_UMT_MODE_HW_USER, /*!< HW UMT user Mode */
 	DP_UMT_MODE_SW, /*!< SW UMT: no need to call UMT API */
-	DP_UMT_MODE_MAX, /*!< Not valid UMT mode */
 };
 
 enum DP_UMT_MSG_MODE {

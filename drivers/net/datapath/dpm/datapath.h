@@ -49,6 +49,7 @@
 #include "datapath_swdev.h"
 #endif
 #include <net/datapath_inst.h>
+#include <net/intel_datapath_umt.h>
 
 #define MAX_SUBIFS 256  /* Max subif per DPID */
 #define MAX_DP_PORTS  16
@@ -547,6 +548,13 @@ struct pmac_port_info {
 	struct dma_tx_desc_1 dma1_mask_template[MAX_TEMPLATE];
 	struct dma_tx_desc_3 dma3_template[MAX_TEMPLATE];
 	struct dma_tx_desc_3 dma3_mask_template[MAX_TEMPLATE];
+	u32 num_tx_ring; /* Num of Tx ring */
+	u32 num_rx_ring; /* Num of Rx ring */
+	struct dp_rx_ring rx_ring[DP_RX_RING_NUM]; /*!< DC rx ring info	*/
+	struct dp_tx_ring tx_ring[DP_TX_RING_NUM]; /*!< DC tx ring info	*/
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
+	struct dp_umt_param umt_param; /*!< UMT Param */
+#endif
 	/* These members must be end. */
 	u32 tail;
 	struct dp_subif_info *subif_info;

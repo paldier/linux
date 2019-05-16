@@ -130,5 +130,6 @@ int dp_umt_set(struct dp_umt_param *umt, unsigned long flag);
 int dp_umt_enable(struct dp_umt_param *umt, unsigned long flag, int enable);
 int dp_umt_suspend_sending(struct dp_umt_param *umt,
 			   unsigned long flag, int halt);
+int dp_umt_release(struct dp_umt_param *umt, unsigned long flag);
 
 #endif
