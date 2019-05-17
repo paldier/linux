@@ -4498,8 +4498,137 @@ int dp_children_get_31(struct dp_node_child *cfg, int flag)
 	return DP_FAILURE;
 }
 
-/* #define DP_SUPPORT_RES_RESERVE */
-int dp_node_reserve(int inst, int ep, struct dp_port_data *data, int flags)
+static int dp_queue_alloc_conf(int inst, int *logical_id, int *qid)
+{
+	unsigned int id = 0;
+	struct hal_priv *priv = HAL(inst);
+	struct pp_qos_queue_conf q_conf;
+	struct pp_qos_queue_info info;
+	int res = DP_SUCCESS;
+
+	if (qos_queue_allocate(priv->qdev, &id)) {
+		res = DP_FAILURE;
+		PR_ERR("qos_queue_allocate failed\n");
+		return res;
+	}
+	qos_queue_conf_set_default(&q_conf);
+	q_conf.wred_enable = 0;
+	q_conf.queue_wred_max_allowed = DEF_QRED_MAX_ALLOW;
+	q_conf.queue_child_prop.parent = priv->ppv4_drop_p;
+	if (qos_queue_set(priv->qdev, id, &q_conf)) {
+		res = DP_FAILURE;
+		PR_ERR("qos_queue_set fail for queue=%d to parent=%d\n",
+		       id, q_conf.queue_child_prop.parent);
+		goto EXIT;
+	}
+	DP_DEBUG(DP_DBG_FLAG_QOS, "Workaround queue(/%d)-> tmp parent(/%d)\n",
+		 id, q_conf.queue_child_prop.parent);
+	if (qos_queue_info_get(priv->qdev, id, &info)) {
+		res = DP_FAILURE;
+		PR_ERR("qos_queue_info_get: %d\n", id);
+		goto EXIT;
+	}
+	*qid = info.physical_id;
+	*logical_id = id;
+	return res;
+EXIT:
+	qos_queue_remove(priv->qdev, id);
+	return res;
+}
+
+int dp_q_reserve_continuous(int inst, int ep, struct dp_dev_data *data,
+			    int flags)
+{
+	int i;
+	unsigned int id = 0, qid = 0;
+	int len, curr_num = 0, curr_off = 0;
+	struct resv_q *resv_q, *tmp_resv_q;
+	struct hal_priv *priv = HAL(inst);
+	int res = DP_SUCCESS;
+
+	/* free resved queue */
+	if (flags == DP_F_DEREGISTER)
+		goto FREE_EXIT;
+	/* to reserve the queue */
+	if (data->num_resv_q <= 0) {
+		DP_ERR("Provide valid Q no for continuous Q reserve\n");
+		return DP_FAILURE;
+	}
+
+	len = sizeof(struct resv_q) * data->num_resv_q;
+	priv->resv[ep].resv_q = kzalloc(len, GFP_ATOMIC);
+	if (!priv->resv[ep].resv_q)
+		return DP_FAILURE;
+	tmp_resv_q = kzalloc(sizeof(*tmp_resv_q) * MAX_QUEUE, GFP_ATOMIC);
+	if (!tmp_resv_q) {
+		kfree(priv->resv[ep].resv_q);
+		return DP_FAILURE;
+	}
+	if (dp_queue_alloc_conf(inst, &id, &qid)) {
+		PR_ERR("qos_queue_allocate failed\n");
+		kfree(priv->resv[ep].resv_q);
+		kfree(tmp_resv_q);
+		return DP_FAILURE;
+	}
+	tmp_resv_q[curr_num].id = id;
+	tmp_resv_q[curr_num].physical_id = qid;
+	curr_num++;
+	while (((curr_num) - curr_off) < data->num_resv_q) {
+		if (dp_queue_alloc_conf(inst, &id, &qid)) {
+			res = DP_FAILURE;
+			PR_ERR("qos_queue_allocate failed\n");
+			kfree(priv->resv[ep].resv_q);
+			goto clear_q;
+		}
+		tmp_resv_q[curr_num].id = id;
+		tmp_resv_q[curr_num].physical_id = qid;
+		curr_num++;
+		if ((tmp_resv_q[curr_num - 1].physical_id -
+		     tmp_resv_q[curr_num - 2].physical_id == 1) ||
+		     (tmp_resv_q[curr_num - 2].physical_id -
+		     tmp_resv_q[curr_num - 1].physical_id == 1)) {
+			DP_DEBUG(DP_DBG_FLAG_QOS, "%d %d\n",
+				 curr_num, curr_off);
+			continue;
+		} else {
+			curr_off = curr_num - 1;
+		}
+	}
+	if (curr_num - curr_off == data->num_resv_q) {
+		/* Copy information to priv structure */
+		resv_q = priv->resv[ep].resv_q;
+		for (i = 0; i < data->num_resv_q; i++) {
+			resv_q[i].id = tmp_resv_q[curr_off + i].id;
+			resv_q[i].physical_id =
+				tmp_resv_q[curr_off + i].physical_id;
+			priv->resv[ep].num_resv_q = i + 1;
+			DP_DEBUG(DP_DBG_FLAG_QOS, "reseve q[%d/%d]\n",
+				 resv_q[i].id, resv_q[i].physical_id);
+		}
+	} else {
+		goto clear_q;
+	}
+clear_q:
+	/* clear other non-continuously allocated Q */
+	for (i = 0; i < curr_off; i++)
+		qos_queue_remove(priv->qdev, tmp_resv_q[i].id);
+	kfree(tmp_resv_q);
+	data->qos_resv_q_base = resv_q[curr_off].physical_id;
+	return res;
+FREE_EXIT:
+	if (priv->resv[ep].resv_q) {
+		struct resv_q  *resv_q = priv->resv[ep].resv_q;
+
+		for (i = 0; i < priv->resv[ep].num_resv_q; i++)
+			qos_queue_remove(priv->qdev, resv_q[i].id);
+		kfree(resv_q);
+		priv->resv[ep].resv_q = NULL;
+		priv->resv[ep].num_resv_q = 0;
+	}
+	return res;
+}
+
+int dp_node_reserve(int inst, int ep, struct dp_dev_data *data, int flags)
 {
 	int i;
 	unsigned int id;
@@ -4512,10 +4641,6 @@ int dp_node_reserve(int inst, int ep, struct dp_port_data *data, int flags)
 	struct hal_priv *priv = HAL(inst);
 	int res = DP_SUCCESS;
 
-#ifndef DP_SUPPORT_RES_RESERVE /* immediately return */
-	return res;
-#endif
-
 	if (!priv) {
 		PR_ERR("priv cannot be NULL\n");
 		return DP_FAILURE;
@@ -4525,12 +4650,11 @@ int dp_node_reserve(int inst, int ep, struct dp_port_data *data, int flags)
 	if (flags == DP_F_DEREGISTER)
 		goto FREE_EXIT;
 
-	/* Need reserve for queue/scheduler */
-/* #define DP_SUPPORT_RES_TEST */
-#ifdef DP_SUPPORT_RES_TEST
-	data->num_resv_q = 4;
-	data->num_resv_sched = 4;
-#endif
+	if (data->flag_ops & (DP_F_DEV_RESV_Q | DP_F_DEV_CONTINUOUS_Q)) {
+		dp_q_reserve_continuous(inst, ep, data, flags);
+		return res;
+	}
+
 	/* to reserve the queue */
 	if (data->num_resv_q <= 0)
 		goto RESERVE_SCHED;

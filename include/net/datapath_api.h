@@ -310,6 +310,13 @@ enum DP_SPL_TYPE {
 				 *     pmapper althogh GSIWP support 64
 				 *     in pcp mode
 				 */
+#define DP_MAX_DEQ_PER_SUBIF 8 /*!<@brief the maximum number of dequeue port per
+				* subif Note : one subif, it can create more
+				* than 8 queues.
+				* for example of epon, one subif can use up to 8
+				* dequeue port, each dequeue port will use 1 Q
+				* only
+				*/
 #define DP_PMAPPER_DISCARD_CTP 0xFFFF  /*!<@brief Discard ctp flag for pmapper*/
 /*! @brief structure for pmapper */
 struct dp_pmapper {
@@ -354,7 +361,13 @@ typedef struct dp_subif {
 		   *   normally one GPID per subif for non PON device.
 		   *   For PON case, one GPID per bridge port
 		   */
-	u16 def_qid; /*!< [out] default physical queue id assigned by DP */
+	u8  num_q; /*!< [out] num of default number of queues allocated by DP */
+	union {
+		u16 def_qid; /*!< [out] def physical queue id assigned by DP */
+		u16 def_qlist[DP_MAX_DEQ_PER_SUBIF]; /*!< [in/out] default
+						      * physical qid list 
+						      * assigned by DP */
+	};
 	int lookup_mode; /*!< [out] CQM lookup mode for this device
 			  *   (dp_port based)
 			  *   valid for dp_get_netif_subifid only
@@ -745,6 +758,7 @@ enum DP_SUBIF_DATA_FLAG {
 				       */
 	DP_SUBIF_LCT = BIT(2), /*!< Register as LCT port */
 	DP_SUBIF_VANI = BIT(3), /*!< Register as vANI Subif */
+	DP_SUBIF_DEQPORT_NUM = BIT(4), /*!< Specify num of deq port per subif */
 };
 
 /*! @brief dp_subif_id struct for get_netif_subif */
@@ -850,6 +864,7 @@ struct dp_subif_data {
 	u16 mac_learn_disable; /*!< [in] To enable or disable
 				* mac learning for subif
 				*/
+	u16 num_deq_port; /*!< [in] To specify number of DEQ_PORT one subif */
 };
 
 /*! @brief enum DP_F_DATA_RESV_CQM_PORT */
@@ -881,14 +896,14 @@ struct dp_port_data {
 			    */
 	u32 start_port_no; /*!< valid only if DP_F_DATA_RESV_CQM_PORT is set */
 
-	int num_resv_q; /*!< input:reserve the required number of queues. Valid
+	int num_resv_q; /*!< [in] reserve the required number of queues. Valid
 			 *   only if DP_F_DATA_RESV_Q bit valid in \ref flag_ops
 			 */
-	int num_resv_sched; /*!< input:reserve required number of schedulers.
+	int num_resv_sched; /*!< [in] reserve required number of schedulers.
 			     *   Valid only if DP_F_DATA_RESV_SCH bit valid in
 			     *   \ref flag_ops
 			     */
-	int deq_port_base; /*!< output: the CQM dequeue port base for the
+	int deq_port_base; /*!< [out] the CQM dequeue port base for the
 			    *   traffic to this device.
 			    */
 	int deq_num;  /*!< [out] the number of dequeue port allocated for the
@@ -975,6 +990,20 @@ struct dp_buf_info {
  *            use default policy to free it
  */
 int dp_free_dc_buf(struct dp_buf_info *buf, int flag);
+
+/*! @brief enum DP_SUBIF_DATA_FLAG */
+enum DP_DEV_DATA_FLAG {
+	DP_F_DEV_RESV_Q = BIT(0), /*!< Reserve queues for this dev
+				   * based on num_resv_q
+				   */
+	DP_F_DEV_RESV_SCH = BIT(1), /*!< Reserve scheduler for this dev
+				     * based on num_resv_sched
+				     */
+	DP_F_DEV_CONTINUOUS_Q = BIT(2), /*!< Reserve continuous Q for this dev
+					 * DP_F_DEV_RESV_Q bit should also be
+					 * set for this continuous Q alloc
+					 */
+};
 
 /**
  * @brief dp_gpid_tx_info
@@ -1227,23 +1256,27 @@ struct dp_umt {
  *  applications
  */
 struct dp_dev_data {
-	u8 num_rx_ring; /*!< [in] number of rx ring from DC device to Host.
-			 *   num_rx_ring requirement:
-			 *   @num_rings <= @DP_RX_RING_NUM
-			 *   GRX350/PRX300:1 rx ring
-			 *   LGM: up to 2 rx ring, like Docsis can use 2 rings
-			 *   For two ring case:
-			 *    1st rxout ring without qos
-			 *    2nd rxout ring with qos
-			 */
-	u8 num_tx_ring; /*!< [in] number of tx ring from Host to DC device
-			 *   num_rx_ring requirement:
-			 *   @num_rings <= @DP_TX_RING_NUM
-			 *   Normally it is 1 TX ring only.
-			 *   But for 5G, it can support up to 8 TX ring
-			 *   For docsis, alhtough it is 16 dequeue port to WIB.
-			 *   But the final ring only 1, ie, WIB to Dcosis
-			 */
+	enum DP_DEV_DATA_FLAG flag_ops; /*!< flag operation, for subif
+					 * registration
+					 * refer to enum DP_DEV_DATA_FLAG 
+					 */
+	u8 num_rx_ring;   /*!< [in] number of rx ring from DC device to Host.
+			    *   num_rx_ring requirement:
+			    *   @num_rings <= @DP_RX_RING_NUM
+			    *   GRX350/PRX300:1 rx ring
+			    *   LGM: up to 2 rx ring, like Docsis can use 2 rings
+			    *   For two ring case:
+			    *    1st rxout ring without qos
+			    *    2nd rxout ring with qos
+			    */
+	u8 num_tx_ring;   /*!< [in] number of tx ring from Host to DC device
+			    *   num_rx_ring requirement:
+			    *   @num_rings <= @DP_TX_RING_NUM
+			    *   Normally it is 1 TX ring only.
+			    *   But for 5G, it can support up to 8 TX ring
+			    *   For docsis, alhtough it is 16 dequeue port to WIB.
+			    *   But the final ring only 1, ie, WIB to Dcosis
+			    */
 	u8 num_umt_port;   /*!< [in] number of UMT port.
 			    *    Normally is 1 only. But Docsis can use up to 2
 			    */
@@ -1283,6 +1316,14 @@ struct dp_dev_data {
 			* DP need to add this parameter to fully use of shared
 			* HW resource.
 			*/
+	int num_resv_q; /*!< [in] reserve the required number of queues. Valid
+			 *   only if DP_F_DATA_RESV_Q bit valid in \ref flag_ops
+			 */
+	int num_resv_sched; /*!< [in] reserve required number of schedulers.
+			     *   Valid only if DP_F_DATA_RESV_SCH bit valid in
+			     *   \ref flag_ops
+			     */
+	u16 qos_resv_q_base; /*!< [out] PPv4 QoS reserved Q base */
 };
 
 /*! @addtogroup Datapath_Driver_API */

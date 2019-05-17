@@ -533,7 +533,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	}
 	cqe_deq = port_info->deq_port_base + deq_port_idx;
 	dma_ch_offset = dp_deq_port_tbl[inst][cqe_deq].dma_ch_offset;
-	get_dp_port_subif(port_info, subif_ix)->cqm_deq_port = cqe_deq;
+	get_dp_port_subif(port_info, subif_ix)->cqm_deq_port[0] = cqe_deq;
 	dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
 	if (port_info->num_dma_chan)
 		atomic_inc(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);

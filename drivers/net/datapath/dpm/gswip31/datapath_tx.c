@@ -113,7 +113,7 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 	char tx_chksum_flag = 0; /*check csum cal can be supported or not */
 	char insert_pmac_f = 1; /*flag to insert one pmac */
 	int res = DP_SUCCESS;
-	int ep, vap;
+	int ep, vap, num_deq_port, deq_port_idx, class;
 	enum dp_xmit_errors err_ret = 0;
 	int inst = 0;
 	struct cbm_tx_data data;
@@ -327,6 +327,18 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 	 */
 	if (insert_pmac_f)
 		DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
+
+	/* For EPON subifid set as Deq Port Idx + Class */
+	if (dp_info->alloc_flags & DP_F_EPON) {
+		num_deq_port = get_dp_port_subif(dp_info, vap)->num_qid;
+		deq_port_idx = get_dp_port_subif(dp_info, vap)->cqm_port_idx;
+		if (skb->priority <= num_deq_port)
+			class = skb->priority;
+		else
+			class = num_deq_port - 1;
+		desc_0->field.dest_sub_if_id = deq_port_idx + class;
+		DP_CB(inst, set_pmac_subif)(&pmac, deq_port_idx + class);
+	}
 
 	if (unlikely(dp_dbg_flag)) {
 		if (insert_pmac_f)

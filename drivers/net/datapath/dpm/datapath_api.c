@@ -530,11 +530,14 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 {
 	int res = DP_FAILURE;
 
-	int i, port_id, start, end;
+	int i, port_id, start, end, j;
 	struct pmac_port_info *port_info;
 	struct cbm_dp_en_data cbm_data = {0};
 	struct subif_platform_data platfrm_data = {0};
 	struct dp_subif_info *sif;
+	u32 cqm_deq_port;
+	u32 dma_ch_offset;
+	u32 dma_ch_ref, dma_ch_ref_curr;
 
 	port_id = subif_id->port_id;
 	port_info = get_dp_port_info(inst, port_id);
@@ -582,13 +585,16 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 	/*PR_INFO("search range: start=%d end=%d\n",start, end);*/
     /*allocate a free subif */
 	for (i = start; i < end; i++) {
-		u32 cqm_deq_port;
-		u32 dma_ch_offset;
-
 		sif = get_dp_port_subif(port_info, i);
 		if (sif->flags) /*used already & not free*/
 			continue;
 
+		if (data->num_deq_port == 0)
+			data->num_deq_port = 1;
+		cqm_deq_port = port_info->deq_port_base + data->deq_port_idx;
+		dma_ch_offset =	DP_DEQ(inst, cqm_deq_port).dma_ch_offset;
+		dma_ch_ref_curr = atomic_read(&(dp_dma_chan_tbl[inst] +
+					      dma_ch_offset)->ref_cnt);
 		/*now find a free subif or valid subif
 		 *need to do configuration HW
 		 */
@@ -605,13 +611,14 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			PR_ERR("port info status fail for 0\n");
 			return res;
 		}
-		cqm_deq_port = sif->cqm_deq_port;
-		dma_ch_offset =
-			dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
-
 		sif->flags = 1;
 		sif->netif = dev;
 		port_info->port_id = port_id;
+		/*currently this field is used for EPON case. Later can further
+		 * enhance
+		 */
+		sif->num_qid = data->num_deq_port;
+		sif->deq_port_idx = data->deq_port_idx;
 
 		if (subif_id->subif < 0) /*dynamic:shift bits as HW defined*/
 			sif->subif =
@@ -634,8 +641,6 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		port_info->num_subif++;
 		if ((port_info->num_subif == 1) ||
 		    (platfrm_data.act & TRIGGER_CQE_DP_ENABLE)) {
-			u32 dma_ch_ref;
-
 			cbm_data.dp_inst = inst;
 			cbm_data.num_dma_chan = port_info->num_dma_chan;
 			cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
@@ -651,24 +656,39 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 				PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
 				return res;
 			}
-			dma_ch_ref = atomic_read(&(dp_dma_chan_tbl[inst] +
+			for (j = 0; j < data->num_deq_port; j++) {
+				cqm_deq_port = sif->cqm_deq_port[j];
+				dma_ch_offset =
+					DP_DEQ(inst, cqm_deq_port).dma_ch_offset;
+				dma_ch_ref =
+					atomic_read(&(dp_dma_chan_tbl[inst] +
 						 dma_ch_offset)->ref_cnt);
-			/* PPA Directpath/LitePath don't have DMA CH */
-			if (dma_ch_ref == 1 &&
-			    !(port_info->alloc_flags & DP_F_DIRECT))
-				cbm_data.dma_chnl_init = 1; /*to enable DMA*/
-			DP_DEBUG(DP_DBG_FLAG_REG, "%s:%s%d %s%d %s%d  %s%d\n",
-				 "cbm_dp_enable",
-				 "dp_port=", port_id,
-				 "deq_port=", cbm_data.deq_port,
-				 "dma_chnl_init=", cbm_data.dma_chnl_init,
-				 "tx_dma_chan ref=%d\n",
-				 dma_ch_ref);
-			if (cbm_dp_enable(owner, port_id, &cbm_data, 0,
-					  port_info->alloc_flags)) {
-				DP_DEBUG(DP_DBG_FLAG_REG,
-					 "cbm_dp_enable fail\n");
-				return res;
+				cbm_data.deq_port = port_info->deq_port_base +
+							data->deq_port_idx + j;
+				/* No need to enable DMA if multiple DEQ->single
+				 * DMA
+				 */
+				if (j != 0)
+					cbm_data.dma_chnl_init = 0;
+				else
+				/* PPA Directpath/LitePath don't have DMA CH */
+					if (dma_ch_ref_curr == 0 &&
+					    !(port_info->alloc_flags &
+					    DP_F_DIRECT))
+						/*to enable DMA*/
+						cbm_data.dma_chnl_init = 1;
+				DP_DEBUG(DP_DBG_FLAG_REG, "%s%d%s%d%s%d%s%d%d\n",
+					 "cbm_dp_enable: dp_port=", port_id,
+					 " deq_port=", cbm_data.deq_port,
+					 " dma_chnl_init=",
+					 cbm_data.dma_chnl_init,
+					 " tx_dma_chan ref=", dma_ch_ref, dma_ch_ref_curr);
+				if (cbm_dp_enable(owner, port_id, &cbm_data, 0,
+						  port_info->alloc_flags)) {
+					DP_DEBUG(DP_DBG_FLAG_REG,
+						 "cbm_dp_enable fail\n");
+					return res;
+				}
 			}
 			DP_DEBUG(DP_DBG_FLAG_REG, "cbm_dp_enable ok\n");
 		} else {
@@ -702,12 +722,13 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 				    uint32_t flags)
 {
 	int res = DP_FAILURE;
-	int i, port_id, cqm_port, bp;
+	int i, j, port_id, cqm_port, bp;
 	u8 find = 0;
 	struct pmac_port_info *port_info;
 	struct cbm_dp_en_data cbm_data = {0};
 	struct subif_platform_data platfrm_data = {0};
 	struct dp_subif_info *sif;
+	u32 dma_ch_offset, dma_ch_ref;
 
 	port_id = subif_id->port_id;
 	port_info = get_dp_port_info(inst, port_id);
@@ -757,7 +778,6 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 			 subif_name);
 		return res;
 	}
-	cqm_port = sif->cqm_deq_port;
 	bp = sif->bp;
 	/* reset mib, flag, and others */
 	memset(&sif->mib, 0, sizeof(sif->mib));
@@ -771,35 +791,43 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	}
 	if (!port_info->num_subif)
 		port_info->status = PORT_DEV_REGISTERED;
+	for (j = 0; j < sif->num_qid; j++) {
+		cqm_port = sif->cqm_deq_port[j];
+		if (!dp_deq_port_tbl[inst][cqm_port].ref_cnt) {
+			/*delete all queues which may created
+			 * by PPA or other apps
+			 */
+			struct dp_node_alloc port_node;
 
-	if (!dp_deq_port_tbl[inst][cqm_port].ref_cnt) {
-		/*delete all queues which may created by PPA or other apps*/
-		struct dp_node_alloc port_node;
-
-		port_node.inst = inst;
-		port_node.dp_port = port_id;
-		port_node.type = DP_NODE_PORT;
-		port_node.id.cqm_deq_port = cqm_port;
-		dp_node_children_free(&port_node, 0);
-		/*disable cqm port */
-		cbm_data.dp_inst = inst;
-		cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
-		cbm_data.deq_port = cqm_port;
-		/* PPA Directpath/LitePath don't have DMA CH */
-		if (!(port_info->alloc_flags & DP_F_DIRECT))
-			cbm_data.dma_chnl_init = 1; /*to disable DMA */
-		if (cbm_dp_enable(owner, port_id, &cbm_data,
-				  CBM_PORT_F_DISABLE, port_info->alloc_flags)) {
+			port_node.inst = inst;
+			port_node.dp_port = port_id;
+			port_node.type = DP_NODE_PORT;
+			port_node.id.cqm_deq_port = cqm_port;
+			dp_node_children_free(&port_node, 0);
+			/*disable cqm port */
+			cbm_data.dp_inst = inst;
+			cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
+			cbm_data.deq_port = cqm_port;
+			dma_ch_offset =	DP_DEQ(inst, cqm_port).dma_ch_offset;
+			dma_ch_ref = atomic_read(&(dp_dma_chan_tbl[inst] +
+						 dma_ch_offset)->ref_cnt);
+			/* PPA Directpath/LitePath don't have DMA CH */
+			if ((!(port_info->alloc_flags & DP_F_DIRECT)) &&
+			    (!dma_ch_ref))
+				cbm_data.dma_chnl_init = 1; /*to disable DMA */
+			if (cbm_dp_enable(owner, port_id, &cbm_data,
+					  CBM_PORT_F_DISABLE,
+					  port_info->alloc_flags)) {
+				DP_DEBUG(DP_DBG_FLAG_REG,
+					 "cbm_dp_disable fail:port=%d subix=%d %s=%d\n",
+					 port_id, i, "dma_chnl_init",
+					 cbm_data.dma_chnl_init);
+				return res;
+			}
 			DP_DEBUG(DP_DBG_FLAG_REG,
-				 "cbm_dp_disable fail:port=%d subix=%d %s=%d\n",
-				 port_id, i,
-				 "dma_chnl_init", cbm_data.dma_chnl_init);
-
-			return res;
+				 "cbm_dp_disable ok:port=%d subix=%d cqm_port=%d\n",
+				 port_id, i, cqm_port);
 		}
-		DP_DEBUG(DP_DBG_FLAG_REG,
-			 "cbm_dp_disable ok:port=%d subix=%d cqm_port=%d\n",
-			 port_id, i, cqm_port);
 	}
 	/* for pmapper and non-pmapper both
 	 *  1)for PRX300, dev is managed at its HAL level
@@ -977,7 +1005,6 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 		return res;
 	}
 
-	/*register a device */
 	if (port_info->status != PORT_ALLOCATED) {
 		DP_DEBUG(DP_DBG_FLAG_REG,
 			 "No de-register for %s for unknown status:%d\n",
@@ -994,6 +1021,8 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 	}
 
 	DP_CB(inst, dev_platform_set)(inst, port_id, data, flags);
+	port_info->res_qid_base = data->qos_resv_q_base;
+	port_info->num_resv_q = data->num_resv_q;
 
 	cbm_data = kzalloc(sizeof(*cbm_data), GFP_ATOMIC);
 	if (!cbm_data) {
@@ -1036,7 +1065,6 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 	port_info->status = PORT_DEV_REGISTERED;
 	if (dp_cb)
 		port_info->cb = *dp_cb;
-
 	DP_LIB_UNLOCK(&dp_lock);
 	kfree(cbm_data);
 
@@ -1319,7 +1347,9 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 				bport = sif->bp;
 				subif->flag_bp = 0;
 				gpid = sif->gpid;
-				subif->def_qid = sif->qid;
+				subif->num_q = sif->num_qid;
+				memcpy(subif->def_qlist, sif->qid_list,
+				       sizeof(sif->qid_list));
 				num++;
 				break;
 			}
@@ -1345,7 +1375,9 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					 */
 					subifs[num] = sif->subif;
 					gpid = sif->gpid;
-					subif->def_qid = sif->qid;
+					subif->num_q = sif->num_qid;
+					memcpy(subif->def_qlist, sif->qid_list,
+					       sizeof(sif->qid_list));
 					subif_flag[num] = sif->subif_flag;
 					if (sif->ctp_dev)
 						subif->flag_pmapper = 1;
@@ -1368,7 +1400,9 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif->port_id = k;
 					subif->bport = tmp->bp;
 					subif->gpid = sif->gpid;
-					subif->def_qid = sif->qid;
+					subif->num_q = sif->num_qid;
+					memcpy(subif->def_qlist, sif->qid_list,
+					       sizeof(sif->qid_list));
 					res = 0;
 					/*note: logical device no callback */
 					goto EXIT;
@@ -1443,6 +1477,9 @@ static int dp_build_cqm_data(int inst, uint32_t port_id,
 		memcpy(&cbm_data->rx_ring[i], &data->rx_ring[i],
 		       sizeof(struct dp_rx_ring));
 	}
+
+	cbm_data->num_qid = data->num_resv_q;
+	cbm_data->qid_base = data->qos_resv_q_base;
 
 	return 0;
 }
@@ -1882,7 +1919,7 @@ int dp_set_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 	}
 	/* get the subif from the dev */
 	ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
-	if ((ret == DP_FAILURE) || (subif.flag_pmapper == 0)) {
+	if (ret == DP_FAILURE) {
 		PR_ERR("Fail to get subif:dev=%s ret=%d flag_pmap=%d bp=%d\n",
 		       dev->name, ret, subif.flag_pmapper, subif.bport);
 		return DP_FAILURE;
@@ -1968,7 +2005,7 @@ int dp_get_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 
 	/*get the subif from the dev*/
 	ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
-	if (ret == DP_FAILURE || subif.flag_pmapper == 0) {
+	if (ret == DP_FAILURE) {
 		PR_ERR("Can not get the subif from the dev\n");
 		return DP_FAILURE;
 	}

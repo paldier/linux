@@ -1127,9 +1127,9 @@ int dp_platform_queue_set(int inst, u32 flag)
 		port_info->deq_port_num++;
 		sif = get_dp_port_subif(port_info, i);
 		sif->qid = q_port.qid;
-		sif->q_node = q_port.q_node;
-		sif->qos_deq_port = q_port.port_node;
-		sif->cqm_deq_port = q_port.cqe_deq;
+		sif->q_node[0] = q_port.q_node;
+		sif->qos_deq_port[0] = q_port.port_node;
+		sif->cqm_deq_port[0] = q_port.cqe_deq;
 		if (!f_cpu_q) {
 			f_cpu_q = 1;
 			/*Map all CPU port's lookup to its 1st queue only */
@@ -1337,6 +1337,7 @@ static int dev_platform_set(int inst, u8 ep, struct dp_dev_data *data,
 	itf = ctp_port_assign(inst, ep, priv->bp_def, flags, data);
 	/*reset_gsw_itf(ep); */
 	get_dp_port_info(inst, ep)->itf_info = itf;
+	dp_node_reserve(inst, ep, data, flags);
 	return 0;
 }
 
@@ -1355,11 +1356,6 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 		return DP_FAILURE;
 	}
 	set_port_lookup_mode_31(inst, ep, flags);
-	if (flags & DP_F_DEREGISTER) {
-		dp_node_reserve(inst, ep, NULL, flags);
-		return 0;
-	}
-
 	DP_DEBUG(DP_DBG_FLAG_QOS, "priv=%p deq_port_stat=%p qdev=%p\n",
 		 priv,
 		 priv ? priv->deq_port_stat : NULL,
@@ -1402,7 +1398,6 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 			   CBM_QUEUE_MAP_F_MPE1_DONTCARE |
 			   CBM_QUEUE_MAP_F_MPE2_DONTCARE);
 
-	dp_node_reserve(inst, ep, data, flags);
 	dp_port_spl_cfg(inst, ep, data, flags);
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (DP_DBG_FLAG_QOS & dp_dbg_flag) {
@@ -1419,11 +1414,14 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 	return 0;
 }
 
-static int set_ctp_bp(int inst, int ctp, int portid, int bp)
+static int set_ctp_bp(int inst, int ctp, int portid, int bp,
+		      struct subif_platform_data *data)
 {
 	GSW_CTP_portConfig_t tmp;
 	struct core_ops *gsw_handle;
+	struct pmac_port_info *port_info;
 
+	port_info = get_dp_port_info(inst, portid);
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
 	memset(&tmp, 0, sizeof(tmp));
 	tmp.nLogicalPortId = portid;
@@ -1444,7 +1442,11 @@ static int reset_ctp_bp(int inst, int ctp, int portid, int bp)
 {
 	GSW_CTP_portConfig_t tmp;
 	struct core_ops *gsw_handle;
+	struct pmac_port_info *port_info;
+	struct dp_subif_info *sif;
 
+	port_info = get_dp_port_info(inst, portid);
+	sif = get_dp_port_subif(port_info, ctp);
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
 	memset(&tmp, 0, sizeof(tmp));
 	tmp.nLogicalPortId = portid;
@@ -1489,14 +1491,8 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 {
 	struct ppv4_q_sch_port q_port = {0};
 	static cbm_queue_map_entry_t lookup = {0};
-	u32 lookup_f = CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE |
-		CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE |
-		CBM_QUEUE_MAP_F_EN_DONTCARE |
-		CBM_QUEUE_MAP_F_DE_DONTCARE |
-		CBM_QUEUE_MAP_F_MPE1_DONTCARE |
-		CBM_QUEUE_MAP_F_MPE2_DONTCARE |
-		CBM_QUEUE_MAP_F_TC_DONTCARE;
-	int subif, deq_port_idx = 0, bp = -1;
+	u32 lookup_f;
+	int subif, deq_port_idx = 0, bp = -1, i = 0;
 	int dma_ch_offset = 0;
 	struct pmac_port_info *port_info;
 	struct dp_subif_info *sif;
@@ -1543,9 +1539,9 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	sif->bp = bp;
 	if (port_info->ctp_max == 1) {
 		if (port_info->num_subif == 0)
-			set_ctp_bp(inst, 0, portid, sif->bp);
+			set_ctp_bp(inst, 0, portid, sif->bp, data);
 	} else {
-		set_ctp_bp(inst, subif_ix, portid, sif->bp);
+		set_ctp_bp(inst, subif_ix, portid, sif->bp, data);
 	}
 	data->act = 0;
 	if (flags & DP_F_SUBIF_LOGICAL) {
@@ -1576,6 +1572,12 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	}
 	/*QUEUE_CFG if needed */
 	q_port.cqe_deq = port_info->deq_port_base + deq_port_idx;
+	if ((data->subif_data->flag_ops & DP_SUBIF_DEQPORT_NUM) &&
+	    (data->subif_data->num_deq_port > DP_MAX_DEQ_PER_SUBIF)) {
+		DP_ERR("deq_port(%d), cannot be more than max Q per subif %d\n",
+		       data->subif_data->num_deq_port, DP_MAX_DEQ_PER_SUBIF);
+		return -1;
+	}
 	if (!priv) {
 		PR_ERR("priv NULL\n");
 		return -1;
@@ -1591,199 +1593,227 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 			 q_port.cqe_deq, inst);
 	}
 #endif
-	q_port.tx_pkt_credit =
-		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_pkt_credit;
-	q_port.tx_ring_addr =
-		(u32)dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr_qos;
-	q_port.tx_ring_size =
-		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_size;
-	q_port.inst = inst;
-	q_port.dp_port = portid;
-	q_port.ctp = subif_ix;
-
-	dma_ch_offset = dp_deq_port_tbl[inst][q_port.cqe_deq].dma_ch_offset;
-	if (data->subif_data->flag_ops & DP_SUBIF_SPECIFIC_Q) {
-		q_flag = DP_SUBIF_SPECIFIC_Q;
-	} else if (data->subif_data->flag_ops & DP_SUBIF_AUTO_NEW_Q) {
-		q_flag = DP_SUBIF_AUTO_NEW_Q;
-	}  else { /*sharing mode (default)*/
-		if (!dp_deq_port_tbl[inst][q_port.cqe_deq].f_first_qid)
-			q_flag = DP_SUBIF_AUTO_NEW_Q; /*no queue created yet*/
-	}
-	DP_DEBUG(DP_DBG_FLAG_QOS, "Queue decision:%s\n", q_flag_str(q_flag));
-	if (q_flag == DP_SUBIF_AUTO_NEW_Q) {
+	for (i = 0; i < data->subif_data->num_deq_port; i++) {
 		int cqe_deq;
 
-		if (alloc_q_to_port(&q_port, 0)) {
-			PR_ERR("alloc_q_to_port fail for dp_port=%d\n",
-			       q_port.dp_port);
-			return -1;
-		}
-		if (dp_q_tbl[inst][q_port.qid].flag) {
-			PR_ERR("Why dp_q_tbl[%d][%d].flag =%d:expect 0?\n",
-			       inst, q_port.qid,
-			       dp_q_tbl[inst][q_port.qid].flag);
-			return -1;
-		}
-		if (dp_q_tbl[inst][q_port.qid].ref_cnt) {
-			PR_ERR("Why dp_q_tbl[%d][%d].ref_cnt =%d:expect 0?\n",
-			       inst, q_port.qid,
-			       dp_q_tbl[inst][q_port.qid].ref_cnt);
-			return -1;
-		}
-		/*update queue table */
-		dp_q_tbl[inst][q_port.qid].flag = 1;
-		dp_q_tbl[inst][q_port.qid].need_free = 1;
-		dp_q_tbl[inst][q_port.qid].ref_cnt = 1;
-		dp_q_tbl[inst][q_port.qid].q_node_id = q_port.q_node;
-		dp_q_tbl[inst][q_port.qid].cqm_dequeue_port = q_port.cqe_deq;
-
-		/*update port table */
+		lookup_f = CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE |
+			CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE |
+			CBM_QUEUE_MAP_F_EN_DONTCARE |
+			CBM_QUEUE_MAP_F_DE_DONTCARE |
+			CBM_QUEUE_MAP_F_MPE1_DONTCARE |
+			CBM_QUEUE_MAP_F_MPE2_DONTCARE |
+			CBM_QUEUE_MAP_F_TC_DONTCARE;
+		q_port.cqe_deq = port_info->deq_port_base + deq_port_idx + i;
 		cqe_deq = q_port.cqe_deq;
-		dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
-		if (port_info->num_dma_chan)
-			atomic_inc(&(dp_dma_chan_tbl[inst] +
-				   dma_ch_offset)->ref_cnt);
-		dp_deq_port_tbl[inst][cqe_deq].qos_port = q_port.port_node;
-		if (!dp_deq_port_tbl[inst][cqe_deq].f_first_qid) {
-			dp_deq_port_tbl[inst][cqe_deq].first_qid = q_port.qid;
-			dp_deq_port_tbl[inst][cqe_deq].f_first_qid = 1;
-			DP_DEBUG(DP_DBG_FLAG_QOS,
-				 "dp_deq_port_tbl[%d][%d].first_qid=%d\n",
-				 inst, q_port.cqe_deq,
-				 dp_deq_port_tbl[inst][cqe_deq].first_qid);
+
+		q_port.tx_pkt_credit =
+			dp_deq_port_tbl[inst][q_port.cqe_deq].tx_pkt_credit;
+		q_port.tx_ring_addr =
+		(u32)dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr_qos;
+		q_port.tx_ring_size =
+			dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_size;
+		q_port.inst = inst;
+		q_port.dp_port = portid;
+		q_port.ctp = subif_ix;
+
+		dma_ch_offset = dp_deq_port_tbl[inst][q_port.cqe_deq].
+								dma_ch_offset;
+		if (data->subif_data->flag_ops & DP_SUBIF_SPECIFIC_Q) {
+			q_flag = DP_SUBIF_SPECIFIC_Q;
+		} else if (data->subif_data->flag_ops & DP_SUBIF_AUTO_NEW_Q) {
+			q_flag = DP_SUBIF_AUTO_NEW_Q;
+		}  else { /*sharing mode (default)*/
+			if (!dp_deq_port_tbl[inst][q_port.cqe_deq].f_first_qid)
+				q_flag = DP_SUBIF_AUTO_NEW_Q;/*no Q create yet*/
 		}
-		/*update scheduler table later */
-
-	} else if (q_flag == DP_SUBIF_SPECIFIC_Q) { /*specified queue */
-		if (!dp_q_tbl[inst][q_port.qid].flag) {
-			/*1st time to use it
-			 *In this case, normally this queue is created by caller
-			 */
+		DP_DEBUG(DP_DBG_FLAG_QOS, "Queue decision:%s\n",
+			 q_flag_str(q_flag));
+		if (q_flag == DP_SUBIF_AUTO_NEW_Q) {
+			if (alloc_q_to_port(&q_port, 0)) {
+				PR_ERR("alloc_q_to_port fail for dp_port=%d\n",
+				       q_port.dp_port);
+				return -1;
+			}
+			if (dp_q_tbl[inst][q_port.qid].flag) {
+				PR_ERR("Why dp_q_tbl[%d][%d].flag =%d%s?\n",
+				       inst, q_port.qid,
+				       dp_q_tbl[inst][q_port.qid].flag,
+				       ":expect 0");
+				return -1;
+			}
+			if (dp_q_tbl[inst][q_port.qid].ref_cnt) {
+				PR_ERR("Why dp_q_tbl[%d][%d].ref_cnt =%d%s?\n",
+				       inst, q_port.qid,
+				       dp_q_tbl[inst][q_port.qid].ref_cnt,
+				       ":expect 0");
+				return -1;
+			}
+			/*update queue table */
 			dp_q_tbl[inst][q_port.qid].flag = 1;
-			dp_q_tbl[inst][q_port.qid].need_free = 0; /*caller q*/
+			dp_q_tbl[inst][q_port.qid].need_free = 1;
 			dp_q_tbl[inst][q_port.qid].ref_cnt = 1;
-
-			/*update port table
-			 *Note: since this queue is created by caller itself
-			 *      we need find way to get cqm_dequeue_port
-			 *      and qos_port later
-			 */
-			/* need set cqm_dequeue_port/qos_port since not fully
-			 * tested
-			 */
+			dp_q_tbl[inst][q_port.qid].q_node_id = q_port.q_node;
 			dp_q_tbl[inst][q_port.qid].cqm_dequeue_port =
 				q_port.cqe_deq;
-			dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port = -1;
+
+			/*update port table */
+			dp_deq_port_tbl[inst][cqe_deq].ref_cnt++;
+			if (port_info->num_dma_chan)
+				atomic_inc(&(dp_dma_chan_tbl[inst] +
+						dma_ch_offset)->ref_cnt);
+			dp_deq_port_tbl[inst][cqe_deq].qos_port =
+				q_port.port_node;
+			if (!dp_deq_port_tbl[inst][cqe_deq].f_first_qid) {
+				dp_deq_port_tbl[inst][cqe_deq].first_qid =
+					q_port.qid;
+				dp_deq_port_tbl[inst][cqe_deq].f_first_qid = 1;
+				DP_DEBUG(DP_DBG_FLAG_QOS,
+					 "dp_deq_port_tbl[%d][%d].first_qid=%d\n",
+					 inst, q_port.cqe_deq,
+					 dp_deq_port_tbl[inst][cqe_deq].
+					 first_qid);
+			}
+			/*update scheduler table later */
+
+		} else if (q_flag == DP_SUBIF_SPECIFIC_Q) { /*specified queue */
+			if (!dp_q_tbl[inst][q_port.qid].flag) {
+				/*1st time to use it
+				 *In this case, normally this queue
+				 *is created by caller
+				 */
+				dp_q_tbl[inst][q_port.qid].flag = 1;
+				/*caller q*/
+				dp_q_tbl[inst][q_port.qid].need_free = 0;
+				dp_q_tbl[inst][q_port.qid].ref_cnt = 1;
+
+				/*update port table
+				 *Note: since this queue is created
+				 *by caller itself
+				 *      we need find way to get cqm_dequeue_port
+				 *      and qos_port later
+				 */
+				/* need set cqm_dequeue_port/qos_port
+				 *since not fully tested
+				 */
+				dp_q_tbl[inst][q_port.qid].cqm_dequeue_port =
+					q_port.cqe_deq;
+				dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port = -1;
+				dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
+				if (port_info->num_dma_chan)
+					atomic_inc(&(dp_dma_chan_tbl[inst] +
+						   dma_ch_offset)->ref_cnt);
+			} else {
+				/*note: don't change need_free in this case */
+				dp_q_tbl[inst][q_port.cqe_deq].ref_cnt++;
+				dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
+				if (port_info->num_dma_chan)
+					atomic_inc(&(dp_dma_chan_tbl[inst] +
+						   dma_ch_offset)->ref_cnt);
+			}
+
+			/*get already stored q_node_id/qos_port id to q_port
+			 */
+			q_port.q_node = dp_q_tbl[inst][q_port.qid].q_node_id;
+			q_port.port_node =
+				dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port;
+
+			/* need to further set q_port.q_node/port_node
+			 * via special internal QOS HAL API to get it
+			 * since it is created by caller itself\n");
+			 */
+
+		} else { /*auto sharing queue: if go to here,
+			  *it means sharing queue
+			  *is ready and it is created by previous
+			  *dp_register_subif_ext
+			  */
+
+			/*get already stored q_node_id/qos_port id to q_port
+			 */
+			q_port.qid =
+				dp_deq_port_tbl[inst][q_port.cqe_deq].first_qid;
+			q_port.q_node =
+				dp_deq_port_tbl[inst][q_port.cqe_deq].q_node;
+			q_port.port_node =
+				dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port;
+			dp_q_tbl[inst][q_port.qid].ref_cnt++;
 			dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
 			if (port_info->num_dma_chan)
 				atomic_inc(&(dp_dma_chan_tbl[inst] +
-					   dma_ch_offset)->ref_cnt);
-		} else {
-			/*note: don't change need_free in this case */
-			dp_q_tbl[inst][q_port.cqe_deq].ref_cnt++;
-			dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
-			if (port_info->num_dma_chan)
-				atomic_inc(&(dp_dma_chan_tbl[inst] +
-					   dma_ch_offset)->ref_cnt);
+						dma_ch_offset)->ref_cnt);
 		}
-
-		/*get already stored q_node_id/qos_port id to q_port
-		 */
-		q_port.q_node = dp_q_tbl[inst][q_port.qid].q_node_id;
-		q_port.port_node =
-			dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port;
-
-		/* need to further set q_port.q_node/port_node
-		 * via special internal QOS HAL API to get it
-		 * since it is created by caller itself\n");
-		 */
-
-	} else { /*auto sharing queue: if go to here, it means sharing queue
-		  *is ready and it is created by previous dp_register_subif_ext
-		  */
-
-		/*get already stored q_node_id/qos_port id to q_port
-		 */
-		q_port.qid = dp_deq_port_tbl[inst][q_port.cqe_deq].first_qid;
-		q_port.q_node = dp_deq_port_tbl[inst][q_port.cqe_deq].q_node;
-		q_port.port_node =
-			dp_deq_port_tbl[inst][q_port.cqe_deq].qos_port;
-		dp_q_tbl[inst][q_port.qid].ref_cnt++;
-		dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt++;
-		if (port_info->num_dma_chan)
-			atomic_inc(&(dp_dma_chan_tbl[inst] +
-				   dma_ch_offset)->ref_cnt);
-	}
-	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan ref=%d\n",
-		 "subif_hw_set",
-		 "dp_port", portid,
-		 "vap", subif_ix,
-		 q_port.qid, dp_q_tbl[inst][q_port.qid].ref_cnt,
-		 q_port.cqe_deq, dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt,
-		 atomic_read(&(dp_dma_chan_tbl[inst] +
-			     dma_ch_offset)->ref_cnt));
+		DP_DEBUG(DP_DBG_FLAG_QOS,
+			 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d %s=%d\n",
+			 "subif_hw_set",
+			 "dp_port", portid,
+			 "vap", subif_ix,
+			 q_port.qid, dp_q_tbl[inst][q_port.qid].ref_cnt,
+			 q_port.cqe_deq,
+			 dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt,
+			 "tx_dma_chan ref",
+			 atomic_read(&(dp_dma_chan_tbl[inst] +
+						dma_ch_offset)->ref_cnt));
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_QOS_HAL)
-	if (dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt == 1) /*first CTP*/
-		data->act = TRIGGER_CQE_DP_ENABLE;
+		if (dp_deq_port_tbl[inst][q_port.cqe_deq].ref_cnt == 1)
+			data->act = TRIGGER_CQE_DP_ENABLE; /*first CTP*/
 #else
-	if (q_port.f_deq_port_en)
-		data->act = TRIGGER_CQE_DP_ENABLE;
+		if (q_port.f_deq_port_en)
+			data->act = TRIGGER_CQE_DP_ENABLE;
 #endif
-	/* update caller dp_subif_data.q_id with allocated queue number */
-	data->subif_data->q_id = q_port.qid;
-	/*update subif table */
-	sif->qid = q_port.qid;
-	sif->q_node = q_port.q_node;
-	sif->qos_deq_port = q_port.port_node;
-	sif->cqm_deq_port = q_port.cqe_deq;
-	sif->cqm_port_idx = deq_port_idx;
-
-	qid = q_port.qid;
-	if (data->subif_data->flag_ops & DP_SUBIF_VANI) {
-		lookup_f &= ~CBM_QUEUE_MAP_F_MPE2_DONTCARE;
-		lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
-		lookup.mpe2 = 0;
-		/* Map to CPU Q */
-		qid = get_dp_port_info(inst, 0)->subif_info[0].qid;
-	} else if (port_info->alloc_flags & DP_F_VUNI) {
-		/* Map to GSWIP */
-		lookup_f &= ~CBM_QUEUE_MAP_F_MPE2_DONTCARE;
-		lookup_f &= ~CBM_QUEUE_MAP_F_MPE1_DONTCARE;
-		lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
-		lookup.mpe2 = 1;
-		lookup.mpe1 = 0;
+		/* update caller dp_subif_data.q_id with allocated queue num */
+		data->subif_data->q_id = q_port.qid;
+		/*update subif table */
+		sif->qid_list[i] = q_port.qid;
+		sif->q_node[i] = q_port.q_node;
+		sif->qos_deq_port[i] = q_port.port_node;
+		sif->cqm_deq_port[i] = q_port.cqe_deq;
+		sif->cqm_port_idx = deq_port_idx;
+		port_info->subif_info[subif_ix].cqm_port_idx = deq_port_idx;
+		qid = q_port.qid;
+		if (data->subif_data->flag_ops & DP_SUBIF_VANI) {
+			lookup_f &= ~CBM_QUEUE_MAP_F_MPE2_DONTCARE;
+			lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
+			lookup.mpe2 = 0;
+			/* Map to CPU Q */
+			qid = get_dp_port_info(inst, 0)->subif_info[0].qid;
+		} else if (port_info->alloc_flags & DP_F_VUNI) {
+			/* Map to GSWIP */
+			lookup_f &= ~CBM_QUEUE_MAP_F_MPE2_DONTCARE;
+			lookup_f &= ~CBM_QUEUE_MAP_F_MPE1_DONTCARE;
+			lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
+			lookup.mpe2 = 1;
+			lookup.mpe1 = 0;
+		}
+		/* Map this port's lookup to its 1st queue only */
+		lookup.ep = portid;
+		if (port_info->alloc_flags & DP_F_EPON) {
+			lookup.sub_if_id = deq_port_idx + i;
+		} else {
+			lookup.sub_if_id = subif; /*Note:CQM need full subif(15bits)*/
+		}
+			/* For 1st subif and mode 0, use CBM_QUEUE_MAP_F_SUBIF_DONTCARE,
+			 * otherwise, don't use this flag
+			 */
+			if (!port_info->num_subif &&
+			    (port_info->cqe_lu_mode == CQE_LU_MODE0))
+				lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
+		cbm_queue_map_set(dp_port_prop[inst].cbm_inst, qid,
+				  &lookup, lookup_f);
+		DP_DEBUG(DP_DBG_FLAG_QOS,
+			 "%s %s=%d %s=%d %s=%d %s=%d %s=0x%x %s=0x%x(%d)\n",
+			 "cbm_queue_map_set",
+			 "qid", qid, "for dp_port", lookup.ep,
+			 "num_subif", port_info->num_subif,
+			 "lu_mode", port_info->cqe_lu_mode, "flag", lookup_f,
+			 "subif", subif, subif_ix);
 	}
-	/* Map this port's lookup to its 1st queue only */
-	lookup.ep = portid;
-	lookup.sub_if_id = subif; /* Note:CQM API need full subif(15bits) */
-	/* For 1st subif and mode 0, use CBM_QUEUE_MAP_F_SUBIF_DONTCARE,
-	 * otherwise, don't use this flag
-	 */
-	if (!port_info->num_subif &&
-	    (port_info->cqe_lu_mode == CQE_LU_MODE0))
-		lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
-	cbm_queue_map_set(dp_port_prop[inst].cbm_inst,
-			  qid,
-			  &lookup,
-			  lookup_f);
-	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s %s=%d %s=%d %s=%d %s=%d %s=0x%x %s=0x%x(%d)\n",
-		 "cbm_queue_map_set",
-		 "qid", qid,
-		 "for dp_port", lookup.ep,
-		 "num_subif", port_info->num_subif,
-		 "lu_mode", port_info->cqe_lu_mode,
-		 "flag", lookup_f,
-		 "subif", subif, subif_ix);
 	return 0;
 }
 
 static int subif_hw_reset(int inst, int portid, int subif_ix,
 			  struct subif_platform_data *data, u32 flags)
 {
-	int qid;
+	int qid, i;
 	int cqm_deq_port;
 	int dma_ch_offset;
 	struct pmac_port_info *port_info = get_dp_port_info(inst, portid);
@@ -1791,123 +1821,131 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 	struct dp_subif_info *sif = get_dp_port_subif(port_info, subif_ix);
 	int bp = sif->bp;
 
-	qid = sif->qid;
-	cqm_deq_port = sif->cqm_deq_port;
-	dma_ch_offset = dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
-	bp = sif->bp;
+	for (i = 0; i < sif->num_qid; i++) {
+		qid = sif->qid_list[i];
+		cqm_deq_port = sif->cqm_deq_port[i];
+		dma_ch_offset =
+			dp_deq_port_tbl[inst][cqm_deq_port].dma_ch_offset;
+		bp = sif->bp;
 
-	if (!dp_dma_chan_tbl[inst]) {
-		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
-		return DP_FAILURE;
-	}
-	/* santity check table */
-	if (!dp_q_tbl[inst][qid].ref_cnt) {
-		PR_ERR("Why dp_q_tbl[%d][%d].ref_cnt Zero: expect > 0\n",
-		       inst, qid);
-		return DP_FAILURE;
-	}
-	if (!dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt) {
-		PR_ERR("Why dp_deq_port_tbl[%d][%d].ref_cnt Zero\n",
-		       inst, cqm_deq_port);
-		return DP_FAILURE;
-	}
-	if ((sif->ctp_dev) &&
-	    !dp_bp_dev_tbl[inst][bp].ref_cnt) {
-		PR_ERR("Why dp_bp_dev_tbl[%d][%d].ref_cnt =%d\n",
-		       inst, bp, dp_bp_dev_tbl[inst][bp].ref_cnt);
-		return DP_FAILURE;
-	}
-	/* update queue/port/sched/bp_pmapper table's ref_cnt */
-	dp_q_tbl[inst][qid].ref_cnt--;
-	dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt--;
-	if (port_info->num_dma_chan)
-		atomic_dec(&(dp_dma_chan_tbl[inst] + dma_ch_offset)->ref_cnt);
-	if (sif->ctp_dev) { /* pmapper */
-		sif->ctp_dev = NULL;
-		dp_bp_dev_tbl[inst][bp].ref_cnt--;
-		if (!dp_bp_dev_tbl[inst][bp].ref_cnt) {
-			dp_bp_dev_tbl[inst][bp].dev = NULL;
-			dp_bp_dev_tbl[inst][bp].flag = 0;
-			DP_DEBUG(DP_DBG_FLAG_REG,
-				 "ctp ref_cnt becomes zero:%s\n",
-				 sif->device_name);
+		if (!dp_dma_chan_tbl[inst]) {
+			PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+			return DP_FAILURE;
 		}
-	}
-	/* Check for max_ctp since CTP,BP is shared,
-	 * for all subif in case of DSL
-	 */
-	if (port_info->ctp_max == 1) {
-		if (port_info->num_subif == 0) {
-			reset_ctp_bp(inst, 0, portid, bp);
-			if (!dp_bp_dev_tbl[inst][bp].dev) {
-				/*NULL already, then free it */
-				DP_DEBUG(DP_DBG_FLAG_PAE,
-					 "Free BP[%d] vap=%d\n", bp, subif_ix);
-				free_bridge_port(inst, bp);
+		/* santity check table */
+		if (!dp_q_tbl[inst][qid].ref_cnt) {
+			PR_ERR("Why dp_q_tbl[%d][%d].ref_cnt Zero:expect > 0\n",
+			       inst, qid);
+			return DP_FAILURE;
+		}
+		if (!dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt) {
+			PR_ERR("Why dp_deq_port_tbl[%d][%d].ref_cnt Zero\n",
+			       inst, cqm_deq_port);
+			return DP_FAILURE;
+		}
+		if ((sif->ctp_dev) &&
+		    !dp_bp_dev_tbl[inst][bp].ref_cnt) {
+			PR_ERR("Why dp_bp_dev_tbl[%d][%d].ref_cnt =%d\n",
+			       inst, bp, dp_bp_dev_tbl[inst][bp].ref_cnt);
+			return DP_FAILURE;
+		}
+		/* update queue/port/sched/bp_pmapper table's ref_cnt */
+		dp_q_tbl[inst][qid].ref_cnt--;
+		dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt--;
+		if (port_info->num_dma_chan)
+			atomic_dec(&(dp_dma_chan_tbl[inst] +
+					dma_ch_offset)->ref_cnt);
+		if (i == 0) { /* Cannot reset BP for all qid */
+			if (sif->ctp_dev) { /* pmapper */
+				sif->ctp_dev = NULL;
+				dp_bp_dev_tbl[inst][bp].ref_cnt--;
+				if (!dp_bp_dev_tbl[inst][bp].ref_cnt) {
+					dp_bp_dev_tbl[inst][bp].dev = NULL;
+					dp_bp_dev_tbl[inst][bp].flag = 0;
+					DP_DEBUG(DP_DBG_FLAG_REG,
+						 "ctp ref_cnt become zero:%s\n",
+						 sif->device_name);
+				}
+			}
+			/* Check for max_ctp since CTP,BP is shared,
+			 * for all subif in case of DSL
+			 */
+			if (port_info->ctp_max == 1) {
+				if (port_info->num_subif == 0) {
+					reset_ctp_bp(inst, 0, portid, bp);
+					if (!dp_bp_dev_tbl[inst][bp].dev) {
+						/*NULL already, then free it */
+						DP_DEBUG(DP_DBG_FLAG_PAE,
+							 "Free BP[%d] vap=%d\n",
+							 bp, subif_ix);
+						free_bridge_port(inst, bp);
+					}
+				}
+			} else {
+				reset_ctp_bp(inst, subif_ix, portid, bp);
+				if (!dp_bp_dev_tbl[inst][bp].dev) {
+					/*NULL already, then free it */
+					DP_DEBUG(DP_DBG_FLAG_PAE, "Free BP[%d] vap=%d\n",
+							bp, subif_ix);
+					free_bridge_port(inst, bp);
+				}
 			}
 		}
-	} else {
-		reset_ctp_bp(inst, subif_ix, portid, bp);
-		if (!dp_bp_dev_tbl[inst][bp].dev) {
-			/*NULL already, then free it */
-			DP_DEBUG(DP_DBG_FLAG_PAE, "Free BP[%d] vap=%d\n",
-				 bp, subif_ix);
-			free_bridge_port(inst, bp);
-		}
-	}
 #ifdef CONFIG_INTEL_DATAPATH_QOS_HAL
-	qid = sif->qid;
-	cqm_deq_port = dp_q_tbl[inst][qid].cqm_dequeue_port;
+		cqm_deq_port = dp_q_tbl[inst][qid].cqm_dequeue_port;
 
-	if (dp_q_tbl[inst][qid].flag &&
-	    !dp_q_tbl[inst][qid].ref_cnt &&/*no one is using */
-	    dp_q_tbl[inst][qid].need_free) {
-		DP_DEBUG(DP_DBG_FLAG_QOS, "Free qid %d\n", qid);
-		node.id.q_id = qid;
-		/*if no subif using this queue, need to delete it*/
-		node.inst = inst;
-		node.dp_port = portid;
-		node.type = DP_NODE_QUEUE;
-		dp_node_free(&node, 0);
+		if (dp_q_tbl[inst][qid].flag &&
+		    !dp_q_tbl[inst][qid].ref_cnt &&/*no one is using */
+		    dp_q_tbl[inst][qid].need_free) {
+			DP_DEBUG(DP_DBG_FLAG_QOS, "Free qid %d\n", qid);
+			node.id.q_id = qid;
+			/*if no subif using this queue, need to delete it*/
+			node.inst = inst;
+			node.dp_port = portid;
+			node.type = DP_NODE_QUEUE;
+			dp_node_free(&node, 0);
 
-		/*update dp_q_tbl*/
-		dp_q_tbl[inst][qid].flag = 0;
-		dp_q_tbl[inst][qid].need_free = 0;
-		if (dp_deq_port_tbl[inst][cqm_deq_port].f_first_qid &&
-		    (dp_deq_port_tbl[inst][cqm_deq_port].first_qid
-		     == qid)) {
-			dp_deq_port_tbl[inst][cqm_deq_port].f_first_qid = 0;
-			dp_deq_port_tbl[inst][cqm_deq_port].first_qid = 0;
-			DP_DEBUG(DP_DBG_FLAG_QOS, "q_id[%d] is freed\n", qid);
-			DP_DEBUG(DP_DBG_FLAG_QOS,
-				 "dp_deq_port_tbl[%d][%d].f_first_qid reset\n",
-				 inst, cqm_deq_port);
+			/*update dp_q_tbl*/
+			dp_q_tbl[inst][qid].flag = 0;
+			dp_q_tbl[inst][qid].need_free = 0;
+			if (dp_deq_port_tbl[inst][cqm_deq_port].f_first_qid &&
+			    (dp_deq_port_tbl[inst][cqm_deq_port].first_qid
+								== qid)) {
+				dp_deq_port_tbl[inst][cqm_deq_port].f_first_qid = 0;
+				dp_deq_port_tbl[inst][cqm_deq_port].first_qid = 0;
+				DP_DEBUG(DP_DBG_FLAG_QOS, "q_id[%d] is freed\n",
+					 qid);
+				DP_DEBUG(DP_DBG_FLAG_QOS,
+					 "dp_deq_port_tbl[%d][%d].f_first_qid reset\n",
+					 inst, cqm_deq_port);
+			}
+		} else {
+			DP_DEBUG(DP_DBG_FLAG_QOS, "q_id[%d] dont need freed\n",
+				 qid);
 		}
-	} else {
-		DP_DEBUG(DP_DBG_FLAG_QOS, "q_id[%d] dont need freed\n", qid);
-	}
-	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d tx_dma_chan ref=%d\n",
-		 "subif_hw_reset",
-		 "dp_port", portid,
-		 "vap", subif_ix,
-		 qid, dp_q_tbl[inst][qid].ref_cnt,
-		 cqm_deq_port, dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt,
-		 atomic_read(&(dp_dma_chan_tbl[inst] +
-			     dma_ch_offset)->ref_cnt));
+		DP_DEBUG(DP_DBG_FLAG_QOS,
+			 "%s:%s=%d %s=%d q[%d].cnt=%d cqm_p[%d].cnt=%d %s=%d\n",
+			 "subif_hw_reset", "dp_port", portid,
+			 "vap", subif_ix, qid, dp_q_tbl[inst][qid].ref_cnt,
+			 cqm_deq_port,
+			 dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt,
+			 "tx_dma_chan_ref",
+			 atomic_read(&(dp_dma_chan_tbl[inst] +
+						dma_ch_offset)->ref_cnt));
 #else
-	qos_queue_flush(priv->qdev, sif->q_node);
-	qos_queue_remove(priv->qdev, sif->q_node);
-	qos_port_remove(priv->qdev, sif->qos_deq_port);
-	priv->deq_port_stat[sif->cqm_deq_port].flag = PP_NODE_FREE;
+		qos_queue_flush(priv->qdev, sif->q_node);
+		qos_queue_remove(priv->qdev, sif->q_node);
+		qos_port_remove(priv->qdev, sif->qos_deq_port);
+		priv->deq_port_stat[sif->cqm_deq_port].flag = PP_NODE_FREE;
 #endif /* CONFIG_INTEL_DATAPATH_QOS_HAL */
 
-	if (!port_info->num_subif &&
-	    dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt) {
-		PR_ERR("num_subif(%d) not match dp_deq_port[%d][%d].ref_cnt\n",
-		       port_info->num_subif,
-		       inst, cqm_deq_port);
-		return DP_FAILURE;
+		if (!port_info->num_subif &&
+		    dp_deq_port_tbl[inst][cqm_deq_port].ref_cnt) {
+			PR_ERR("num_subif(%d) not match %s[%d][%d].ref_cnt\n",
+			       port_info->num_subif, "dp_deq_port", inst,
+			       cqm_deq_port);
+			return DP_FAILURE;
+		}
 	}
 
 	return DP_SUCCESS;

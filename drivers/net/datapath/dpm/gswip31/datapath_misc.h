@@ -162,7 +162,9 @@ int dp_get_gsw_pmapper_31(int inst, int bport, int lport,
 			  struct dp_pmapper *mapper, u32 flag);
 int dp_children_get_31(struct dp_node_child *cfg, int flag);
 int dp_free_children_via_parent_31(struct dp_node_alloc *node, int flag);
-int dp_node_reserve(int inst, int ep, struct dp_port_data *data, int flags);
+int dp_node_reserve(int inst, int ep, struct dp_dev_data *data, int flags);
+int dp_q_reserve_continuos(int inst, int ep, struct dp_dev_data *data,
+			   int flags);
 int dp_qos_level_get_31(struct dp_qos_level *dp, int flag);
 int dp_meter_alloc_31(int inst, int *meterid, int flag);
 int dp_meter_add_31(struct net_device *dev,

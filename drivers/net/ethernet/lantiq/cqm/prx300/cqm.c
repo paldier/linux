@@ -13,7 +13,7 @@
 #define MAX_PORT(FLAG) (((FLAG) & FLAG_LAN) ? LAN_PORT_NUM : 1)
 #define OWN_BIT  BIT(31)
 #define COMPLETE_BIT  BIT(30)
-#define CQM_PON_IP_BASE_ADDR 0x1000
+#define CQM_PON_IP_BASE_ADDR 0x181003FC
 #define CQM_PON_IP_PKT_LEN_ADJ_BYTES 9
 #define PRX300_CQM_DROP_INIT ((PRX300_CQM_DROP_Q << 24) | \
 			   (PRX300_CQM_DROP_Q << 16) | \
@@ -2412,7 +2412,7 @@ static s32 dp_port_alloc_complete(struct module *owner, struct net_device *dev,
 		reg = (EPON_EPON_MODE_REG_EPONCHKEN_MASK |
 		       EPON_EPON_MODE_REG_EPONPKTSIZADJ_MASK |
 		       (data->deq_port << EPON_EPON_MODE_REG_EPONBASEPORT_POS) |
-		       ((data->qid_base + data->num_qid) <<
+		       ((data->qid_base + (data->num_qid - 1)) <<
 			 EPON_EPON_MODE_REG_ENDQ_POS)
 		       | data->qid_base);
 		cbm_w32(cqm_ctrl->enq + EPON_EPON_MODE_REG, reg);

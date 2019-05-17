@@ -156,10 +156,10 @@ int proc_port_dump(struct seq_file *s, int pos)
 				print_ctp_bp(s, tmp_inst, port, 0, 0);
 			seq_printf(s, "           qid/node:       %d/%d\n",
 				   sif->qid,
-				   sif->q_node);
-			seq_printf(s, "           port/node:      %d/%d\n",
-				   sif->cqm_deq_port,
-				   sif->qos_deq_port);
+				   sif->q_node[0]);
+			seq_printf(s, "           port/node:    %d/%d\n",
+				   sif->cqm_deq_port[0],
+				   sif->qos_deq_port[0]);
 		} else
 			seq_printf(s,
 				   "%02d: rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
@@ -209,6 +209,8 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_printf(s, "    vap_offset/mask:   %d/0x%x\n", port->vap_offset,
 		   port->vap_mask);
 	seq_printf(s, "    flag_other:        0x%x\n", port->flag_other);
+	seq_printf(s, "    resv_queue:        %d\n", port->num_resv_q);
+	seq_printf(s, "    resv_queue_base:   %d\n", port->res_qid_base);
 	seq_printf(s, "    deq_port_base:     %d\n", port->deq_port_base);
 	seq_printf(s, "    deq_port_num:      %d\n", port->deq_port_num);
 	seq_printf(s, "    num_dma_chan:      %d\n", port->num_dma_chan);
@@ -270,25 +272,33 @@ int proc_port_dump(struct seq_file *s, int pos)
 			   STATS_GET(mib->tx_hdr_room_pkt));
 		if (print_ctp_bp)
 			print_ctp_bp(s, tmp_inst, port, i, 0);
-		seq_printf(s, "           qid/node:       %d/%d\n",
-			   sif->qid, sif->q_node);
-		cqm_p = sif->cqm_deq_port;
-		seq_printf(s, "           port/node:      %d/%d(ref=%d)\n",
-			   cqm_p, sif->qos_deq_port,
-			   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
-		seq_printf(s, "           mac_learn_dis:  %d\n",
-			   sif->mac_learn_dis);
-		cid = _DMA_CONTROLLER(
-				dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
-		pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
-		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
-		dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
-		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst]) {
-			dma = dp_dma_chan_tbl[tmp_inst] + dma_ch_offset;
-			seq_printf(s, "           tx_dma_ch:      0x%x(ref=%d,dma-ctrl=%d,port=%d,channel=%d)\n",
+		seq_printf(s, "           subif_qid=%d\n", sif->num_qid);
+		seq_printf(s, "           dqport_idx=%d\n", sif->cqm_port_idx);
+		for (j = 0; j < sif->num_qid; j++) {
+			seq_printf(s, "           [%02d]qid/node:    %d/%d\n",
+				   j, sif->qid_list[j],
+				   sif->q_node[j]);
+			cqm_p = sif->cqm_deq_port[j];
+			seq_printf(s, "           port/node:    %d/%d(ref=%d)\n",
+				   cqm_p, sif->qos_deq_port[j],
+				   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
+
+		        cid = _DMA_CONTROLLER(
+				    dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
+		        pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
+		        nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
+		        dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
+		        if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst]) {
+			        dma = dp_dma_chan_tbl[tmp_inst] + dma_ch_offset;
+			        seq_printf(s, "           tx_dma_ch:      0x%x(ref=%d,dma-ctrl=%d,port=%d,channel=%d)\n",
 				   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
 				   atomic_read(&dma->ref_cnt), cid, pid, nid);
+		        }
+
 		}
+		seq_printf(s, "           mac_learn_dis:    %d\n",
+			   sif->mac_learn_dis);
+
 		seq_printf(s, "           gpid:           %d\n", sif->gpid);
 		seq_puts(s, "           ctp_dev:        ");
 		if (sif->ctp_dev && sif->ctp_dev->name)

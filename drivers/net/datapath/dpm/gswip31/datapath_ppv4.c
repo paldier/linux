@@ -262,7 +262,7 @@ int init_ppv4_qos(int inst, int flag)
 		goto EXIT;
 	}
 	qos_port_conf_set_default(&t->p_conf);
-	t->p_conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WSP;
+	t->p_conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WRR;
 	t->p_conf.ring_address =
 	(void *)dp_deq_port_tbl[inst][idx].txpush_addr_qos;
 	t->p_conf.ring_size = dp_deq_port_tbl[inst][idx].tx_ring_size;

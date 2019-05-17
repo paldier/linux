@@ -170,6 +170,7 @@
 #define DP_MAX_DMA_CHAN 64
 /* maximum dma controller*/
 #define DP_DMAMAX 7
+#define DP_DEQ(p, q) (dp_deq_port_tbl[p][q])
 
 enum dp_xmit_errors {
 	DP_XMIT_ERR_DEFAULT = 0,
@@ -410,11 +411,21 @@ struct dp_subif_info {
 #if IS_ENABLED(CONFIG_NET_SWITCHDEV)
 	void *swdev_priv; /*to store ext vlan info*/
 #endif
-	s16 qid;    /* physical queue id */
+	u8 num_qid; /*!< number of queue id*/
+	u8 deq_port_idx; /* To store deq port index from register_subif */
+	union {
+		s16 qid;    /* physical queue id Still keep it to be
+			     * back-compatible for legacy platform and legacy
+			     * integration
+			     */
+		s16 qid_list[DP_MAX_DEQ_PER_SUBIF];/* physical queue id */
+	};
 	s16 sched_id; /* can be physical scheduler id or logical node id */
-	s16 q_node; /* logical queue node Id if applicable */
-	s16 qos_deq_port; /* qos port id */
-	s16 cqm_deq_port; /* CQM physical dequeue port ID (absolute) */
+	s16 q_node[DP_MAX_DEQ_PER_SUBIF]; /* logical Q node Id if applicable */
+	s16 qos_deq_port[DP_MAX_DEQ_PER_SUBIF]; /* qos port id */
+	s16 cqm_deq_port[DP_MAX_DEQ_PER_SUBIF]; /* CQM physical dequeue port ID
+						 * (absolute)
+						 */
 	s16 cqm_port_idx; /* CQM relative dequeue port index, like tconf id */
 	u32 subif_flag; /* To store original flag from caller during
 			 * dp_register_subif
@@ -522,6 +533,8 @@ struct pmac_port_info {
 	u32 num_dma_chan; /*For G.INT it's 8 or 16, for other 1*/
 	u32 lct_idx; /* LCT subif register flag */
 	u32 dma_ch_base; /*! Base entry index of dp_dma_chan_tbl */
+	u32 res_qid_base; /* Base entry for the device's reserved Q */
+	u32 num_resv_q; /* Num of reserved Q per device */
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	u32 f_ptp:1; /* PTP1588 support enablement */
 #endif
