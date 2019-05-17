@@ -87,6 +87,8 @@
 #define DP_TX_INSERT_PMAC    4	/*!< @brief Oly for special test purpose */
 #define DP_TX_OAM            8	/*!< @brief OAM packet */
 #define DP_TX_TO_DL_MPEFW    0x10/*!< @brief Send Pkt directly to DL FW */
+#define DP_TX_INSERT	     0x20 /*!< @brief GSWIP Insertion Support */
+#define DP_TX_INSERT_POINT   0x40 /*!< For GSWIP Insertion Point 0 or 1 */
 #define DP_MAX_ETH_ALEN 6  /*!< @brief MAC Header Size */
 #define DP_MAX_PMAC_LEN     8  /*!< @brief Maximum PMAC Header Size */
 

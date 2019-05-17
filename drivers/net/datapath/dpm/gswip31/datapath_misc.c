@@ -100,6 +100,10 @@ static void init_dma_pmac_template(int portid, u32 flags)
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 		dp_info->pmac_template[TEMPL_PTP].ptp = 1;
 #endif
+		dp_info->pmac_template[TEMPL_INSERT].ins = 1;
+		dp_info->dma0_template[TEMPL_INSERT].field.redir = 0;
+		dp_info->dma0_mask_template[TEMPL_INSERT].field.redir = 0;
+
 	} else if (flags & DP_F_DIRECTLINK) { /*always with pmac*/
 		/*normal dirctpath without checksum support
 		 *but with pmac to Switch for accelerate

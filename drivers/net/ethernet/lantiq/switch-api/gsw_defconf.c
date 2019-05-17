@@ -219,6 +219,17 @@ int gsw_misc_config(struct core_ops *ops)
 		return GSW_statusErr;
 	}
 
+	/* Ignore Undersized frames and forward to CPU for the 
+	 * Pmac Ports 0 and 1
+	 */	
+	for (i = 0; i < 2; i++) {
+		reg.nRegAddr = (SDMA_PRIO_USIGN_OFFSET + (i * 6));
+		ops->gsw_common_ops.RegisterGet(ops, &reg);
+
+		reg.nData |= (1 << SDMA_PRIO_USIGN_SHIFT);
+		ops->gsw_common_ops.RegisterSet(ops, &reg);
+	}
+
 	/* Ignore Undersized frames and forward to CPU for the MAC ports
 	 * MAC logical ports start from 2
 	 */
