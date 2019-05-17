@@ -15,26 +15,38 @@
 #include <linux/clk.h>
 
 /* reg definition */
-#define DUTY_CYCLE(x)	(0x8 + ((x) * 4))
-#define SSO_CON0	0x2B0
-#define SSO_CON1	0x2B4
-#define SSO_CPU		0x2B8
-#define SSO_CON2	0x2C4
-#define SSO_CON3	0x2C8
+#define DUTY_CYCLE(x)		(0x8 + ((x) * 4))
+#define SSO_CON0		0x2B0
+#define SSO_CON1		0x2B4
+#define SSO_CPU			0x2B8
+#define SSO_CON2		0x2C4
+#define SSO_CON3		0x2C8
 
 /* CON0 */
-#define SWU		31
-#define BLINK_R		30
-#define RZFL		26
+#define SWU			31
+#define BLINK_R			30
+#define RZFL			26
 
 /* CON1 */
-#define US		30
-#define US_MASK		3
+#define US			30
+#define US_MASK			3
 #define MAX_PIN_NUM_PER_BANK	32
 #define MAX_GROUP_NUM		4
 #define PINS_PER_GROUP		8
+#define FPID_FREQ_RANK_MAX	4
+#define SSO_CON1_FPID		23
+#define SSO_CON1_FPID_MASK	3
+#define SSO_CON1_GPTD		25
+#define SSO_CON1_GPTD_MASK	3
 
+static const int freq_tbl[] = {2, 4, 8, 10, 50000, 100000, 200000, 250000};
 static const char * const sso_gpio_drv_name = "intel-sso-gpio";
+
+enum {
+	US_SW = 0,
+	US_GPTC = 1,
+	US_FPID = 2
+};
 
 /**
  * struct sso_gpio_priv
@@ -57,6 +69,7 @@ struct sso_gpio_priv {
 	u32 pins;
 	int gpio_base;
 	int edge;
+	int freq;
 	u32 alloc_bitmap;
 };
 
@@ -118,7 +131,9 @@ sso_gpio_dir_out(struct gpio_chip *chip, unsigned int offset, int value)
 {
 	struct sso_gpio_priv *priv = gpiochip_get_data(chip);
 
-	return sso_gpio_update_bit(priv->mmap, SSO_CPU, offset, value);
+	sso_gpio_update_bit(priv->mmap, SSO_CPU, offset, value);
+	if (!priv->freq)
+		sso_gpio_update_bit(priv->mmap, SSO_CON0, SWU, 1);
 }
 
 static int sso_gpio_get(struct gpio_chip *chip, unsigned int offset)
@@ -135,7 +150,46 @@ static void sso_gpio_set(struct gpio_chip *chip, unsigned int offset, int value)
 	struct sso_gpio_priv *priv = gpiochip_get_data(chip);
 
 	sso_gpio_update_bit(priv->mmap, SSO_CPU, offset, value);
-	sso_gpio_update_bit(priv->mmap, SSO_CON0, SWU, 1);
+	if (!priv->freq)
+		sso_gpio_update_bit(priv->mmap, SSO_CON0, SWU, 1);
+}
+
+static int sso_gpio_get_freq_idx(int freq)
+{
+	int idx;
+
+	for (idx = 0; idx < ARRAY_SIZE(freq_tbl); idx++) {
+		if (freq <= freq_tbl[idx])
+			return idx;
+	}
+
+	return (idx - 1);
+}
+
+static int sso_gpio_freq_set(struct sso_gpio_priv *priv)
+{
+	u32 mask, freq_idx, val, off, us;
+
+	freq_idx = sso_gpio_get_freq_idx(priv->freq);
+	val = freq_idx % FPID_FREQ_RANK_MAX;
+
+	if (!priv->freq) {
+		us = US_SW;
+	} else if (freq_idx < FPID_FREQ_RANK_MAX) {
+		mask = SSO_CON1_FPID_MASK;
+		off = SSO_CON1_FPID;
+		us = US_FPID;
+	} else {
+		mask = SSO_CON1_GPTD_MASK;
+		off = SSO_CON1_GPTD;
+		us = US_GPTC;
+	}
+
+	/* Update FSC/GPT Divider and US for LED  */
+	sso_gpio_write_mask(priv->mmap, SSO_CON1, US, US_MASK, us);
+	sso_gpio_write_mask(priv->mmap, SSO_CON1, off, mask, val);
+
+	return 0;
 }
 
 static int sso_gpio_gc_init(struct sso_gpio_priv *priv,
@@ -199,11 +253,11 @@ static int sso_gpio_hw_init(struct sso_gpio_priv *priv)
 	if (sso_gpio_update_bit(priv->mmap, SSO_CON0, RZFL, priv->edge))
 		return -ENOTSUPP;
 
-	/* SW mode by default */
-	if (sso_gpio_update_bit(priv->mmap, SSO_CON0, BLINK_R, 0))
+	if (sso_gpio_update_bit(priv->mmap, SSO_CON0, BLINK_R, 1))
 		return -ENOTSUPP;
-	if (sso_gpio_write_mask(priv->mmap, SSO_CON0, US, US_MASK, 0))
-		return -ENOTSUPP;
+
+	/* Set GPIO update rate */
+	sso_gpio_freq_set(priv);
 
 	return 0;
 }
@@ -219,6 +273,10 @@ static int intel_sso_gpio_probe(struct platform_device *pdev)
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
 		return -ENOMEM;
+
+	priv->dev = dev;
+	priv->pdev = pdev;
+	platform_set_drvdata(pdev, priv);
 
 	/* pin base */
 	if (device_property_read_u32(dev, "intel,sso-gpio-base", &prop))
@@ -257,6 +315,12 @@ static int intel_sso_gpio_probe(struct platform_device *pdev)
 	else
 		priv->edge = 1;
 
+	/* update frequency */
+	if (device_property_read_u32(dev, "intel,sso-update-rate", &prop))
+		priv->freq = 0;
+	else
+		priv->freq = prop;
+
 	/* gpio mem */
 	priv->mmap = syscon_node_to_regmap(dev->of_node);
 	if (IS_ERR(priv->mmap)) {
@@ -271,10 +335,6 @@ static int intel_sso_gpio_probe(struct platform_device *pdev)
 	ret = sso_gpio_gc_init(priv, dev, drv_name);
 	if (ret)
 		goto gc_err;
-
-	priv->dev = dev;
-	priv->pdev = pdev;
-	platform_set_drvdata(pdev, priv);
 
 	dev_dbg(dev, "sso gpio init success\n");
 	return 0;

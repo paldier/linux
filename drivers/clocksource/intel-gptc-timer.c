@@ -27,6 +27,8 @@
 #include <linux/sched_clock.h>
 #include <linux/cpu.h>
 #include <linux/debugfs.h>
+#include <linux/platform_device.h>
+#include <linux/module.h>
 
 #include <asm/time.h>
 
@@ -612,7 +614,7 @@ static int gptc_of_parse_timer(struct gptc *gptc)
 			timer->cpuid = 0;
 			list_add_tail(&timer->ht_yield, &gptc_ht_yield_list);
 			break;
-			default:
+		default:
 			break;
 		}
 	}
@@ -918,7 +920,7 @@ static int __init gptc_timer_init(struct device_node *np)
 CLOCKSOURCE_OF_DECLARE(lantiq_gptc_timer, "lantiq,gptc", gptc_timer_init);
 CLOCKSOURCE_OF_DECLARE(intel_gptc_timer, "intel,gptc", gptc_timer_init);
 
-static int __init gptc_heartbeat_init(void)
+static int heartbeat_init(void)
 {
 	struct gptc_timer *timer;
 
@@ -933,6 +935,11 @@ static int __init gptc_heartbeat_init(void)
 		}
 	}
 	return -EINVAL;
+}
+
+static int __init gptc_heartbeat_init(void)
+{
+	return heartbeat_init();
 }
 arch_initcall(gptc_heartbeat_init);
 
@@ -1185,3 +1192,47 @@ remove:
 	return -ENOMEM;
 }
 late_initcall(gptc_debugfs_init);
+
+static const struct of_device_id gptc_match[] = {
+	{
+		.compatible = "intel,prx300-gptc",
+	},
+	{}
+};
+
+static int gptc_probe(struct platform_device *pdev)
+{
+	struct device_node *np = pdev->dev.of_node;
+
+	gptc_of_init(np);
+
+	gptc_clocksource_init();
+
+	/* Register immediately the clock event on BSP */
+	gptc_clkevent_init();
+
+	heartbeat_init();
+	return 0;
+}
+
+static int gptc_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+
+/**
+ * GPTC might not be used as clock source in PRX300.
+ * GPTC driver for prx300 has same function scopes as other soc,
+ * but it uses platform device instead of clock source init API
+ * to better support senarios that it is not used as clock source.
+ */
+static struct platform_driver gptc_drv = {
+	.probe = gptc_probe,
+	.remove = gptc_remove,
+	.driver = {
+		.name = "gptc",
+		.of_match_table = gptc_match,
+	}
+};
+
+builtin_platform_driver(gptc_drv);
