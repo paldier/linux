@@ -52,7 +52,7 @@
 /**
   \brief DC DP API version code
  */
-#define DC_DP_API_VERSION_CODE        0x040103
+#define DC_DP_API_VERSION_CODE        0x040104
 
 /**
   \brief DC DP API version
@@ -88,6 +88,11 @@
   \brief Alloc flag as shared resource
  */
 #define DC_DP_F_SHARED_RES       0x00000200
+
+/**
+  \brief Alloc flag as Multiport support
+ */
+#define DC_DP_F_MULTI_PORT       0x00000400
 
 /**
   \brief Register device flag; Specify if peripheral driver want to allocate SW Tx ring
@@ -270,14 +275,14 @@
 #define DC_DP_F_HOST_CAP_SKB_CHAIN			0x00200000
 
 /**
-  \brief Device request: Specify when device expects without Tx FCS.
+  \brief Device request: Specify when device expects with Tx FCS.
  */
-#define DC_DP_F_DEV_REQ_TX_WO_FCS			0x00000001
+#define DC_DP_F_DEV_REQ_TX_FCS				0x00000001
 
 /**
-  \brief Device request: Specify when device expects without Rx FCS.
+  \brief Device request: Specify when device expects with Rx FCS.
  */
-#define DC_DP_F_DEV_REQ_RX_WO_FCS			0x00000002
+#define DC_DP_F_DEV_REQ_RX_FCS				0x00000002
 
 /**
   \brief Device request: Specify when device expects Tx PMAC.
@@ -292,7 +297,7 @@
 /**
   \brief Device capability: Specify when device supports SKB chain on receive.
  */
-#define DC_DP_F_DEV_CAP_RX_SKB_CHAIN			0x00000010
+#define DC_DP_F_DEV_REQ_RX_SKB_CHAIN			0x00000010
 
 /**
   \brief Device request: Specify when device expects Rx fragmentation handling.
@@ -1095,6 +1100,8 @@ dc_dp_get_host_capability (
   -  DC_DP_F_FAST_DSL : Allocate the DSL port as h/w acclerable
   -  DC_DP_F_LITEPATH : Allocate the port as partial accelerable/offload
   -  DC_DP_F_SWPATH : Allocate the port as non-accelerable
+  -  DC_DP_F_MULTI_PORT : Allocate the port as multiport device
+  -  DC_DP_F_SHARED_RES : Allocate the port as shared resources
   -  DC_DP_F_DEREGISTER : Deallocate the already allocated port
   \return  Returns allocated Port number for given netdevice. / -1 if error
  */
@@ -1171,7 +1178,6 @@ dc_dp_register_dev (
   \note LITEPATH register/deregister only works on Partial offload or NOT, does deregister subif.
   \note if subinterface has to be deregistered completely, DC_DP_F_DEREGISTER flag must be passed.
  */
-/* FIXME : dev optional and device name??? */
 int32_t
 dc_dp_register_subif (
 		struct module *owner,
