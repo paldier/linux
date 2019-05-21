@@ -447,16 +447,16 @@ static int32_t dp_alloc_port_private(int inst,
 	if (cbm_data.flags & CBM_PORT_BYTE_CRDT_SET)
 		port->tx_b_credit = cbm_data.tx_b_credit;
 	if (cbm_data.flags & CBM_PORT_RING_ADDR_SET) {
-		port->tx_ring_addr = cbm_data.tx_ring_addr;
-		port->tx_ring_addr_push = cbm_data.tx_ring_addr_txpush;
+		port->txpush_addr = (void *)cbm_data.txpush_addr;
+		port->txpush_addr_qos =	(void *)cbm_data.txpush_addr_qos;
 	}
 	if (cbm_data.flags & CBM_PORT_RING_SIZE_SET)
 	port->tx_ring_size = cbm_data.tx_ring_size;
 	if (cbm_data.flags & CBM_PORT_RING_OFFSET_SET)
 		port->tx_ring_offset =
 				cbm_data.tx_ring_offset;
-	if((cbm_data.num_dma_chan > 1) && (cbm_data.deq_port_num !=
-	   cbm_data.num_dma_chan)) {
+	if ((cbm_data.num_dma_chan > 1) && (cbm_data.deq_port_num !=
+	    cbm_data.num_dma_chan)) {
 		PR_ERR("ERROR:deq_port_num=%d not equal to num_dma_chan=%d\n",
 		       cbm_data.deq_port_num, cbm_data.num_dma_chan);
 		return DP_FAILURE;
@@ -604,6 +604,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		if ((port_info->num_subif == 1) ||
 		    (platfrm_data.act & TRIGGER_CQE_DP_ENABLE)) {
 			u32 dma_ch_ref;
+
 			cbm_data.dp_inst = inst;
 			cbm_data.num_dma_chan = port_info->num_dma_chan;
 			cbm_data.cbm_inst = dp_port_prop[inst].cbm_inst;
@@ -901,6 +902,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 	struct cbm_dp_alloc_complete_data cbm_data = {0};
 #endif
 	struct dp_dev_data tmp_data = {0};
+
 	if (unlikely(!dp_init_ok)) {
 		PR_ERR("dp_register_dev failed for datapath not init yet\n");
 		return DP_FAILURE;
@@ -1879,8 +1881,8 @@ int dp_lan_wan_bridging(int port_id, struct sk_buff *skb)
 }
 
 void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
-		       u32 ip_offset, int ip_off_hw_adjust,
-		       u32 tcp_h_offset)
+		u32 ip_offset, int ip_off_hw_adjust,
+		u32 tcp_h_offset)
 {
 	pmac->tcp_type = tcp_type;
 	pmac->ip_offset = ip_offset + ip_off_hw_adjust;
@@ -1975,7 +1977,7 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 	info.inst = subif.inst;
 
 	if ((vlan->def_apply == DP_VLAN_APPLY_CTP) &&
-				(subif.flag_pmapper == 1)) {
+	    (subif.flag_pmapper == 1)) {
 		PR_ERR("cannot apply VLAN rule for pmapper device\n");
 		return DP_FAILURE;
 	} else if (vlan->def_apply == DP_VLAN_APPLY_CTP) {

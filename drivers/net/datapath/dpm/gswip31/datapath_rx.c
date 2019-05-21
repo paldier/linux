@@ -151,7 +151,9 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 	char decryp = 0;
 	u8 inst = 0;
 	struct pmac_port_info *dp_port;
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
 	struct mac_ops *ops;
+#endif
 	int ret_lct = 1;
 	struct dp_subif_info *sif;
 	struct dev_mib *mib;
@@ -238,7 +240,8 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 		//desc_1->all &= dma_rx_desc_mask1.all;
 		desc_3->all &= dma_rx_desc_mask3.all;
 		skb->priority = desc_1->field.classid;
-		skb->dev = sif->netif;
+		skb->dev = sif->netif; /* note: for DSL ATM case, its driver
+					* will correct it in later stage */
 		if (((dp_port->alloc_flags & DP_F_FAST_DSL) == 0) && /*non-dsl*/
 			sif->flags) { /*not de-registered */
 			dev = sif->netif;
@@ -248,7 +251,7 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 			desc_1->field.enc = 1;
 		}
 		if (!dev &&
-		    ((dp_port->alloc_flags & DP_F_FAST_DSL) == 0)) {
+		    (!(dp_port->alloc_flags & DP_F_FAST_DSL))) {
 			UP_STATS(mib->rx_fn_dropped);
 			goto RX_DROP;
 		}
@@ -293,9 +296,7 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 			if (dp_port->lct_idx > 0)
 				ret_lct = dp_handle_lct(dp_port, skb, rx_fn);
 			if (ret_lct) {
-				if ((STATS_GET(sif->rx_flag) <= 0) &&
-					((dp_port->alloc_flags & DP_F_FAST_DSL)
-						== 0)) {
+				if (STATS_GET(sif->rx_flag) <= 0) {
 					UP_STATS(mib->rx_fn_dropped);
 					goto RX_DROP2;
 				}
@@ -303,9 +304,7 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 				UP_STATS(mib->rx_fn_rxif_pkt);
 			}
 		} else {
-			if ((STATS_GET(sif->rx_flag) <= 0) &&
-					((dp_port->alloc_flags & DP_F_FAST_DSL)
-						== 0)) {
+			if (STATS_GET(sif->rx_flag) <= 0) {
 				UP_STATS(mib->rx_fn_dropped);
 				goto RX_DROP2;
 			}
@@ -341,5 +340,3 @@ RX_DROP2:
 		dev_kfree_skb_any(skb);
 	return res;
 }
-
-

@@ -88,7 +88,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[i].all = 0xFFFFFFFF;
 	}
 	if ((flags & DP_F_FAST_ETH_LAN) || (flags & DP_F_FAST_ETH_WAN) ||
-	    (flags & DP_F_GPON) || (flags & DP_F_EPON)|| (flags & DP_F_GINT)) {
+	    (flags & DP_F_GPON) || (flags & DP_F_EPON) || (flags & DP_F_GINT)) {
 		/*always with pmac */
 		for (i = 0; i < MAX_TEMPLATE; i++) {
 			dp_info->pmac_template[i].class_en = 1;
@@ -1142,21 +1142,28 @@ int dp_platform_queue_set(int inst, u32 flag)
 		q_port.cqe_deq = cpu_data.dq_tx_push_info[i].deq_port;
 		q_port.tx_pkt_credit = cpu_data.dq_tx_push_info[i].
 							tx_pkt_credit;
-		q_port.tx_ring_addr = cpu_data.dq_tx_push_info[i].tx_ring_addr;
+		q_port.tx_ring_addr = cpu_data.dq_tx_push_info[i].
+								txpush_addr_qos;
 		q_port.tx_ring_size = cpu_data.dq_tx_push_info[i].tx_ring_size;
 
 		/*Sotre Ring Info */
 		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_pkt_credit =
 			cpu_data.dq_tx_push_info[i].tx_pkt_credit;
-		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_addr =
-			cpu_data.dq_tx_push_info[i].tx_ring_addr;
+		dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr =
+			(void *)cpu_data.dq_tx_push_info[i].txpush_addr;
+		dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr_qos =
+			(void *)cpu_data.dq_tx_push_info[i].txpush_addr_qos;
 		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_size =
 			cpu_data.dq_tx_push_info[i].tx_ring_size;
 		dp_deq_port_tbl[inst][q_port.cqe_deq].dp_port = 0;/* CPU */
 		DP_DEBUG(DP_DBG_FLAG_QOS, "Store CPU ring info\n");
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address[%d]=0x%p\n",
 			 q_port.cqe_deq,
-			 dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_addr);
+			 (void *)dp_deq_port_tbl[inst][q_port.cqe_deq].
+								txpush_addr);
+		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address_push[%d]=0x%px\n",
+			 q_port.cqe_deq,
+			 dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr_qos);
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_size[%d]=%d\n",
 			 q_port.cqe_deq,
 			 dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_size);
@@ -1166,7 +1173,7 @@ int dp_platform_queue_set(int inst, u32 flag)
 		q_port.inst = inst;
 		q_port.dp_port = PMAC_CPU_ID;
 		DP_DEBUG(DP_DBG_FLAG_QOS, "CPU[%d] ring addr=%x\n", i,
-			 cpu_data.dq_tx_push_info[i].tx_ring_addr);
+			 cpu_data.dq_tx_push_info[i].txpush_addr);
 		q_port.ctp = i; /*fake CTP for CPU port to store its qid*/
 		DP_DEBUG(DP_DBG_FLAG_QOS, "alloc_q_to_port...\n");
 		if (alloc_q_to_port(&q_port, 0)) {
@@ -1245,7 +1252,6 @@ static int dp_platform_set(int inst, u32 flag)
 		sif->bp = CPU_BP;
 		sif->mac_learn_dis = DP_MAC_LEARNING_DIS;
 		INIT_LIST_HEAD(&sif->logic_dev);
-
 		priv->bp_def = alloc_bridge_port(inst, CPU_PORT, CPU_SUBIF,
 						 CPU_FID, CPU_BP);
 		DP_DEBUG(DP_DBG_FLAG_DBG, "bp_def[%d]=%d\n",
@@ -1369,7 +1375,7 @@ static int dp_port_spl_cfg(int inst, int ep, struct dp_port_data *data,
 }
 
 static int dev_platform_set(int inst, u8 ep, struct dp_dev_data *data,
-			     u32 flags)
+			    u32 flags)
 {
 	struct gsw_itf *itf;
 	struct hal_priv *priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
@@ -1413,8 +1419,11 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 	dma_chan =  port_info->dma_chan;
 	dma_ch_base = port_info->dma_ch_base;
 	for (i = 0; i < port_info->deq_port_num; i++) {
-		dp_deq_port_tbl[inst][i + idx].tx_ring_addr =
-			port_info->tx_ring_addr +
+		dp_deq_port_tbl[inst][i + idx].txpush_addr =
+			port_info->txpush_addr +
+			(port_info->tx_ring_offset * i);
+		dp_deq_port_tbl[inst][i + idx].txpush_addr_qos =
+			port_info->txpush_addr_qos +
 			(port_info->tx_ring_offset * i);
 		dp_deq_port_tbl[inst][i + idx].tx_ring_size =
 			port_info->tx_ring_size;
@@ -1448,9 +1457,10 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (DP_DBG_FLAG_QOS & dp_dbg_flag) {
 		for (i = 0; i < port_info->deq_port_num; i++) {
-			PR_INFO("cqm[%d]: addr=%p credit=%d size==%d\n",
+			PR_INFO("cqm[%d]:addr/push=%px/%px credit=%dsize==%d\n",
 				i + idx,
-				dp_deq_port_tbl[inst][i + idx].tx_ring_addr,
+				dp_deq_port_tbl[inst][i + idx].txpush_addr,
+				dp_deq_port_tbl[inst][i + idx].txpush_addr_qos,
 				dp_deq_port_tbl[inst][i + idx].tx_pkt_credit,
 				dp_deq_port_tbl[inst][i + idx].tx_ring_size);
 		}
@@ -1609,8 +1619,8 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 #endif
 	q_port.tx_pkt_credit =
 		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_pkt_credit;
-	q_port.tx_ring_addr =
-		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_addr;
+	q_port.tx_ring_addr = (u32)dp_deq_port_tbl[inst][q_port.cqe_deq].
+								txpush_addr_qos;
 	q_port.tx_ring_size =
 		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_size;
 	q_port.inst = inst;

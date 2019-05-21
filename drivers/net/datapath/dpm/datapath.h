@@ -499,8 +499,10 @@ struct pmac_port_info {
 	u32 dma_chan; /*associated dma tx CH,-1 means no DMA CH*/
 	u32 tx_pkt_credit;  /*PP port tx bytes credit */
 	u32 tx_b_credit;  /*PP port tx bytes credit */
-	void *tx_ring_addr;  /*PP port ring address (physical address) */
-	void *tx_ring_addr_push;  /*PP port ring address. should follow HW definition*/
+	void *txpush_addr_qos;  /*QoS push addr after shift or mask from
+				 * PP QOS point of view
+				 */
+	void *txpush_addr;  /* QOS push address without any shift/mask */
 	u32 tx_ring_size; /*PP ring size */
 	u32 tx_ring_offset;  /*PP: next tx_ring_addr=
 			      *   current tx_ring_addr + tx_ring_offset
@@ -587,8 +589,10 @@ struct cqm_port_info {
 	int f_first_qid : 1; /*0 not valid */
 	u32 ref_cnt; /*reference counter: the number of CTP attached to it*/
 	u32 tx_pkt_credit;  /*PP port tx bytes credit */
-	void *tx_ring_addr;  /*PP port ring address. should follow HW definition*/
-	void *tx_ring_addr_push;  /*PP port ring address. should follow HW definition*/
+	void *txpush_addr; /* QOS push addr after shift or mask from
+			    * PP QOS point of view
+			    */
+	void *txpush_addr_qos; /* QOS push address without any shift/mask */
 	u32 tx_ring_size; /*PP port ring size */
 	int qos_port; /*qos port id*/
 	int first_qid; /*in order to auto sharing queue, 1st queue allocated by

@@ -4,7 +4,6 @@
 static int dp_ndo_ptp_ioctl(struct net_device *dev,
 			    struct ifreq *ifr,
 			    int cmd);
-#endif
 
 static int get_tsinfo(struct net_device *dev,
 		      struct ethtool_ts_info *ts_info)
@@ -30,6 +29,7 @@ static int get_tsinfo(struct net_device *dev,
 		 dev->name);
 	return 0;
 }
+#endif
 
 int dp_ops_set(void **dev_ops, int ops_cb_offset,
 	       size_t ops_size, void **dp_orig_ops_cb,

@@ -728,12 +728,16 @@ int init_ppv4_qos(int inst, int flag)
 	}
 	priv->cqm_drop_p = idx;
 	dp_deq_port_tbl[inst][idx].tx_pkt_credit = flush_port->tx_pkt_credit;
-	dp_deq_port_tbl[inst][idx].tx_ring_addr = flush_port->tx_ring_addr;
+	dp_deq_port_tbl[inst][idx].txpush_addr =
+				(void *)flush_port->txpush_addr;
+	dp_deq_port_tbl[inst][idx].txpush_addr_qos =
+				(void *)flush_port->txpush_addr_qos;
 	dp_deq_port_tbl[inst][idx].tx_ring_size = flush_port->tx_ring_size;
 	dp_deq_port_tbl[inst][idx].dp_port = 0;/* dummy one */
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-		 "DP Flush port[%d]: ring addr=0x%x size=%d pkt_credit=%d\n",
-		 priv->cqm_drop_p, dp_deq_port_tbl[inst][idx].tx_ring_addr,
+		 "DP Flush port[%d]: ring addr/push=0x%px/0x%px size=%d pkt_credit=%d\n",
+		 priv->cqm_drop_p, dp_deq_port_tbl[inst][idx].txpush_addr_qos,
+		 dp_deq_port_tbl[inst][idx].txpush_addr,
 		 dp_deq_port_tbl[inst][idx].tx_ring_size,
 		 dp_deq_port_tbl[inst][idx].tx_pkt_credit);
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_QOS_HAL)
@@ -750,7 +754,7 @@ int init_ppv4_qos(int inst, int flag)
 	qos_port_conf_set_default(&t->p_conf);
 	t->p_conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WRR;
 	t->p_conf.ring_address =
-	(void *)dp_deq_port_tbl[inst][idx].tx_ring_addr;
+	(void *)dp_deq_port_tbl[inst][idx].txpush_addr_qos;
 	t->p_conf.ring_size = dp_deq_port_tbl[inst][idx].tx_ring_size;
 	t->p_conf.packet_credit_enable = 1;
 	t->p_conf.credit = dp_deq_port_tbl[inst][idx].tx_pkt_credit;

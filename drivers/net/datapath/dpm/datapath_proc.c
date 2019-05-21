@@ -96,8 +96,6 @@ int proc_port_dump(struct seq_file *s, int pos)
 			seq_printf(s, "          : port/node:    %d/%d\n",
 				   sif->cqm_deq_port,
 				   sif->qos_deq_port);
-
-
 		} else
 			seq_printf(s,
 				   "%02d: rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
@@ -156,14 +154,14 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_printf(s, "    gpid_num:          %d\n", port->policy_num);
 	seq_printf(s, "    tx_pkt_credit:     %d\n", port->tx_pkt_credit);
 	seq_printf(s, "    tx_b_credit:       %02d\n", port->tx_b_credit);
-	seq_printf(s, "    tx_ring_addr:      0x%px\n", port->tx_ring_addr);
-	seq_printf(s, "    tx_ring_addr_push: 0x%px\n", port->tx_ring_addr_push);
+	seq_printf(s, "    txpush_addr:      0x%px\n", port->txpush_addr);
+	seq_printf(s, "    txpush_addr_qos: 0x%px\n", port->txpush_addr_qos);
 	seq_printf(s, "    tx_ring_size:      %d\n", port->tx_ring_size);
 	seq_printf(s, "    tx_ring_offset:    %d(to next dequeue port)\n",
 		   port->tx_ring_offset);
 	if (pos == 0)
 		loop = info->cap.max_num_subif_per_port;
-	else 
+	else
 		loop = port->ctp_max;
 	for (i = 0; i < loop; i++) {
 		struct dp_subif_info *sif = get_dp_port_subif(port, i);
@@ -227,11 +225,11 @@ int proc_port_dump(struct seq_file *s, int pos)
 		dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
 		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst]) {
 			seq_printf(s, "          : tx_dma_ch:    0x%x(ref=%d)\n",
-			   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
+				   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
 			   atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
 				       dma_ch_offset)->ref_cnt));
 			seq_printf(s, "          : dma-ctrl/port/channel:%d/%d/%d\n",
-				cid, pid, nid);
+				   cid, pid, nid);
 		}
 		seq_printf(s, "          : gpid:           %d\n",
 			   sif->gpid);
@@ -494,10 +492,10 @@ ssize_t proc_dbg_write(struct file *file, const char *buf, size_t count,
 	}
 
 	for (i = 1; i < num; i++) {
-		for (j = 0; j < get_dp_dbg_flag_str_size()-1; j++)
+		for (j = 0; j < get_dp_dbg_flag_str_size() - 1; j++)
 			if (dp_strncmpi(param_list[i],
-				dp_dbg_flag_str[j],
-				strlen(dp_dbg_flag_str[j]) + 1) == 0) {
+					dp_dbg_flag_str[j],
+					strlen(dp_dbg_flag_str[j]) + 1) == 0) {
 				set_ltq_dbg_flag(dp_dbg_flag, f_enable,
 						 dp_dbg_flag_list[j]);
 				break;
