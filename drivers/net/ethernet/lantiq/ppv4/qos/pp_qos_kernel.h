@@ -39,6 +39,7 @@ void qos_dbg_module_clean(void);
 struct pp_qos_dbg_data {
 	struct dentry *dir;
 	uint16_t	node;
+	uint8_t		raw_config;
 	void		*fw_logger_addr;
 };
 

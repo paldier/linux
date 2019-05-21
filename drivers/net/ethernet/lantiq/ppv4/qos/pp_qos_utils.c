@@ -1528,6 +1528,48 @@ static void link_with_parent(
 
 }
 
+int qos_pools_init(struct pp_qos_dev *qdev, unsigned int max_port)
+{
+	qdev->nodes = pp_nodes_init();
+	if (!qdev->nodes)
+		goto fail;
+
+	qdev->ids = free_id_init();
+	if (!qdev->ids)
+		goto fail;
+
+	qdev->rlms = free_rlm_init();
+	if (!qdev->rlms)
+		goto fail;
+
+	qdev->octets = octets_init(octet_of_phy(max_port));
+	if (!qdev->octets)
+		goto fail;
+
+	qdev->mapping = pp_mapping_init();
+	if (!qdev->mapping)
+		goto fail;
+
+	qdev->queue = pp_queue_init(1024);
+	if (!qdev->queue)
+		goto fail;
+
+	return 0;
+
+fail:
+	return -ENOMEM;
+}
+
+void qos_pools_clean(struct pp_qos_dev *qdev)
+{
+	pp_nodes_clean(qdev->nodes);
+	pp_pool_clean(qdev->ids);
+	pp_pool_clean(qdev->rlms);
+	octets_clean(qdev->octets);
+	pp_mapping_clean(qdev->mapping);
+	pp_queue_clean(qdev->queue);
+}
+
 void _qos_init(unsigned int max_port, struct pp_qos_dev **qdev)
 {
 	unsigned int i;
@@ -1537,28 +1579,7 @@ void _qos_init(unsigned int max_port, struct pp_qos_dev **qdev)
 		memset(*qdev, 0, sizeof(struct pp_qos_dev));
 		(*qdev)->max_port = max_port;
 
-		(*qdev)->octets = octets_init(octet_of_phy(max_port));
-		if ((*qdev)->octets == NULL)
-			goto fail;
-
-		(*qdev)->nodes = pp_nodes_init();
-		if ((*qdev)->nodes == NULL)
-			goto fail;
-
-		(*qdev)->ids = free_id_init();
-		if ((*qdev)->ids == NULL)
-			goto fail;
-
-		(*qdev)->rlms = free_rlm_init();
-		if ((*qdev)->rlms == NULL)
-			goto fail;
-
-		(*qdev)->mapping = pp_mapping_init();
-		if ((*qdev)->mapping == NULL)
-			goto fail;
-
-		(*qdev)->queue = pp_queue_init(1024);
-		if ((*qdev)->queue == NULL)
+		if (qos_pools_init(*qdev, max_port))
 			goto fail;
 
 		(*qdev)->drvcmds.cmdq = cmd_queue_init();
@@ -1581,16 +1602,11 @@ fail:
 void _qos_clean(struct pp_qos_dev *qdev)
 {
 	if (qdev) {
+		qos_pools_clean(qdev);
 		pp_pool_clean(qdev->portsphys);
 		clean_fwdata_internals(qdev);
 		cmd_queue_clean(qdev->drvcmds.pendq);
 		cmd_queue_clean(qdev->drvcmds.cmdq);
-		pp_queue_clean(qdev->queue);
-		pp_mapping_clean(qdev->mapping);
-		pp_pool_clean(qdev->rlms);
-		pp_pool_clean(qdev->ids);
-		pp_nodes_clean(qdev->nodes);
-		octets_clean(qdev->octets);
 		QOS_FREE(qdev);
 	}
 }
@@ -2781,10 +2797,13 @@ int check_sync_with_fw(struct pp_qos_dev *qdev)
 	create_get_sys_info_cmd(qdev, qdev->hwconf.fw_stat, &hw_info);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
-	QOS_ASSERT(hw_info.num_used == used,
-		   "Driver's DB has %u used nodes, while firmware reports %u\n",
-		   used,
-		   hw_info.num_used);
+
+	if (hw_info.num_used != used) {
+		QOS_LOG_ERR("Driver's DB has %u used nodes, "
+			    "while firmware reports %u\n",
+			    used, hw_info.num_used);
+		rc = -1;
+	}
 
 	id = pp_pool_get(pool);
 	while (QOS_ID_VALID(id)) {
@@ -2797,6 +2816,7 @@ int check_sync_with_fw(struct pp_qos_dev *qdev)
 	}
 
 	pp_pool_clean(pool);
+
 	return rc;
 }
 
@@ -2992,4 +3012,77 @@ void qos_dbg_tree_show(struct pp_qos_dev *qdev, struct seq_file *s)
 			__dbg_dump_subtree(qdev, node, 1, s);
 		}
 	}
+}
+
+#define NUM_QUEUES_ON_QUERY (32U)
+#define NUM_OF_TRIES (20U)
+struct queue_stat_info {
+	uint32_t qid;
+	struct queue_stats_s qstat;
+};
+
+int qos_dbg_qstat_show(struct pp_qos_dev *qdev, struct seq_file *s)
+{
+	unsigned int i;
+	struct queue_stat_info *stat;
+	unsigned int tries;
+	uint32_t *dst;
+	unsigned int j;
+	uint32_t val;
+	uint32_t num;
+	volatile uint32_t *pos;
+
+	if (!qos_device_ready(qdev)) {
+		seq_puts(s, "Device is not ready\n");
+		return 0;
+	}
+	QOS_DBG_PRINT(s, "Queue\t\tQocc(p)\t\tAccept(p)\tDrop(p)"
+			 "\t\tRed dropped(p)\n");
+
+	dst = (uint32_t *)(qdev->fwcom.cmdbuf);
+	*dst++ = qos_u32_to_uc(
+			UC_QOS_CMD_GET_ACTIVE_QUEUES_STATS);
+	pos = dst;
+	*dst++ = qos_u32_to_uc(UC_CMD_FLAG_IMMEDIATE);
+	*dst++ = qos_u32_to_uc(3);
+
+	for (i = 0; i < NUM_OF_QUEUES; i += NUM_QUEUES_ON_QUERY) {
+		*pos = qos_u32_to_uc(UC_CMD_FLAG_IMMEDIATE);
+		dst = (uint32_t *)(qdev->fwcom.cmdbuf) + 3;
+		*dst++ = qos_u32_to_uc(i);
+		*dst++ = qos_u32_to_uc(i + NUM_QUEUES_ON_QUERY - 1);
+		*dst++ = qos_u32_to_uc(qdev->hwconf.fw_stat);
+		signal_uc(qdev);
+		val = qos_u32_from_uc(*pos);
+		tries = 0;
+		while ((
+				val &
+				(UC_CMD_FLAG_UC_DONE |
+				 UC_CMD_FLAG_UC_ERROR))
+				== 0) {
+			qos_sleep(10);
+			tries++;
+			if (tries == NUM_OF_TRIES) {
+				QOS_DBG_PRINT(s, "firmware not responding\n");
+				return 0;
+			}
+			val = qos_u32_from_uc(*pos);
+		}
+		if (val & UC_CMD_FLAG_UC_ERROR) {
+			QOS_DBG_PRINT(s, "firmware signaled error !!!!\n");
+			return 0;
+		}
+		stat = (struct queue_stat_info *)(qdev->stat + 4);
+		num =   *((uint32_t *)(qdev->stat));
+		for (j = 0; j < num; ++j) {
+			QOS_DBG_PRINT(s, "%u\t\t%u\t\t%u\t\t%u\t\t%u\n",
+				      stat->qid,
+				      stat->qstat.queue_size_entries,
+				      stat->qstat.total_accepts,
+				      stat->qstat.total_drops,
+				      stat->qstat.total_red_dropped);
+			++stat;
+		}
+	}
+	return 0;
 }

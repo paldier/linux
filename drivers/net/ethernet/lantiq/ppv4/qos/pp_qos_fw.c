@@ -342,7 +342,7 @@ void print_fw_log(struct platform_device *pdev)
 		 read);
 
 	for (i = read; i < num; ++i) {
-		memcpy((char *)msg, 
+		memcpy((char *)msg,
 		       (char *)(cur + PPV4_QOS_LOGGER_MSG_SIZE * i),
 		       PPV4_QOS_LOGGER_MSG_SIZE);
 		swap_msg(msg, (PPV4_QOS_LOGGER_MSG_SIZE / sizeof(uint32_t)));
@@ -2636,6 +2636,16 @@ static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
 	switch (type) {
 	case CMD_TYPE_GET_QUEUE_STATS:
 		fw_qstat = (struct queue_stats_s *)(qdev->stat);
+
+		if (fw_qstat->queue_size_entries !=
+		    fw_qstat->qmgr_num_queue_entries) {
+			QOS_LOG_ERR("Queue %u occ mismatch (qmgr %u / wred %u)\n",
+				    get_id_from_phy(qdev->mapping,
+						    dcmd->queue_stats.phy),
+				    fw_qstat->qmgr_num_queue_entries,
+				    fw_qstat->queue_size_entries);
+		}
+
 		qstat = dcmd->queue_stats.stat;
 		qstat->queue_packets_occupancy = fw_qstat->
 			qmgr_num_queue_entries;

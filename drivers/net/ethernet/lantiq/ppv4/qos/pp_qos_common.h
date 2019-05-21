@@ -90,7 +90,14 @@ do { \
 	else \
 		pr_debug("%s:%d: " format, __func__, __LINE__, ##arg); \
 } while (0)
-
+#define QOS_LOG_API_DEBUG(format, arg...) \
+do { \
+	if (cur_dev) \
+		dev_dbg(cur_dev, "[API]%s:%d: " format, __func__, __LINE__, \
+			##arg); \
+	else \
+		pr_debug("[API]%s:%d: " format, __func__, __LINE__, ##arg); \
+} while (0)
 #endif
 
 #ifndef __KERNEL__

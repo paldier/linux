@@ -201,6 +201,8 @@ int pp_qos_port_allocate(
 		goto out;
 	}
 
+	QOS_LOG_API_DEBUG("port %u > allocate\n", physical_id);
+
 	if (physical_id == ALLOC_PORT_ID) {
 		phy = pp_pool_get(qdev->portsphys);
 		if (!QOS_PHY_VALID(phy)) {
@@ -421,6 +423,8 @@ int pp_qos_port_remove(struct pp_qos_dev *qdev, unsigned int id)
 	rc = tree_remove(qdev, phy);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
+
+	QOS_LOG_API_DEBUG("port %u > remove\n", id);
 out:
 	QOS_UNLOCK(qdev);
 	return rc;
@@ -646,6 +650,19 @@ static int _pp_qos_port_set(
 	uint16_t phy;
 
 	modified = 0;
+
+	QOS_LOG_API_DEBUG("port=%u bw=%u shared=%u arb=%u be=%u"
+			  " r_addr=%#lx r_size=%u pkt_cred=%u cred=%u"
+			  " dis=%u > port\n",
+			  id, conf->common_prop.bandwidth_limit,
+			  conf->common_prop.shared_bandwidth_group,
+			  conf->port_parent_prop.arbitration,
+			  conf->port_parent_prop.best_effort_enable,
+			  (unsigned long)conf->ring_address,
+			  conf->ring_size,
+			  conf->packet_credit_enable,
+			  conf->credit,
+			  conf->disable);
 
 	nodep = get_conform_node(qdev, id, NULL);
 	if (!nodep)
@@ -1027,6 +1044,8 @@ int pp_qos_queue_allocate(struct pp_qos_dev *qdev, unsigned int *id)
 	int rc;
 	uint16_t _id;
 
+	QOS_LOG_API_DEBUG("queue > allocate\n");
+
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
@@ -1183,6 +1202,8 @@ int pp_qos_queue_remove(struct pp_qos_dev *qdev, unsigned int id)
 	rc = _pp_qos_queue_remove(qdev, id);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
+
+	QOS_LOG_API_DEBUG("queue %u > remove\n", id);
 out:
 	QOS_UNLOCK(qdev);
 	return rc;
@@ -1215,6 +1236,34 @@ static int _pp_qos_queue_set(
 
 	modified = 0;
 	nodep = NULL;
+
+	QOS_LOG_API_DEBUG("queue=%u bw=%u shared=%u parent=%u"
+			" priority=%u bw_share=%u max_burst=%u blocked=%u"
+			  " wred_enable=%u wred_fixed_drop_prob=%u"
+			  " wred_min_avg_green=%u wred_max_avg_green=%u"
+			  " wred_slope_green=%u wred_fixed_drop_prob_green=%u"
+			  " wred_min_avg_yellow=%u wred_max_avg_yellow=%u"
+			  " wred_slope_yellow=%u wred_fixed_drop_prob_yellow=%u"
+			  " wred_min_guaranteed=%u wred_max_allowed=%u > queue\n",
+			  id, conf->common_prop.bandwidth_limit,
+			  conf->common_prop.shared_bandwidth_group,
+			  conf->queue_child_prop.parent,
+			  conf->queue_child_prop.priority,
+			  conf->queue_child_prop.bandwidth_share,
+			  conf->max_burst,
+			  conf->blocked,
+			  conf->wred_enable,
+			  conf->wred_fixed_drop_prob_enable,
+			  conf->queue_wred_min_avg_green,
+			  conf->queue_wred_max_avg_green,
+			  conf->queue_wred_slope_green,
+			  conf->queue_wred_fixed_drop_prob_green,
+			  conf->queue_wred_min_avg_yellow,
+			  conf->queue_wred_max_avg_yellow,
+			  conf->queue_wred_slope_yellow,
+			  conf->queue_wred_fixed_drop_prob_yellow,
+			  conf->queue_wred_min_guaranteed,
+			  conf->queue_wred_max_allowed);
 
 	rc = check_queue_conf_validity(qdev, id, conf,
 			&node, &modified, alias_node);
@@ -1707,6 +1756,8 @@ int pp_qos_sched_allocate(struct pp_qos_dev *qdev, unsigned int *id)
 	uint16_t _id;
 	int rc;
 
+	QOS_LOG_API_DEBUG("sched > allocate\n");
+
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
 	if (!qos_device_ready(qdev)) {
@@ -1755,6 +1806,8 @@ int pp_qos_sched_remove(struct pp_qos_dev *qdev, unsigned int id)
 	rc = tree_remove(qdev, get_phy_from_node(qdev->nodes, node));
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);
+
+	QOS_LOG_API_DEBUG("sched %u > remove\n", id);
 out:
 	QOS_UNLOCK(qdev);
 	return rc;
@@ -1870,6 +1923,16 @@ int pp_qos_sched_set(
 		const struct pp_qos_sched_conf *conf)
 {
 	int rc;
+
+	QOS_LOG_API_DEBUG("sched=%u bw=%u shared=%u arb=%u be=%u"
+			  " parent=%u priority=%u bw_share=%u > sched\n",
+			  id, conf->common_prop.bandwidth_limit,
+			  conf->common_prop.shared_bandwidth_group,
+			  conf->sched_parent_prop.arbitration,
+			  conf->sched_parent_prop.best_effort_enable,
+			  conf->sched_child_prop.parent,
+			  conf->sched_child_prop.priority,
+			  conf->sched_child_prop.bandwidth_share);
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
@@ -2300,8 +2363,10 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 
 	QOS_LOG_DEBUG("wred total resources\t%u\n",
 		      qdev->hwconf.wred_total_avail_resources);
-	QOS_LOG_DEBUG("qm_ddr_start\t\t0x%08X\n", qdev->hwconf.qm_ddr_start);
-	QOS_LOG_DEBUG("qm_num_of_pages\t\t%u\n", qdev->hwconf.qm_num_pages);
+	QOS_LOG_DEBUG("qm_ddr_start\t\t0x%08X\n",
+		      qdev->hwconf.qm_ddr_start);
+	QOS_LOG_DEBUG("qm_num_of_pages\t\t%u\n",
+		      qdev->hwconf.qm_num_pages);
 	QOS_LOG_DEBUG("clock\t\t\t%u\n", qdev->hwconf.qos_clock);
 
 	if (conf->wred_p_const > 1023) {
@@ -2313,8 +2378,10 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	qdev->hwconf.wred_const_p = conf->wred_p_const;
 	qdev->hwconf.wred_max_q_size = conf->wred_max_q_size;
 
-	QOS_LOG_DEBUG("wred p const\t\t%u\n", qdev->hwconf.wred_const_p);
-	QOS_LOG_DEBUG("wred max q size\t\t%u\n", qdev->hwconf.wred_max_q_size);
+	QOS_LOG_DEBUG("wred p const\t\t%u\n",
+		      qdev->hwconf.wred_const_p);
+	QOS_LOG_DEBUG("wred max q size\t\t%u\n",
+		      qdev->hwconf.wred_max_q_size);
 
 	rc = load_firmware(qdev, FIRMWARE_FILE);
 	if (rc)
@@ -2326,6 +2393,7 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 	transmit_cmds(qdev);
 
 	qdev->initialized = 1;
+
 	rc = 0;
 out:
 	QOS_UNLOCK(qdev);
@@ -2369,14 +2437,14 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 		qos_devs[id] = qdev;
 
 		QOS_LOG_DEBUG("Initialized qos instance\nmax_port:\t\t%u\n",
-				qdev->max_port);
+			      qdev->max_port);
 		QOS_LOG_DEBUG("fw_logger_start:\t0x%08X\n",
-				qdev->hwconf.fw_logger_start);
+			      qdev->hwconf.fw_logger_start);
 		QOS_LOG_DEBUG("fw_stat:\t\t0x%08X\n",
-				qdev->hwconf.fw_stat);
+			      qdev->hwconf.fw_stat);
 		QOS_LOG_DEBUG("cmdbuf:\t\t0x%08X\ncmdbuf size:\t\t%zu\n",
-				(unsigned int)(uintptr_t)qdev->fwcom.cmdbuf,
-				qdev->fwcom.cmdbuf_sz);
+			      (unsigned int)(uintptr_t)qdev->fwcom.cmdbuf,
+			      qdev->fwcom.cmdbuf_sz);
 	} else {
 		QOS_LOG_CRIT("Failed creating qos instance %u\n", id);
 	}

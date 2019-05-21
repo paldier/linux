@@ -42,7 +42,7 @@
 #define QOS_MAX_SHARED_BW_GRP QOS_MAX_SHARED_BANDWIDTH_GROUP
 
 #define MAX_QOS_INSTANCES 1U
-#define PP_QOS_DBG_MAX_INPUT (64)
+#define PP_QOS_DBG_MAX_INPUT (1024)
 
 /* for calculating number of ddr pages for qm from resource size */
 #define PPV4_QOS_DESC_SIZE (16U)
@@ -283,6 +283,7 @@ struct qos_dev_init_info {
 #define QOS_LOG(format, arg...) QOS_LOG_DEBUG(format, ##arg)
 void stop_run(void);
 void qos_dbg_tree_show(struct pp_qos_dev *qdev, struct seq_file *s);
+int qos_dbg_qstat_show(struct pp_qos_dev *qdev, struct seq_file *s);
 
 #ifdef __KERNEL__
 #define QOS_ASSERT(condition, format... )				\
@@ -414,7 +415,8 @@ void pp_queue_reset(struct pp_queue *queue);
  */
 uint16_t pp_pool_get(struct pp_pool *pool);
 int pp_pool_put(struct pp_pool *pool, uint16_t data);
-
+int qos_pools_init(struct pp_qos_dev *qdev, unsigned int max_port);
+void qos_pools_clean(struct pp_qos_dev *qdev);
 /*
  * Cyclic buffer
  */
@@ -592,6 +594,8 @@ void get_port_rlms(struct pp_qos_dev *qdev, u32 phy,
 void get_node_queues(struct pp_qos_dev *qdev, unsigned int phy,
 		     uint16_t *queue_ids,
 		     unsigned int size, unsigned int *queues_num);
+
+int check_sync_with_fw(struct pp_qos_dev *qdev);
 
 /**
  * phy_alloc_by_parent() - Allocate new phy for a node

@@ -70,7 +70,7 @@ static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
 	lbuf[count - 1] = '\0';
 
 	if (sscanf(lbuf, "%u", &limit) != 1) {
-		pr_err("sscanf err\n");
+		QOS_LOG_ERR("sscanf err\n");
 		goto add_shared_bwl_group_done;
 	}
 
@@ -127,7 +127,7 @@ static ssize_t remove_shared_bwl_group(struct file *file,
 	lbuf[count-1] = '\0';
 
 	if (sscanf(lbuf, "%u", &id) != 1) {
-		pr_err("sscanf err\n");
+		QOS_LOG_ERR("sscanf err\n");
 		goto remove_shared_bwl_group_done;
 	}
 
@@ -158,19 +158,157 @@ static ssize_t remove_shared_bwl_group_help(struct file *file,
 	return ret;
 }
 
+static ssize_t remove_node(struct file *file,
+			   const char __user *buf, size_t count, loff_t *pos)
+{
+	char *lbuf;
+	struct pp_qos_dev *qdev;
+	u32 id = 0;
+	char node_type[10];
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+
+	pdev = (struct platform_device *)(file->private_data);
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (count >= PP_QOS_DBG_MAX_INPUT)
+		return count;
+
+	lbuf = kzalloc(count, GFP_KERNEL);
+
+	if (copy_from_user(lbuf, buf, count))
+		goto remove_node_done;
+
+	lbuf[count - 1] = '\0';
+
+	if (sscanf(lbuf, "%10s %u", node_type, &id) != 2) {
+		QOS_LOG_ERR("sscanf err\n");
+		goto remove_node_done;
+	}
+
+	if (!strncmp(node_type, "port", 6))
+		pp_qos_port_remove(qdev, id);
+	else if (!strncmp(node_type, "sched", 6))
+		pp_qos_sched_remove(qdev, id);
+	else if (!strncmp(node_type, "queue", 6))
+		pp_qos_queue_remove(qdev, id);
+	else
+		QOS_LOG_ERR("Type %s not supported\n", node_type);
+
+remove_node_done:
+	kfree(lbuf);
+	return count;
+}
+
+static ssize_t remove_node_help(struct file *file,
+				char __user *user_buf,
+				size_t count, loff_t *ppos)
+{
+	char *buff;
+	u32 len = 0;
+	ssize_t ret = 0;
+
+	buff = kmalloc(PP_QOS_DBG_MAX_BUF, GFP_KERNEL);
+	if (!buff)
+		return -ENOMEM;
+
+	len = scnprintf(buff, PP_QOS_DBG_MAX_BUF,
+			"<port/sched/queue> <node id>\n");
+	ret = simple_read_from_buffer(user_buf, count, ppos, buff, len);
+	kfree(buff);
+
+	return ret;
+}
+
+static ssize_t allocate_node(struct file *file,
+			     const char __user *buf, size_t count, loff_t *pos)
+{
+	char *lbuf;
+	struct pp_qos_dev *qdev;
+	u32 phy = 0, id;
+	char node_type[10];
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+
+	pdev = (struct platform_device *)(file->private_data);
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (count >= PP_QOS_DBG_MAX_INPUT)
+		return count;
+
+	lbuf = kzalloc(count, GFP_KERNEL);
+
+	if (copy_from_user(lbuf, buf, count))
+		goto allocate_node_done;
+
+	lbuf[count - 1] = '\0';
+
+	if (sscanf(lbuf, "%10s", node_type) != 1) {
+		QOS_LOG_ERR("sscanf err\n");
+		goto allocate_node_done;
+	}
+
+	if (!strncmp(node_type, "port", 6)) {
+		if (sscanf(lbuf, "%10s %u", node_type, &phy) != 2) {
+			QOS_LOG_ERR("sscanf err\n");
+			goto allocate_node_done;
+		}
+		pp_qos_port_allocate(qdev, phy, &id);
+	} else if (!strncmp(node_type, "sched", 6)) {
+		pp_qos_sched_allocate(qdev, &id);
+	} else if (!strncmp(node_type, "queue", 6)) {
+		pp_qos_queue_allocate(qdev, &id);
+	} else {
+		QOS_LOG_ERR("Type %s not supported\n", node_type);
+		goto allocate_node_done;
+	}
+
+	QOS_LOG_INFO("Allocated id %u\n", id);
+
+allocate_node_done:
+	kfree(lbuf);
+	return count;
+}
+
+static ssize_t allocate_node_help(struct file *file,
+				  char __user *user_buf,
+				  size_t count, loff_t *ppos)
+{
+	char *buff;
+	u32 len = 0;
+	ssize_t ret = 0;
+
+	buff = kmalloc(PP_QOS_DBG_MAX_BUF, GFP_KERNEL);
+	if (!buff)
+		return -ENOMEM;
+
+	len = scnprintf(buff, PP_QOS_DBG_MAX_BUF,
+			"<port/sched/queue> <port phy (%#x for automatic phy)>\n",
+			ALLOC_PORT_ID);
+	ret = simple_read_from_buffer(user_buf, count, ppos, buff, len);
+	kfree(buff);
+
+	return ret;
+}
+
 #define DBG_MAX_PROPS	(32)
 
 struct dbg_prop {
 	char		field[32];
 	char		desc[128];
+	u8		data_type; /* 0 - normal, 1 - pointer */
 	unsigned int	*dest;
+	unsigned long	**pdest;
 };
 
 struct dbg_props_cbs {
 	int (*first_prop_cb)(struct pp_qos_dev *qdev,
 			     char *field,
 			     unsigned int val,
-			     void *user_data);
+			     void *user_data,
+			     u8 raw_config);
 
 	int (*done_props_cb)(struct pp_qos_dev *qdev,
 			     unsigned int val,
@@ -198,8 +336,7 @@ static ssize_t qos_dbg_props(struct file *fp,
 	char *tok;
 	char *ptr;
 	char *pval;
-	u16 ind;
-	u16 num_changed = 0;
+	u16 i, num_changed = 0;
 	u16 len;
 
 	pdev = (struct platform_device *)(fp->private_data);
@@ -218,7 +355,6 @@ static ssize_t qos_dbg_props(struct file *fp,
 		return rc;
 	}
 
-	dev_info(&pdev->dev, "received %d bytes\n", rc);
 	cmd[rc] = '\0';
 	dev_info(&pdev->dev, "cmd->%s\n", cmd);
 	ptr = (char *)cmd;
@@ -243,33 +379,44 @@ static ssize_t qos_dbg_props(struct file *fp,
 			first_prop = 0;
 			id = res;
 			if (cbs && cbs->first_prop_cb &&
-			    cbs->first_prop_cb(qdev, field, res, user_data)) {
+			    cbs->first_prop_cb(qdev, field, res, user_data,
+					       pdata->dbg.raw_config)) {
 				dev_err(&pdev->dev, "first_prop_cb failed\n");
 				return rc;
 			}
 		}
 
-		for (ind = 0; ind < num_props ; ind++) {
-			len = max(strlen(props[ind].field), strlen(field));
-			if (!strncmp(field, props[ind].field, len)) {
-				*(props[ind].dest) = res;
+		for (i = 0; i < num_props ; i++) {
+			len = max(strlen(props[i].field), strlen(field));
+			if (!strncmp(field, props[i].field, len)) {
+				if (props[i].data_type == 0)
+					*(props[i].dest) = res;
+				else
+					*(props[i].pdest) = (void *)res;
 				num_changed++;
 				break;
 			}
 		}
 
-		if (ind == num_props)
+		if (i == num_props)
 			dev_err(&pdev->dev, "Not supported field %s", field);
 	}
 
 	if (id != PP_QOS_INVALID_ID) {
 		/* If only logical id was set, print current configuration */
 		if (num_changed == 1) {
-			pr_info("Current configuration:\n");
+			QOS_LOG_INFO("Current configuration:\n");
 
-			for (ind = 0; ind < num_props ; ind++) {
-				pr_info("%-30s%u\n",
-					props[ind].field, *props[ind].dest);
+			for (i = 0; i < num_props ; i++) {
+				if (props[i].data_type == 0) {
+					QOS_LOG_INFO("%-30s%u\n",
+						     props[i].field,
+						     *props[i].dest);
+				} else {
+					QOS_LOG_INFO("%-30s%#x\n",
+						     props[i].field,
+						     (ulong)(*props[i].pdest));
+				}
 			}
 
 			return rc;
@@ -327,13 +474,31 @@ static void dbg_add_prop(struct dbg_prop *props, u16 *pos, u16 size,
 		const char *name, const char *desc, unsigned int *dest)
 {
 	if (*pos >= size) {
-		pr_err("pos %d >= size %d", *pos, size);
+		QOS_LOG_ERR("pos %d >= size %d", *pos, size);
 		return;
 	}
 
 	strncpy(props[*pos].field, name, sizeof(props[*pos].field));
 	strncpy(props[*pos].desc, desc, sizeof(props[*pos].desc));
+	props[*pos].data_type = 0;
 	props[*pos].dest = dest;
+
+	(*pos)++;
+}
+
+static void dbg_add_prop_ptr(struct dbg_prop *props, u16 *pos, u16 size,
+			     const char *name, const char *desc,
+			     unsigned long **dest)
+{
+	if (*pos >= size) {
+		QOS_LOG_ERR("pos %d >= size %d", *pos, size);
+		return;
+	}
+
+	strncpy(props[*pos].field, name, sizeof(props[*pos].field));
+	strncpy(props[*pos].desc, desc, sizeof(props[*pos].desc));
+	props[*pos].data_type = 1;
+	props[*pos].pdest = dest;
 
 	(*pos)++;
 }
@@ -356,6 +521,8 @@ static u16 create_port_props(struct dbg_prop *props, u16 size,
 	dbg_add_prop(props, &num, size, "be",
 		"Best effort enable: best effort scheduling is enabled",
 		&pconf->port_parent_prop.best_effort_enable);
+	dbg_add_prop_ptr(props, &num, size, "r_addr",
+			 "Ring address", (ulong **)&pconf->ring_address);
 	dbg_add_prop(props, &num, size, "r_size",
 		"Ring size", &pconf->ring_size);
 	dbg_add_prop(props, &num, size, "pkt_cred",
@@ -371,16 +538,19 @@ static u16 create_port_props(struct dbg_prop *props, u16 size,
 static int port_first_prop_cb(struct pp_qos_dev *qdev,
 			      char *field,
 			      unsigned int val,
-			      void *user_data)
+			      void *user_data,
+			      u8 raw_config)
 {
 	/* Make sure first property is the port id */
 	if (strncmp(field, "port", strlen("port"))) {
-		pr_err("First prop (%s) must be port\n", field);
+		QOS_LOG_ERR("First prop (%s) must be port\n", field);
 		return -EINVAL;
 	}
 
-	if (pp_qos_port_conf_get(qdev, val, user_data) != 0) {
-		pr_err("pp_qos_port_conf_get failed (id %u)", val);
+	if (raw_config) {
+		pp_qos_port_conf_set_default(user_data);
+	} else if (pp_qos_port_conf_get(qdev, val, user_data) != 0) {
+		QOS_LOG_ERR("pp_qos_port_conf_get failed (id %u)", val);
 		return -EINVAL;
 	}
 
@@ -392,7 +562,7 @@ static int port_done_props_cb(struct pp_qos_dev *qdev,
 			      void *user_data)
 {
 	if (pp_qos_port_set(qdev, val, user_data) != 0) {
-		pr_err("pp_qos_port_set failed (id %u)", val);
+		QOS_LOG_ERR("pp_qos_port_set failed (id %u)", val);
 		return -EINVAL;
 	}
 
@@ -415,6 +585,8 @@ static ssize_t port(struct file *fp,
 			      GFP_KERNEL);
 	if (!props)
 		return -ENOMEM;
+
+	memset(props, 0, sizeof(*props));
 
 	num_props = create_port_props(props, DBG_MAX_PROPS, &id, &conf);
 
@@ -484,16 +656,19 @@ static u16 create_sched_props(struct dbg_prop *props, u16 size,
 static int sched_first_prop_cb(struct pp_qos_dev *qdev,
 			       char *field,
 			       unsigned int val,
-			       void *user_data)
+			       void *user_data,
+			       u8 raw_config)
 {
 	/* Make sure first property is the sched id */
 	if (strncmp(field, "sched", strlen("sched"))) {
-		pr_err("First prop (%s) must be sched\n", field);
+		QOS_LOG_ERR("First prop (%s) must be sched\n", field);
 		return -EINVAL;
 	}
 
-	if (pp_qos_sched_conf_get(qdev, val, user_data) != 0) {
-		pr_err("pp_qos_sched_conf_get failed (id %u)", val);
+	if (raw_config) {
+		pp_qos_sched_conf_set_default(user_data);
+	} else if (pp_qos_sched_conf_get(qdev, val, user_data) != 0) {
+		QOS_LOG_ERR("pp_qos_sched_conf_get failed (id %u)", val);
 		return -EINVAL;
 	}
 
@@ -505,7 +680,7 @@ static int sched_done_props_cb(struct pp_qos_dev *qdev,
 			       void *user_data)
 {
 	if (pp_qos_sched_set(qdev, val, user_data) != 0) {
-		pr_err("pp_qos_sched_set failed (id %u)", val);
+		QOS_LOG_ERR("pp_qos_sched_set failed (id %u)", val);
 		return -EINVAL;
 	}
 
@@ -628,16 +803,19 @@ static u16 create_queue_props(struct dbg_prop *props, u16 size,
 static int queue_first_prop_cb(struct pp_qos_dev *qdev,
 			       char *field,
 			       unsigned int val,
-			       void *user_data)
+			       void *user_data,
+			       u8 raw_config)
 {
 	/* Make sure first property is the queue id */
 	if (strncmp(field, "queue", strlen("queue"))) {
-		pr_err("First prop (%s) must be queue\n", field);
+		QOS_LOG_ERR("First prop (%s) must be queue\n", field);
 		return -EINVAL;
 	}
 
-	if (pp_qos_queue_conf_get(qdev, val, user_data) != 0) {
-		pr_err("pp_qos_queue_conf_get failed (id %u)", val);
+	if (raw_config) {
+		pp_qos_queue_conf_set_default(user_data);
+	} else if (pp_qos_queue_conf_get(qdev, val, user_data) != 0) {
+		QOS_LOG_ERR("pp_qos_queue_conf_get failed (id %u)", val);
 		return -EINVAL;
 	}
 
@@ -649,7 +827,7 @@ static int queue_done_props_cb(struct pp_qos_dev *qdev,
 			       void *user_data)
 {
 	if (pp_qos_queue_set(qdev, val, user_data) != 0) {
-		pr_err("pp_qos_queue_set failed (id %u)", val);
+		QOS_LOG_ERR("pp_qos_queue_set failed (id %u)", val);
 		return -EINVAL;
 	}
 
@@ -721,6 +899,20 @@ static const struct file_operations debug_remove_shared_bwl_group_fops = {
 	.open    = simple_open,
 	.read    = remove_shared_bwl_group_help,
 	.write   = remove_shared_bwl_group,
+	.llseek  = default_llseek,
+};
+
+static const struct file_operations debug_remove_node_fops = {
+	.open    = simple_open,
+	.read    = remove_node_help,
+	.write   = remove_node,
+	.llseek  = default_llseek,
+};
+
+static const struct file_operations debug_allocate_node_fops = {
+	.open    = simple_open,
+	.read    = allocate_node_help,
+	.write   = allocate_node,
 	.llseek  = default_llseek,
 };
 
@@ -1020,32 +1212,17 @@ static int pp_qos_dbg_gen_show(struct seq_file *s, void *unused)
 		}
 
 	} else {
-		pr_err("Error, platform device was not found\n");
+		QOS_LOG_ERR("Error, platform device was not found\n");
 	}
 
 	return 0;
 }
 
-#define NUM_QUEUES_ON_QUERY (32U)
-#define NUM_OF_TRIES (20U)
-struct queue_stat_info {
-	uint32_t qid;
-	struct queue_stats_s qstat;
-};
-
 static int pp_qos_dbg_qstat_show(struct seq_file *s, void *unused)
 {
-	unsigned int i;
 	struct platform_device *pdev;
 	struct pp_qos_drv_data *pdata;
 	struct pp_qos_dev *qdev;
-	struct queue_stat_info *stat;
-	unsigned int tries;
-	uint32_t *dst;
-	unsigned int j;
-	uint32_t val;
-	uint32_t num;
-	volatile uint32_t *pos;
 
 	pdev = s->private;
 	if (!pdev) {
@@ -1056,57 +1233,7 @@ static int pp_qos_dbg_qstat_show(struct seq_file *s, void *unused)
 	pdata = platform_get_drvdata(pdev);
 	qdev = pdata->qdev;
 
-	if (!qos_device_ready(qdev)) {
-		seq_puts(s, "Device is not ready !!!!\n");
-		return 0;
-	}
-	seq_puts(s, "Queue\t\tQocc(p)\t\tAccept(p)\tDrop(p)\t\tRed dropped(p)\n");
-	dst = (uint32_t *)(qdev->fwcom.cmdbuf);
-	*dst++ = qos_u32_to_uc(
-			UC_QOS_CMD_GET_ACTIVE_QUEUES_STATS);
-	pos = dst;
-	*dst++ = qos_u32_to_uc(UC_CMD_FLAG_IMMEDIATE);
-	*dst++ = qos_u32_to_uc(3);
-
-	for (i = 0; i < NUM_OF_QUEUES; i += NUM_QUEUES_ON_QUERY) {
-		*pos = qos_u32_to_uc(UC_CMD_FLAG_IMMEDIATE);
-		dst = (uint32_t *)(qdev->fwcom.cmdbuf) + 3;
-		*dst++ = qos_u32_to_uc(i);
-		*dst++ = qos_u32_to_uc(i + NUM_QUEUES_ON_QUERY - 1);
-		*dst++ = qos_u32_to_uc(qdev->hwconf.fw_stat);
-		signal_uc(qdev);
-		val = qos_u32_from_uc(*pos);
-		tries = 0;
-		while ((
-				val &
-				(UC_CMD_FLAG_UC_DONE |
-				 UC_CMD_FLAG_UC_ERROR))
-				== 0) {
-			qos_sleep(10);
-			tries++;
-			if (tries == NUM_OF_TRIES) {
-				seq_puts(s, "firmware not responding !!!!\n");
-				return 0;
-			}
-			val = qos_u32_from_uc(*pos);
-		}
-		if (val & UC_CMD_FLAG_UC_ERROR) {
-			seq_puts(s, "firmware signaled error !!!!\n");
-			return 0;
-		}
-		stat = (struct queue_stat_info *)(qdev->stat + 4);
-		num =   *((uint32_t *)(qdev->stat));
-		for (j = 0; j < num; ++j) {
-			seq_printf(s, "%u\t\t%u\t\t%u\t\t%u\t\t%u\n",
-				   stat->qid,
-				   stat->qstat.queue_size_entries,
-				   stat->qstat.total_accepts,
-				   stat->qstat.total_drops,
-				   stat->qstat.total_red_dropped);
-			++stat;
-		}
-	}
-	return 0;
+	return qos_dbg_qstat_show(qdev, s);
 }
 
 static int pp_qos_dbg_pstat_show(struct seq_file *s, void *unused)
@@ -1191,7 +1318,6 @@ static int pp_qos_dbg_tree_show(struct seq_file *s, void *unused)
 
 	pdev = s->private;
 
-	pr_info("tree_show called\n");
 	if (unlikely(!pdev)) {
 		seq_puts(s, "pdev Null\n");
 		return 0;
@@ -1221,6 +1347,110 @@ static const struct file_operations debug_tree_fops = {
 	.release = single_release,
 };
 
+static int pp_qos_dbg_tree_remove(struct seq_file *s, void *unused)
+{
+	u32 node_id, total_occupancy;
+	struct qos_node *node;
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+	struct pp_qos_dev *qdev;
+	struct pp_qos_queue_stat stats;
+	u32 idx;
+	s32 node_phy;
+
+	pdev = s->private;
+
+	if (unlikely(!pdev)) {
+		seq_puts(s, "pdev Null\n");
+		return 0;
+	}
+
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (unlikely(!qos_device_ready(qdev))) {
+		seq_puts(s, "Device is not ready\n");
+		return 0;
+	}
+
+	/* Iterate through all queue nodes */
+	for (node_phy = NUM_OF_NODES - 1; node_phy >= 0; --node_phy) {
+		node = get_node_from_phy(qdev->nodes, node_phy);
+		if (node_queue(node)) {
+			node_id = get_id_from_phy(qdev->mapping, node_phy);
+			pp_qos_queue_block(qdev, node_id);
+		}
+	}
+
+	/* Read stats */
+	for (idx = 0; idx < 100; ++idx) {
+		total_occupancy = 0;
+		for (node_phy = 0; node_phy < NUM_OF_NODES; ++node_phy) {
+			node = get_node_from_phy(qdev->nodes, node_phy);
+
+			if (!node_queue(node))
+				continue;
+
+			node_id = get_id_from_phy(qdev->mapping, node_phy);
+			pp_qos_queue_stat_get(qdev, node_id, &stats);
+			total_occupancy += stats.queue_packets_occupancy;
+			if (stats.queue_packets_occupancy) {
+				QOS_LOG_INFO("Queue %u has %u packet occ\n",
+					     node_id,
+					     stats.queue_packets_occupancy);
+			}
+		}
+
+		if (total_occupancy != 0)
+			qos_dbg_qstat_show(qdev, NULL);
+		else
+			break;
+
+		mdelay(10);
+	}
+
+	if (total_occupancy != 0) {
+		QOS_LOG_ERR("Cannot remove tree while occupancy=%u\n",
+			    total_occupancy);
+		qos_dbg_qstat_show(qdev, NULL);
+		return -EBUSY;
+	}
+
+	/* Iterate through all queue nodes */
+	for (node_phy = NUM_OF_NODES - 1; node_phy >= 0; --node_phy) {
+		node = get_node_from_phy(qdev->nodes, node_phy);
+		if (node_queue(node)) {
+			node_id = get_id_from_phy(qdev->mapping, node_phy);
+			pp_qos_queue_remove(qdev, node_id);
+		}
+	}
+
+	/* Iterate through all port nodes */
+	for (node_phy = 0; node_phy < NUM_OF_NODES; ++node_phy) {
+		node = get_node_from_phy(qdev->nodes, node_phy);
+		if (node_port(node)) {
+			node_id = get_id_from_phy(qdev->mapping, node_phy);
+			pp_qos_port_remove(qdev, node_id);
+		}
+	}
+
+	qos_pools_clean(qdev);
+	qos_pools_init(qdev, qdev->max_port);
+
+	return 0;
+}
+
+static int pp_qos_dbg_tree_remove_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, pp_qos_dbg_tree_remove, inode->i_private);
+}
+
+static const struct file_operations debug_tree_remove_fops = {
+	.open = pp_qos_dbg_tree_remove_open,
+	.read = seq_read,
+	.release = single_release,
+};
+
 static int dbg_cmd_open(struct inode *inode, struct file *filep)
 {
 	filep->private_data = inode->i_private;
@@ -1245,8 +1475,6 @@ static ssize_t dbg_cmd_write(struct file *fp, const char __user *user_buffer,
 	pdev = (struct platform_device *)(fp->private_data);
 	pdata = platform_get_drvdata(pdev);
 	qdev = pdata->qdev;
-
-	pr_info("qos drv address is %p\n", qdev);
 
 	if (cnt > MAX_CMD_LEN) {
 		dev_err(&pdev->dev, "Illegal length %zu\n", cnt);
@@ -1344,6 +1572,9 @@ static int fw_logger_set(void *data, u64 val)
 		break;
 	}
 
+	update_cmd_id(&qdev->drvcmds);
+	transmit_cmds(qdev);
+
 	return 0;
 }
 
@@ -1363,7 +1594,31 @@ static int check_sync_get(void *data, u64 *val)
 		goto out;
 	}
 
-	check_sync_with_fw(pdata->qdev);
+	*val = check_sync_with_fw(pdata->qdev);
+out:
+	return 0;
+}
+
+static int dbg_qos_init(void *data, u64 *val)
+{
+	struct platform_device *pdev = data;
+	struct pp_qos_drv_data *pdata;
+	struct pp_qos_dev *qdev;
+
+	QOS_LOG_INFO("QoS FW Init\n");
+
+	pdev = data;
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+	if (!qdev->initialized) {
+		dev_err(&pdev->dev, "Device is not initialized\n");
+		goto out;
+	}
+
+	create_init_qos_cmd(qdev);
+	update_cmd_id(&qdev->drvcmds);
+	transmit_cmds(qdev);
+	*val = 0;
 out:
 	return 0;
 }
@@ -1371,6 +1626,7 @@ out:
 DEFINE_SIMPLE_ATTRIBUTE(dbg_fw_logger_fops, fw_logger_get,
 			fw_logger_set, "%llu\n");
 DEFINE_SIMPLE_ATTRIBUTE(dbg_check_sync_fops, check_sync_get, NULL, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(dbg_qos_init_fops, dbg_qos_init, NULL, "%llu\n");
 DEFINE_SIMPLE_ATTRIBUTE(dbg_phy2id_fops, phy2id_get, NULL, "%llu\n");
 
 #define MAX_DIR_NAME 11
@@ -1387,13 +1643,17 @@ static struct debugfs_file qos_debugfs_files[] = {
 	{"phy2id", &dbg_phy2id_fops, 0400},
 	{"fw_logger", &dbg_fw_logger_fops, 0400},
 	{"check_fw_sync", &dbg_check_sync_fops, 0400},
+	{"qos_init", &dbg_qos_init_fops, 0400},
 	{"geninfo", &debug_gen_fops, 0400},
 	{"qstat", &debug_qstat_fops, 0400},
 	{"pstat", &debug_pstat_fops, 0400},
 	{"cmd", &debug_cmd_fops, 0200},
 	{"tree", &debug_tree_fops, 0400},
+	{"destroy_tree", &debug_tree_remove_fops, 0400},
 	{"add_shared_bwl_group", &debug_add_shared_bwl_group_fops, 0400},
 	{"remove_shared_bwl_group", &debug_remove_shared_bwl_group_fops, 0400},
+	{"allocate", &debug_allocate_node_fops, 0400},
+	{"remove", &debug_remove_node_fops, 0400},
 	{"port", &debug_port_fops, 0400},
 	{"sched", &debug_sched_fops, 0400},
 	{"queue", &debug_queue_fops, 0400},
@@ -1436,6 +1696,30 @@ int qos_dbg_dev_init(struct platform_device *pdev)
 		}
 	}
 
+	dent = debugfs_create_u32("qos_init_state",
+				  0600,
+				  pdata->dbg.dir,
+				  &pdata->qdev->initialized);
+	if (IS_ERR_OR_NULL(dent)) {
+		err = (int)PTR_ERR(dent);
+		dev_err(&pdev->dev,
+			"debugfs_create_u8 failed creating qos_init_state with %d\n",
+			err);
+		goto fail;
+	}
+
+	dent = debugfs_create_u8("raw_config",
+				 0600,
+				 pdata->dbg.dir,
+				 &pdata->dbg.raw_config);
+	if (IS_ERR_OR_NULL(dent)) {
+		err = (int)PTR_ERR(dent);
+		dev_err(&pdev->dev,
+			"debugfs_create_u8 failed creating raw_config with %d\n",
+			err);
+		goto fail;
+	}
+
 	dent = debugfs_create_u16("node",
 				  0600,
 				  pdata->dbg.dir,
@@ -1474,7 +1758,7 @@ int qos_dbg_module_init(void)
 	dir = debugfs_create_dir(PP_QOS_DEBUGFS_DIR, NULL);
 	if (IS_ERR_OR_NULL(dir)) {
 		rc = (int)PTR_ERR(dir);
-		pr_err("debugfs_create_dir failed with %d\n", rc);
+		QOS_LOG_ERR("debugfs_create_dir failed with %d\n", rc);
 		return rc;
 	}
 	dbg_data.dir = dir;
