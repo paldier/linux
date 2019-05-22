@@ -62,4 +62,9 @@ extern int (*mpe_hal_feature_start_fn)(
 		uint32_t port_id,
 		uint32_t *featureCfgBase,
 		uint32_t flags);
+
+#if defined(CONFIG_SOC_GRX500) && CONFIG_SOC_GRX500
+extern int32_t (*mpe_hal_set_checksum_queue_map_hook_fn) (uint32_t pmac_port,
+		bool is_pmac_hdr_req);
+#endif
 #endif  /*  ___MPE_HAL_H__20081119_1144__*/
