@@ -3225,7 +3225,7 @@ static int pool_config(struct platform_device *pdev, int p, u32 buf_size,
 	u32 size;
 	u32 adj_size;
 
-	size = buf_size * (buf_num + 1);
+	size = buf_size * buf_num;
 	cqm_ctrl->max_mem_alloc += size;
 	/*This is not a fool proof check, because there could be other users
 	 *allocating from CMA zone
