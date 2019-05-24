@@ -343,6 +343,11 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 							dp_info);
 			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		}
+	}  else if (dp_info->alloc_flags & DP_F_VUNI) {
+		DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
+						desc_0, desc_1,
+						dp_info);
+		DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 	} else { /*normal directpath: always w/ pmac */
 		if (unlikely(tx_chksum_flag)) {
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM,

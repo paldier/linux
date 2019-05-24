@@ -13,7 +13,7 @@
 #define PMAC0_TX_DMACHID_START	0
 #define PMAC0_TX_DMACHID_END	16
 #define PMAC1_TX_DMACHID_START	0
-#define PMAC1_TX_DMACHID_END	0
+#define PMAC1_TX_DMACHID_END	1 /* Using a reserved DMA2 TX for PON-HGU */
 
 #define PMAC0_DST_PRT_START	0
 #define PMAC0_DST_PRT_END	11
@@ -234,8 +234,8 @@ int gsw_misc_config(struct core_ops *ops)
 	/* Ignore Undersized frames and forward to CPU for the MAC ports
 	 * MAC logical ports start from 2
 	 */
-	for (i = 0; i < gswdev->pnum; i++) {
-		reg.nRegAddr = ((SDMA_PRIO_USIGN_OFFSET + (2 * 6)) + (i * 6));
+	for (i = 0; i < gswdev->tpnum; i++) {
+		reg.nRegAddr = (SDMA_PRIO_USIGN_OFFSET + (i * 6));
 		ops->gsw_common_ops.RegisterGet(ops, &reg);
 
 		reg.nData |= (1 << SDMA_PRIO_USIGN_SHIFT);
@@ -337,8 +337,14 @@ static int pmac_ig_cfg(struct core_ops *ops, u8 pmacid, u8 dpu)
 				ig_cfg.bSpIdDefault	= 1;
 			}
 
-			/* The packets has PMAC header for 0, 8 & 16 */
+			/* The packet has PMAC header for 0, 8 & 16 */
 			if ((i % 8) == 0)
+				ig_cfg.bPmacPresent  = 1;
+
+			/* For PON HGU using a reserved DMA2 TX Channel,
+			 * so from CPU packet is entering with PMAC Header through PMAC 1
+			 */
+			if (pmacid == 1)
 				ig_cfg.bPmacPresent  = 1;
 		} else if (dpu == DPU) {
 			/* The packets has PMAC header for all channels */

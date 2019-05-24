@@ -64,6 +64,7 @@ static struct ctp_assign ctp_assign_info[] = {
 		GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
 	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
 #endif
+	{DP_F_VUNI, GSW_LOGICAL_PORT_8BIT_WLAN, 2, 8, 0xF, CQE_LU_MODE2, 1},
 	{DP_F_FAST_WLAN, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 8, 0xF, CQE_LU_MODE2, 1},
 	{DP_F_FAST_WLAN_EXT, GSW_LOGICAL_PORT_9BIT_WLAN, 8, 9, 0x7,
 		CQE_LU_MODE2, 1}
@@ -326,13 +327,11 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 			egcfg.nTrafficClass = i;
 			egcfg.nFlowIDMsb = j;
 			egcfg.nBslTrafficClass = i;
-
-			memset(&pmac_glb, 0, sizeof(pmac_glb));
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Gbl_CfgGet, gswr_r, &pmac_glb);
-			egcfg.bProcFlagsSelect = pmac_glb.bProcFlagsEgCfgEna;
+			egcfg.bProcFlagsSelect = 1;
 			DP_DEBUG(DP_DBG_FLAG_DBG, "bProcFlagsSelect=%u\n",
 				 egcfg.bProcFlagsSelect);
+			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
+				     .Pmac_Eg_CfgGet, gswr_r, &egcfg);
 
 			/*update egcfg and write back to gsw */
 			if (pmac_cfg->eg_pmac_flags & EG_PMAC_F_FCS)

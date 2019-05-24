@@ -196,6 +196,7 @@ enum DP_F_FLAG {
 	DP_F_DOCSIS   = BIT(15), /*!< For DOCSIS device support */
 	DP_F_CPU      = BIT(16), /*!< For CPU */
 
+	DP_F_VUNI     = BIT(21), /*!< For vUNI device */
 	DP_F_SHARE_RES = BIT(22), /*!< Wave600 multiple radio share same ACA */
 	DP_F_ACA       = BIT(23), /*!< peripheral PCI device via ACA*/
 	DP_F_NON_ACA_PORT = BIT(24), /*!< ACA device but without ACA PORT */
@@ -733,6 +734,7 @@ enum DP_SUBIF_DATA_FLAG {
 				       *  by last call of dp_register_subif_ext
 				       */
 	DP_SUBIF_LCT = BIT(2), /*!< Register as LCT port */
+	DP_SUBIF_VANI = BIT(3), /*!< Register as vANI Subif */
 };
 
 /*! @brief dp_subif_id struct for get_netif_subif */

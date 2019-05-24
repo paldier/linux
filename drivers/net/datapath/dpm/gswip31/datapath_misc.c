@@ -197,6 +197,15 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.enc = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.dec = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.mpe2 = 0;
+	} else if (flags & DP_F_VUNI) {
+		dp_info->pmac_template[TEMPL_NORMAL].igp_msb = portid;
+		SET_PMAC_IGP_EGP(&dp_info->pmac_template[TEMPL_NORMAL], portid);
+		dp_info->dma0_template[TEMPL_NORMAL].field.redir = 0;
+		dp_info->dma0_mask_template[TEMPL_NORMAL].field.redir = 0;
+		dp_info->dma1_template[TEMPL_NORMAL].field.ep = portid;
+		dp_info->dma1_template[TEMPL_NORMAL].field.ip = portid;
+		dp_info->dma1_mask_template[TEMPL_NORMAL].field.mpe2 = 0;
+		dp_info->dma1_template[TEMPL_NORMAL].field.mpe2 = 1;
 	} else if (flags & DP_F_FAST_WLAN) {
 		/* WLAN block must put after DSL/DIRECTLINK block
 		 * since all ACA device in GRX500 is using WLAN flag wrongly
@@ -1542,6 +1551,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	struct dp_subif_info *sif;
 	struct hal_priv *priv = HAL(inst);
 	int q_flag = 0;
+	int qid;
 
 	if (!data || !data->subif_data) {
 		PR_ERR("data NULL or subif_data NULL\n");
@@ -1771,6 +1781,21 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	sif->cqm_deq_port = q_port.cqe_deq;
 	sif->cqm_port_idx = deq_port_idx;
 
+	qid = q_port.qid;
+	if (data->subif_data->flag_ops & DP_SUBIF_VANI) {
+		lookup_f &= ~CBM_QUEUE_MAP_F_MPE2_DONTCARE;
+		lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
+		lookup.mpe2 = 0;
+		/* Map to CPU Q */
+		qid = get_dp_port_info(inst, 0)->subif_info[0].qid;
+	} else if (port_info->alloc_flags & DP_F_VUNI) {
+		/* Map to GSWIP */
+		lookup_f &= ~CBM_QUEUE_MAP_F_MPE2_DONTCARE;
+		lookup_f &= ~CBM_QUEUE_MAP_F_MPE1_DONTCARE;
+		lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
+		lookup.mpe2 = 1;
+		lookup.mpe1 = 0;
+	}
 	/* Map this port's lookup to its 1st queue only */
 	//lookup.mode = get_dp_port_info(inst, portid)->cqe_lu_mode; /*no need */
 	lookup.ep = portid;
@@ -1782,13 +1807,13 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	    (port_info->cqe_lu_mode == CQE_LU_MODE0))
 		lookup_f |= CBM_QUEUE_MAP_F_SUBIF_DONTCARE;
 	cbm_queue_map_set(dp_port_prop[inst].cbm_inst,
-			  q_port.qid,
+			  qid,
 			  &lookup,
 			  lookup_f);
 	DP_DEBUG(DP_DBG_FLAG_QOS,
 		 "%s %s=%d %s=%d %s=%d %s=%d %s=0x%x %s=0x%x(%d)\n",
 		 "cbm_queue_map_set",
-		 "qid", q_port.qid,
+		 "qid", qid,
 		 "for dp_port", lookup.ep,
 		 "num_subif", port_info->num_subif,
 		 "lu_mode", port_info->cqe_lu_mode,
