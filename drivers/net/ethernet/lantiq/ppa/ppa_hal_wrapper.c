@@ -181,12 +181,12 @@ uint32_t ppa_drv_deregister_cap(PPA_API_CAPS cap, PPA_HAL_ID hal_id)
 /*****************************************************************************************/
 /* wrappers for various hal API*/
 /*****************************************************************************************/
-uint32_t ppa_hsel_hal_init(uint32_t flag, uint32_t hal_id)
+uint32_t ppa_hsel_hal_init(PPA_HAL_INIT_CFG *cfg, uint32_t flag, uint32_t hal_id)
 {
 	if (!ppa_drv_hal_hook[hal_id])
 		return PPA_FAILURE;
 
-	return ppa_drv_hal_hook[hal_id](PPA_GENERIC_HAL_INIT, (void *)NULL, flag);
+	return ppa_drv_hal_hook[hal_id](PPA_GENERIC_HAL_INIT, cfg, flag);
 }
 
 uint32_t ppa_hsel_hal_exit(uint32_t flag, uint32_t hal_id)
@@ -798,7 +798,7 @@ static inline int32_t get_platform_hal(int api_type) /* 0 = routing, 1 = qos */
 /*****************************************************************************************/
 /*  Initialize all registred HAL layers							 */
 /*****************************************************************************************/
-uint32_t ppa_drv_hal_init(uint32_t flag)
+uint32_t ppa_drv_hal_init(PPA_HAL_INIT_CFG *cfg, uint32_t flag)
 {
 	int i = 0;
 
@@ -808,7 +808,7 @@ uint32_t ppa_drv_hal_init(uint32_t flag)
 	}
 	/* Initialize all the registred HAL layers*/
 	for (i = 0; i < MAX_HAL; i++) {
-		if (ppa_drv_hal_hook[i] && (ppa_hsel_hal_init(flag, i) !=  PPA_SUCCESS))
+		if (ppa_drv_hal_hook[i] && (ppa_hsel_hal_init(cfg, flag, i) !=  PPA_SUCCESS))
 			return PPA_FAILURE;
 	}
 

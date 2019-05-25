@@ -486,6 +486,7 @@
 #define SESSION_FLAG2_CONTAINER 		0x00008000
 #define SESSION_FLAG2_NON_ETHWAN_SESSION 	0x00010000
 #define SESSION_FLAG2_DS_MPE_QOS		0x00020000 /* Flag for DS_QOS capability */
+#define SESSION_FLAG2_VALID_IPSEC_TRANS		0x00040000 /* Flag for L2TP over IPSec Transport mode */
 
 /* Other flags */
 #define FLG_PPA_PROCESSED		0x100	/* this used to mark ecah packets which are processed by ppa datapath driver*/

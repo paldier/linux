@@ -201,7 +201,6 @@ typedef struct ppa_hsel_cnode{
 #define FLAG_SESSION_HI_PRIO 0x0001
 #define FLAG_SESSION_SWAPPED 0x0002
 #define FLAG_SESSION_LOCK_FAIL 0x0004
-#define SESSION_FLAG2_VALID_IPSEC_TRANS		0x00040000 /* Flag for L2TP over IPSec Transport mode */
 /* tunnel table datastructures*/
 /* PPA default values */
 #define PPA_IPV4_HDR_LEN 20
@@ -257,6 +256,12 @@ typedef struct {
 	uint32_t max_bridging_entries; /*!< Maximum Number of bridging entries */
 	uint32_t add_requires_min_hits; /*!< Minimum number of calls to ppa_add_session() before session would be added in h/w - calls from the same hook position in stack. Currently, set to 1 */
 } PPA_INIT_INFO;
+/*!
+        \brief This is the data structure for PPA HAL Initialization kernel hook function
+ */
+typedef struct {
+	void (*del_cb)(void *); /*!< Pointer to pass the callback function*/
+} PPA_HAL_INIT_CFG;
 /*!
 	\brief This is the data structure which specifies an interface and its TTL value as applicable for multicast routing.
  */
@@ -517,6 +522,7 @@ typedef struct {
 
 	uint32_t	entry;		/* session index returned by Hardware */
 	uint64_t	bytes;		/*for MIB*/
+	uint64_t	packets;	/*for MIB*/
 	uint8_t		f_hit;		/*only for test_and_clear_hit_stat*/
 	uint8_t		collision_flag; /* 1 mean the entry is in collsion table or no hashed table, like ASE/Danube*/
 
@@ -591,6 +597,7 @@ typedef struct {
 	uint32_t 	dest_list; 
 	uint32_t 	p_entry;
 	uint64_t 	bytes;
+	uint64_t 	packets;
 	uint32_t 	update_flags; 
 #if IS_ENABLED(CONFIG_SOC_GRX500)
 	PPA_TUNNEL_INFO tnnl_info;

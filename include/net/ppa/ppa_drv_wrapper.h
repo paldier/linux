@@ -65,7 +65,7 @@ extern uint32_t ppa_drv_get_ports_mib(PPA_PORT_MIB *mib, uint32_t flag);
 extern uint32_t ppa_drv_get_itf_mib(PPE_ITF_MIB_INFO *mib, uint32_t flag);
 extern uint32_t ppa_drv_test_and_clear_bridging_hit_stat(PPA_BR_MAC_INFO *entry, uint32_t flag);
 extern uint32_t ppa_set_wan_itf(PPA_WANITF_CFG *cfg, uint32_t flag);
-extern uint32_t ppa_drv_hal_init(uint32_t flag);
+extern uint32_t ppa_drv_hal_init(PPA_HAL_INIT_CFG *cfg, uint32_t flag);
 extern uint32_t ppa_drv_hal_exit(uint32_t flag);
 extern uint32_t ppa_get_session_hash(PPA_SESSION_HASH *cfg, uint32_t flag);
 #if defined(MBR_CONFIG) && MBR_CONFIG
