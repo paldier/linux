@@ -326,10 +326,6 @@ static int prx300_gphy_boot(struct xway_gphy_data *priv)
 	regmap_update_bits(priv->syscfg, PRX300_IFMUX_CFG, PRX300_LAN_MUX_MASK,
 			   PRX300_LAN_MUX_GPHY);
 
-	/* GPHY reset */
-	reset_control_assert(rst->gphy);
-	usleep_range(500, 1000);
-
 	/* CDB and Power Down */
 	reset_control_assert(rst->gphy_cdb);
 	reset_control_assert(rst->gphy_pwr_down);
@@ -449,7 +445,7 @@ static int prx300_dt_parse(struct xway_gphy_data *priv)
 		return PTR_ERR(priv->aspa_syscfg);
 	}
 
-	rst->gphy = devm_reset_control_get(priv->dev, "gphy");
+	rst->gphy = devm_reset_control_get_shared(priv->dev, "gphy");
 	if (IS_ERR(rst->gphy)) {
 		dev_err(priv->dev, "fail to get gphy prop\n");
 		return PTR_ERR(rst->gphy);
