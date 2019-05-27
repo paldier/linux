@@ -53,6 +53,7 @@ struct xway_gphy_data {
 	const struct xway_gphy_soc_data {
 		int (*boot_func)(struct xway_gphy_data *);
 		int (*dt_parse_func)(struct xway_gphy_data *);
+		int (*shutdown)(struct xway_gphy_data *);
 		int align;
 		int fixed_mem_size;
 	} *soc_data;
@@ -475,6 +476,20 @@ static int prx300_dt_parse(struct xway_gphy_data *priv)
 	return 0;
 }
 
+static int prx300_gphy_shutdown(struct xway_gphy_data *priv)
+{
+	struct prx300_reset_control *rst = &priv->rst.prx300;
+
+	dev_dbg(priv->dev, "Shutting down p31g gphy\n");
+
+	/* Global sw reset in prx300 will not reset RCU register
+	 * for gphy, which eventually causes issue at reboot.
+	 * We therefore explicitily reset the gphy during shutdown.
+	 */
+	reset_control_assert(rst->gphy);
+	return 0;
+}
+
 static int xway_gphy_load(struct xway_gphy_data *priv)
 {
 	const struct firmware *fw;
@@ -513,6 +528,15 @@ static int xway_gphy_load(struct xway_gphy_data *priv)
 
 	release_firmware(fw);
 	return 0;
+}
+
+static void xway_phy_shutdown(struct platform_device *pdev)
+{
+	struct xway_gphy_data *priv;
+
+	priv = platform_get_drvdata(pdev);
+	if (priv->soc_data->shutdown)
+		priv->soc_data->shutdown(priv);
 }
 
 static int xway_phy_fw_probe(struct platform_device *pdev)
@@ -568,6 +592,7 @@ static struct xway_gphy_soc_data xrx500_gphy_data = {
 
 static struct xway_gphy_soc_data prx300_gphy_data = {
 	.boot_func = &prx300_gphy_boot,
+	.shutdown = &prx300_gphy_shutdown,
 	.dt_parse_func = &prx300_dt_parse,
 
 	/* To workaround GPHY memory corruption issue,
@@ -592,6 +617,7 @@ MODULE_DEVICE_TABLE(of, xway_phy_match);
 
 static struct platform_driver xway_phy_driver = {
 	.probe = xway_phy_fw_probe,
+	.shutdown = xway_phy_shutdown,
 	.driver = {
 		.name = "phy-xrx500",
 		.owner = THIS_MODULE,
