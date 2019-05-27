@@ -136,6 +136,7 @@ static int mac_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int linksts = 0, duplex = 0, speed = 0;
 	char *load, *ls, *dp;
+	int ret;
 
 	gswdev->mac_dev[pdev->id] = pdev;
 
@@ -173,15 +174,21 @@ static int mac_probe(struct platform_device *pdev)
 		pdata->haps = 0;
 	}
 
-	pdata->ker_ptp_clk = devm_clk_get(dev, "ptp_clk");
+	ret = of_property_read_u32(dev->of_node, "clock-frequency",
+				   &pdata->ptp_clk);
+	if (ret < 0) {
+		pdata->ptp_clk = 500000000;
+		dev_info(dev, "using default %u Hz PTP clock frequency\n",
+			 pdata->ptp_clk);
+	}
 
+	pdata->ker_ptp_clk = devm_clk_get(dev, "ptp_clk");
 	if (IS_ERR(pdata->ker_ptp_clk)) {
 		dev_err(dev, "Failed to get MAC %d ptp clock!\n",
 			pdata->mac_idx);
-		return -EINVAL;
+		return PTR_ERR(pdata->ker_ptp_clk);
 	}
 
-	pdata->ptp_clk = (u32)clk_get_rate(pdata->ker_ptp_clk);
 	pdata->dev = dev;
 
 	/* Init function fointers */
@@ -191,6 +198,25 @@ static int mac_probe(struct platform_device *pdev)
 	if (pdata->mac_en == MAC_DIS) {
 		mac_reset(&pdata->ops, RESET_OFF);
 		return 0;
+	}
+
+	ret = clk_round_rate(pdata->ker_ptp_clk, pdata->ptp_clk);
+	if (ret < 0) {
+		dev_err(dev, "Failed to set MAC %d ptp clock to %i Hz\n",
+			pdata->mac_idx, pdata->ptp_clk);
+		return ret;
+	}
+	if (ret != pdata->ptp_clk) {
+		dev_err(dev, "Expected PTP clock rate unsupported, will use %i Hz instead\n",
+			ret);
+		pdata->ptp_clk = ret;
+	}
+
+	ret = clk_prepare_enable(pdata->ker_ptp_clk);
+	if (ret < 0) {
+		dev_err(dev, "Failed to enable MAC %i ptp clock\n",
+			pdata->mac_idx);
+		return ret;
 	}
 
 	/* Request IRQ for MAC */
@@ -235,6 +261,15 @@ static int mac_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static int mac_remove(struct platform_device *pdev)
+{
+	struct mac_prv_data *pdata = GET_MAC_PDATA(platform_get_drvdata(pdev));
+
+	clk_disable_unprepare(pdata->ker_ptp_clk);
+
+	return 0;
+}
+
 static const struct of_device_id gsw_mac_match[] = {
 	{ .compatible = "intel,gsw_mac" },
 	{},
@@ -243,6 +278,7 @@ MODULE_DEVICE_TABLE(of, gsw_mac_match);
 
 static struct platform_driver gsw_mac_driver = {
 	.probe = mac_probe,
+	.remove = mac_remove,
 	.driver = {
 		.name = MAC_DEV_NAME,
 		.owner = THIS_MODULE,
