@@ -21382,7 +21382,6 @@ GSW_return_t GSW_BridgeConfigSet(void *cdev, GSW_BRIDGE_config_t *param)
 
 	/*Address-based write*/
 	gsw_pce_table_write(cdev, &tbl_prog);
-	pr_err("param->nBridgeId %d\n", param->nBridgeId);
 	ret = GSW_statusOk;
 
 UNLOCK_AND_RETURN:
