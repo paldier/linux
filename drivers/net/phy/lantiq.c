@@ -24,6 +24,7 @@
 
 #define MII_VR9_11G_IMASK	0x19	/* interrupt mask */
 #define MII_VR9_11G_ISTAT	0x1a	/* interrupt status */
+#define MII_PHY_FWV		0x1e	/* firmware version */
 
 #define INT_VR9_11G_WOL		BIT(15)	/* Wake-On-LAN */
 #define INT_VR9_11G_ANE		BIT(11)	/* Auto-Neg error */
@@ -192,6 +193,9 @@ static int p31g_gphy_config_init(struct phy_device *phydev)
 		  phydev->extended_supported);
 	__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
 		  phydev->extended_advertising);
+
+	dev_info(&phydev->mdio.dev, "fw version 0x%04X\n",
+		 phy_read(phydev, MII_PHY_FWV));
 
 	return 0;
 }
