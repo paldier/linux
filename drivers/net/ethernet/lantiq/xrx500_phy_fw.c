@@ -55,7 +55,6 @@ struct xway_gphy_data {
 		int (*dt_parse_func)(struct xway_gphy_data *);
 		int (*shutdown)(struct xway_gphy_data *);
 		int align;
-		int fixed_mem_size;
 	} *soc_data;
 };
 
@@ -499,17 +498,11 @@ static int xway_gphy_load(struct xway_gphy_data *priv)
 		return -EIO;
 	}
 
-	if (priv->soc_data->fixed_mem_size)
-		size = priv->soc_data->fixed_mem_size;
-	else
-		size = fw->size;
-
 	/**
 	 * GPHY cores need the firmware code in a persistent and contiguous
 	 * memory area with a boundary aligned start address.
 	 */
-	size += priv->soc_data->align;
-
+	size = fw->size + priv->soc_data->align;
 	virt_addr = dmam_alloc_coherent(priv->dev, size, &priv->dma_addr,
 					GFP_KERNEL);
 	if (!virt_addr) {
@@ -590,12 +583,7 @@ static struct xway_gphy_soc_data prx300_gphy_data = {
 	.boot_func = &prx300_gphy_boot,
 	.shutdown = &prx300_gphy_shutdown,
 	.dt_parse_func = &prx300_dt_parse,
-
-	/* To workaround GPHY memory corruption issue,
-	 * we allocate 16MB (plus additional 16MB for alignment)
-	 */
-	.align = 16 * 1024 * 1024,
-	.fixed_mem_size = 16 * 1024 * 1024,
+	.align = 128 * 1024,
 };
 
 static const struct of_device_id xway_phy_match[] = {
