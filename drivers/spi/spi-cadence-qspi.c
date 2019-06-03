@@ -363,28 +363,38 @@ static int cadence_qspi_probe(struct platform_device *pdev)
 		goto err_ioremap;
 	}
 
-	pdata = kmalloc(sizeof(struct cqspi_platform_data), GFP_KERNEL);
+	pdata = devm_kzalloc(&pdev->dev, sizeof(struct cqspi_platform_data),
+			     GFP_KERNEL);
 	if (!pdata) {
 		status = -ENOMEM;
-		goto err_pdata;
+		goto err_ioremap;
 	}
 	pdev->dev.platform_data = pdata;
 	cadence_qspi->clk = devm_clk_get(&pdev->dev, "qspi");
 	if (IS_ERR(cadence_qspi->clk)) {
 		dev_err(&pdev->dev, "cannot get qspi clk\n");
-		return PTR_ERR(cadence_qspi->clk);
+		status = PTR_ERR(cadence_qspi->clk);
+		goto err_ioremap;
 	}
 	cadence_qspi->fpi_clk = devm_clk_get(&pdev->dev, "freq");
 	if (IS_ERR(cadence_qspi->fpi_clk)) {
 		dev_err(&pdev->dev, "cannot get qspi fpi_clk\n");
-		return PTR_ERR(cadence_qspi->fpi_clk);
+		status = PTR_ERR(cadence_qspi->fpi_clk);
+		goto err_ioremap;
 	}
 	pdata->master_ref_clk_hz = clk_get_rate(cadence_qspi->fpi_clk);
 	status = clk_prepare_enable(cadence_qspi->clk);
 	if (status < 0) {
 		dev_err(&pdev->dev,
 			"failed to enable qspi clock: %d\n", status);
-		return status;
+		goto err_ioremap;
+	}
+
+	status = clk_prepare_enable(cadence_qspi->fpi_clk);
+	if (status < 0) {
+		dev_err(&pdev->dev,
+			"failed to enable fpi clock: %d\n", status);
+		goto err_clk;
 	}
 
 	status = cadence_qspi_of_get_pdata(pdev);
@@ -461,26 +471,33 @@ static int cadence_qspi_probe(struct platform_device *pdev)
 	}
 	dev_info(&pdev->dev, "Cadence QSPI controller driver\n");
 	return 0;
+
 err_of:
-	kfree(pdata);
-err_pdata:
 	free_irq(cadence_qspi->irq, cadence_qspi);
 err_start_q:
 err_irq:
 	destroy_workqueue(cadence_qspi->workqueue);
 err_wq:
 err_ahbremap:
+	clk_disable_unprepare(cadence_qspi->fpi_clk);
+err_clk:
+	clk_disable_unprepare(cadence_qspi->clk);
 err_ioremap:
 	spi_master_put(master);
 	dev_err(&pdev->dev, "Cadence QSPI controller probe failed\n");
 	return status;
 }
+
 static int cadence_qspi_remove(struct platform_device *pdev)
 {
 	struct spi_master *master = platform_get_drvdata(pdev);
 	struct struct_cqspi *cadence_qspi = spi_master_get_devdata(master);
 
 	cadence_qspi_apb_controller_disable(cadence_qspi->iobase);
+
+	clk_disable_unprepare(cadence_qspi->fpi_clk);
+	clk_disable_unprepare(cadence_qspi->clk);
+
 	platform_set_drvdata(pdev, NULL);
 	destroy_workqueue(cadence_qspi->workqueue);
 	free_irq(cadence_qspi->irq, cadence_qspi);
