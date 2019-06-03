@@ -200,6 +200,7 @@ static ssize_t qos_dbg_props(struct file *fp,
 	char *pval;
 	u16 ind;
 	u16 num_changed = 0;
+	u16 len;
 
 	pdev = (struct platform_device *)(fp->private_data);
 	pdata = platform_get_drvdata(pdev);
@@ -249,8 +250,8 @@ static ssize_t qos_dbg_props(struct file *fp,
 		}
 
 		for (ind = 0; ind < num_props ; ind++) {
-			if (!strncmp(field, props[ind].field,
-				strlen(props[ind].field))) {
+			len = max(strlen(props[ind].field), strlen(field));
+			if (!strncmp(field, props[ind].field, len)) {
 				*(props[ind].dest) = res;
 				num_changed++;
 				break;
@@ -598,7 +599,7 @@ static u16 create_queue_props(struct dbg_prop *props, u16 size,
 	dbg_add_prop(props, &num, size, "wred_max_avg_green",
 		"End of the slope area",
 		&pconf->queue_wred_max_avg_green);
-	dbg_add_prop(props, &num, size, "wred_slope_green", "0-90 scale",
+	dbg_add_prop(props, &num, size, "wred_slope_green", "0-100 scale",
 		&pconf->queue_wred_slope_green);
 	dbg_add_prop(props, &num, size, "wred_fixed_drop_prob_green",
 		"fixed drop rate",
@@ -609,7 +610,7 @@ static u16 create_queue_props(struct dbg_prop *props, u16 size,
 	dbg_add_prop(props, &num, size, "wred_max_avg_yellow",
 		"End of the slope area",
 		&pconf->queue_wred_max_avg_yellow);
-	dbg_add_prop(props, &num, size, "wred_slope_yellow", "0-90 scale",
+	dbg_add_prop(props, &num, size, "wred_slope_yellow", "0-100 scale",
 		&pconf->queue_wred_slope_yellow);
 	dbg_add_prop(props, &num, size, "wred_fixed_drop_prob_yellow",
 		"fixed drop rate",
@@ -1062,7 +1063,7 @@ static int pp_qos_dbg_qstat_show(struct seq_file *s, void *unused)
 	seq_puts(s, "Queue\t\tQocc(p)\t\tAccept(p)\tDrop(p)\t\tRed dropped(p)\n");
 	dst = (uint32_t *)(qdev->fwcom.cmdbuf);
 	*dst++ = qos_u32_to_uc(
-			UC_QOS_COMMAND_GET_ACTIVE_QUEUES_STATS);
+			UC_QOS_CMD_GET_ACTIVE_QUEUES_STATS);
 	pos = dst;
 	*dst++ = qos_u32_to_uc(UC_CMD_FLAG_IMMEDIATE);
 	*dst++ = qos_u32_to_uc(3);
