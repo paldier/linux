@@ -129,7 +129,7 @@ static int deliver_clone(const struct net_bridge_port *prev,
 			 struct sk_buff *skb, bool local_orig)
 {
 	struct net_device *dev = BR_INPUT_SKB_CB(skb)->brdev;
-#ifdef CONFIG_MCAST_HELPER
+#if IS_ENABLED(CONFIG_MCAST_HELPER)
 	const unsigned char *dest = eth_hdr(skb)->h_dest;
 #endif
 
@@ -139,7 +139,7 @@ static int deliver_clone(const struct net_bridge_port *prev,
 		return -ENOMEM;
 	}
 
-#ifdef CONFIG_MCAST_HELPER
+#if IS_ENABLED(CONFIG_MCAST_HELPER)
 	/* Send five tuple info to mcast helper */
 	if (mch_br_capture_pkt == 1) {
 		if ((ip_hdr(skb)->protocol == IPPROTO_UDP) || (ipv6_hdr(skb)->nexthdr == IPPROTO_UDP)) {
