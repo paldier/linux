@@ -2163,7 +2163,24 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		}
 
 		if ((ptbl.val[0] >> 11) & 0x1) {
-			parm->action.eMeterAction = (ptbl.val[3] >> 6) & 0x3;
+			switch ((ptbl.val[3] >> 6) & 0x3) {
+			case 0:
+				parm->action.eMeterAction = GSW_PCE_ACTION_METER_REGULAR;
+				break;
+
+			case 1:
+				parm->action.eMeterAction = GSW_PCE_ACTION_METER_1;
+				break;
+
+			case 3:
+				parm->action.eMeterAction = GSW_PCE_ACTION_METER_1_2;
+				break;
+
+			default:
+				/* Action Disable, default it was set */
+				break;
+			}
+
 			parm->action.nMeterId = ptbl.val[3] & 0x1F;
 		}
 
@@ -2209,7 +2226,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				parm->action.eMeterAction = GSW_PCE_ACTION_METER_1;
 				parm->action.nMeterId = ptbl.val[3] & 0x7F;
 			} else {
-				parm->action.eMeterAction = GSW_PCE_ACTION_METER_REGULAR;
+				parm->action.eMeterAction = GSW_PCE_ACTION_METER_DISABLE;
 			}
 		}
 
