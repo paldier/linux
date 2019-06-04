@@ -2956,9 +2956,11 @@ void __dbg_dump_subtree(struct pp_qos_dev *qdev,
 		child = get_node_from_phy(qdev->nodes, child_phy);
 
 		if (last_child)
-			snprintf(indent_str, "%s'-- ", tabs_str);
+			snprintf(indent_str, sizeof(indent_str), "%s'-- ",
+				 tabs_str);
 		else
-			snprintf(indent_str, "%s|-- ", tabs_str);
+			snprintf(indent_str, sizeof(indent_str), "%s|-- ",
+				 tabs_str);
 
 		if (node_sched(child)) {
 			QOS_DBG_PRINT(s, "%sSched-%u(%u)-%s\n",
