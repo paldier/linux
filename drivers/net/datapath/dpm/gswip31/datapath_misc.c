@@ -1154,7 +1154,7 @@ int dp_platform_queue_set(int inst, u32 flag)
 			cpu_data.dq_tx_push_info[i].tx_ring_size;
 		dp_deq_port_tbl[inst][q_port.cqe_deq].dp_port = 0;/* CPU */
 		DP_DEBUG(DP_DBG_FLAG_QOS, "Store CPU ring info\n");
-		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address[%d]=0x%x\n",
+		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address[%d]=0x%p\n",
 			 q_port.cqe_deq,
 			 dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_addr);
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_size[%d]=%d\n",
@@ -1448,7 +1448,7 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (DP_DBG_FLAG_QOS & dp_dbg_flag) {
 		for (i = 0; i < port_info->deq_port_num; i++) {
-			PR_INFO("cqm[%d]: addr=%x credit=%d size==%d\n",
+			PR_INFO("cqm[%d]: addr=%p credit=%d size==%d\n",
 				i + idx,
 				dp_deq_port_tbl[inst][i + idx].tx_ring_addr,
 				dp_deq_port_tbl[inst][i + idx].tx_pkt_credit,
