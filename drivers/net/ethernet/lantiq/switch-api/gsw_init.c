@@ -981,6 +981,11 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 		}
 	}
 
+	result = gsw_cdev_interface(GSW_API_MAJOR_NUMBER, device_id, gswdev);
+	if (result != 0) {
+		pr_err("Failed to create cdev interface\n");
+		return result;
+	}
 
 	if (device_id == 0) {
 		/* Init FLOW Switch Core Layer */

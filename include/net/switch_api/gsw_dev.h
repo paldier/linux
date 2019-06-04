@@ -17,6 +17,7 @@
 #include <net/switch_api/mac_ops.h>
 #include <net/switch_api/gsw_flow_ops.h>
 #include <net/switch_api/lantiq_gsw_api.h>
+#include <linux/cdev.h>
 
 #define MAX_GSWDEV		16
 #define MAC_DEV_NAME		"gsw_mac"
@@ -41,6 +42,8 @@ struct gswss {
 	struct platform_device *core_dev;
 	/* Number of Mac Subdevice in this GSWIP SubSystem */
 	u32 mac_subdevs_cnt;
+	/* cdev interface for GSWIP SubSystem */
+	struct cdev gswss_cdev;
 	/* Mac Platform device for each Mac Subdevice */
 	struct platform_device *mac_dev[];
 };

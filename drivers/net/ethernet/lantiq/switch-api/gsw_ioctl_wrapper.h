@@ -97,6 +97,7 @@ void	*ioctl_wrapper_init(ioctl_wrapper_init_t *pinit);
 int ioctl_wrapper_dev_add(ioctl_wrapper_ctx_t *pioctldev,
 			  void *pcoredev, u8 mnum);
 int gsw_api_ioctl_wrapper_cleanup(void);
+int gsw_cdev_interface(u32, u32, struct gswss *);
 
 
 

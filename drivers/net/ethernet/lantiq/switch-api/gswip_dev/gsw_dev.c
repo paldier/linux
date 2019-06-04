@@ -527,6 +527,7 @@ static int gsw_remove_devices(struct device *parent)
 	struct gswss *gswdev = dev_get_drvdata(parent);
 	int i = 0;
 
+	cdev_del(&gswdev->gswss_cdev);
 	gsw_remove_data(parent->id);
 
 	if (gswdev->adap_ops)

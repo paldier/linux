@@ -20,6 +20,7 @@ ioctl_wrapper_ctx_t *ioctlwrapctx = NULL;
 static int gsw_api_open(struct inode *inode, struct file *filp);
 static int gsw_api_release(struct inode *inode, struct file *filp);
 static long gsw_api_ioctl(struct file *filp, u32 cmd, unsigned long arg);
+static struct class *gswss_class = NULL;
 #endif
 
 ioctl_cmd_handle_t *gsw_api_alloc_cmd_handle(void)
@@ -249,24 +250,69 @@ static int gsw_api_release(struct inode *inode,
 	return 0;
 }
 
+int gsw_cdev_interface(u32 major, u32 device_id, struct gswss *gswdev)
+{
+	int ret;
+
+	cdev_init(&gswdev->gswss_cdev, &swapi_fops);
+	gswdev->gswss_cdev.owner = THIS_MODULE;
+	ret = cdev_add(&gswdev->gswss_cdev, MKDEV(major, device_id), 1);
+	if (ret < 0) {
+		pr_err("Failed to add cdev\n");
+		goto fail_add_cdev;
+	}
+	if (!device_create(gswss_class, NULL, MKDEV(major, device_id),
+			  NULL, "switch_api/%d", device_id)) {
+		ret = -EINVAL;
+		pr_debug("failed to create device\n");
+		goto fail_create_device;
+	}
+	return 0;
+
+fail_add_cdev:
+	unregister_chrdev_region(MKDEV(major, 0), MINORMASK);
+	return -1;
+fail_create_device:
+	class_destroy(gswss_class);
+	return -1;
+}
+
 int gsw_api_drv_register(u32 major)
 {
 	int result;
-	result = register_chrdev(major, ETHSW_API_DEV_NAME, &swapi_fops);
+	dev_t dev_num;
+
+	/* Device Number */
+	dev_num = MKDEV(major, 0);
+	result = register_chrdev_region(dev_num, MINORMASK, ETHSW_API_DEV_NAME);
 
 	if (result < 0) {
 		pr_err("SWAPI: Register Char Dev failed with %d !!!\n", result);
-		return result;
+		goto fail_register_chrdev_region;
 	}
 
+	/* Register the device class */
+	gswss_class = class_create(THIS_MODULE, ETHSW_API_DEV_NAME);
+	if (!gswss_class) {
+		result = -EEXIST;
+		pr_err("SWAPI: failed to create class %d\n", result);
+		goto fail_create_class;
+	}
 	pr_debug("SWAPI: Registered char device [%s] with major no [%d]\n",
 		 ETHSW_API_DEV_NAME, major);
 	return 0;
+
+fail_create_class:
+	unregister_chrdev_region(MKDEV(major, 0), MINORMASK);
+	return -1;
+fail_register_chrdev_region:
+	return result;
 }
 
 int gsw_api_drv_unregister(u32 major)
 {
-	unregister_chrdev(major, ETHSW_API_DEV_NAME);
+	class_destroy(gswss_class);
+	unregister_chrdev_region(MKDEV(major, 0), MINORMASK);
 	return 0;
 }
 
