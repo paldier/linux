@@ -319,7 +319,7 @@ static void esp_output_done_fastpath(struct ltq_ipsec_complete *done)
 	struct sk_buff *skb = (struct sk_buff *)(done->data);
 	skb->len = done->ret_pkt_len;
 	skb->data = skb_transport_header(skb);
-	skb->tail = skb->data + skb->len;
+	skb_set_tail_pointer(skb, skb->len);
 	skb_push(skb, -skb_network_offset(skb));
 	xfrm_output_resume(skb, done->err);
 }
@@ -361,7 +361,7 @@ static int esp_output_eip97(struct xfrm_state *x, struct sk_buff *skb)
 	if (err > 0) {
 		skb->data = skb_transport_header(skb);
 		skb->len = err;
-		skb->tail = skb->data + skb->len;
+		skb_set_tail_pointer(skb, skb->len);
 		skb_push(skb, -skb_network_offset(skb));
 		return 0;
 	}
@@ -580,8 +580,9 @@ static void esp_input_done_fastpath(struct ltq_ipsec_complete *done)
 	skb->len = done->ret_pkt_len;
 	iph = ip_hdr(skb);
 	ihl = iph->ihl * 4;
-	skb->transport_header = skb->network_header = (uint16_t)(skb->data  - ihl);
-	skb->tail = skb->data  + skb->len;
+	skb_set_network_header(skb, -ihl);
+	skb_set_transport_header(skb, -ihl);
+	skb_set_tail_pointer(skb, skb->len);
 	xfrm_input_resume(skb, done->nexthdr);
 }
 
@@ -606,7 +607,7 @@ static int esp_input_eip97(struct xfrm_state *x, struct sk_buff *skb)
 
 	if(err > 0) {
 		skb->len = err;
-		skb->tail = skb->data  + skb->len;
+		skb_set_tail_pointer(skb, skb->len);
 		return 0;
 	}
 
