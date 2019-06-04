@@ -1352,6 +1352,11 @@ static int pon_config(int inst, int ep, struct dp_port_data *data, u32 flags)
 	 */
 	mac_ops->mac_op_cfg(mac_ops, RX_TIME_NO_INSERT);
 
+	/* Reset the MAC, without this reset the downstream from the PON IP
+	 * will not work when the MAC is not reset in U-Boot before.
+	 */
+	mac_ops->soft_restart(mac_ops);
+
 	return 0;
 }
 
