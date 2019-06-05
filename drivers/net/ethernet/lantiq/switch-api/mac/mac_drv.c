@@ -200,12 +200,14 @@ static int mac_probe(struct platform_device *pdev)
 		return 0;
 	}
 
-	ret = clk_round_rate(pdata->ker_ptp_clk, pdata->ptp_clk);
-	if (ret < 0) {
-		dev_err(dev, "Failed to set MAC %d ptp clock to %i Hz\n",
-			pdata->mac_idx, pdata->ptp_clk);
+	ret = clk_set_rate(pdata->ker_ptp_clk, pdata->ptp_clk);
+	if (ret) {
+		dev_err(dev, "Failed to ptp clock to %i Hz: err: %i\n",
+			pdata->ptp_clk, ret);
 		return ret;
 	}
+
+	ret = clk_get_rate(pdata->ker_ptp_clk);
 	if (ret != pdata->ptp_clk) {
 		dev_err(dev, "Expected PTP clock rate unsupported, will use %i Hz instead\n",
 			ret);
