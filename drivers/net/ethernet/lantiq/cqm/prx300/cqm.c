@@ -1027,8 +1027,8 @@ static void cqm_qidt_set_mode3(const struct cqm_qidt_elm *qid_set,
 				      qid_mask->sub_if_id_mask,
 				      &qidt_elm.sub_if_id,
 				      &qidt_idx.sub_if_id);
-			sel_field = (qidt_elm.sub_if_id << 4) |
-				     (qidt_elm.clsid & 0xf);
+			sel_field = (qidt_elm.sub_if_id << 3) |
+				     (qidt_elm.clsid & 0x7);
 		break;
 		case STATE_EP:
 			handle_state(&state, STATE_MPE1, STATE_SUBIF_ID, 16,
