@@ -87,6 +87,17 @@ static int set_port_specific_prop(struct pp_qos_dev *qdev,
 		node->data.port.disable = !!(conf->disable);
 		QOS_BITS_SET(*modified, QOS_MODIFIED_DISABLE);
 	}
+
+	if (node->data.port.green_threshold != conf->green_threshold) {
+		node->data.port.green_threshold = conf->green_threshold;
+		QOS_BITS_SET(*modified, QOS_MODIFIED_PORT_GREEN_THRESHOLD);
+	}
+
+	if (node->data.port.yellow_threshold != conf->yellow_threshold) {
+		node->data.port.yellow_threshold = conf->yellow_threshold;
+		QOS_BITS_SET(*modified, QOS_MODIFIED_PORT_YELLOW_THRESHOLD);
+	}
+
 	return 0;
 }
 
@@ -183,6 +194,8 @@ void pp_qos_port_conf_set_default(struct pp_qos_port_conf *conf)
 		QOS_NO_SHARED_BANDWIDTH_GROUP;
 	conf->port_parent_prop.arbitration = PP_QOS_ARBITRATION_WSP;
 	conf->packet_credit_enable = 1;
+	conf->green_threshold = 0xFFFFFFFF;
+	conf->yellow_threshold = 0xFFFFFFFF;
 }
 
 int pp_qos_port_allocate(
@@ -456,6 +469,9 @@ static int _pp_qos_port_conf_get(
 			QOS_NODE_FLAGS_PORT_PACKET_CREDIT_ENABLE);
 	conf->credit = node->data.port.credit;
 	conf->disable = node->data.port.disable;
+	conf->green_threshold = node->data.port.green_threshold;
+	conf->yellow_threshold = node->data.port.yellow_threshold;
+
 	return  get_node_prop(
 			qdev,
 			node,

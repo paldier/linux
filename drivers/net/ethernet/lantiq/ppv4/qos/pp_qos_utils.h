@@ -98,6 +98,8 @@
 #define QOS_MODIFIED_WRED_FIXED_DROP_PROB_ENABLE	BIT(27)
 #define QOS_MODIFIED_WRED_FIXED_GREEN_PROB	BIT(28)
 #define QOS_MODIFIED_WRED_FIXED_YELLOW_PROB	BIT(29)
+#define QOS_MODIFIED_PORT_GREEN_THRESHOLD	BIT(30)
+#define QOS_MODIFIED_PORT_YELLOW_THRESHOLD	BIT(31)
 
 #define MAX_MOVING_NODES 8
 
@@ -140,6 +142,8 @@ struct qos_node {
 			size_t		ring_size;
 			unsigned int	credit;
 			int		disable;
+			unsigned int	green_threshold;
+			unsigned int	yellow_threshold;
 		} port;
 		struct {
 			uint16_t	new_child_phy;

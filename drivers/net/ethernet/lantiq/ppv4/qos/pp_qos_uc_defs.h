@@ -36,8 +36,8 @@
 
 /* UC version */
 #define UC_VERSION_MAJOR	(1)
-#define UC_VERSION_MINOR	(0)
-#define UC_VERSION_BUILD	(13)
+#define UC_VERSION_MINOR	(4)
+#define UC_VERSION_BUILD	(22)
 
 /**************************************************************************
  *! @enum	UC_STATUS
@@ -275,22 +275,28 @@ enum wred_queue_conf {
  **************************************************************************/
 enum port_conf {
 	/*!< None */
-	PORT_CONF_NONE					=	0x0000,
+	PORT_CONF_NONE              = 0,
 
 	/*!< Ring Size */
-	PORT_CONF_RING_SIZE				=	0x0001,
+	PORT_CONF_RING_SIZE         = BIT(0),
 
 	/*!< Ring address high */
-	PORT_CONF_RING_ADDRESS_HIGH		=	0x0002,
+	PORT_CONF_RING_ADDRESS_HIGH = BIT(1),
 
 	/*!< Ring address low */
-	PORT_CONF_RING_ADDRESS_LOW		=	0x0004,
+	PORT_CONF_RING_ADDRESS_LOW  = BIT(2),
 
 	/*!< Enable port */
-	PORT_CONF_ACTIVE				=	0x0008,
+	PORT_CONF_ACTIVE            = BIT(3),
+
+	/*!< Green bytes threshold */
+	PORT_CONF_GREEN_THRESHOLD   = BIT(4),
+
+	/*!< Yellow bytes threshold */
+	PORT_CONF_YELLOW_THRESHOLD  = BIT(5),
 
 	/*!< All flags are set */
-	PORT_CONF_ALL					=	0xFFFF
+	PORT_CONF_ALL               = 0xFFFF
 };
 
 /**************************************************************************

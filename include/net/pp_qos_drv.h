@@ -190,6 +190,8 @@ struct pp_qos_port_stat {
  *                              when packet_credit is enabled this designates
  *                              packet credit, otherwise byte credit
  * @disable			disable port transmission
+ * @green_threshold		Egress green bytes threshold
+ * @yellow_threshold		Egress yellow bytes threshold
  */
 struct pp_qos_port_conf {
 	struct pp_qos_common_node_properties common_prop;
@@ -199,6 +201,8 @@ struct pp_qos_port_conf {
 	int      packet_credit_enable;
 	unsigned int credit;
 	int	disable;
+	unsigned int green_threshold;
+	unsigned int yellow_threshold;
 };
 
 
@@ -229,6 +233,8 @@ struct pp_qos_port_info {
  *    byte_credit - 0
  *    ring_size - 0
  *    ring_address - 0
+ *    green_threshold - 0xFFFFFFFF
+ *    yellow_threshold - 0xFFFFFFFF
  */
 void pp_qos_port_conf_set_default(struct pp_qos_port_conf *conf);
 

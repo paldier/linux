@@ -531,6 +531,10 @@ static u16 create_port_props(struct dbg_prop *props, u16 size,
 	dbg_add_prop(props, &num, size, "cred", "Port credit", &pconf->credit);
 	dbg_add_prop(props, &num, size, "dis",
 		"Disable port tx", &pconf->disable);
+	dbg_add_prop(props, &num, size, "green_threshold",
+		"Egress bytes green threshold", &pconf->green_threshold);
+	dbg_add_prop(props, &num, size, "yellow_threshold",
+		"Egress bytes yellow threshold", &pconf->yellow_threshold);
 
 	return num;
 }

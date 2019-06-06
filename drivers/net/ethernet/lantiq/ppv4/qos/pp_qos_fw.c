@@ -425,6 +425,8 @@ struct port_properties {
 	uint8_t  packet_credit_enable;
 	unsigned int credit;
 	int	     disable;
+	unsigned int green_threshold;
+	unsigned int yellow_threshold;
 };
 
 struct cmd_add_port {
@@ -823,6 +825,8 @@ static void set_cmd_port_properties(
 	prop->ring_size = conf->ring_size;
 	prop->credit = conf->credit;
 	prop->disable = !!conf->disable;
+	prop->green_threshold = conf->green_threshold;
+	prop->yellow_threshold = conf->yellow_threshold;
 }
 
 static void create_add_port_cmd(
@@ -1363,6 +1367,8 @@ struct fw_set_port {
 	void	 *ring_addr;
 	size_t	 ring_size;
 	int active;
+	unsigned int green_threshold;
+	unsigned int yellow_threshold;
 };
 
 struct fw_set_sched {
@@ -1557,8 +1563,8 @@ static uint32_t *fw_write_add_port_cmd(
 	*buf++ = qos_u32_to_uc(GET_ADDRESS_HIGH(cmd->prop.ring_addr));
 	*buf++ = qos_u32_to_uc(((uintptr_t)cmd->prop.ring_addr) & 0xFFFFFFFF);
 	*buf++ = qos_u32_to_uc(cmd->prop.credit);
-	*buf++ = qos_u32_to_uc(0xFFFFFFFF); /* Egress Port green Threshold */
-	*buf++ = qos_u32_to_uc(0xFFFFFFFF); /* Egress Port yellow Threshold */
+	*buf++ = qos_u32_to_uc(cmd->prop.green_threshold);
+	*buf++ = qos_u32_to_uc(cmd->prop.yellow_threshold);
 	return buf;
 }
 
@@ -1572,9 +1578,9 @@ static uint32_t *fw_write_set_port_cmd(
 {
 	*buf++ = qos_u32_to_uc(UC_QOS_CMD_SET_PORT);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(14);
+	*buf++ = qos_u32_to_uc(16);
 	*buf++ = qos_u32_to_uc(phy);
-	*buf++ = qos_u32_to_uc(common->valid | parent->valid | port->valid);
+	*buf++ = qos_u32_to_uc(common->valid | parent->valid);
 	*buf++ = qos_u32_to_uc(common->suspend);
 	if (parent->first > parent->last) {
 		parent->first = 0;
@@ -1591,6 +1597,8 @@ static uint32_t *fw_write_set_port_cmd(
 	*buf++ = qos_u32_to_uc(GET_ADDRESS_HIGH(port->ring_addr));
 	*buf++ = qos_u32_to_uc(((uintptr_t)port->ring_addr) & 0xFFFFFFFF);
 	*buf++ = qos_u32_to_uc(port->active);
+	*buf++ = qos_u32_to_uc(port->green_threshold);
+	*buf++ = qos_u32_to_uc(port->yellow_threshold);
 	return buf;
 }
 
@@ -2190,9 +2198,24 @@ static uint32_t *set_port_cmd_wrapper(
 	set_common(&cmd->prop.common, &fwdata->common, modified);
 	set_parent(&cmd->prop.parent, &fwdata->parent, modified);
 	fwdata->type_data.port.valid = 0;
+
 	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_DISABLE)) {
 		QOS_BITS_SET(fwdata->type_data.port.valid, PORT_CONF_ACTIVE);
 		fwdata->type_data.port.active = !!cmd->prop.disable;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_PORT_GREEN_THRESHOLD)) {
+		QOS_BITS_SET(fwdata->type_data.port.valid,
+			     PORT_CONF_GREEN_THRESHOLD);
+		fwdata->type_data.port.green_threshold =
+			cmd->prop.green_threshold;
+	}
+
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_PORT_YELLOW_THRESHOLD)) {
+		QOS_BITS_SET(fwdata->type_data.port.valid,
+			     PORT_CONF_YELLOW_THRESHOLD);
+		fwdata->type_data.port.yellow_threshold =
+			cmd->prop.yellow_threshold;
 	}
 
 	if ((fwdata->common.valid | fwdata->parent.valid |
