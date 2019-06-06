@@ -10958,6 +10958,12 @@ GSW_return_t GSW_MulticastSnoopCfgSet(void *cdev,
 					(1 << parm->nForwardPortId);
 				pcrule.pattern.nPortId = parm->nForwardPortId;
 			} else if (parm->eForwardPort == GSW_PORT_FORWARD_CPU) {
+
+				if (IS_VRSN_31_OR_32(gswdev->gipver)) {
+					pcrule.pattern.bInsertionFlag_Enable = 1;
+					pcrule.pattern.nInsertionFlag = 0;
+				}
+
 				pcrule.action.nForwardPortMap[0] =
 					(1 << gswdev->cport);
 				pcrule.pattern.nPortId = gswdev->cport;
