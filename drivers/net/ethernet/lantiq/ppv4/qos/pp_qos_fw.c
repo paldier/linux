@@ -3158,8 +3158,9 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 				continue;
 			}
 
-			rc = get_port_phy_queues(qdev, id, rlms, rlm_ids,
-						 NUM_OF_QUEUES, &num_queues);
+			rc = get_active_port_phy_queues(qdev, id, rlms,
+							rlm_ids, NUM_OF_QUEUES,
+							&num_queues);
 			if (rc) {
 				pr_err("Failed fetching port queues\n");
 				kfree(rlms);

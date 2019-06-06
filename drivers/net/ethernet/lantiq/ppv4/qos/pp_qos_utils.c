@@ -1731,6 +1731,13 @@ static int node_queue_wrapper(const struct pp_qos_dev *qdev,
 	return node_used(node) && (node->type == TYPE_QUEUE);
 }
 
+static int node_active_queue_wrapper(const struct pp_qos_dev *qdev,
+				     const struct qos_node *node, void *data)
+{
+	return node_used(node) && (node->type == TYPE_QUEUE) &&
+		(!QOS_BITS_IS_SET(node->flags, QOS_NODE_FLAGS_QUEUE_BLOCKED));
+}
+
 void get_node_queues(struct pp_qos_dev *qdev,
 		unsigned int phy, uint16_t *queue_ids,
 		unsigned int size, unsigned int *queues_num)
@@ -1744,8 +1751,21 @@ void get_node_queues(struct pp_qos_dev *qdev,
 			update_ids_container, &data);
 }
 
-void get_port_rlms(struct pp_qos_dev *qdev, u32 phy,
-		   u16 *rlms, u32 size, u32 *queues_num)
+void get_active_node_queues(struct pp_qos_dev *qdev,
+			    unsigned int phy, uint16_t *queue_ids,
+			    unsigned int size, unsigned int *queues_num)
+{
+	struct ids_container_metadata data = {0, queue_ids, size};
+
+	if (queue_ids == NULL)
+		data.size = 0;
+	*queues_num = post_order_travers_tree(qdev, phy,
+			node_active_queue_wrapper, NULL,
+			update_ids_container, &data);
+}
+
+void get_active_port_rlms(struct pp_qos_dev *qdev, u32 phy,
+			  u16 *rlms, u32 size, u32 *queues_num)
 {
 	struct rlm_container_metadata data = {0, rlms, size};
 
@@ -1753,7 +1773,7 @@ void get_port_rlms(struct pp_qos_dev *qdev, u32 phy,
 		data.size = 0;
 
 	*queues_num = post_order_travers_tree(qdev, phy,
-					      node_queue_wrapper, NULL,
+					      node_active_queue_wrapper, NULL,
 					      update_rlm_container, &data);
 }
 
@@ -2532,10 +2552,14 @@ static unsigned int phy_alloc_parent_has_less_than_8_children(
 				    get_phy_from_node(qdev->nodes, parent));
 
 	if (parent->parent_prop.num_of_children == 0) {
-		octet = octet_get_with_at_least_free_entries(qdev->octets, 1);
+		octet = octet_get_with_at_least_free_entries(qdev->octets, 8);
 		if (!QOS_OCTET_VALID(octet)) {
-			QOS_LOG("could not find free octet\n");
-			return QOS_INVALID_PHY;
+			octet = octet_get_with_at_least_free_entries(
+				qdev->octets, 1);
+			if (!QOS_OCTET_VALID(octet)) {
+				QOS_LOG("could not find free octet\n");
+				return QOS_INVALID_PHY;
+			}
 		}
 		phy = octet * 8 + octet_get_use_count(qdev->octets, octet);
 	} else {
@@ -2601,10 +2625,13 @@ static unsigned int create_internal_scheduler_on_node(
 	uint32_t modified;
 	struct pp_qos_sched_conf conf;
 
-	octet = octet_get_with_at_least_free_entries(qdev->octets, 2);
+	octet = octet_get_with_at_least_free_entries(qdev->octets, 8);
 	if (!QOS_OCTET_VALID(octet)) {
-		QOS_LOG("could not find free octet\n");
-		return  QOS_INVALID_PHY;
+		octet = octet_get_with_at_least_free_entries(qdev->octets, 2);
+		if (!QOS_OCTET_VALID(octet)) {
+			QOS_LOG("could not find free octet\n");
+			return  QOS_INVALID_PHY;
+		}
 	}
 
 	/*

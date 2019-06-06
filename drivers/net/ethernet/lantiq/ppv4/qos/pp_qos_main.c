@@ -588,8 +588,8 @@ out:
 	return rc;
 }
 
-int get_port_phy_queues(struct pp_qos_dev *qdev, u32 port_id,
-			u16 *rlms, u16 *ids, u32 size, u32 *queues_num)
+int get_active_port_phy_queues(struct pp_qos_dev *qdev, u32 port_id,
+			       u16 *rlms, u16 *ids, u32 size, u32 *queues_num)
 {
 	s32 rc = 0;
 	u32 phy;
@@ -607,8 +607,8 @@ int get_port_phy_queues(struct pp_qos_dev *qdev, u32 port_id,
 	}
 
 	phy = get_phy_from_node(qdev->nodes, node);
-	get_port_rlms(qdev, phy, rlms, size, queues_num);
-	get_node_queues(qdev, phy, ids, size, queues_num);
+	get_active_port_rlms(qdev, phy, rlms, size, queues_num);
+	get_active_node_queues(qdev, phy, ids, size, queues_num);
 out:
 	return rc;
 }

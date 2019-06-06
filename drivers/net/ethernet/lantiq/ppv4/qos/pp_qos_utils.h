@@ -576,16 +576,16 @@ void node_init(const struct pp_qos_dev *qdev,
 	       unsigned int child);
 
 /**
- * get_port_rlms() - Return all rlms on a subtree
+ * get_port_rlms() - Return all active rlms on a subtree
  * @qdev:
  * @phy:       Phy of subtree's node
  * @rlms:      Array to store the rlms - may be NULL
  * @size:      Size of array - may be 0
  * @queues_num: The number of queues on the subtree
  */
-void get_port_rlms(struct pp_qos_dev *qdev, u32 phy,
-		   u16 *rlms,
-		   u32 size, u32 *queues_num);
+void get_active_port_rlms(struct pp_qos_dev *qdev, u32 phy,
+			  u16 *rlms,
+			  u32 size, u32 *queues_num);
 
 /**
  * get_node_queues() - Return all queues on a subtree
@@ -598,6 +598,18 @@ void get_port_rlms(struct pp_qos_dev *qdev, u32 phy,
 void get_node_queues(struct pp_qos_dev *qdev, unsigned int phy,
 		     uint16_t *queue_ids,
 		     unsigned int size, unsigned int *queues_num);
+
+/**
+ * get_node_queues() - Return all active queues on a subtree
+ * @qdev:
+ * @phy:       Phy of subtree's node
+ * @queue_ids: Array to store the queues ids - may be NULL
+ * @size:      Size of array - may be 0
+ * @queues_num: The number of queues on the subtree
+ */
+void get_active_node_queues(struct pp_qos_dev *qdev, unsigned int phy,
+			    uint16_t *queue_ids,
+			    unsigned int size, unsigned int *queues_num);
 
 int check_sync_with_fw(struct pp_qos_dev *qdev);
 
@@ -692,8 +704,8 @@ int allocate_ddr_for_qm(struct pp_qos_dev *qdev);
 int allocate_ddr_for_qm_on_platform(struct pp_qos_dev *qdev);
 int check_sync_with_fw(struct pp_qos_dev *qdev);
 
-int get_port_phy_queues(struct pp_qos_dev *qdev, u32 port_id,
-			u16 *rlms, u16 *ids, u32 size, u32 *queues_num);
+int get_active_port_phy_queues(struct pp_qos_dev *qdev, u32 port_id,
+			       u16 *rlms, u16 *ids, u32 size, u32 *queues_num);
 int store_port_queue_max_allowed(struct pp_qos_dev *qdev,
 				 u32 port_id, u16 *rlms,
 				 u16 *rlms_ids,
