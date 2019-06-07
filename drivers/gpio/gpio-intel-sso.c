@@ -38,7 +38,11 @@
 #define SSO_CON1_FPID_MASK	3
 #define SSO_CON1_GPTD		25
 #define SSO_CON1_GPTD_MASK	3
+/* Shift clock */
+#define FCDSC 20
+#define FCDSC_MASK 3
 
+static const int shift_clk_freq_tbl[] = {25000000, 12500000, 6250000, 3125000};
 static const int freq_tbl[] = {2, 4, 8, 10, 50000, 100000, 200000, 250000};
 static const char * const sso_gpio_drv_name = "intel-sso-gpio";
 
@@ -70,6 +74,7 @@ struct sso_gpio_priv {
 	int gpio_base;
 	int edge;
 	int freq;
+	int shift_clk_freq;
 	u32 alloc_bitmap;
 };
 
@@ -192,6 +197,26 @@ static int sso_gpio_freq_set(struct sso_gpio_priv *priv)
 	return 0;
 }
 
+static void sso_register_shift_clk(struct sso_gpio_priv *priv)
+{
+	u32 val = 0;
+	int idx, size = ARRAY_SIZE(shift_clk_freq_tbl);
+
+	for (idx = 0; idx < size; idx++) {
+		if (shift_clk_freq_tbl[idx] <= priv->shift_clk_freq) {
+			val = idx;
+			break;
+		}
+	}
+
+	if (idx == size)
+		dev_warn(priv->dev, "%s: Invalid freq %d\n",
+			 __func__, priv->shift_clk_freq);
+
+	sso_gpio_write_mask(priv->mmap, SSO_CON1, FCDSC,
+			    FCDSC_MASK, val);
+}
+
 static int sso_gpio_gc_init(struct sso_gpio_priv *priv,
 			    struct device *dev, const char *name)
 {
@@ -259,6 +284,9 @@ static int sso_gpio_hw_init(struct sso_gpio_priv *priv)
 	/* Set GPIO update rate */
 	sso_gpio_freq_set(priv);
 
+	/* Register shift clock */
+	sso_register_shift_clk(priv);
+
 	return 0;
 }
 
@@ -320,6 +348,11 @@ static int intel_sso_gpio_probe(struct platform_device *pdev)
 		priv->freq = 0;
 	else
 		priv->freq = prop;
+
+	/* update shift clock frequency */
+	if (device_property_read_u32(dev, "intel,sso-shift-clk-freq",
+				     &priv->shift_clk_freq))
+		priv->shift_clk_freq = -1;
 
 	/* gpio mem */
 	priv->mmap = syscon_node_to_regmap(dev->of_node);

@@ -36,10 +36,6 @@
 #define BLINK_SRC_OFF(pin, src)		(((pin) * 6) + 4)
 #define BLINK_SRC_MASK	0x3
 
-/* CON1 */
-#define US		30
-#define US_MASK		0x3
-
 /* Driver MACRO */
 #define MAX_FREQ_RANK		10
 #define GPTC_PRE_DIV		200
@@ -75,13 +71,6 @@ enum {
 	SSO_BRIGHTNESS_OFF = 0,
 	SSO_DEF_BRIGHTNESS = 0x80,
 	SSO_MAX_BRIGHTNESS = 0xFF
-};
-
-enum {
-	SSO_SW_UPDATE = 0,
-	SSO_GPTC_UPDATE,
-	SSO_FPID_UPDATE,
-	SSO_UPDATE_MAX
 };
 
 static const u32 freq_div_tbl[] = {4000, 2000, 1000, 800};
@@ -152,7 +141,6 @@ struct sso_cfg {
 	u32 gptc_clkrate;
 	u32 brightness;
 	int blink_rate_idx;
-	u32 update_src;
 };
 
 /**
@@ -202,22 +190,6 @@ sso_led_write_mask(struct regmap *map, u32 reg, u32 off, u32 mask, u32 val)
 	reg_val = (reg_val & ~(mask << off)) | ((val & mask) << off);
 
 	return sso_led_writel(map, reg, reg_val);
-}
-
-static int sso_led_hw_init(struct sso_led_priv *priv)
-{
-	struct sso_cfg *cfg = &priv->cfg;
-
-	if (sso_led_write_mask(priv->mmap, SSO_CON1, US,
-			       US_MASK, cfg->update_src))
-		return -EINVAL;
-
-	if (cfg->update_src != SSO_GPTC_UPDATE)
-		sso_led_update_bit(priv->mmap, SSO_CON0, BLINK_R, 0);
-	else
-		sso_led_update_bit(priv->mmap, SSO_CON0, BLINK_R, 1);
-
-	return 0;
 }
 
 static u32 sso_rectify_brightness(u32 brightness)
@@ -299,7 +271,10 @@ static void sso_led_freq_set(struct sso_led_priv *priv, u32 pin, int freq_idx)
 	group = sso_led_pin_to_group(pin);
 	freq_src = sso_led_get_freq_src(freq_idx);
 	off = sso_led_pin_blink_off(pin, group);
-	if (group == LED_GRP1_24_28)
+
+	if (group == LED_GRP0_0_23)
+		return;
+	else if (group == LED_GRP1_24_28)
 		reg = LED_BLINK_H8_0;
 	else
 		reg = LED_BLINK_H8_1;
@@ -594,21 +569,6 @@ static int sso_dt_parse(struct sso_led_priv *priv)
 		cfg->blink_rate_idx = 0;
 	else
 		cfg->blink_rate_idx = sso_rectify_blink_rate(priv, prop);
-
-	if (device_property_read_u32(dev, "intel,sso-def-updatesrc", &prop))
-		cfg->update_src = SSO_GPTC_UPDATE;
-	else
-		cfg->update_src = prop;
-
-	if (cfg->update_src >= SSO_UPDATE_MAX) {
-		dev_err(dev, "led update src error!\n");
-		return -EINVAL;
-	}
-
-	if (sso_led_hw_init(priv)) {
-		dev_err(dev, "led HW init fail!\n");
-		return -EINVAL;
-	}
 
 	if (sso_led_dt_parse(priv))
 		return -EINVAL;

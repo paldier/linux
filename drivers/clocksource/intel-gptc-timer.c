@@ -118,6 +118,7 @@ struct gptc_timer {
 	u32 irq;
 	u32 type;
 	u32 frequency;
+	unsigned long cycles;
 	enum gptc_cnt_dir dir;
 	bool used;
 	bool irq_registered;
@@ -383,7 +384,7 @@ static void gptc_per_timer_init(struct gptc_timer *timer)
 	gptc_count_dir(timer);
 	gptc_enable_32bit_timer(timer);
 	if (timer->type == TIMER_TYPE_HEARTBEAT)
-		gptc_reload_counter(timer, 1); /* TODO for interval */
+		gptc_reload_counter(timer, timer->cycles);
 	else
 		gptc_reset_counter(timer);
 	if (timer->type == TIMER_TYPE_CLK_SRC ||
@@ -546,11 +547,6 @@ static int gptc_of_parse_timer(struct gptc *gptc)
 			 __func__, clkspec.args_count, clkspec.args[0],
 			 clkspec.args[1], clkspec.args[2]);
 
-		if (clkspec.args_count != 3) {
-			pr_err("%s: invalid gptc clk property\n", __func__);
-			return -EINVAL;
-		}
-
 		type = clkspec.args[0];
 		tid = clkspec.args[1];
 		cpuid = clkspec.args[2];
@@ -591,6 +587,8 @@ static int gptc_of_parse_timer(struct gptc *gptc)
 			timer->irq = 0;
 			timer->dir = GPTC_COUNT_DOWN;
 			timer->cpuid = 0;
+			timer->cycles = ((clkspec.args_count > 3)
+					 ? clkspec.args[3] : 1);
 			list_add_tail(&timer->heartbeat, &gptc_heartbeat_list);
 			break;
 		case TIMER_TYPE_CLK_EVT:
@@ -1224,7 +1222,7 @@ static int gptc_remove(struct platform_device *pdev)
  * GPTC might not be used as clock source in PRX300.
  * GPTC driver for prx300 has same function scopes as other soc,
  * but it uses platform device instead of clock source init API
- * to better support senarios that it is not used as clock source.
+ * to better support scenarios that it is not used as clock source.
  */
 static struct platform_driver gptc_drv = {
 	.probe = gptc_probe,
