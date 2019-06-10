@@ -188,6 +188,7 @@ typedef enum {
 #if IS_ENABLED(CONFIG_INTEL_IPQOS_MPE_DS_ACCEL)
 	MPE_DS_QOS,
 #endif
+	QOS_METER,
 	MAX_CAPS
 } PPA_API_CAPS;
 
@@ -930,6 +931,19 @@ typedef struct{
 	uint32_t 	timeout;	/*!< PPA timeout*/
 	uint16_t 	session_uid[2];	/*!< PPA session id*/
 } ppa_lro_entry;
+/*!
+  \brief QoS Meter configuration structure
+ */
+typedef struct {
+	PPA_QOS_METER_TYPE	type; /*!< Mode of Meter*/
+	uint32_t		enable; /*!< Enable for meter */
+	uint32_t		cir; /*!< Committed Information Rate in bytes/s */
+	uint32_t		cbs; /*!< Committed Burst Size in bytes */
+	uint32_t		pir; /*!< Peak Information Rate in bytes/s */
+	uint32_t		pbs; /*!< Peak Burst Size */
+	uint32_t		meterid; /*!< Meter ID Configured on the system*/
+	uint32_t		flags; /*!< Flags define operations on meters enbled*/
+}PPA_QOS_METER_CFG;
 /*
  * ####################################
  * Declaration
@@ -990,6 +1004,7 @@ int32_t ppa_add_class_rule(PPA_CLASS_RULE *rule);
 int32_t ppa_mod_class_rule(PPA_CLASS_RULE *rule);
 int32_t ppa_del_class_rule(PPA_CLASS_RULE *rule);
 int32_t ppa_get_class_rule(PPA_CLASS_RULE *rule);
+int32_t ppa_set_qos_meter(PPA_QOS_METER_CFG *meter_cfg);
 #endif
 int32_t ppa_inactivity_status(PPA_U_SESSION *);
 int32_t ppa_set_session_inactivity(PPA_U_SESSION *, int32_t);

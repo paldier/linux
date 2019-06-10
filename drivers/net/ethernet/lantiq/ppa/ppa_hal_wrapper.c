@@ -337,6 +337,15 @@ uint32_t ppa_hsel_set_qos_shaper_entry(QOS_RATE_SHAPING_CFG *entry, uint32_t fla
 	return ppa_drv_hal_hook[hal_id](PPA_GENERIC_HAL_SET_QOS_SHAPER_CFG, (void *)entry, flag);
 }
 
+uint32_t ppa_hsel_set_qos_meter_entry(PPA_QOS_METER_CFG *entry, uint32_t flag, uint32_t hal_id)
+{
+	if (!ppa_drv_hal_hook[hal_id])
+		return PPA_FAILURE;
+
+	return ppa_drv_hal_hook[hal_id](PPA_GENERIC_HAL_SET_QOS_METER_CFG,(void *)entry, flag);
+}
+EXPORT_SYMBOL(ppa_hsel_set_qos_meter_entry);
+
 uint32_t ppa_hsel_mod_subif_port_cfg(QOS_MOD_SUBIF_PORT_CFG *entry, uint32_t flag, uint32_t hal_id)
 {
 	if (!ppa_drv_hal_hook[hal_id])

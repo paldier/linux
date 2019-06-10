@@ -1150,6 +1150,27 @@ typedef struct {
 	int32_t			phys_shaperid;
 } PPA_QOS_SHAPER_CFG;
 /*!
+	\brief QoS Meter Mode Configuration
+ */
+typedef enum {
+	PPA_QOS_METER_TOKEN_BUCKET = 1,/*!< Simple Token Bucket */
+	PPA_QOS_METER_SR_TCM = 2, /*!< Single Rate Three Color Marker */
+	PPA_QOS_METER_TR_TCM = 3 /*!< Two Rate Three Color Marker */
+}PPA_QOS_METER_TYPE;
+/*!
+  \brief QoS Meter configuration structure
+ */
+typedef struct {
+	PPA_QOS_METER_TYPE	type; /*!< Mode of Meter*/
+	uint32_t		enable; /*!< Enable for meter */
+	uint32_t		cir; /*!< Committed Information Rate in bytes/s */
+	uint32_t		cbs; /*!< Committed Burst Size in bytes */
+	uint32_t		pir; /*!< Peak Information Rate in bytes/s */
+	uint32_t		pbs; /*!< Peak Burst Size */
+	uint32_t		meterid; /*!< Meter ID Configured on the system*/
+	uint32_t		flags; /*!< Flags define operations on meters enbled*/
+}PPA_QOS_METER_INFO;
+/*!
 	\brief This is the data structure for PPA QOS Internal INFO
  */
 typedef struct {
@@ -1988,6 +2009,7 @@ typedef union {
 	PPA_CMD_SW_SESSION_ENABLE_INFO sw_session_enable_info; /*!< PPA SW session enable parameter */
 	PPA_CMD_VARIABLE_VALUE_INFO var_value_info; /*!< PPA VARABILE value. */
 	PPA_CMD_DEL_SESSION_INFO del_session; /*!< PPA session delete info. */
+	PPA_QOS_METER_INFO meter_info; /*!< PPA qos meter info. */
 } PPA_CMD_DATA;
 /*@}*/ /* PPA_IOCTL */
 /* -------------------------------------------------------------------------- */
@@ -2106,6 +2128,7 @@ typedef enum {
 	PPA_CMD_MANAGE_SESSIONS_NR,
 	PPA_CMD_GET_SESSIONS_NR,
 	PPA_CMD_GET_SESSIONS_COUNT_NR,
+	PPA_CMD_SET_QOS_METER_NR, /*!< NR for PPA_CMD_SET_QOS_METER */
 	/* PPA_IOC_MAXNR should be the last one in the enumberation */
 	PPA_IOC_MAXNR /*!< NR for PPA_IOC_MAXNR */
 } PPA_IOC_NR;
@@ -2525,6 +2548,11 @@ typedef enum {
 	\note portid, queueid and weight should be set accordingly.
  */
 #define PPA_CMD_GET_QOS_SHAPER _IOR(PPA_IOC_MAGIC, PPA_CMD_GET_QOS_SHAPER_NR, PPA_CMD_RATE_INFO)
+/** PPA Set QOS rate Meter. Value is manipulated by _IOW() macro for final value
+ *   \param[in] PPA_QOS_METER_CFG The parameter points to a
+ *     \ref PPA_QOS_METER_CFG structure
+ *      */
+#define PPA_CMD_SET_QOS_METER _IOW(PPA_IOC_MAGIC, PPA_CMD_SET_QOS_METER_NR, PPA_QOS_METER_INFO)
 /** PPA get all exported hook count. Value is manipulated by _IOR() macro for final value
 	\param PPA_CMD_COUNT_INFO The parameter points to a
 	\ref PPA_CMD_COUNT_INFO structure
