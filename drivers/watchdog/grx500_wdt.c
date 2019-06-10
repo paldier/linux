@@ -284,6 +284,7 @@ static irqreturn_t grx500wdt_irq(int irqno, void *param)
 	struct watchdog_device *grx500_wdt;
 	struct grx500_wdt_struct *priv;
 	int i;
+	static int flag;
 
 	grx500_wdt = &per_cpu(grx500wdt, smp_processor_id());
 	priv = watchdog_get_drvdata(grx500_wdt);
@@ -301,6 +302,10 @@ static irqreturn_t grx500wdt_irq(int irqno, void *param)
 	WARN_ONCE(1, " IRQ %d triggered as WDT%d Timer Overflow on CPU %d!\n",
 		irqno, grx500_wdt->id, smp_processor_id());
 
+	if (flag == 0) {
+		show_state();
+		flag = 1;
+	}
 	return IRQ_HANDLED;
 }
 
