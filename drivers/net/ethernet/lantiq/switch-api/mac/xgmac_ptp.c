@@ -61,7 +61,7 @@ static int xgmac_ptp_register(void *pdev);
 static void xgmac_extts_isr_handler(struct mac_prv_data *pdata,
 				    u32 tstamp_sts);
 
-void xgmac_config_timer_reg(void *pdev)
+int xgmac_config_timer_reg(void *pdev, u32 mac_tscr)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
 	struct timespec now;
@@ -69,6 +69,11 @@ void xgmac_config_timer_reg(void *pdev)
 	u64 temp = 0;
 
 	if (!pdata->systime_initialized) {
+		/* Check Timestamp Enabled/Disabled
+		 * Exit if Disabled, No need to Intialize the Timer
+		 */
+		if (!MAC_GET_VAL(mac_tscr, MAC_TSTAMP_CR, TSENA))
+			return 0;
 
 		/* program Sub Second Increment Reg */
 		hw_if->config_subsec_inc(pdev, pdata->ptp_clk);
@@ -87,6 +92,8 @@ void xgmac_config_timer_reg(void *pdev)
 		hw_if->init_systime(pdev, now.tv_sec, now.tv_nsec);
 		pdata->systime_initialized = 1;
 	}
+
+	return 0;
 }
 
 /* API to adjust the frequency of hardware clock.

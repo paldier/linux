@@ -84,7 +84,7 @@ int xgmac_set_hwts(void *pdev, struct ifreq *ifr);
 int xgmac_get_hwts(void *pdev, struct ifreq *ifr);
 int xgmac_ptp_init(void *pdev);
 void xgmac_ptp_remove(void *pdev);
-void xgmac_config_timer_reg(void *pdev);
+int xgmac_config_timer_reg(void *pdev, u32 mac_tscr);
 int xgmac_ptp_tx_work(struct work_struct *work);
 int xgmac_get_ts_info(void *pdev,
 		      struct ethtool_ts_info *ts_info);

@@ -1649,7 +1649,7 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	xgmac_config_tstamp(pdev, mac_tscr);
 
 #ifdef __KERNEL__
-	xgmac_config_timer_reg(pdev);
+	xgmac_config_timer_reg(pdev, mac_tscr);
 #endif
 
 	return 0;
