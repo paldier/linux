@@ -383,6 +383,7 @@ enum QOS_FLAG {
 	QOS_LEVEL_GET,     /* get Max Scheduler level for Node */
 	QOS_Q_LOGIC,       /* get logical queue ID based on physical queue ID */
 	QOS_GLOBAL_CFG_GET, /* get global qos config info */
+	QOS_PORT_CFG_SET, /* set qos port config info */
 };
 
 struct dev_mib {

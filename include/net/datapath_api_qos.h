@@ -1267,6 +1267,30 @@ struct dp_qos_cfg_info {
 int dp_qos_global_info_get(struct dp_qos_cfg_info *info, int flag);
 
 /*!
+ * @struct dp_port_cfg_info
+ *
+ * Structure defining the QoS port config info
+ *
+ */
+struct dp_port_cfg_info {
+	int inst; /*!< [in] dp instance. For SOC side, it is always zero */
+	int pid; /*!< [in] physical qos port id */
+	u32 green_threshold; /*!< [in] QoS port Egress green bytes threshold*/
+	u32 yellow_threshold; /*!< [in] QoS port Egress yellow bytes threshold*/
+};
+
+/*!< API dp_qos_port_conf_set: Helps to retrieve global QoS
+ *  Config information.
+ *
+ * @param [in] port info struct dp_port_cfg_info *info
+ * @param [in] flag: reserved
+ * @return [out] integer value: return DP_SUCCESS if succeed,
+ *                              otherwise, return DP_FAILURE
+ *
+ */
+int dp_qos_port_conf_set(struct dp_port_cfg_info *info, int flag);
+
+/*!
  * @struct dp_qos_q_logic
  *
  * Structure defining the conversion from physical to logical queue ID

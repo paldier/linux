@@ -249,3 +249,12 @@ int dp_qos_global_info_get(struct dp_qos_cfg_info *info, int flag)
 		dp_qos_platform_set(QOS_GLOBAL_CFG_GET, info, flag);
 }
 EXPORT_SYMBOL(dp_qos_global_info_get);
+
+int dp_qos_port_conf_set(struct dp_port_cfg_info *info, int flag)
+{
+	if (!dp_port_prop[info->inst].info.dp_qos_platform_set)
+		return DP_FAILURE;
+	return dp_port_prop[info->inst].info.
+		dp_qos_platform_set(QOS_PORT_CFG_SET, info, flag);
+}
+EXPORT_SYMBOL(dp_qos_port_conf_set);

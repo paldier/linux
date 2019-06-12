@@ -127,7 +127,12 @@ int qos_platform_set(int cmd_id, void *node, int flag)
 		res = dp_qos_level_get_31((struct dp_qos_level *)node, flag);
 		break;
 	case QOS_GLOBAL_CFG_GET:
-		res = dp_qos_global_info_get_31((struct dp_qos_cfg_info *)node, flag);
+		res = dp_qos_global_info_get_31((struct dp_qos_cfg_info *)node,
+						flag);
+		break;
+	case QOS_PORT_CFG_SET:
+		res = dp_qos_port_conf_set_31((struct dp_port_cfg_info *)node,
+					      flag);
 		break;
 	default:
 		PR_ERR("no support yet cmd_id %d\n", cmd_id);
@@ -258,6 +263,23 @@ static int get_cqm_deq_port_by_node(int inst, int node_id, int flag)
 	for (i = 0; i < MAX_CQM_DEQ; i++) {
 		if (node_id == priv->deq_port_stat[i].node_id)
 			return i;
+	}
+	return DP_FAILURE;
+}
+
+/* get_node_by_cqm_deq_port API
+ * upon Success
+ *    return port node id
+ *    else return DP_FAILURE
+ */
+static int get_node_by_cqm_deq_port(int inst, int pid, int flag)
+{
+	int i;
+	struct hal_priv *priv = HAL(inst);
+
+	for (i = 0; i < MAX_CQM_DEQ; i++) {
+		if (pid == priv->deq_port_stat[i].deq_id)
+			return priv->deq_port_stat[i].node_id;
 	}
 	return DP_FAILURE;
 }
@@ -4589,5 +4611,39 @@ int dp_qos_global_info_get_31(struct dp_qos_cfg_info *info, int flag)
 	info->quanta = quanta;
 	DP_DEBUG(DP_DBG_FLAG_QOS, "quanta=%d\n", quanta);
 
+	return DP_SUCCESS;
+}
+
+/* dp_qos_port_conf_set_31 API
+ * Get global qos config information return DP_SUCCESS
+ * else return DP_FAILURE
+ */
+int dp_qos_port_conf_set_31(struct dp_port_cfg_info *info, int flag)
+{
+	struct hal_priv *priv;
+	struct pp_qos_port_conf port_cfg = {0};
+	int node_id;
+
+	if (!info) {
+		PR_ERR("info cannot be NULL\n");
+		return DP_FAILURE;
+	}
+	priv = HAL(info->inst);
+	if (!priv) {
+		PR_ERR("priv cannot be NULL\n");
+		return DP_FAILURE;
+	}
+	node_id = get_node_by_cqm_deq_port(info->inst, info->pid, flag);
+	if (qos_port_conf_get(priv->qdev, node_id, &port_cfg)) {
+		PR_ERR("failed qos_port_conf_get\n");
+		return DP_FAILURE;
+	}
+	port_cfg.green_threshold = info->green_threshold;
+	port_cfg.yellow_threshold = info->yellow_threshold;
+	if (qos_port_set(priv->qdev, node_id, &port_cfg)) {
+		PR_ERR("fail to set yellow:%d green:%d for node:%d\n",
+		       info->yellow_threshold, info->green_threshold, node_id);
+		return DP_FAILURE;
+	}
 	return DP_SUCCESS;
 }

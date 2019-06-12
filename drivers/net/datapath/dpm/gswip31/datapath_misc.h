@@ -172,12 +172,12 @@ int dp_meter_del_31(struct net_device *dev,
 		    struct dp_meter_cfg *meter,
 		    int flag, struct dp_meter_subif *mtr_subif);
 int dp_qos_global_info_get_31(struct dp_qos_cfg_info *info, int flag);
+int dp_qos_port_conf_set_31(struct dp_port_cfg_info *info, int flag);
 int32_t dp_rx_31(struct sk_buff *skb, u32 flags);
 int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
-		struct sk_buff *skb, int32_t len, uint32_t flags);
-void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
-		       u32 ip_offset, int ip_off_hw_adjust,
-		       u32 tcp_h_offset);
+		   struct sk_buff *skb, int32_t len, uint32_t flags);
+void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type, u32 ip_offset,
+		int ip_off_hw_adjust, u32 tcp_h_offset);
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
 GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param);
