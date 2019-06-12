@@ -384,7 +384,7 @@ long icc_ioctl (struct file *file_p,uint32_t nCmd, unsigned long arg){
 		 			/*mark that the device is opened in global structure
 					to avoid further open of the device*/
 		 			iccdev[num].Installed=1;
-#ifdef CONFIG_SOC_GRX500_BOOTCORE
+#if defined(CONFIG_SOC_GRX500_BOOTCORE) || defined(CONFIG_SOC_PRX300_BOOTCORE)
 					/*Intimate to IAP that bootcore is ready if IA gets registered*/
 					if(num == IA)
 					{
