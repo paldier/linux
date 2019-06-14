@@ -2181,7 +2181,7 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 				break;
 			}
 
-			parm->action.nMeterId = ptbl.val[3] & 0x1F;
+			parm->action.nMeterId = ptbl.val[3] & 0x3F;
 		}
 
 		if (!((ptbl.val[3] >> 13) & 0x1))
@@ -4472,7 +4472,7 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	if (IS_VRSN_NOT_31(gswdev->gipver)) {
 		if (paction->eMeterAction != GSW_PCE_ACTION_METER_DISABLE) {
 			ptbl.val[0] |= (1 << 11);
-			ptbl.val[3] |= (paction->nMeterId & 0x1F);
+			ptbl.val[3] |= (paction->nMeterId & 0x3F);
 
 			switch (paction->eMeterAction) {
 			case GSW_PCE_ACTION_METER_REGULAR:
