@@ -299,23 +299,6 @@ static int get_cqm_deq_port_by_node(int inst, int node_id, int flag)
 	return DP_FAILURE;
 }
 
-/* get_node_by_cqm_deq_port API
- * upon Success
- *    return port node id
- *    else return DP_FAILURE
- */
-static int get_node_by_cqm_deq_port(int inst, int pid, int flag)
-{
-	int i;
-	struct hal_priv *priv = HAL(inst);
-
-	for (i = 0; i < MAX_CQM_DEQ; i++) {
-		if (pid == priv->deq_port_stat[i].deq_id)
-			return priv->deq_port_stat[i].node_id;
-	}
-	return DP_FAILURE;
-}
-
 #ifndef DP_FLUSH_VIA_AUTO
 static int cqm_queue_flush_32(int cqm_inst, int cqm_drop_port, int qid)
 {
@@ -4636,7 +4619,9 @@ int dp_qos_port_conf_set_32(struct dp_port_cfg_info *info, int flag)
 		PR_ERR("priv cannot be NULL\n");
 		return DP_FAILURE;
 	}
-	node_id = get_node_by_cqm_deq_port(info->inst, info->pid, flag);
+	node_id = priv->deq_port_stat[info->pid].node_id;
+	DP_DEBUG(DP_DBG_FLAG_QOS, "%s cqm_deq:%d, qos_port:%d\n",
+		 __func__, info->pid, node_id);
 	if (qos_port_conf_get(priv->qdev, node_id, &port_cfg)) {
 		PR_ERR("failed qos_port_conf_get\n");
 		return DP_FAILURE;
