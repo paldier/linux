@@ -116,6 +116,8 @@ struct nand_flash_dev spinand_flash_ids[] = {
 	{"SPI NAND MT29F2G01AAAED 256MiB",
 		{ .id = {0x2c, 0x22} }, 2048, 256, 0x20000,
 		 LP_OPTIONS | SPINAND_NEED_PLANE_SELECT, 2, 64},
+	{"SPI NAND MT29F1G01ABAFD 128MiB",
+		{ .id = {0x2c, 0x14} }, 2048, 128, 0x20000, LP_OPTIONS, 2, 128},
 	{"SPI NAND MT29F2G01ABAGD 256MiB",
 		{ .id = {0x2c, 0x24} }, 2048, 256, 0x20000,
 		 LP_OPTIONS | SPINAND_NEED_PLANE_SELECT, 2, 128},
