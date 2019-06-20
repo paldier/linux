@@ -213,15 +213,16 @@ int gsw_misc_config(struct core_ops *ops)
 	GSW_register_t reg;
 	int i = 0;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(ops);
+	struct mac_ops *mac_ops;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
 	}
 
-	/* Ignore Undersized frames and forward to CPU for the 
+	/* Ignore Undersized frames and forward to CPU for the
 	 * Pmac Ports 0 and 1
-	 */	
+	 */
 	for (i = 0; i < 2; i++) {
 		reg.nRegAddr = (SDMA_PRIO_USIGN_OFFSET + (i * 6));
 		ops->gsw_common_ops.RegisterGet(ops, &reg);
@@ -239,6 +240,13 @@ int gsw_misc_config(struct core_ops *ops)
 
 		reg.nData |= (1 << SDMA_PRIO_USIGN_SHIFT);
 		ops->gsw_common_ops.RegisterSet(ops, &reg);
+	}
+
+	for (i = MAC_2; i < (gswdev->pnum + MAC_2); i++) {
+		mac_ops = gsw_get_mac_ops(0, i);
+
+		if (mac_ops)
+			mac_ops->mac_op_cfg(mac_ops, RX_SPTAG_INSERT);
 	}
 
 	return 0;

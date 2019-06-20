@@ -1358,6 +1358,11 @@ static int pon_config(int inst, int ep, struct dp_port_data *data, u32 flags)
 	 */
 	mac_ops->mac_op_cfg(mac_ops, RX_TIME_NO_INSERT);
 
+	/* PON Interface always have a Special Tag from PON -> Xgmac
+	 * so should disable the Dummy Special Tag
+	 */
+	mac_ops->mac_op_cfg(mac_ops, RX_SPTAG_NO_INSERT);
+
 	/* Reset the MAC, without this reset the downstream from the PON IP
 	 * will not work when the MAC is not reset in U-Boot before.
 	 */
