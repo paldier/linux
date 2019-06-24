@@ -1655,6 +1655,16 @@ int32_t ppa_form_gre_hdr(PPA_NETIF *dev,
 		uint16_t dataLen,
 		uint8_t *pHdr,
 		uint16_t *len);
+/*! \brief This function returns EOGRE inner destination mac address.
+	\param[out] mac Pointer to destination mac address.
+	\param[in] skb Pointer to the packet buffer.
+	\param[in] dst Pointer to the route table entry.
+	\return Returns PPA_SUCCESS value if GRE inner dmac is formed.
+	\note
+ */
+int32_t ppa_get_dmac_from_dst_entry( uint8_t* mac,
+		PPA_BUF* skb,
+		struct dst_entry *dst);
 /*! \brief This function performs a bridge forwarding database lookup for the bridge specified by netif and returns the member interface on which the packet needs to be forwarded.
 	\param[in] netif Pointer to the network interface structure for the bridge interface where destination lookup is to be performed.
 	\param[in] mac Pointer to destination mac address.
