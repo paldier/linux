@@ -2057,11 +2057,11 @@ static s32 cqm_dp_port_dealloc(struct module *owner, u32 dev_port,
 				buf = (void *)p_info->deq_info.pkt_base[idx];
 				cqm_buffer_free(cpu, buf, 1);
 			} else {
-				devm_kfree(cqm_ctrl->dev,
-					   p_info->deq_info.pkt_base);
 				break;
 			}
 		}
+		devm_kfree(cqm_ctrl->dev, p_info->deq_info.pkt_base);
+		ltq_dma_chan_desc_free(p_info->dma_ch);
 	}
 
 	if (p_info->dma_dt_init_type == DEQ_DMA_CHNL) {
@@ -2214,11 +2214,11 @@ static void fill_tx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 	}
 }
 
-static void fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
+static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 {
 	u32 buf,  cpu = smp_processor_id();
 	struct cqm_dqm_port_info *p_info;
-	u8 ring_idx, idx;
+	int ring_idx, idx, ret = CBM_FAILURE;
 
 	p_info = &dqm_port_info[dp_data->deq_port];
 
@@ -2310,6 +2310,7 @@ static void fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 		if (!p_info->deq_info.pkt_base) {
 			dev_err(cqm_ctrl->dev, "%s: kzalloc failed\r\n",
 				__func__);
+			ltq_free_dma(p_info->dma_ch);
 			break;
 		}
 
@@ -2323,6 +2324,14 @@ static void fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 			if (!buf) {
 				dev_err(cqm_ctrl->dev, "%s: BM alloc failed\n",
 					__func__);
+
+				while (--idx >= 0) {
+					buf = p_info->deq_info.pkt_base[idx];
+					cqm_buffer_free(cpu, (void *)buf, 1);
+				}
+				devm_kfree(cqm_ctrl->dev,
+					   p_info->deq_info.pkt_base);
+				ltq_free_dma(p_info->dma_ch);
 				break;
 			}
 			p_info->deq_info.pkt_base[idx] =
@@ -2336,7 +2345,11 @@ static void fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 
 		/* Need to be disccused and modified later base on policy */
 		dp_data->rx_ring[ring_idx].rx_policy_base = 0;
+
+		ret = CBM_SUCCESS;
 	}
+
+	return ret;
 }
 
 static s32 dp_port_alloc_complete(struct module *owner, struct net_device *dev,
@@ -2352,7 +2365,9 @@ static s32 dp_port_alloc_complete(struct module *owner, struct net_device *dev,
 		return CBM_FAILURE;
 
 	if (flags & FLAG_ACA) {
-		fill_rx_ring_data(data);
+		if (fill_rx_ring_data(data) != CBM_SUCCESS)
+			return CBM_FAILURE;
+
 		fill_tx_ring_data(data);
 	} else if (flags & DP_F_EPON) {
 		reg = (EPON_EPON_MODE_REG_EPONCHKEN_MASK |
