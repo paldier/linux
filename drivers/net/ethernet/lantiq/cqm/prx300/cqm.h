@@ -38,6 +38,7 @@
 #define FLAG_PIB_WAKEUP_INTR	BIT(4)
 #define FLAG_PIB_BYPASS		BIT(5)
 #define FLAG_PIB_DELAY		BIT(6)
+#define FLAG_PIB_PKT_LEN_ADJ	BIT(7)
 #define DMA_PORT_FOR_FLUSH 25
 #define PRX300_CQM_DROP_Q	0x0
 #define PRX300_CQM_Q_MASK	0xff
@@ -544,6 +545,7 @@ struct pib_ctrl {
 	u32 cmd_illegal_port_intr_en:1;
 	u32 wakeup_intr_en:1;
 	u32 pib_bypass:1;
+	u32 pkt_len_adj:1;
 	u32 deq_delay:4;
 };
 

@@ -124,6 +124,15 @@
 //! Constant EN - Enable Bypass
 #define CONST_PIB_CTRL_PIB_BYPASS_EN 0x1
 
+//! Field PKT_LEN_ADJ_EN - Enable Packet Length Adjustment
+#define PIB_CTRL_PKT_LEN_ADJ_EN_POS 20
+//! Field PKT_LEN_ADJ_EN - Enable Packet Length Adjustment
+#define PIB_CTRL_PKT_LEN_ADJ_EN_MASK 0x100000
+//! Constant DIS - Disable adj
+#define CONST_PIB_CTRL_PKT_LEN_ADJ_DIS 0x0
+//! Constant EN - Enable Adj
+#define CONST_PIB_CTRL_PIB_PKT_LEN_ADJ_EN 0x1
+
 //! Field DQ_DLY - Dequeue Delay
 #define PIB_CTRL_DQ_DLY_POS 24
 //! Field DQ_DLY - Dequeue Delay
