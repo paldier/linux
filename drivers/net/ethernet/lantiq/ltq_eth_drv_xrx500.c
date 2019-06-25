@@ -1325,7 +1325,8 @@ static int phy_netdevice_event(struct notifier_block *nb, unsigned long action,
 	if (!ptr)
 		return 0;
 
-	dev = (struct net_device *)ptr;
+	dev = netdev_notifier_info_to_dev(ptr);
+
 
 	switch (action) {
 	case NETDEV_CHANGENAME: {
