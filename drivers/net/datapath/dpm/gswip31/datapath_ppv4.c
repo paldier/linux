@@ -705,7 +705,7 @@ int init_ppv4_qos(int inst, int flag)
 	}
 	t->param.wred_total_avail_resources = 0x10000;
 	t->param.wred_p_const = 512;
-	t->param.wred_max_q_size = 10000;
+	t->param.wred_max_q_size = 0x3fffff;
 	/*reserve all ppv4 port to 1:1 sequnce link cqm port */
 	for (i = 0; i < ARRAY_SIZE(t->param.reserved_ports); i++)
 		t->param.reserved_ports[i] = 1;
