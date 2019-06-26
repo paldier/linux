@@ -1309,13 +1309,16 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			u32 flags, int *f_subif_up)
 {
 	void *subif_data = NULL;
+	struct pmac_port_info *port;
+
 	/* Note: workaround to set dummy subif_data via subif_name for DSL case.
 	 *       During dp_get_netif_subifID, subif_data is used to get its PVC
 	 *       information.
 	 * Later VRX518/618 need to provide valid subif_data in order to support
 	 * multiple DSL instances during dp_register_subif_ext
 	 */
-	if (flags & DP_F_FAST_DSL)
+	port = get_dp_port_info(0, subif_id->port_id);
+	if (port->alloc_flags & DP_F_FAST_DSL)
 		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
 	if (flags & DP_F_DEREGISTER) {
@@ -1348,6 +1351,7 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 			     int *f_subif_up)
 {
 	void *subif_data = NULL;
+	struct pmac_port_info *port;
 
 	/* Note: workaround to set dummy subif_data via subif_name for DSL case.
 	 *       During dp_get_netif_subifID, subif_data is used to get its PVC
@@ -1355,7 +1359,8 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 	 * Later VRX518/618 need to provide valid subif_data in order to support
 	 * multiple DSL instances during dp_register_subif_ext
 	 */
-	if (flags & DP_F_FAST_DSL)
+	port = get_dp_port_info(0, subif_id->port_id);
+	if (port->alloc_flags & DP_F_FAST_DSL)
 		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
 	if (flags & DP_F_DEREGISTER) {
