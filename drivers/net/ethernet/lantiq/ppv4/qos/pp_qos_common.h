@@ -121,8 +121,6 @@ do { \
 #define QOS_FREE(p)		free(p)
 #endif
 
-#define ALLOCATE_DDR_FOR_QM(qdev) allocate_ddr_for_qm(qdev)
-
 /* Locking */
 #ifdef __KERNEL__
 #define LOCK spinlock_t

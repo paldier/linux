@@ -253,7 +253,6 @@ static int pp_qos_get_resources(
 	return 0;
 }
 
-#ifdef CONFIG_OF
 int allocate_ddr_for_qm(struct pp_qos_dev *qdev)
 {
 	void *addr;
@@ -272,33 +271,25 @@ int allocate_ddr_for_qm(struct pp_qos_dev *qdev)
 		return -ENOMEM;
 	}
 
+	qdev->hwconf.qm_ddr_start_virt = addr;
 	qdev->hwconf.qm_ddr_start = (unsigned int)(dma);
 	qdev->hwconf.qm_num_pages =
 		qdev->hwconf.wred_total_avail_resources / PPV4_QOS_DESC_IN_PAGE;
 
 	return 0;
 }
-#else
-int allocate_ddr_for_qm(struct pp_qos_dev *qdev)
+
+void free_ddr_for_qm(struct pp_qos_dev *qdev)
 {
-	struct ppv4_qos_platform_data *psrc;
 	struct device *dev;
+	unsigned int size;
 
 	dev = &((struct platform_device *)qdev->pdev)->dev;
-	psrc = (struct ppv4_qos_platform_data *)dev_get_platdata(dev);
-	if (!psrc) {
-		dev_err(dev, "Device contain no platform data\n");
-		return -ENODEV;
-	}
+	size = qdev->hwconf.wred_total_avail_resources * PPV4_QOS_DESC_SIZE;
 
-	qdev->hwconf.qm_num_pages =
-		qdev->hwconf.wred_total_avail_resources / PPV4_QOS_DESC_IN_PAGE;
-
-	qdev->hwconf.qm_ddr_start = psrc->qm_ddr_start;
-	return 0;
+	dma_free_coherent(dev, size, qdev->hwconf.qm_ddr_start_virt,
+			  qdev->hwconf.qm_ddr_start);
 }
-#endif
-
 
 static int pp_qos_config_from_of_node(
 		struct platform_device *pdev,
@@ -429,6 +420,7 @@ static int pp_qos_config_from_platform_data(
 	pdrvdata->ddr = memaddr;
 
 	pdata->qm_ddr_start = psrc->qm_ddr_start;
+	pdata->qm_ddr_start_virt = psrc->qm_ddr_start_virt;
 	pdata->qm_num_pages = psrc->qm_num_pages;
 	pdata->fw_logger_start = psrc->fw_logger_start;
 	pdata->fw_stat = pdata->fw_logger_start + PPV4_QOS_LOGGER_BUF_SIZE;

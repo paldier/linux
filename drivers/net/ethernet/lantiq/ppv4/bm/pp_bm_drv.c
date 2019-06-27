@@ -559,7 +559,12 @@ static s32 bmgr_is_pool_params_valid(
 		return -EINVAL;
 	}
 
-	// Num_buffers can be up to 2^24
+	if (!IS_ALIGNED(pool_params->num_buffers, 64)) {
+		pr_err("Number of buffers must be aligned to 64\n");
+		return -EINVAL;
+	}
+
+	/* Num_buffers can be up to 2^24 */
 	if (pool_params->num_buffers >= 0x1000000) {
 		pr_err("Number of buffers can be up to 0x1000000\n");
 		return -EINVAL;

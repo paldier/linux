@@ -2349,28 +2349,52 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();
+
 	if (qdev->initialized) {
 		QOS_LOG_ERR("Device already initialized, can't initialize again\n");
 		rc = -EINVAL;
 		goto out;
 	}
+
 	if ((qdev->max_port + 1) & 7) {
 		QOS_LOG_ERR("Given max port %u is not last node of an octet\n",
 				qdev->max_port);
 		rc = -EINVAL;
 		goto out;
 	}
+
+	if (conf->wred_p_const > 1023) {
+		QOS_LOG_ERR("wred_p_const should be not greater than 1023\n");
+		rc = -EINVAL;
+		goto out;
+	}
+
+	qdev->hwconf.wred_total_avail_resources =
+		conf->wred_total_avail_resources;
+
+	if (!IS_ALIGNED(qdev->hwconf.wred_total_avail_resources,
+			PPV4_QOS_DESC_IN_PAGE)) {
+		QOS_LOG_ERR("Num resources %u must be aligned to %u\n",
+			    qdev->hwconf.wred_total_avail_resources,
+			    PPV4_QOS_DESC_IN_PAGE);
+		rc = -EINVAL;
+		goto out;
+	}
+
 	qdev->portsphys = free_ports_phys_init(
 			qdev->reserved_ports,
 			qdev->max_port,
 			conf->reserved_ports,
 			QOS_MAX_PORTS);
+	if (!qdev->portsphys) {
+		QOS_LOG_ERR("portsphys alloc failed\n");
+		rc = -EINVAL;
+		goto out;
+	}
 
-	qdev->hwconf.wred_total_avail_resources =
-		conf->wred_total_avail_resources;
-
-	rc = ALLOCATE_DDR_FOR_QM(qdev);
+	rc = allocate_ddr_for_qm(qdev);
 	if (rc) {
+		QOS_FREE(qdev->portsphys);
 		QOS_LOG_ERR("Could not allocate %u bytes for queue manager\n",
 				qdev->hwconf.wred_total_avail_resources *
 				PPV4_QOS_DESC_SIZE);
@@ -2385,23 +2409,18 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 		      qdev->hwconf.qm_num_pages);
 	QOS_LOG_DEBUG("clock\t\t\t%u\n", qdev->hwconf.qos_clock);
 
-	if (conf->wred_p_const > 1023) {
-		QOS_LOG_ERR("wred_p_const should be not greater than 1023\n");
-		rc = -EINVAL;
-		goto out;
-	}
-
 	qdev->hwconf.wred_const_p = conf->wred_p_const;
 	qdev->hwconf.wred_max_q_size = conf->wred_max_q_size;
 
-	QOS_LOG_DEBUG("wred p const\t\t%u\n",
-		      qdev->hwconf.wred_const_p);
-	QOS_LOG_DEBUG("wred max q size\t\t%u\n",
-		      qdev->hwconf.wred_max_q_size);
+	QOS_LOG_DEBUG("wred p const\t\t%u\n", qdev->hwconf.wred_const_p);
+	QOS_LOG_DEBUG("wred max q size\t\t%u\n", qdev->hwconf.wred_max_q_size);
 
 	rc = load_firmware(qdev, FIRMWARE_FILE);
-	if (rc)
+	if (rc) {
+		free_ddr_for_qm(qdev);
+		QOS_FREE(qdev->portsphys);
 		goto out;
+	}
 
 	create_init_logger_cmd(qdev, UC_LOGGER_LEVEL_INFO);
 	create_init_qos_cmd(qdev);

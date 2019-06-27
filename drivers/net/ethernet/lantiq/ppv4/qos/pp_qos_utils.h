@@ -218,6 +218,7 @@ struct hw_conf {
 	unsigned int	wred_const_p;
 	unsigned int	wred_max_q_size;
 	unsigned int	qm_ddr_start;
+	void*		qm_ddr_start_virt;
 	unsigned int	qm_num_pages;
 	unsigned int	fw_logger_start;
 	unsigned int	fw_stat;
@@ -265,6 +266,7 @@ struct ppv4_qos_platform_data  {
 	unsigned int	max_port;
 	unsigned int	wred_prioritize_pop;
 	unsigned int	qm_ddr_start;
+	void*		qm_ddr_start_virt;
 	unsigned int	qm_num_pages;
 	unsigned int	fw_logger_start;
 	unsigned int	fw_stat;
@@ -701,6 +703,7 @@ void update_children_position(
 			struct qos_node *parent,
 			struct qos_node *node_src);
 int allocate_ddr_for_qm(struct pp_qos_dev *qdev);
+void free_ddr_for_qm(struct pp_qos_dev *qdev);
 int allocate_ddr_for_qm_on_platform(struct pp_qos_dev *qdev);
 int check_sync_with_fw(struct pp_qos_dev *qdev);
 
