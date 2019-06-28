@@ -39,6 +39,12 @@ config LTQ_ETH_XRX500
         ---help---
         Lantiq Ethernet driver for XRX500 series.
 
+config INTEL_PON_HGU_VUNI 
+        tristate "Intel PON HGU vUNI driver"
+        depends on (LTQ_DATAPATH || PRX300_CQM)
+        ---help---
+        Intel PON HGU vUNI driver.
+
 config INTEL_GINT_ETH
         tristate "INTEL G.INT Ethernet driver"
         depends on (LTQ_DATAPATH || PRX300_CQM)
