@@ -362,10 +362,11 @@ int dp_inst_del_dev(struct net_device *dev, char *subif_name, int inst, int ep,
 
 			if (!dp_dev->count) { /*move to free list */
 				hlist_del(&dp_dev->hlist);
+				if (dev)
+					dp_ops_reset(dp_dev, dev);
 				/*do't really free now
 				 *in case network stack is holding the callback
 				 */
-				dp_ops_reset(dp_dev, dev);
 				hlist_add_head(&dp_dev->hlist,
 					       &dp_dev_list_free[idx]);
 			}

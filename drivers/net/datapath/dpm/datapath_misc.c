@@ -1318,6 +1318,8 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 	 * multiple DSL instances during dp_register_subif_ext
 	 */
 	port = get_dp_port_info(0, subif_id->port_id);
+	if (!port)
+		return DP_FAILURE;
 	if (port->alloc_flags & DP_F_FAST_DSL)
 		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
@@ -1360,6 +1362,8 @@ int32_t dp_sync_subifid_priv(struct net_device *dev, char *subif_name,
 	 * multiple DSL instances during dp_register_subif_ext
 	 */
 	port = get_dp_port_info(0, subif_id->port_id);
+	if (!port)
+		return DP_FAILURE;
 	if (port->alloc_flags & DP_F_FAST_DSL)
 		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
