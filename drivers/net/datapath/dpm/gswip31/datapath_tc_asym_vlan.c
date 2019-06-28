@@ -594,12 +594,39 @@ static int ext_vlan_action_cfg(struct core_ops *ops,
 			       struct dp_act_vlan *act)
 {
 	int ret;
+	dp_subif_t subif;
 
 	DP_DEBUG(DP_DBG_FLAG_PAE, "act->act: 0x%02x\n", (unsigned int)act->act);
 
 	/* Copy DSCP table */
 	memcpy(pcfg->nDscp2PcpMap, act->dscp_pcp_map,
 	       sizeof(pcfg->nDscp2PcpMap));
+
+	DP_DEBUG(DP_DBG_FLAG_PAE, "act->ract.act: 0x%02x Bp_dev %p\n",
+		(unsigned int)act->ract.act, act->ract.bp_dev);
+
+	/* Reassign Bridge Port */
+	if ((act->ract.act & DP_BP_REASSIGN) && (act->ract.bp_dev)) {
+		
+		ret = dp_get_port_subitf_via_dev(act->ract.bp_dev, &subif);
+		if (ret == DP_FAILURE)
+			return 0;
+
+		DP_DEBUG(DP_DBG_FLAG_PAE, "New Bridge Port %d\n", subif.bport);
+
+		pcfg->bReassignBridgePort = 1;
+		pcfg->nNewBridgePortId = subif.bport;
+	}
+
+	/* Reassign traffic class */
+	if (act->ract.act & DP_TC_REASSIGN) {
+		
+		DP_DEBUG(DP_DBG_FLAG_PAE, "New TC %d\n", act->ract.new_tc);
+		
+		pcfg->bNewTrafficClassEnable = 1;
+		pcfg->nNewTrafficClass = act->ract.new_tc;
+	}
+	
 	/* forward without modification */
 	if ((act->act & DP_VLAN_ACT_FWD))
 		return 0;

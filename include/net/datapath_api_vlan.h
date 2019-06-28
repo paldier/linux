@@ -46,6 +46,14 @@ struct dp_pattern_vlan {
 		   */
 };
 
+struct dp_act_reassign {
+#define DP_BP_REASSIGN     BIT(0)  /* Reassign to new bridge port */
+#define DP_TC_REASSIGN     BIT(1)  /* Set new traffic class */
+	int act;
+	int new_tc;             /* set new traffic class */
+	struct net_device *bp_dev;  /* BP network device where to reassign*/
+};
+
 struct dp_act_vlan {
 #define DP_VLAN_ACT_FWD    BIT(0)  /*forward packet without editing */
 #define DP_VLAN_ACT_DROP   BIT(1)  /*drop packet */
@@ -92,6 +100,7 @@ struct dp_act_vlan {
 				*  copy from recv pkt's outer tag(CP_FROM_OUTER)
 				*/
 	unsigned char dscp_pcp_map[64]; /* DSCP to P-bit mapping table */
+	struct dp_act_reassign ract; /* VLAN reassignment action */
 };
 
 #define DP_VLAN_DEF_RULE 1
