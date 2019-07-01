@@ -1026,6 +1026,14 @@ struct dp_rx_ring {
 				*   For LGM: it is CQM enqueue register address
 				*   If NULL, it means not valid
 				*/
+	void *out_enq_vaddr;	/*!< [out] rxout ring virtual address
+				*   For software testing or debugging
+				*   For GRX350/PRX300, it is DMA coherent
+				*     virtual address of DMA Descriptor base
+				*   For LGM, it is IO mapped virtual address
+				*     of CQM enqueue register base
+				*   If NULL, it means not valid
+				*/
 	u32 out_dma_ch_to_gswip; /*!< [out] DMA TX channel base to GSWIP for
 				  *   forwarding rxout packet to GSWIP
 				  */
@@ -1044,6 +1052,12 @@ struct dp_rx_ring {
 			       *   Note:
 			       *   1. GRX350/PRX300: not support
 			       */
+	void *in_alloc_vaddr;	/*!< [out] rxin ring buf allocation virtual
+				*     address. It is for 4 ring case only
+				*   For software testing or debugging
+				*   Note:
+				*   1. GRX350/PRX300: not support
+				*/
 	u32 num_pkt; /*!< [in/out] nuber of packet for this policy */
 	int rx_pkt_size; /*!< [in/out] rx packet buffer size
 			  *   requirement rxout packets.
@@ -1070,6 +1084,16 @@ struct dp_rx_ring {
 			       *     The buffer size should based on @rx_pkt_size
 			       *     requirement
 			       */
+	void *pkt_base_vaddr;	/*!< [out] packet list base virtual address,
+				*    which stored @prefill_pkt_num of packet
+				*    physical addresses
+				*    For software testing or debugging
+				*/
+	void *pkt_list_vaddr;	/*!< [out] virtual address of 2nd pkt list,
+				*    which stored @prefill_pkt_num of packet
+				*    virtual addresses
+				*    For software testing or debugging
+				*/
 	enum DP_RXOUT_MSG_MODE out_msg_mode; /*!< [in] rxout msg mode */
 	enum DP_RXOUT_QOS_MODE out_qos_mode; /*!< [in] rxout qos mode */
 };
@@ -1087,6 +1111,9 @@ struct dp_tx_ring {
 	void *in_deq_paddr; /*!< [out] txin ring/dequeue physical base
 			     *   address
 			     */
+	void *in_deq_vaddr;	/*!< [out] txin ring/dequeue virtual base address
+					* For software testing or debugging
+					*/
 	int out_free_ring_size;/*!< [out] txout ring/free buffer burst size,
 				*     the number of buffer can be freed in
 				*     in one free operation.
@@ -1094,6 +1121,9 @@ struct dp_tx_ring {
 	void *out_free_paddr; /*!< [out] txout/free buffer
 			       *     physica address
 			       */
+	void *out_free_vaddr;	/*!< [out] txout/free buffer virtual base address
+					* For software testing or debugging
+					*/
 	u32 num_tx_pkt; /*!< [in] nuber of packet */
 	int tx_pkt_size; /*!< [in] maximum packet size
 			  *   requirement to the packet

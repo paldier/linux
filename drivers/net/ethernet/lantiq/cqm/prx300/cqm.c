@@ -2060,7 +2060,9 @@ static s32 cqm_dp_port_dealloc(struct module *owner, u32 dev_port,
 				break;
 			}
 		}
-		devm_kfree(cqm_ctrl->dev, p_info->deq_info.pkt_base);
+		dmam_free_coherent(cqm_ctrl->dev, p_info->deq_info.dma_size,
+					p_info->deq_info.pkt_base,
+					p_info->deq_info.pkt_base_paddr);
 		ltq_dma_chan_desc_free(p_info->dma_ch);
 	}
 
@@ -2189,6 +2191,9 @@ static void fill_tx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 	struct cqm_dqm_port_info *p_info;
 	void *deq = cqm_ctrl->deq_phy + DESC0_0_CPU_EGP_0;
 	void *free = cqm_ctrl->deq_phy + PTR_RTN_CPU_DW2_EGP_0;
+	void *deq_v = cqm_ctrl->deq + DESC0_0_CPU_EGP_0;
+	void *free_v = cqm_ctrl->deq + PTR_RTN_CPU_DW2_EGP_0;
+
 	u8 ring_idx;
 
 	p_info = &dqm_port_info[dp_data->deq_port];
@@ -2199,9 +2204,17 @@ static void fill_tx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 		dp_data->tx_ring[ring_idx].in_deq_paddr	=
 			(deq + (dp_data->deq_port * (DESC0_0_CPU_EGP_1 -
 			 DESC0_0_CPU_EGP_0)));
+		dp_data->tx_ring[ring_idx].in_deq_vaddr	=
+			(deq_v + (dp_data->deq_port * (DESC0_0_CPU_EGP_1 -
+			 DESC0_0_CPU_EGP_0)));
+
 		dp_data->tx_ring[ring_idx].out_free_paddr =
 			(free + (dp_data->deq_port * (PTR_RTN_CPU_DW2_EGP_1 -
 			 PTR_RTN_CPU_DW2_EGP_0)));
+		dp_data->tx_ring[ring_idx].out_free_vaddr =
+			(free_v + (dp_data->deq_port * (PTR_RTN_CPU_DW2_EGP_1 -
+			 PTR_RTN_CPU_DW2_EGP_0)));
+
 		dp_data->tx_ring[ring_idx].out_free_ring_size =
 			p_info->deq_info.num_free_burst;
 
@@ -2219,6 +2232,11 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 	u32 buf,  cpu = smp_processor_id();
 	struct cqm_dqm_port_info *p_info;
 	int ring_idx, idx, ret = CBM_FAILURE;
+	size_t tbl_size;
+	size_t dma_size;
+	void *dma_vaddr;
+	dma_addr_t dma_paddr;
+	u32 *vbase;
 
 	p_info = &dqm_port_info[dp_data->deq_port];
 
@@ -2298,21 +2316,30 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 							dp_data->num_rx_ring;
 		dp_data->rx_ring[ring_idx].out_enq_paddr =
 			(void *)ltq_dma_chan_get_desc_phys_base(p_info->dma_ch);
+		dp_data->rx_ring[ring_idx].out_enq_vaddr =
+			(void *)ltq_dma_chan_get_desc_vir_base(p_info->dma_ch);
 
 		cbm_w32((cqm_ctrl->enq + EQ_DMA_PORT(dp_data->deq_port, dptr)),
 			(dp_data->rx_ring[ring_idx].out_enq_ring_size  - 1));
 
-		p_info->deq_info.pkt_base =
-		    devm_kzalloc(cqm_ctrl->dev,
-				 (sizeof(u32) *
-				 dp_data->rx_ring[ring_idx].prefill_pkt_num),
-				 GFP_ATOMIC);
-		if (!p_info->deq_info.pkt_base) {
-			dev_err(cqm_ctrl->dev, "%s: kzalloc failed\r\n",
-				__func__);
+		tbl_size = dp_data->rx_ring[ring_idx].prefill_pkt_num
+				* sizeof(u32);
+		dma_size = tbl_size * 2;
+		dma_vaddr = dmam_alloc_coherent(cqm_ctrl->dev, dma_size,
+						&dma_paddr, GFP_DMA);
+		if (!dma_vaddr) {
+			dev_err(cqm_ctrl->dev,
+				"%s: dmam_alloc_coherent failed\n", __func__);
 			ltq_free_dma(p_info->dma_ch);
 			break;
 		}
+		p_info->deq_info.pkt_base_paddr = (void *)dma_paddr;
+		p_info->deq_info.pkt_base = dma_vaddr;
+		p_info->deq_info.dma_size = dma_size;
+		dp_data->rx_ring[ring_idx].pkt_base_paddr = (void *)dma_paddr;
+		dp_data->rx_ring[ring_idx].pkt_base_vaddr = dma_vaddr;
+		vbase = dma_vaddr + tbl_size;
+		dp_data->rx_ring[ring_idx].pkt_list_vaddr = vbase;
 
 		/* BM Buffer */
 		for (idx = 0; idx < dp_data->rx_ring[ring_idx].prefill_pkt_num;
@@ -2329,17 +2356,16 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 					buf = p_info->deq_info.pkt_base[idx];
 					cqm_buffer_free(cpu, (void *)buf, 1);
 				}
-				devm_kfree(cqm_ctrl->dev,
-					   p_info->deq_info.pkt_base);
+				dmam_free_coherent(cqm_ctrl->dev, dma_size,
+						dma_vaddr, dma_paddr);
 				ltq_free_dma(p_info->dma_ch);
 				break;
 			}
 			p_info->deq_info.pkt_base[idx] =
 					__pa(buf - CQM_POOL_METADATA);
+			vbase[idx] = buf - CQM_POOL_METADATA;
 		}
 
-		dp_data->rx_ring[ring_idx].pkt_base_paddr =
-				(void *)__pa(p_info->deq_info.pkt_base);
 		dp_data->rx_ring[ring_idx].num_pkt =
 				dp_data->rx_ring[ring_idx].prefill_pkt_num;
 

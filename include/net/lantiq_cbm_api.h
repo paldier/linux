@@ -496,7 +496,9 @@ typedef struct cbm_dq_info {
 	int32_t		dma_tx_chan;	/*! PMAC DMA Tx Channel */
 	uint32_t	num_desc; /*!< Number of Descriptors at port base */
 	u32 num_free_burst; /*!< Number of free burst size */
-	u32 *pkt_base; /*!<packet list base physical address */
+	u32 *pkt_base; /*!<packet list base DMA virtual address */
+	void *pkt_base_paddr;	/* packet list base DMA physical address */
+	size_t dma_size;	/* size of allocated DMA memory */
 } cbm_dq_info_t;
 
 /*!
