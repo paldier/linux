@@ -188,7 +188,7 @@ int get_subif_size(u32 vap_mask)
 int dp_add_pp_gpid(int inst, int dpid, int vap, int gpid, int spl_gpid)
 {
 	struct pp_port_cfg cfg = {0};
-	struct ctp_assign *ctp_info;
+	const struct ctp_assign *ctp_info;
 	struct pmac_port_info *port_info;
 	int i;
 	struct hal_priv *priv;

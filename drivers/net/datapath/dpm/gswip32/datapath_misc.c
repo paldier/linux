@@ -1044,7 +1044,7 @@ int dp_platform_queue_set_32(int inst, u32 flag)
 	struct dp_subif_info *subif_info;
 	struct dp_dflt_hostif hostif = {0};
 	int vap_num = 0;
-	struct ctp_assign *cpu_assign = get_ctp_assign(DP_F_CPU);
+	const struct ctp_assign *cpu_assign = get_ctp_assign(DP_F_CPU);
 
 	if (!cpu_assign) {
 		DP_ERR("cpu_assign NULL\n");

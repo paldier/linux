@@ -263,7 +263,7 @@ int set_port_lookup_mode_32(int inst, u8 ep, u32 flags);
 int tc_vlan_set_32(struct core_ops *ops, struct dp_tc_vlan *vlan,
 		   struct dp_tc_vlan_info *info,
 		   int flag);
-struct ctp_assign *get_ctp_assign(int flags);
+const struct ctp_assign *get_ctp_assign(int flags);
 int dp_get_lookup_qid_via_index(struct cbm_lookup *info);
 void dp_set_lookup_qid_via_index(struct cbm_lookup *info);
 

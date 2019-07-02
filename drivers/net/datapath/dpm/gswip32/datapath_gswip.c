@@ -34,7 +34,7 @@
 #define METER_CIR(cir)  ((cir) / 1000)
 #define METER_PIR(pir)  ((pir) / 1000)
 
-static struct ctp_assign ctp_assign_info[] = {
+static const struct ctp_assign ctp_assign_info[] = {
 	/*note: multiple flags must put first */
 	{DP_F_CPU, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 8, 0xF, CQE_LU_MODE2, 8, 0},
 	{DP_F_GPON, GSW_LOGICAL_PORT_GPON, 256, 0, 0xFF, CQE_LU_MODE1, 128, 1},
@@ -60,12 +60,13 @@ static struct ctp_assign ctp_assign_info[] = {
 		CQE_LU_MODE2, 16, 0}
 };
 
-static struct ctp_assign ctp_assign_def = {0, GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8,
-					   0xF, CQE_LU_MODE2, 8, 1};
+static const struct ctp_assign ctp_assign_def = {
+	0, GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 0xF, CQE_LU_MODE2, 8, 1
+};
 
 static struct gsw_itf itf_assign[PMAC_MAX_NUM] = {0};
 
-struct ctp_assign *get_ctp_assign(int flags)
+const struct ctp_assign *get_ctp_assign(int flags)
 {
 	int i;
 
@@ -583,7 +584,7 @@ struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
 				u32 flags, struct dp_dev_data *data)
 {
 	GSW_CTP_portAssignment_t ctp_assign;
-	struct ctp_assign *assign = &ctp_assign_def;
+	const struct ctp_assign *assign = &ctp_assign_def;
 	int i, alloc_flag;
 	u16 num;
 	struct core_ops *gsw_handle;
@@ -655,7 +656,7 @@ struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
 int set_port_lookup_mode_32(int inst, u8 ep, u32 flags)
 {
 	int i, alloc_flag;
-	struct ctp_assign *assign = &ctp_assign_def;
+	const struct ctp_assign *assign = &ctp_assign_def;
 	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
 	alloc_flag = port_info->alloc_flags;
@@ -1586,7 +1587,7 @@ int gpid_port_assign(int inst, u8 ep, u32 flags)
 	GSW_GPID_to_LPID_Assignment_t gp_lp_assign;
 	int gpid_base, gpid_num, i, gpid_spl = -1;
 	struct core_ops *gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
-	struct ctp_assign *assign;
+	const struct ctp_assign *assign;
 	struct cbm_gpid_lpid cbm_gpid = {0};
 	struct hal_priv *priv;
 
