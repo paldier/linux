@@ -2074,7 +2074,6 @@ static int child_cfg_valid(
 {
 	const struct qos_node *parent;
 	unsigned int parent_phy;
-	unsigned int bw;
 	unsigned int cur_virt_parent_phy;
 
 	QOS_ASSERT(node_child(node), "node is not a child\n");
@@ -2104,19 +2103,9 @@ static int child_cfg_valid(
 				qdev->nodes,
 				parent);
 
-	bw = get_children_bandwidth_share(qdev,
-			get_node_from_phy(qdev->nodes, cur_virt_parent_phy));
-
-	/*
-	 * If child does not changing its virtual parent than need
-	 * to subtract its bandwidth share, so it will not calculated twice
-	 */
-	if (cur_virt_parent_phy == prev_virt_parent_phy)
-		bw -= node->child_prop.virt_bw_share;
-
-	if (bw + node->child_prop.virt_bw_share  > 100) {
-		QOS_LOG_ERR("Parent already gave %u bandwidth, can't add %u\n",
-			bw, node->child_prop.virt_bw_share);
+	if (node->child_prop.virt_bw_share  > 0x7F) {
+		QOS_LOG_ERR("bw_share (%u) can't exceed 0x7F\n",
+			    node->child_prop.virt_bw_share);
 		return 0;
 	}
 
