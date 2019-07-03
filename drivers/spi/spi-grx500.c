@@ -637,12 +637,17 @@ static void ltq_spi_txfifo_write(struct ltq_spi *hw)
 	if (!fifo_space)
 		return;
 
-	if (hw->bits_per_word <= 8)
+	if (hw->bits_per_word <= 8) {
 		bytes_per_word = 1;
-	else if (hw->bits_per_word <= 16)
+	} else if (hw->bits_per_word <= 16) {
 		bytes_per_word = 2;
-	else if (hw->bits_per_word <= 32)
+	} else if (hw->bits_per_word <= 32) {
 		bytes_per_word = 4;
+	} else {
+		dev_err(hw->dev, "invalid bits_per_word %u\n",
+			hw->bits_per_word);
+		return;
+	}
 
 	while (hw->tx_cnt < hw->len && fifo_space) {
 		data = ltq_spi_tx_word(hw, bytes_per_word);
@@ -1138,6 +1143,8 @@ static int ltq_spi_probe(struct platform_device *pdev)
 	}
 
 	master->bus_num = pdev->id;
+	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(2, 8) |
+				     SPI_BPW_MASK(16) | SPI_BPW_MASK(32);
 	master->setup = ltq_spi_setup;
 	master->cleanup = ltq_spi_cleanup;
 	master->dev.of_node = pdev->dev.of_node;
