@@ -191,7 +191,8 @@ static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
 		   28, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_PON, "g_pon", "pondef", 0, CGU_GATE1,
 		   29, GATE_CLK_HW, 0),
-	INTEL_GATE(PRX300_GCLK_AON, "g_aon", NULL, 0, CGU_GATE1,
+	INTEL_GATE(PRX300_GCLK_AON, "g_aon", "pon_phy",
+		   CLK_SET_RATE_PARENT, CGU_GATE1,
 		   30, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_DDR, "g_ddr", NULL, CLK_IGNORE_UNUSED, CGU_GATE1,
 		   31, GATE_CLK_HW, 0),
@@ -219,8 +220,9 @@ static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
 		   31, GATE_CLK_HW, 0),
 
 	/* Gate3 clock */
-	INTEL_GATE(PRX300_GCLK_SWREF, "g_swref", NULL, 0, CGU_IF_CLK,
-		   4, GATE_CLK_HW, 0),
+	INTEL_GATE(PRX300_GCLK_SWREF, "g_swref", "g_aon",
+		   CLK_SET_RATE_PARENT, CGU_IF_CLK,
+		   4, GATE_CLK_SW, 0),
 	INTEL_GATE(PRX300_GCLK_CBPHY0, "cbphy0", NULL, 0, CGU_IF_CLK,
 		   24, GATE_CLK_SW, 0),
 	INTEL_GATE(PRX300_GCLK_CBPHY1, "cbphy1", NULL, 0, CGU_IF_CLK,

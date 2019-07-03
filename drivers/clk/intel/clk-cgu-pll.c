@@ -93,7 +93,7 @@ grx500_early_recalc_rate(struct clk_hw *hw, unsigned long prate)
 	return intel_pll_calc_rate(prate, mult, div, frac, BIT(20));
 }
 
-const static struct clk_ops grx500_clk_early_ops = {
+static const struct clk_ops grx500_clk_early_ops = {
 	.recalc_rate = grx500_early_recalc_rate,
 };
 
@@ -126,7 +126,7 @@ prx300_early_recalc_rate(struct clk_hw *hw, unsigned long prate)
 	return intel_pll_calc_rate(prate, mult, div, frac, BIT(24));
 }
 
-const static struct clk_ops prx300_clk_early_ops = {
+static const struct clk_ops prx300_clk_early_ops = {
 	.recalc_rate = prx300_early_recalc_rate,
 };
 
@@ -223,7 +223,7 @@ static int grx500_pll_is_enabled(struct clk_hw *hw)
 	return intel_get_clk_val(pll->map, pll->reg, 1, 1);
 }
 
-const static struct clk_ops intel_grx500_pll_ops = {
+static const struct clk_ops intel_grx500_pll_ops = {
 	.recalc_rate	= grx500_pll_recalc_rate,
 	.is_enabled	= grx500_pll_is_enabled,
 };
@@ -241,6 +241,7 @@ static int
 prx300_pll_set_params(struct intel_clk_pll *pll, unsigned int mult,
 		      unsigned int div, unsigned int frac)
 {
+	intel_set_clk_val(pll->map, pll->reg + 0x8, 28, 1, 1);
 	intel_set_clk_val(pll->map, pll->reg + 0x8, 0, 12, mult);
 	intel_set_clk_val(pll->map, pll->reg + 0x8, 18, 6, div);
 	intel_set_clk_val(pll->map, pll->reg, 2, 24, frac);
@@ -347,7 +348,7 @@ prx300_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	return prx300_pll_set_params(pll, mult, div, frac);
 }
 
-const static struct clk_ops intel_prx300_pll_ops = {
+static const struct clk_ops intel_prx300_pll_ops = {
 	.recalc_rate	= prx300_pll_recalc_rate,
 	.is_enabled	= prx300_pll_is_enabled,
 	.enable		= prx300_pll_enable,
@@ -432,35 +433,50 @@ void intel_clk_plls_parse_vco_config(struct intel_clk_provider *ctx,
 				     const struct intel_pll_clk_data *list,
 				     u32 nr_clk)
 {
+	const struct intel_pll_clk_data *plls;
 	struct device *dev = ctx->dev;
-	struct device_node *np = dev->of_node;
-	const struct intel_pll_clk_data *tmp;
-	struct of_phandle_args args;
-	u32 count = 0, idx;
+	struct of_phandle_args r;
 	struct clk *clk;
+	u32 clk_id, clk_rate, clk_en;
+	int cnt, idx, ret;
 
-	do {
-		if (of_parse_phandle_with_fixed_args(np,
-						     "intel,pll_clks_vco",
-						     3, count, &args) < 0)
+	for (cnt = 0;; cnt++) {
+		/* arg0: Clk ID, arg1: Clk rate, arg2: Clk Enable */
+		ret = of_parse_phandle_with_fixed_args(dev->of_node,
+						       "intel,pll-clks",
+						       3, cnt, &r);
+		if (ret)
 			break;
 
-		for (idx = 0, tmp = list; idx < nr_clk; idx++, tmp++) {
-			if (tmp->id == args.args[0]) {
-				clk = __clk_lookup(tmp->name);
-				if (clk_prepare_enable(clk) == 0) {
-					if (!args.args[2]) {
-						clk_disable_unprepare(clk);
-					} else {
-						if (clk_set_rate(clk, args.args[1]))
-							dev_warn(ctx->dev, "%s clk: %s clk_set_rate failed\n",
-								__func__, tmp->name);
-					}
-				} else
-					dev_warn(ctx->dev, "%s clk: %s enable failed\n",
-						__func__, tmp->name);
-			}
+		clk_id   = r.args[0];
+		clk_rate = r.args[1];
+		clk_en   = r.args[2];
+
+		for (idx = 0, plls = list; idx < nr_clk; idx++, plls++) {
+			if (plls->id == clk_id)
+				break;
 		}
-	} while (++count);
+		if (plls->id != clk_id) {
+			dev_warn(dev, "PLL%u: not supported!\n", clk_id);
+			continue;
+		}
+
+		clk = __clk_lookup(plls->name);
+		if (clk_en) {
+			clk_prepare_enable(clk);
+			if (clk_set_rate(clk, clk_rate)) {
+				dev_warn(dev, "PLL %s not support rate: %u\n",
+					 plls->name, clk_rate);
+				clk_disable_unprepare(clk);
+			}
+		} else {
+			/* PLL HW default is enabled.
+			 * Linux clock default is disabled.
+			 * Disable PLL clk requires to enable first in logic
+			 */
+			clk_prepare_enable(clk);
+			clk_disable_unprepare(clk);
+		}
+	}
 }
 

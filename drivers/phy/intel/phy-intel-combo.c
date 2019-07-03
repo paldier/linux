@@ -61,7 +61,7 @@ enum intel_phy_mode {
 	PHY_MAX_MODE
 };
 
-struct intel_phy_calibrate{
+struct intel_phy_calibrate {
 	u32 resv:31;
 	u32 rx_auto_adapt:1;
 };
@@ -326,7 +326,7 @@ static int intel_phy_gate_clk_enable(struct phy_ctx *iphy)
 	return 0;
 }
 
-static void intel_phy_gate_clk_disable(struct phy_ctx *iphy)
+static __maybe_unused void intel_phy_gate_clk_disable(struct phy_ctx *iphy)
 {
 	if (iphy->phy_gate_clk)
 		clk_disable_unprepare(iphy->phy_gate_clk);
@@ -341,7 +341,7 @@ static int intel_phy_freq_clk_enable(struct phy_ctx *iphy)
 	return 0;
 }
 
-static void intel_phy_freq_clk_disable(struct phy_ctx *iphy)
+static __maybe_unused void intel_phy_freq_clk_disable(struct phy_ctx *iphy)
 {
 	if (iphy->phy_freq_clk)
 		clk_disable_unprepare(iphy->phy_freq_clk);
@@ -380,7 +380,7 @@ static int intel_pcie_set_clk_src(struct phy_ctx *iphy)
 static int phy_rxeq_autoadapt(struct phy *phy)
 {
 	struct phy_ctx *iphy;
-	int i, err;
+	int err;
 	u32 val;
 	struct device *dev;
 
@@ -410,7 +410,7 @@ static int phy_rxeq_autoadapt(struct phy *phy)
 		(RAWLANEN_RX_OV_IN_3 << 2), val, (!!(val & BIT(0))),
 		5, 5 * PHY_RXADAPT_POLL_CNT);
 	/* if auto adapt fail, run auto adapt one more time */
-	if (IS_ERR(err)) {
+	if (err) {
 		/* ADAPT_REQ Bit 11 and ADAPT_REQ_OVRD_EN Bit 12 */
 		val = readl(iphy->cr_base + (RAWLANEN_RX_OV_IN_3 << 2));
 		writel(val & ~(BIT(11) | BIT(12)), iphy->cr_base + (RAWLANEN_RX_OV_IN_3 << 2));
@@ -427,39 +427,41 @@ static int phy_rxeq_autoadapt(struct phy *phy)
 	/* Stop RX Adaptation */
 	combo_phy_w32(iphy->cr_base, 0x0, (RAWLANEN_RX_OV_IN_3 << 2));
 	dev_dbg(dev, "RX Adaptation Turn off after done:\n");
-	dev_dbg(dev, "RAWLANEN_RX_OV_IN_3 (0x%08x) = 0x%08x\n",
+	dev_dbg(dev, "RAWLANEN_RX_OV_IN_3 (0x%p) = 0x%08x\n",
 		(iphy->cr_base + (RAWLANEN_RX_OV_IN_3 << 2)),
 		combo_phy_r32(iphy->cr_base, (RAWLANEN_RX_OV_IN_3 << 2)));
 
 	/* Display RX Adapt Value in PMA */
 	dev_dbg(dev, "Read back on RX Adapted Value\n");
 	/* LANEN_RX_ADPT_ATT_STAT ATT Adaptation code */
-	dev_dbg(dev, "LANEN_RX_ADPT_ATT_STAT [ (0x%08x) = 0x%08x\n",
+	dev_dbg(dev, "LANEN_RX_ADPT_ATT_STAT [ (0x%p) = 0x%08x\n",
 		(iphy->cr_base + (LANEN_RX_ADPT_ATT_STAT << 2)),
 		combo_phy_r32(iphy->cr_base, (LANEN_RX_ADPT_ATT_STAT << 2)));
 
 	/* LANEN_RX_ADPT_VGA_STAT VGA Adaptation code */
-	dev_dbg(dev, "LANEN_RX_ADPT_VGA_STAT [ (0x%08x) = 0x%08x\n",
+	dev_dbg(dev, "LANEN_RX_ADPT_VGA_STAT [ (0x%p) = 0x%08x\n",
 		(iphy->cr_base + (LANEN_RX_ADPT_VGA_STAT << 2)),
 		combo_phy_r32(iphy->cr_base, (LANEN_RX_ADPT_VGA_STAT << 2)));
 
 	/* LANEN_RX_ADPT_CTLE_STAT CTLE Adaptation code */
-	dev_dbg(dev, "LANEN_RX_ADPT_CTLE_STAT [ (0x%08x) = 0x%08x\n",
+	dev_dbg(dev, "LANEN_RX_ADPT_CTLE_STAT [ (0x%p) = 0x%08x\n",
 		(iphy->cr_base + (LANEN_RX_ADPT_CTLE_STAT << 2)),
 		combo_phy_r32(iphy->cr_base, (LANEN_RX_ADPT_CTLE_STAT << 2)));
 
 	/* LANEN_RX_ADPT_DFETAP1_STAT DFE Tap1 Adaptation code */
-	dev_dbg(dev, "LANEN_RX_ADPT_DFETAP1_STAT [ (0x%08x) = 0x%08x\n",
+	dev_dbg(dev, "LANEN_RX_ADPT_DFETAP1_STAT [ (0x%p) = 0x%08x\n",
 		(iphy->cr_base + (LANEN_RX_ADPT_DFETAP1_STAT << 2)),
 		combo_phy_r32(iphy->cr_base, (LANEN_RX_ADPT_DFETAP1_STAT << 2)));
 
 	if (err) {
-		dev_warn(dev, "RX Adaptation not done\n", iphy->parent->id);
+		dev_warn(dev, "PHY(%u:%u): RX Adaptation not done\n",
+			 COMBO_PHY_ID(iphy), PHY_ID(iphy));
 		return -1;
-	} else {
-		dev_dbg(dev, "RX Adaptation done\n", iphy->parent->id);
-		return 0;
 	}
+
+	dev_dbg(dev, "PHY(%u:%u): RX Adaptation done\n",
+		COMBO_PHY_ID(iphy), PHY_ID(iphy));
+	return 0;
 }
 
 static int intel_phy_power_on(struct phy_ctx *iphy)
@@ -520,6 +522,7 @@ static int intel_phy_power_off(struct phy_ctx *iphy)
 		return ret;
 	}
 
+	/* prx300 cannot disable clk */
 	iphy->power_en = false;
 
 	return 0;
@@ -681,9 +684,9 @@ static int intel_combo_phy_calibrate(struct phy *phy)
 	int ret = 0;
 
 	iphy = phy_get_drvdata(phy);
-	if (iphy->calibrate.rx_auto_adapt) {
+	if (iphy->calibrate.rx_auto_adapt)
 		ret = phy_rxeq_autoadapt(phy);
-	}
+
 	return ret;
 }
 
@@ -1222,17 +1225,11 @@ static void twh_combo_phy_mode_set(struct intel_combo_phy *priv)
 			   priv->cb_phy_mode << cb_mode_bit_off);
 }
 
-/* Falconmx platform data */
+/* PRX300 platform data */
 static unsigned long prx300_get_clk_rate(enum intel_phy_mode mode)
 {
-	if (mode == PHY_PCIE_MODE) {
-		return CLK_100MHZ;
-	} else if (mode == PHY_XPCS_MODE) {
-		/* 156.25Mhz */
-		return CLK_156MHZ;
-	}
-
-	return 0;  /* Other mode No support */
+	/* PRX300 only support 156.25Mhz */
+	return CLK_156MHZ;
 }
 
 static u32 prx300_get_phy_cap(unsigned int id)

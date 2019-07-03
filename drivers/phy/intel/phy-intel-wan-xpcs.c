@@ -23,28 +23,28 @@
 #include <linux/regmap.h>
 
 /* chiptop aon/pon config; this is platform specific */
-#define CHIP_TOP_IFMUX_CFG	0x120
-#define WAN_MUX_AON	0x1
-#define WAN_MUX_MASK	0x1
+#define CHIP_TOP_IFMUX_CFG 0x120
+#define WAN_MUX_AON        0x1
+#define WAN_MUX_MASK       0x1
 
-enum clk_control {
-	FREQ_CLK,
-	GATE_CLK,
-	HWEN_CLK,
-	MAX_CLK,
+enum {
+	PHY_RST,
+	WANSS_RST,
+	MAX_RST
 };
 
-static const char *clk_name[MAX_CLK] = {
-	"freq", "xpcs", "hwclken"
+static const char *rst_name[MAX_RST] = {
+	"phy", "wanss"
 };
 
 struct intel_wan_xpcs_phy {
-	struct phy *phy;
+	struct phy             *phy;
 	struct platform_device *pdev;
-	struct device *dev;
-	struct clk *clk[MAX_CLK];
-	struct regmap *syscfg;
-	struct reset_control *resets;
+	struct device          *dev;
+	struct clk             *clk;
+	u32                    clk_freq;
+	struct regmap          *syscfg;
+	struct reset_control   *resets[MAX_RST];
 };
 
 static int intel_wan_xpcs_phy_init(struct phy *phy)
@@ -67,29 +67,26 @@ static int intel_wan_xpcs_phy_power_on(struct phy *phy)
 
 	dev_dbg(priv->dev, "Power on intel wan xpcs phy\n");
 
-	ret = clk_prepare_enable(priv->clk[GATE_CLK]);
+	ret = clk_prepare_enable(priv->clk);
 	if (ret) {
 		dev_err(dev, "Failed to enable PHY gate clock\n");
 		return ret;
 	}
-	ret = clk_prepare_enable(priv->clk[HWEN_CLK]);
-	if (ret) {
-		dev_err(dev, "Failed to enable PHY gate hwen clock\n");
-		return ret;
-	}
 
-	ret = clk_prepare_enable(priv->clk[FREQ_CLK]);
-	if (ret) {
-		dev_err(dev, "Failed to enable PHY clock\n");
-		return ret;
-	}
+	if (priv->clk_freq)
+		clk_set_rate(priv->clk, priv->clk_freq);
 
-	ret = reset_control_deassert(priv->resets);
+	ret = reset_control_deassert(priv->resets[PHY_RST]);
 	if (ret) {
 		dev_err(dev, "Failed to deassert phy reset\n");
 		return ret;
 	}
 
+	ret = reset_control_deassert(priv->resets[WANSS_RST]);
+	if (ret) {
+		dev_err(dev, "Failed to deassert wanss reset\n");
+		return ret;
+	}
 	udelay(2);
 
 	return 0;
@@ -103,15 +100,18 @@ static int intel_wan_xpcs_phy_power_off(struct phy *phy)
 
 	dev_dbg(priv->dev, "Power off intel xpcs phy\n");
 
-	ret = reset_control_assert(priv->resets);
+	ret = reset_control_assert(priv->resets[PHY_RST]);
 	if (ret) {
-		dev_err(dev, "Failed to assert xpcs reset\n");
+		dev_err(dev, "Failed to assert phy reset\n");
 		return ret;
 	}
 
-	clk_disable_unprepare(priv->clk[FREQ_CLK]);
-	clk_disable_unprepare(priv->clk[GATE_CLK]);
-	clk_disable_unprepare(priv->clk[HWEN_CLK]);
+	ret = reset_control_assert(priv->resets[WANSS_RST]);
+	if (ret) {
+		dev_err(dev, "Failed to assert WANSS reset\n");
+		return ret;
+	}
+	clk_disable_unprepare(priv->clk);
 
 	return 0;
 }
@@ -122,24 +122,21 @@ static int intel_wan_xpcs_phy_dt_parse(struct intel_wan_xpcs_phy *priv)
 	struct device_node *np = dev->of_node;
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(priv->clk); i++) {
-		priv->clk[i] = devm_clk_get(dev, clk_name[i]);
-		if (IS_ERR(priv->clk[i])) {
-			if (i == FREQ_CLK) {
-				dev_err(dev, "Failed to retrieve clk %s\n",
-					clk_name[i]);
-				return PTR_ERR(priv->clk[i]);
-			}
-
-			/* others are optional */
-			priv->clk[i] = NULL;
-		}
+	priv->clk = devm_clk_get(dev, NULL);
+	if (IS_ERR(priv->clk)) {
+		dev_err(dev, "Failed to retrieve clk\n");
+		return PTR_ERR(priv->clk);
 	}
 
-	priv->resets = devm_reset_control_get(dev, NULL);
-	if (IS_ERR(priv->resets)) {
-		dev_err(dev, "Failed to retrieve rst controller\n");
-		return PTR_ERR(priv->resets);
+	if (device_property_read_u32(dev, "clock-frequency", &priv->clk_freq))
+		priv->clk_freq = 0;
+
+	for (i = 0; i < MAX_RST; i++) {
+		priv->resets[i] = devm_reset_control_get(dev, rst_name[i]);
+		if (IS_ERR(priv->resets[i])) {
+			dev_err(dev, "Failed to retrieve rst controller\n");
+			return PTR_ERR(priv->resets[i]);
+		}
 	}
 
 	/* get chiptop regmap */
