@@ -127,11 +127,14 @@ static int update_ctp(struct core_ops *ops,
 	ctpcfg2.nSubIfIdGroup = subifidg;
 	if (ingress) {
 		if (multicast) {
-			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN_IGMP;
+			ctpcfg1.eMask =
+				GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN_IGMP;
 			if (!pextvlan) {
-				ctpcfg2.bIngressExtendedVlanIgmpEnable = LTQ_FALSE;
+				ctpcfg2.bIngressExtendedVlanIgmpEnable =
+								LTQ_FALSE;
 			} else {
-				ctpcfg2.bIngressExtendedVlanIgmpEnable = LTQ_TRUE;
+				ctpcfg2.bIngressExtendedVlanIgmpEnable =
+								LTQ_TRUE;
 				ctpcfg2.nIngressExtendedVlanBlockIdIgmp =
 					pextvlan->nExtendedVlanBlockId;
 				ctpcfg2.nIngressExtendedVlanBlockSizeIgmp = 0;
@@ -149,11 +152,14 @@ static int update_ctp(struct core_ops *ops,
 		}
 	} else {
 		if (multicast) {
-			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN_IGMP;
+			ctpcfg1.eMask =
+				GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN_IGMP;
 			if (!pextvlan) {
-				ctpcfg2.bEgressExtendedVlanIgmpEnable = LTQ_FALSE;
+				ctpcfg2.bEgressExtendedVlanIgmpEnable =
+								LTQ_FALSE;
 			} else {
-				ctpcfg2.bEgressExtendedVlanIgmpEnable = LTQ_TRUE;
+				ctpcfg2.bEgressExtendedVlanIgmpEnable =
+								LTQ_TRUE;
 				ctpcfg2.nEgressExtendedVlanBlockIdIgmp =
 					pextvlan->nExtendedVlanBlockId;
 				ctpcfg2.nEgressExtendedVlanBlockSizeIgmp = 0;
@@ -182,12 +188,14 @@ static int update_ctp(struct core_ops *ops,
 
 	if (ingress) {
 		if (multicast) {
-			if (ctpcfg1.bIngressExtendedVlanIgmpEnable != LTQ_FALSE) {
+			if (ctpcfg1.bIngressExtendedVlanIgmpEnable !=
+								LTQ_FALSE) {
 				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
 
 				alloc.nExtendedVlanBlockId =
 					ctpcfg1.nIngressExtendedVlanBlockIdIgmp;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
+									&alloc);
 			}
 		} else {
 			if (ctpcfg1.bIngressExtendedVlanEnable != LTQ_FALSE) {
@@ -195,17 +203,20 @@ static int update_ctp(struct core_ops *ops,
 
 				alloc.nExtendedVlanBlockId =
 					ctpcfg1.nIngressExtendedVlanBlockId;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
+									&alloc);
 			}
 		}
 	} else {
 		if (multicast) {
-			if (ctpcfg1.bEgressExtendedVlanIgmpEnable != LTQ_FALSE) {
+			if (ctpcfg1.bEgressExtendedVlanIgmpEnable !=
+								LTQ_FALSE) {
 				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
 
 				alloc.nExtendedVlanBlockId =
 					ctpcfg1.nEgressExtendedVlanBlockIdIgmp;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
+									&alloc);
 			}
 		} else {
 			if (ctpcfg1.bEgressExtendedVlanEnable != LTQ_FALSE) {
@@ -213,7 +224,8 @@ static int update_ctp(struct core_ops *ops,
 
 				alloc.nExtendedVlanBlockId =
 					ctpcfg1.nEgressExtendedVlanBlockId;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
+									&alloc);
 			}
 		}
 	}
@@ -603,11 +615,10 @@ static int ext_vlan_action_cfg(struct core_ops *ops,
 	       sizeof(pcfg->nDscp2PcpMap));
 
 	DP_DEBUG(DP_DBG_FLAG_PAE, "act->ract.act: 0x%02x Bp_dev %p\n",
-		(unsigned int)act->ract.act, act->ract.bp_dev);
+		 (unsigned int)act->ract.act, act->ract.bp_dev);
 
 	/* Reassign Bridge Port */
 	if ((act->ract.act & DP_BP_REASSIGN) && (act->ract.bp_dev)) {
-		
 		ret = dp_get_port_subitf_via_dev(act->ract.bp_dev, &subif);
 		if (ret == DP_FAILURE)
 			return 0;
@@ -620,13 +631,12 @@ static int ext_vlan_action_cfg(struct core_ops *ops,
 
 	/* Reassign traffic class */
 	if (act->ract.act & DP_TC_REASSIGN) {
-		
 		DP_DEBUG(DP_DBG_FLAG_PAE, "New TC %d\n", act->ract.new_tc);
-		
+
 		pcfg->bNewTrafficClassEnable = 1;
 		pcfg->nNewTrafficClass = act->ract.new_tc;
 	}
-	
+
 	/* forward without modification */
 	if ((act->act & DP_VLAN_ACT_FWD))
 		return 0;
@@ -891,7 +901,9 @@ int tc_vlan_set_31(struct core_ops *ops,
 	if ((info->dev_type & 0x01) != 0) {
 		int ret;
 
-		/* Multicast (IGMP Controlled) VLAN is not supported on Bridge Port */
+		/* Multicast (IGMP Controlled) VLAN is not supported
+		 * on Bridge Port
+		 */
 		if ((info->dev_type & 0x02) != 0)
 			return -EINVAL;
 

@@ -425,8 +425,8 @@ lbl_err_ret:
 		break;
 	case DP_XMIT_ERR_NULL_SKB:
 		PR_RATELIMITED("skb NULL");
-		UP_STATS(get_dp_port_info(inst, rx_subif->port_id)->
-			 tx_err_drop);
+		UP_STATS(get_dp_port_info(inst,
+					  rx_subif->port_id)->tx_err_drop);
 		break;
 	case DP_XMIT_ERR_NULL_IF:
 		UP_STATS(mib->tx_pkt_dropped);
@@ -454,6 +454,4 @@ lbl_err_ret:
 	if (skb)
 		dev_kfree_skb_any(skb);
 	return DP_FAILURE;
-
 }
-

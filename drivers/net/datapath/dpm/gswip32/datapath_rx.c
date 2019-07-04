@@ -23,12 +23,11 @@ void rx_dbg_32(u32 f, struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 {
 	int inst = 0;
 
-	DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "\nDPID=%d GPID=%d\n",dpid, gpid);
+	DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "\nDPID=%d GPID=%d\n", dpid, gpid);
 	DP_DEBUG(DP_DBG_FLAG_DUMP_RX,
 		 "\ndp_rx:skb->data=%px Loc=%x offset=%d skb->len=%d\n",
 		 skb->data, desc2->field.data_ptr,
 		 desc2->field.byte_offset, skb->len);
-
 
 	if ((f) & DP_DBG_FLAG_DUMP_RX_DESCRIPTOR)
 		dp_port_prop[inst].info.dump_rx_dma_desc(desc0, desc1,
@@ -44,7 +43,6 @@ void rx_dbg_32(u32 f, struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 		dp_dump_raw_data((char *)skb->data,
 				 skb->len,
 				 "Original Data");
-
 }
 
 int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
@@ -102,7 +100,7 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 	}
 
 	prel2_len += (desc_1->field.pre_l2 * 16);
-	if(prel2_len)
+	if (prel2_len)
 		pre_l2 = (u32 *)(skb->data + pmac_len);
 
 	/* only for those packet from PPv4 should  call pp hook ? */
@@ -113,7 +111,8 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 		goto RX_DROP2;
 	}
 
-	if (desc_1->field.ep < (get_dp_port_info(inst, 0)->gpid_base + get_dp_port_info(inst, 0)->gpid_num))
+	if (desc_1->field.ep < (get_dp_port_info(inst, 0)->gpid_base +
+				get_dp_port_info(inst, 0)->gpid_num))
 		gpid = pp_desc->ud.rx_port;
 
 	dpid = get_dpid_from_gpid(0, gpid);
@@ -125,9 +124,13 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 
 	if (unlikely(!dpid)) { /*Normally shouldnot go to here */
 		DP_ERR("Impossible: DPID Invalid (0), Desc rx'd: D0: %08x D1: %08x D2: %08x D3: %08x\n",
-		       *(u32 *)desc_0, *(u32 *)desc_1, *(u32 *)desc_2, *(u32 *)desc_3);
+		       *(u32 *)desc_0, *(u32 *)desc_1,
+		       *(u32 *)desc_2, *(u32 *)desc_3);
 		DP_ERR("QoS Descriptor at buf_base %px Desc rx'd: D0: %08x D1: %08x D2: %08x D3: %08x\n",
-                skb->buf_base, *(skb->buf_base), *(skb->buf_base + sizeof(u32)), *(skb->buf_base + (2 * sizeof(u32))), *(skb->buf_base + (3 * sizeof(u32))));
+		       skb->buf_base, *(skb->buf_base),
+		       *(skb->buf_base + sizeof(u32)),
+		       *(skb->buf_base + (2 * sizeof(u32))),
+		       *(skb->buf_base + (3 * sizeof(u32))));
 		goto RX_DROP;
 	}
 
@@ -153,6 +156,7 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 
 		if (atomic_inc_and_test(&p_subif->f_dfl_sess[classid]) == 1) {
 			struct dp_session sess;
+
 			sess.inst = inst;
 			sess.in_port = gpid;
 			sess.eg_port = p_subif->gpid;
@@ -163,7 +167,7 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 			sess.sig = pp_desc->ud.hash_sig;
 			if (dp_add_default_egress_sess(&sess, 0)) {
 				atomic_dec(&p_subif->f_dfl_sess[classid]);
-				PR_ERR("Fail to create default egress \n");
+				PR_ERR("Fail to create default egress\n");
 				goto RX_DROP;
 			}
 		} else {
@@ -172,10 +176,8 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 
 		cbm_data.dp_inst = inst;
 		cbm_data.f_byqos = 1;
-		res = cbm_cpu_pkt_tx(skb, &cbm_data, 0); /* no need to insert pmac
-						      * since it should be
-						      * already there
-						      */
+		/* no need to insert pmac since it should be already there */
+		res = cbm_cpu_pkt_tx(skb, &cbm_data, 0);
 		UP_STATS(mib->tx_cbm_pkt);
 		return res;
 	}
@@ -213,8 +215,8 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 		}
 
 		if (unlikely(dp_dbg_flag)) {
-			DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "DPID=%d GPID=%d vap=%d\n",
-				 dpid, gpid, vap);
+			DP_DEBUG(DP_DBG_FLAG_DUMP_RX,
+				 "DPID=%d GPID=%d vap=%d\n", dpid, gpid, vap);
 
 			if (dp_dbg_flag & DP_DBG_FLAG_DUMP_RX_DATA) {
 				if (pmac_len) {
@@ -225,9 +227,8 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 				} else {
 					data_offset = skb->data;
 					data_len = skb->len;
-					dp_dump_raw_data(data_offset,
-						 	data_len,
-						 	"Data to top drv");
+					dp_dump_raw_data(data_offset, data_len,
+							 "Data to top drv");
 				}
 			}
 
@@ -236,7 +237,6 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 					desc_0, desc_1,
 					desc_2, desc_3);
 		}
-
 
 		/*
 		 * If switch h/w acceleration is enabled,setting of this bit
@@ -249,11 +249,11 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 
 #endif
 
-		/*Remove PMAC from SKB */
-        if (pmac_len)
-		    skb_pull(skb, pmac_len);
+		/* Remove PMAC from SKB */
+		if (pmac_len)
+			skb_pull(skb, pmac_len);
 
-		if((STATS_GET(p_subif->rx_flag) <= 0)) {
+		if ((STATS_GET(p_subif->rx_flag) <= 0)) {
 			UP_STATS(mib->rx_fn_dropped);
 			goto RX_DROP2;
 		}

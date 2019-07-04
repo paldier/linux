@@ -204,8 +204,9 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce.action.bRMON_Action = 1;
 		pce.action.nRMON_Id = 0;	/*RMON_UDP_CNTR; */
 
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_tflow_ops
-				 .TFLOW_PceRuleWrite, gsw_handle, &pce)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_tflow_ops.TFLOW_PceRuleWrite,
+			gsw_handle, &pce)) {
 			PR_ERR("PCE rule add fail: GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
@@ -216,8 +217,9 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce_rule_id = dp_atoi(param_list[1]);
 		pce.pattern.nIndex = pce_rule_id;
 		pce.pattern.bEnable = 0;
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_tflow_ops
-				 .TFLOW_PceRuleWrite, gsw_handle, &pce)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_tflow_ops.TFLOW_PceRuleWrite,
+			gsw_handle, &pce)) {
 			PR_ERR("PCE rule add fail:GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
@@ -248,8 +250,9 @@ char *get_bp_member_string_32(int inst, u16 bp, char *buf)
 	bp_cfg.nBridgePortId = bp;
 	bp_cfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP |
 		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_ConfigGet, gsw_handle, &bp_cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to get bridge port's member for bridgeport=%d\n",
 		       bp_cfg.nBridgePortId);
@@ -264,8 +267,8 @@ char *get_bp_member_string_32(int inst, u16 bp, char *buf)
 
 /* proc_print_ctp_bp_info_32 is an callback API, not a standalone proc API */
 int proc_print_ctp_bp_info_32(struct seq_file *s, int inst,
-			   struct pmac_port_info *port,
-			   int subif_index, u32 flag)
+			      struct pmac_port_info *port,
+			      int subif_index, u32 flag)
 {
 	struct logic_dev *tmp;
 	struct dp_subif_info *sif = get_dp_port_subif(port, subif_index);

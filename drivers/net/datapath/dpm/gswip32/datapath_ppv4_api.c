@@ -57,7 +57,6 @@ static void dp_wred_def(struct pp_qos_queue_conf *conf)
 #endif
 }
 
-
 int qos_platform_set_32(int cmd_id, void *node, int flag)
 {
 	struct dp_node_link *node_link = (struct dp_node_link *)node;
@@ -161,10 +160,12 @@ int qos_platform_set_32(int cmd_id, void *node, int flag)
 		res = dp_qos_global_info_get_32((struct dp_qos_cfg_info *)node,
 						flag);
 	case QOS_Q_LOGIC:
-		res = dp_get_queue_logic_32((struct dp_qos_q_logic*)node, flag);
+		res = dp_get_queue_logic_32((struct dp_qos_q_logic *)node,
+					    flag);
 		break;
 	case QOS_PORT_CFG_SET:
-		res = dp_qos_port_conf_set_32((struct dp_port_cfg_info *)node, flag);
+		res = dp_qos_port_conf_set_32((struct dp_port_cfg_info *)node,
+					      flag);
 		break;
 	default:
 		PR_ERR("no support yet cmd_id %d\n", cmd_id);
@@ -398,8 +399,9 @@ static int queue_flush_32(int inst, int node_id, int flag)
 		dp_wred_def(&tmp_q_cfg);
 		tmp_q_cfg.queue_child_prop.parent = priv->ppv4_drop_p;
 		if (qos_queue_set_32(priv->qdev, node_id, &tmp_q_cfg)) {
-			PR_ERR("qos_queue_set_32 fail for queue=%d to parent=%d\n",
-			       qid, tmp_q_cfg.queue_child_prop.parent);
+			PR_ERR(
+			    "qos_queue_set_32 fail for queue=%d to parent=%d\n",
+			    qid, tmp_q_cfg.queue_child_prop.parent);
 			goto EXIT;
 		}
 		DP_DEBUG(DP_DBG_FLAG_QOS,
@@ -1109,14 +1111,14 @@ static int dp_link_unset(struct dp_node_link *info, int flag)
 		goto EXIT;
 	} else if (info->node_type == DP_NODE_SCH) {
 		if (qos_sched_conf_get_32(priv->qdev, info->node_id.sch_id,
-				       &sched_cfg)) {
+					  &sched_cfg)) {
 			PR_ERR("failed to qos_queue_conf_get_32\n");
 			return DP_FAILURE;
 		}
 		if (sched_cfg.sched_child_prop.parent ==
 						*(int *)&info->p_node_id) {
 			if (qos_sched_remove_32(priv->qdev,
-					     info->node_id.sch_id)) {
+						info->node_id.sch_id)) {
 				PR_ERR("failed to qos_sched_remove_32\n");
 				return DP_FAILURE;
 			}
@@ -1289,8 +1291,9 @@ static int dp_node_alloc_global_pool(struct dp_node_alloc *node, int flag)
 		q_conf->queue_child_prop.parent = priv->ppv4_tmp_p;
 #endif /* WORKAROUND_DROP_PORT */
 		if (qos_queue_set_32(priv->qdev, id, q_conf)) {
-			PR_ERR("qos_queue_set_32 fail for queue=%d to parent=%d\n",
-			       id, q_conf->queue_child_prop.parent);
+			PR_ERR(
+			    "qos_queue_set_32 fail for queue=%d to parent=%d\n",
+			    id, q_conf->queue_child_prop.parent);
 			goto EXIT;
 		}
 		DP_DEBUG(DP_DBG_FLAG_QOS,
@@ -1390,8 +1393,7 @@ static int dp_alloc_qos_port(struct dp_node_alloc *node, int flag)
 	/* Configure QOS dequeue port */
 	qos_port_conf_set_default_32(&port_cfg);
 	port_cfg.ring_address =
-		(unsigned long)dp_deq_port_tbl[inst][cqm_deq_port].
-							txpush_addr_qos;
+		(unsigned long)dp_deq_port_tbl[inst][cqm_deq_port].txpush_addr_qos;
 	port_cfg.ring_size = dp_deq_port_tbl[inst][cqm_deq_port].tx_ring_size;
 	port_cfg.credit = dp_deq_port_tbl[inst][cqm_deq_port].tx_pkt_credit;
 	if (port_cfg.credit)
@@ -1889,7 +1891,8 @@ int dp_node_free_32(struct dp_node_alloc *node, int flag)
 			goto EXIT;
 		}
 
-		if (qos_queue_conf_get_32(priv->qdev, t->node_id, &t->queue_cfg)) {
+		if (qos_queue_conf_get_32(priv->qdev, t->node_id,
+					  &t->queue_cfg)) {
 			res = node_stat_update(node->inst, t->node_id,
 					       DP_NODE_RST);
 			if (res == DP_FAILURE) {
@@ -1950,7 +1953,8 @@ int dp_node_free_32(struct dp_node_alloc *node, int flag)
 		if (t->resv_flag & PP_NODE_RESERVE) {
 			qos_queue_conf_set_default_32(&t->tmp_q);
 			t->tmp_q.queue_child_prop.parent = priv->ppv4_drop_p;
-			if (qos_queue_set_32(priv->qdev, t->node_id, &t->tmp_q)) {
+			if (qos_queue_set_32(priv->qdev, t->node_id,
+					     &t->tmp_q)) {
 				PR_ERR("qos_queue_set_32 %s=%d to parent=%d\n",
 				       "fail to reserve queue", t->node_id,
 				       t->tmp_q.queue_child_prop.parent);
@@ -1981,7 +1985,8 @@ int dp_node_free_32(struct dp_node_alloc *node, int flag)
 			goto EXIT;
 		}
 
-		if (qos_sched_conf_get_32(priv->qdev, t->sch_id, &t->sched_cfg)) {
+		if (qos_sched_conf_get_32(priv->qdev, t->sch_id,
+					  &t->sched_cfg)) {
 			if (node_stat_update(node->inst, t->sch_id,
 					     DP_NODE_RST | P_FLAG)) {
 				PR_ERR("node_stat_update failed\n");
@@ -2033,7 +2038,8 @@ int dp_node_free_32(struct dp_node_alloc *node, int flag)
 		if (t->resv_flag & PP_NODE_RESERVE) {
 			qos_sched_conf_set_default_32(&t->tmp_sch);
 			t->tmp_sch.sched_child_prop.parent = priv->ppv4_drop_p;
-			if (qos_sched_set_32(priv->qdev, t->sch_id, &t->tmp_sch)) {
+			if (qos_sched_set_32(priv->qdev, t->sch_id,
+					     &t->tmp_sch)) {
 				PR_ERR("qos_sched_set_32 %s=%d to parent=%d\n",
 				       "fail to reserve SCH", t->sch_id,
 				       t->tmp_sch.sched_child_prop.parent);
@@ -2163,7 +2169,7 @@ int dp_node_link_get_32(struct dp_node_link *info, int flag)
 		return DP_SUCCESS;
 	} else if (info->node_type == DP_NODE_SCH) {
 		if (qos_sched_conf_get_32(priv->qdev, info->node_id.sch_id,
-				       &sched_cfg)) {
+					  &sched_cfg)) {
 			PR_ERR("failed to qos_sched_conf_get_32\n");
 			return DP_FAILURE;
 		}
@@ -2234,7 +2240,8 @@ static int dp_link_set(struct dp_node_link *info, int parent_node, int flag)
 		qos_sched_conf_set_default_32(sched_cfg);
 		sched_cfg->sched_child_prop.parent = parent_node;
 		sched_cfg->sched_child_prop.priority = info->prio_wfq;
-		sched_cfg->sched_parent_prop.arbitration = arbi_dp2pp_32(info->arbi);
+		sched_cfg->sched_parent_prop.arbitration =
+						arbi_dp2pp_32(info->arbi);
 		node_id = info->node_id.sch_id;
 
 		DP_DEBUG(DP_DBG_FLAG_QOS,
@@ -2449,7 +2456,7 @@ int dp_qos_link_prio_set_32(struct dp_node_prio *info, int flag)
 			return DP_FAILURE;
 		}
 		if (qos_sched_conf_get_32(priv->qdev, info->id.sch_id,
-				       &sched_cfg)) {
+					  &sched_cfg)) {
 			PR_ERR("fail to get sched prio and parent\n");
 			return DP_FAILURE;
 		}
@@ -2517,9 +2524,9 @@ int dp_qos_link_prio_get_32(struct dp_node_prio *info, int flag)
 
 		arbi = get_parent_arbi(info->inst, node_id, flag);
 
-		if (arbi == DP_FAILURE) {
+		if (arbi == DP_FAILURE)
 			return DP_FAILURE;
-		}
+
 		info->arbi = arbi;
 		info->prio_wfq = queue_cfg.queue_child_prop.priority;
 		return DP_SUCCESS;
@@ -2536,16 +2543,16 @@ int dp_qos_link_prio_get_32(struct dp_node_prio *info, int flag)
 			return DP_FAILURE;
 		}
 		if (qos_sched_conf_get_32(priv->qdev, info->id.sch_id,
-				       &sched_cfg)) {
+					  &sched_cfg)) {
 			PR_ERR("fail to get sched arbi and prio values!\n");
 			return DP_FAILURE;
 		}
 
 		arbi = get_parent_arbi(info->inst, info->id.sch_id, flag);
 
-		if (arbi == DP_FAILURE) {
+		if (arbi == DP_FAILURE)
 			return DP_FAILURE;
-		}
+
 		info->arbi = arbi;
 		info->prio_wfq = sched_cfg.sched_child_prop.priority;
 		return DP_SUCCESS;
@@ -2613,8 +2620,8 @@ int dp_deq_port_res_get_32(struct dp_dequeue_res *res, int flag)
 			continue;
 		q_num = 0;
 		if (qos_port_get_queues_32(priv->qdev,
-					priv->deq_port_stat[k].node_id,
-					q_ids, q_size, &q_num)) {
+					   priv->deq_port_stat[k].node_id,
+					   q_ids, q_size, &q_num)) {
 			PR_ERR("qos_port_get_queues_32: port[%d/%d]\n",
 			       k,
 			       priv->deq_port_stat[k].node_id);
@@ -2631,7 +2638,7 @@ int dp_deq_port_res_get_32(struct dp_dequeue_res *res, int flag)
 		for (i = 0; (i < q_num) && (idx < res->q_res_size); i++) {
 			memset(&t.q_info, 0, sizeof(t.q_info));
 			if (qos_queue_info_get_32(priv->qdev,
-					       q_ids[i], &t.q_info)) {
+						  q_ids[i], &t.q_info)) {
 				PR_ERR("qos_port_info_get_32 fail:q[/%d]\n",
 				       q_ids[i]);
 				continue;
@@ -2643,7 +2650,7 @@ int dp_deq_port_res_get_32(struct dp_dequeue_res *res, int flag)
 			res->q_res[idx].sch_lvl = 0;
 			memset(&t.q_conf, 0, sizeof(t.q_conf));
 			if (qos_queue_conf_get_32(priv->qdev,
-					       q_ids[i], &t.q_conf)) {
+						  q_ids[i], &t.q_conf)) {
 				PR_ERR("qos_port_conf_get_32 fail:q[/%d]\n",
 				       q_ids[i]);
 				continue;
@@ -2668,10 +2675,11 @@ int dp_deq_port_res_get_32(struct dp_dequeue_res *res, int flag)
 				j++;
 				res->q_res[idx].sch_lvl = j;
 				/* get next parent */
-				if (qos_sched_conf_get_32(priv->qdev,
-						       p_id, &t.sched_conf)) {
-					PR_ERR("qos_sched_conf_get_32 %s[/%d]\n",
-					       "fail:sch", p_id);
+				if (qos_sched_conf_get_32(priv->qdev, p_id,
+							  &t.sched_conf)) {
+					PR_ERR(
+					    "qos_sched_conf_get_32 %s[/%d]\n",
+					    "fail:sch", p_id);
 					break;
 				}
 				p_id = t.sched_conf.sched_child_prop.parent;
@@ -2715,8 +2723,8 @@ int dp_node_unlink_32(struct dp_node_link *info, int flag)
 		if (!(priv->qos_queue_stat[info->node_id.q_id].flag &
 		    PP_NODE_ACTIVE)) {
 			PR_ERR("Wrong Queue[%d] Stat(%d):Expect ACTIVE\n",
-				info->node_id.q_id,
-				priv->qos_queue_stat[info->node_id.q_id].flag);
+			       info->node_id.q_id,
+			       priv->qos_queue_stat[info->node_id.q_id].flag);
 		}
 		if (qos_queue_conf_get_32(priv->qdev, node_id, &queue_cfg) == 0)
 			queue_flush_32(info->inst, node_id, 0);
@@ -2725,14 +2733,14 @@ int dp_node_unlink_32(struct dp_node_link *info, int flag)
 								PP_NODE_ACTIVE))
 			PR_ERR("Wrong Sched FLAG Expect ACTIVE\n");
 		if (qos_sched_conf_get_32(priv->qdev, info->node_id.sch_id,
-				       &sched_cfg))
+					  &sched_cfg))
 			return DP_FAILURE;
 		if (qos_sched_get_queues_32(priv->qdev, info->node_id.sch_id,
-					 queue_buf, queue_size, &queue_num))
+					    queue_buf, queue_size, &queue_num))
 			return DP_FAILURE;
 		for (i = 0; i < queue_num; i++) {
 			if (qos_queue_conf_get_32(priv->qdev, queue_buf[i],
-					       &queue_cfg))
+						  &queue_cfg))
 				continue;
 			queue_flush_32(info->inst, queue_buf[i], 0);
 		}
@@ -2785,7 +2793,7 @@ int dp_node_link_add_32(struct dp_node_link *info, int flag)
 
 	if ((!info->dp_port) && (info->dp_port != DP_PORT(info).dp_port)) {
 		PR_ERR("Fix wrong dp_port from %d to %d\n",
-			info->dp_port, DP_PORT(info).dp_port);
+		       info->dp_port, DP_PORT(info).dp_port);
 		info->dp_port = DP_PORT(info).dp_port;
 	}
 	t = kzalloc(sizeof(*t), GFP_ATOMIC);
@@ -2859,7 +2867,7 @@ int dp_node_link_add_32(struct dp_node_link *info, int flag)
 
 		t->node_id = priv->qos_queue_stat[info->node_id.q_id].node_id;
 		if (qos_queue_conf_get_32(priv->qdev, t->node_id,
-				       &t->queue_cfg) == 0) {
+					  &t->queue_cfg) == 0) {
 			t->queue_num = 1;
 			t->queue_buf[0] = t->node_id;
 			/* save original block/suspend status */
@@ -2933,22 +2941,22 @@ int dp_node_link_add_32(struct dp_node_link *info, int flag)
 		}
 		if ((t->f_child_free == 0) &&
 		    qos_sched_conf_get_32(priv->qdev, info->node_id.sch_id,
-				       &t->sched_cfg) == 0) {
+					  &t->sched_cfg) == 0) {
 			DP_DEBUG(DP_DBG_FLAG_QOS_DETAIL,
 				 "info->node_id.sch_id %d\n",
 				 info->node_id.sch_id);
 			if (qos_sched_get_queues_32(priv->qdev,
-						 info->node_id.sch_id,
-						 t->queue_buf, t->queue_size,
-						 &t->queue_num)) {
+						    info->node_id.sch_id,
+						    t->queue_buf, t->queue_size,
+						    &t->queue_num)) {
 				PR_ERR("Can not get queues:%d\n",
 				       info->node_id.sch_id);
 				goto EXIT_ERR;
 			}
 			for (i = 0; i < t->queue_num; i++) {
 				if (qos_queue_conf_get_32(priv->qdev,
-						       t->queue_buf[i],
-						       &t->queue_cfg))
+							  t->queue_buf[i],
+							  &t->queue_cfg))
 					continue;
 				if (t->queue_cfg.blocked == 0)
 					t->q_orig_block[i] =
@@ -2988,7 +2996,7 @@ int dp_node_link_add_32(struct dp_node_link *info, int flag)
 		    (t->q_orig_suspend[i] < 0))/* non-valid suspend stat */
 			continue;
 		if (qos_queue_conf_get_32(priv->qdev, t->queue_buf[i],
-				       &t->queue_cfg))
+					  &t->queue_cfg))
 			continue;
 		t->f_restore = 0;
 		if (t->q_orig_block[i] >= 0) {
@@ -3004,7 +3012,8 @@ int dp_node_link_add_32(struct dp_node_link *info, int flag)
 
 		if (!t->f_restore)
 			continue;
-		if (qos_queue_set_32(priv->qdev, t->queue_buf[i], &t->queue_cfg)) {
+		if (qos_queue_set_32(priv->qdev, t->queue_buf[i],
+				     &t->queue_cfg)) {
 			PR_ERR("qos_queue_set_32 fail for q[/%d]\n",
 			       t->queue_buf[i]);
 			res = DP_FAILURE;
@@ -3269,7 +3278,8 @@ int dp_node_link_en_set_32(struct dp_node_link_enable *en, int flag)
 		}
 
 		if (qos_queue_conf_get_32(priv->qdev, node_id, &queue_cfg)) {
-			PR_ERR("qos_queue_conf_get_32 fail: q[%d]\n", en->id.q_id);
+			PR_ERR("qos_queue_conf_get_32 fail: q[%d]\n",
+			       en->id.q_id);
 			return DP_FAILURE;
 		}
 		if (en->en & DP_NODE_EN) {
@@ -3305,7 +3315,8 @@ int dp_node_link_en_set_32(struct dp_node_link_enable *en, int flag)
 			return DP_FAILURE;
 		}
 
-		if (qos_sched_conf_get_32(priv->qdev, en->id.sch_id, &sched_cfg)) {
+		if (qos_sched_conf_get_32(priv->qdev, en->id.sch_id,
+					  &sched_cfg)) {
 			PR_ERR("qos_sched_conf_get_32 fail: sch[%d]\n",
 			       en->id.sch_id);
 			return DP_FAILURE;
@@ -3421,7 +3432,7 @@ int dp_node_link_en_get_32(struct dp_node_link_enable *en, int flag)
 		DP_DEBUG(DP_DBG_FLAG_QOS,
 			 "en->id.sch_id=%d\n", en->id.sch_id);
 		if (qos_sched_conf_get_32(priv->qdev, en->id.sch_id,
-				       &sched_conf)) {
+					  &sched_conf)) {
 			PR_ERR("qos_sched_conf_get_32 fail: sched[/%d]\n",
 			       en->id.sch_id);
 			return DP_FAILURE;
@@ -3498,7 +3509,7 @@ int dp_link_get_32(struct dp_qos_link *cfg, int flag)
 			cfg->sch[i + 1].id =
 				priv->qos_sch_stat[node_id].parent.node_id;
 			if (qos_sched_conf_get_32(priv->qdev, cfg->sch[i].id,
-					       &sched_cfg)) {
+						  &sched_cfg)) {
 				PR_ERR("dp_link_get:sched[/%d] conf get fail\n",
 				       cfg->sch[i].id);
 				return DP_FAILURE;
@@ -3755,8 +3766,9 @@ int dp_shaper_conf_set_32(struct dp_shaper_conf *cfg, int flag)
 		}
 
 		if (qos_sched_conf_get_32(priv->qdev, cfg->id.sch_id,
-				       &sched_cfg)) {
-			PR_ERR("qos_sched_conf_get_32 fail:%d\n", cfg->id.sch_id);
+					  &sched_cfg)) {
+			PR_ERR("qos_sched_conf_get_32 fail:%d\n",
+			       cfg->id.sch_id);
 			return DP_FAILURE;
 		}
 
@@ -3820,7 +3832,8 @@ int dp_shaper_conf_set_32(struct dp_shaper_conf *cfg, int flag)
 		}
 
 		if (qos_port_set_32(priv->qdev, node_id, &port_cfg)) {
-			PR_ERR("qos_port_set_32 fail:%d\n", cfg->id.cqm_deq_port);
+			PR_ERR("qos_port_set_32 fail:%d\n",
+			       cfg->id.cqm_deq_port);
 			return DP_FAILURE;
 		}
 		return DP_SUCCESS;
@@ -3892,8 +3905,9 @@ int dp_shaper_conf_get_32(struct dp_shaper_conf *cfg, int flag)
 		}
 
 		if (qos_sched_conf_get_32(priv->qdev, cfg->id.sch_id,
-				       &sched_cfg)) {
-			PR_ERR("qos_sched_conf_get_32 fail:%d\n", cfg->id.sch_id);
+					  &sched_cfg)) {
+			PR_ERR("qos_sched_conf_get_32 fail:%d\n",
+			       cfg->id.sch_id);
 			return DP_FAILURE;
 		}
 
@@ -4468,8 +4482,9 @@ int dp_node_reserve_32(int inst, int ep, struct dp_port_data *data, int flags)
 		q_conf.queue_child_prop.parent = priv->ppv4_drop_p;
 		if (qos_queue_set_32(priv->qdev, id, &q_conf)) {
 			res = DP_FAILURE;
-			PR_ERR("qos_queue_set_32 fail for queue=%d to parent=%d\n",
-			       id, q_conf.queue_child_prop.parent);
+			PR_ERR(
+			    "qos_queue_set_32 fail for queue=%d to parent=%d\n",
+			    id, q_conf.queue_child_prop.parent);
 			goto FREE_EXIT;
 		}
 		DP_DEBUG(DP_DBG_FLAG_QOS,
@@ -4552,7 +4567,6 @@ int dp_get_q_logic_32(int inst, int qid)
 	}
 	return pp_qos_queue_id_get(priv->qdev, qid);
 }
-
 
 int dp_get_queue_logic_32(struct dp_qos_q_logic *cfg, int flag)
 {

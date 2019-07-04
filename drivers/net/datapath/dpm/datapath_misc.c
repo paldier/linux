@@ -1109,8 +1109,8 @@ int dp_ingress_ctp_tc_map_set(struct dp_tc_cfg *tc, int flag)
 	mtr_subif.inst =  mtr_subif.subif.inst;
 	if (!dp_port_prop[mtr_subif.inst].info.dp_ctp_tc_map_set)
 		return DP_FAILURE;
-	return dp_port_prop[mtr_subif.inst].info.
-		dp_ctp_tc_map_set(tc, flag, &mtr_subif);
+	return dp_port_prop[mtr_subif.inst].info.dp_ctp_tc_map_set(tc, flag,
+								&mtr_subif);
 }
 EXPORT_SYMBOL(dp_ingress_ctp_tc_map_set);
 
@@ -1204,8 +1204,7 @@ void dp_subif_reclaim(struct rcu_head *rp)
 	struct dp_subif_cache *dp_subif =
 		container_of(rp, struct dp_subif_cache, rcu);
 
-	if (dp_subif->data)
-		kfree(dp_subif->data);
+	kfree(dp_subif->data);
 	kfree(dp_subif);
 }
 
@@ -1284,7 +1283,6 @@ int32_t dp_update_subif(struct net_device *netif, void *data,
 				sizeof(dp_subif->name) - 1);
 		dp_subif->subif_fn = subifid_fn_t;
 		hlist_add_head_rcu(&dp_subif->hlist, &dp_subif_list[idx]);
-		return 0;
 	} else {
 		dp_subif_new = kzalloc(sizeof(*dp_subif), GFP_ATOMIC);
 		if (!dp_subif_new)
@@ -1299,9 +1297,8 @@ int32_t dp_update_subif(struct net_device *netif, void *data,
 		hlist_replace_rcu(&dp_subif->hlist,
 				  &dp_subif_new->hlist);
 		call_rcu_bh(&dp_subif->rcu, dp_subif_reclaim);
-		return 0;
 	}
-	return -1;
+	return 0;
 }
 
 int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
@@ -1396,7 +1393,8 @@ static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 {
 	int inst = 0;
 	struct cpufreq_policy *policy = data;
-	DP_DEBUG(DP_DBG_FLAG_COC,"%s; cpu=%d\n",
+
+	DP_DEBUG(DP_DBG_FLAG_COC, "%s; cpu=%d\n",
 		 event ? "CPUFREQ_NOTIFY" : "CPUFREQ_ADJUST",
 		 policy->cpu);
 	if (event != CPUFREQ_ADJUST) {
@@ -1405,8 +1403,7 @@ static int dp_coc_cpufreq_policy_notifier(struct notifier_block *nb,
 		return NOTIFY_DONE;
 	}
 	return
-	dp_port_prop[inst].info.
-		dp_handle_cpufreq_event(POLICY_NOTIFY, policy);
+	dp_port_prop[inst].info.dp_handle_cpufreq_event(POLICY_NOTIFY, policy);
 }
 
 /* keep track of frequency transitions */
@@ -1415,12 +1412,13 @@ static int dp_coc_cpufreq_transition_notifier(struct notifier_block *nb,
 {
 	int inst = 0;
 	struct cpufreq_freqs *freq = data;
+
 	if (event == CPUFREQ_PRECHANGE) {
-		return dp_port_prop[inst].info.
-				dp_handle_cpufreq_event(PRE_CHANGE, freq);
+		return dp_port_prop[inst].info.dp_handle_cpufreq_event(
+							PRE_CHANGE, freq);
 	} else if (event == CPUFREQ_POSTCHANGE) {
-		return dp_port_prop[inst].info.
-				dp_handle_cpufreq_event(POST_CHANGE, freq);
+		return dp_port_prop[inst].info.dp_handle_cpufreq_event(
+							POST_CHANGE, freq);
 	}
 	return NOTIFY_OK;
 }
@@ -1552,7 +1550,8 @@ u32 alloc_dp_port_subif_info(int inst)
 			PR_ERR("Failed for kmalloc: %zu bytes\n",
 			       max_subif * sizeof(struct dp_subif_info));
 			while (--port_id >= 0)
-				kfree(get_dp_port_info(inst, port_id)->subif_info);
+				kfree(get_dp_port_info(inst,
+						       port_id)->subif_info);
 			return DP_FAILURE;
 		}
 	}

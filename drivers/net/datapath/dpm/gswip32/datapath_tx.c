@@ -34,7 +34,6 @@ static int cqm_preprocess(struct sk_buff *skb, struct dp_tx_common *cmn,
 		return DP_XMIT_ERR_EP_ZERO;
 	}
 #endif
-
 	tx->desc_1->field.pmac = !!(cmn->flags & DP_TX_FLAG_INSERT_PMAC);
 	if (is_stream_port(tx->port->alloc_flags))
 		cmn->flags |= DP_TX_FLAG_STREAM_PORT;
@@ -174,9 +173,8 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 	desc_3->all = (desc_3->all &
 		       tx.port->dma3_mask_template[TEMPL_NORMAL].all);
 
-	if (desc_3->field.dic) {
+	if (desc_3->field.dic)
 		desc_3->field.dic = 1;
-	}
 
 	desc_1->field.classid = (skb->priority >= 15) ? 15 : skb->priority;
 	desc_2->all = ((uintptr_t)skb->data) & 0xFFFFFFFF;

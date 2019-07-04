@@ -115,7 +115,9 @@ struct hal_priv {
 			 * to get physical queue id
 			 */
 	int ppv4_flag[MAX_PPV4_PORTS];
-	struct dp_gpid_map_table gp_dp_map[MAX_GPID]; /* Map Table GPID <-> DPID */
+	struct dp_gpid_map_table gp_dp_map[MAX_GPID];	/* Map Table GPID
+							 *       <-> DPID
+							 */
 };
 
 struct datapath_ctrl {
@@ -134,7 +136,6 @@ struct ctp_assign {
 	u16 swdev_enable; /* To enable or disable switchdev feature */
 };
 
-
 #define SET_PMAC_IGP_EGP(pmac, port_id) ((pmac)->igp_egp = (port_id) & 0xF)
 
 #define SET_PMAC_SUBIF(pmac, subif) do { \
@@ -142,10 +143,11 @@ struct ctp_assign {
 	(pmac)->src_dst_subif_id_msb =  ((subif) >> 8) & 0x1f; \
 } while (0)
 
-int alloc_bridge_port_32(int inst, int portid, int subif, int fid, int bp_member);
+int alloc_bridge_port_32(int inst, int portid, int subif,
+			 int fid, int bp_member);
 int free_bridge_port_32(int inst, int bp);
 struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
-				u32 flags, struct dp_dev_data *data);
+				   u32 flags, struct dp_dev_data *data);
 int gpid_port_assign(int inst, u8 ep, u32 flags);
 void dp_sys_mib_reset_32(u32 flag);
 int dp_pmac_set_32(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg);
@@ -153,14 +155,14 @@ int dp_set_gsw_parser_32(u8 flag, u8 cpu, u8 mpe1, u8 mpe2, u8 mpe3);
 int dp_get_gsw_parser_32(u8 *cpu, u8 *mpe1, u8 *mpe2, u8 *mpe3);
 int gsw_mib_reset_32(int dev, u32 flag);
 int proc_print_ctp_bp_info_32(struct seq_file *s, int inst,
-			   struct pmac_port_info *port,
-			   int subif_index, u32 flag);
+			      struct pmac_port_info *port,
+			      int subif_index, u32 flag);
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 int dp_gswip_mac_entry_add_32(int bport, int fid, int inst, u8 *addr);
 int dp_gswip_mac_entry_del_32(int bport, int fid, int inst, u8 *addr);
 int set_gswip_ext_vlan_32(struct core_ops *ops, struct ext_vlan_info *vlan,
-		       int flag);
+			  int flag);
 #endif
 int qos_platform_set_32(int cmd_id, void *node, int flag);
 int dp_node_alloc_32(struct dp_node_alloc *node, int flag);
@@ -203,10 +205,10 @@ int dp_qos_global_info_get_32(struct dp_qos_cfg_info *info, int flag);
 int dp_qos_port_conf_set_32(struct dp_port_cfg_info *info, int flag);
 int32_t dp_rx_32(struct sk_buff *skb, u32 flags);
 int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
-		struct sk_buff *skb, int32_t len, uint32_t flags);
+		   struct sk_buff *skb, int32_t len, uint32_t flags);
 void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
-		       u32 ip_offset, int ip_off_hw_adjust,
-		       u32 tcp_h_offset);
+		u32 ip_offset, int ip_off_hw_adjust,
+		u32 tcp_h_offset);
 
 int dp_lan_wan_bridging(int port_id, struct sk_buff *skb);
 
@@ -237,12 +239,12 @@ ssize_t proc_get_qid_via_index(struct file *file, const char *buf,
 			       size_t count, loff_t *ppos);
 int datapath_debugfs_init(struct datapath_ctrl *pctrl);
 int get_q_mib_32(int inst, int qid,
-	      u32 *total_accept,
-	      u32 *total_drop,
-	      u32 *red_drop);
+		 u32 *total_accept,
+		 u32 *total_drop,
+		 u32 *red_drop);
 int get_p_mib_32(int inst, int pid,
-	      u32 *green /* bytes*/,
-	      u32 *yellow /*bytes*/);
+		 u32 *green /* bytes*/,
+		 u32 *yellow /*bytes*/);
 int cpu_vlan_mod_dis_32(int inst);
 int set_port_lookup_mode_32(int inst, u8 ep, u32 flags);
 int tc_vlan_set_32(struct core_ops *ops, struct dp_tc_vlan *vlan,

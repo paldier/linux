@@ -24,10 +24,11 @@ s32 pp_port_add(u16 port_id, struct pp_port_cfg *cfg)
 {
 	return 0;
 }
+
 s32 pp_session_create(struct pp_sess_create_args *args, u32 *sess_id,
 		      struct pp_request *req)
 {
-	static int local_sess_id = 0;
+	static int local_sess_id;
 	*sess_id = local_sess_id++;
 
 	return 0;
@@ -66,8 +67,6 @@ void init_gpid_map_table(int inst)
 		if (i >= DP_SPL_GPID_START)
 			priv->gp_dp_map[i].dpid = (12 + (i-DP_SPL_GPID_START));
 	}
-
-	return;
 }
 
 static void __mark_alloc_gpid(int inst, int base, int end, int dpid)
@@ -166,7 +165,6 @@ bool is_stream_port(int alloc_flag)
 	return false;
 }
 
-
 int get_subif_size(u32 vap_mask)
 {
 	u32 i;
@@ -174,14 +172,14 @@ int get_subif_size(u32 vap_mask)
 
 	for (i = 0; i < sizeof(i); i++)
 		if (vap_mask & (1 << i))
-			num ++;
+			num++;
 
 	return num;
 }
 
 /* dp_add_pp_gpid: to configure normal GPID or special GPID
  * Note: try to get all GPID related configuration via dpid/vap
-         if spl_gpid is 1, vap is not valid
+ *       if spl_gpid is 1, vap is not valid
  * If success, return DP_SUCCESS.
  * else return -1 /DP_FAILURE
  */
@@ -282,7 +280,8 @@ int dp_add_pp_gpid(int inst, int dpid, int vap, int gpid, int spl_gpid)
 			cfg.tx.tailroom_size = STREAM_TAILROOM;
 		}
 		cfg.tx.max_pkt_size = STREAM_MAX_PKT_ZIE;
-		cfg.tx.min_pkt_len = PP_MIN_TX_PKT_LEN_NONE; //PP_MIN_TX_PKT_LEN_64B;
+		// PP_MIN_TX_PKT_LEN_64B
+		cfg.tx.min_pkt_len = PP_MIN_TX_PKT_LEN_NONE;
 	} else { /*to CPU */
 		cfg.tx.max_pkt_size = CPU_MAX_PKT_ZIE;
 		cfg.tx.headroom_size = CPU_HEADERROOM;
@@ -307,7 +306,6 @@ int dp_add_pp_gpid(int inst, int dpid, int vap, int gpid, int spl_gpid)
 	PR_INFO("cfg.tx.pkt_only_en=%d\n", cfg.tx.pkt_only_en);
 	PR_INFO("cfg.tx.seg_en=%d\n", cfg.tx.seg_en);
 
-
 	if (pp_port_add(gpid, &cfg)) {
 		PR_ERR("failed to create gpid: %d\n", gpid);
 		return DP_FAILURE;
@@ -320,7 +318,6 @@ int dp_del_pp_gpid(int inst, int dpid, int vap, int gpid, int spl_gpid)
 {
 	return DP_SUCCESS;
 }
-
 
 /* dp_add_default_egress_sess: Add default egress session based on
  *                             special GPID, class/subif only
@@ -341,9 +338,9 @@ int dp_add_default_egress_sess(struct dp_session *sess, int flag)
 	args.color = PP_COLOR_GREEN;
 	args.flags = 0;
 	args.dst_q = dp_get_q_logic_32(sess->inst, sess->qid);
-	for (i =0; i < ARRAY_SIZE(args.sgc); i++)
+	for (i = 0; i < ARRAY_SIZE(args.sgc); i++)
 		args.sgc[i] = PP_SGC_INVALID;
-	for (i =0; i < ARRAY_SIZE(args.tbm); i++)
+	for (i = 0; i < ARRAY_SIZE(args.tbm); i++)
 		args.tbm[i] = PP_TBM_INVALID;
 	args.ud_sz = 0;
 	args.tmp_ud_sz = 0; /* 1 means 1 template of UD,
@@ -395,23 +392,23 @@ int dp_add_hostif(int inst, int dpid, int vap)
 
 	hif.cls.port = get_dp_port_subif(port_info, vap)->gpid;
 	hif.dp.color = PP_COLOR_GREEN;  //??? enough
-	for (i =0; i < ARRAY_SIZE(hif.dp.sgc); i++)
+	for (i = 0; i < ARRAY_SIZE(hif.dp.sgc); i++)
 		hif.dp.sgc[i] = PP_SGC_INVALID;
-	for (i =0; i < ARRAY_SIZE(hif.dp.tbm); i++)
+	for (i = 0; i < ARRAY_SIZE(hif.dp.tbm); i++)
 		hif.dp.tbm[i] = PP_TBM_INVALID;
 
 	/* low priority */
-	hif.cls.tc_bitmap = BIT(0) | BIT(1);  /*need check GSWIP implementation ?*/
+	/* need check GSWIP implementation ? */
+	hif.cls.tc_bitmap = BIT(0) | BIT(1);
 	/*collect all CPU low priority queue/port */
-	for (i =0; (i < ARRAY_SIZE(hif.dp.eg)) && (i < MAX_SUBIFS); i++) {
+	for (i = 0; (i < ARRAY_SIZE(hif.dp.eg)) && (i < MAX_SUBIFS); i++) {
 		struct dp_subif_info *sif;
 
 		sif = get_dp_port_subif(cpu_info, 2 * i + 1);
 		if (sif->flags) { /* vaid VAP */
 			hif.dp.eg[i].qos_q = dp_get_q_logic_32(inst, sif->qid);
 			hif.dp.eg[i].pid = sif->gpid;
-		}
-		else {
+		} else {
 			hif.dp.eg[i].qos_q = PP_QOS_INVALID_ID;
 			hif.dp.eg[i].pid = PP_PORT_INVALID;
 		}
@@ -424,23 +421,23 @@ int dp_add_hostif(int inst, int dpid, int vap)
 		DP_INFO("hif.dp.eg[%d].pid=%u\n", i, hif.dp.eg[i].pid);
 		DP_INFO("hif.dp.eg[%d].qos_q=%u\n", i, hif.dp.eg[i].qos_q);
 	}
-	ret= pp_hostif_add(&hif);
+	ret = pp_hostif_add(&hif);
 	if (ret)
 		DP_ERR("hostif_add fail:dpid/gpid=%u/%u vap/tc=%d/%u\n",
 		       dpid, hif.cls.port, vap, hif.cls.tc_bitmap);
 
 	/* high priority */
-	hif.cls.tc_bitmap = BIT(2) | BIT(3); /*need check GSWIP implementation ?*/
+	/* need check GSWIP implementation ? */
+	hif.cls.tc_bitmap = BIT(2) | BIT(3);
 	/*collect all CPU low priority queue/port */
-	for (i =0; (i < ARRAY_SIZE(hif.dp.eg)) && (i < MAX_SUBIFS); i++) {
+	for (i = 0; (i < ARRAY_SIZE(hif.dp.eg)) && (i < MAX_SUBIFS); i++) {
 		struct dp_subif_info *sif;
 
 		sif = get_dp_port_subif(cpu_info, 2 * i);
 		if (sif->flags) { /* Valid VAP */
 			hif.dp.eg[i].qos_q = dp_get_q_logic_32(inst, sif->qid);
 			hif.dp.eg[i].pid = sif->gpid;
-		}
-		else {
+		} else {
 			hif.dp.eg[i].qos_q = PP_QOS_INVALID_ID;
 			hif.dp.eg[i].pid  = PP_PORT_INVALID;
 		}
@@ -453,14 +450,13 @@ int dp_add_hostif(int inst, int dpid, int vap)
 		DP_INFO("hif.dp.eg[%d].pid=%u\n", i, hif.dp.eg[i].pid);
 		DP_INFO("hif.dp.eg[%d].qos_q=%u\n", i, hif.dp.eg[i].qos_q);
 	}
-	ret= pp_hostif_add(&hif);
+	ret = pp_hostif_add(&hif);
 	if (ret)
 		DP_ERR("hostif_add fail:dpid/gpid=%d/%d vap/tc=%d/%d\n",
 		       dpid, hif.cls.port, vap, hif.cls.tc_bitmap);
 
 	return DP_SUCCESS;
 }
-
 
 /* dp_add_dflt_hostif: create default hostif
  * This API is for default setting in case not match any exception sessions
@@ -479,13 +475,13 @@ int dp_add_dflt_hostif(struct dp_dflt_hostif *hostif, int flag)
 	dp.eg[0].pid = hostif->gpid;
 	dp.color = PP_COLOR_GREEN;
 
-	for (i =1; i < ARRAY_SIZE(dp.eg); i++) {
+	for (i = 1; i < ARRAY_SIZE(dp.eg); i++) {
 		dp.eg[i].qos_q = PP_QOS_INVALID_ID;
 		dp.eg[i].pid = PP_PORT_INVALID;
 	}
-	for (i =0; i < ARRAY_SIZE(dp.sgc); i++)
+	for (i = 0; i < ARRAY_SIZE(dp.sgc); i++)
 		dp.sgc[i] = PP_SGC_INVALID;
-	for (i =0; i < ARRAY_SIZE(dp.tbm); i++)
+	for (i = 0; i < ARRAY_SIZE(dp.tbm); i++)
 		dp.tbm[i] = PP_TBM_INVALID;
 
 	return pp_hostif_dflt_set(&dp);
@@ -507,7 +503,7 @@ int dp_subif_pp_set(int inst, int portid, int vap,
 		gpid = port_info->gpid_base + num;
 	}
 	PR_INFO("dp_subif_pp_set=%d\n", gpid);
-	if (dp_add_pp_gpid(inst, portid, vap, gpid, 0) == DP_FAILURE){
+	if (dp_add_pp_gpid(inst, portid, vap, gpid, 0) == DP_FAILURE) {
 		DP_ERR("dp_add_pp_gpid for dport/vap=%d/%d\n", portid, vap);
 		return -1;
 	}
@@ -515,8 +511,7 @@ int dp_subif_pp_set(int inst, int portid, int vap,
 
 	/* need increase GPID reference counter and store DPID
 	 * Also need update to pmac_port_info array
-	*/
+	 */
 	dp_add_hostif(inst, portid, vap);
 	return 0;
 }
-

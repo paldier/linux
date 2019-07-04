@@ -252,9 +252,8 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 			 "ingress VLAN operation disabled in ctp\n");
 		alloc.nExtendedVlanBlockId = block;
 		ret = ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
-		if (ret != GSW_statusOk) {
+		if (ret != GSW_statusOk)
 			return -EIO;
-		}
 	}
 	memset(&alloc, 0, sizeof(GSW_EXTENDEDVLAN_alloc_t));
 
@@ -263,7 +262,7 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 	alloc.nNumberOfEntries += vlan->n_vlan1_drop * 2;
 	alloc.nNumberOfEntries += vlan->n_vlan2_drop;
 	if (alloc.nNumberOfEntries == 0) {
-		DP_DEBUG(DP_DBG_FLAG_SWDEV,"nNumberOfEntries == 0\n");
+		DP_DEBUG(DP_DBG_FLAG_SWDEV, "nNumberOfEntries == 0\n");
 		return 0;
 	}
 
@@ -310,9 +309,9 @@ static int update_ctp(struct core_ops *ops, struct ext_vlan_info *vlan)
 	ctp.nIngressExtendedVlanBlockSize = 0;
 	ret = ops->gsw_ctp_ops.CTP_PortConfigSet(ops, &ctp);
 
-	if (ret != GSW_statusOk) {
+	if (ret != GSW_statusOk)
 		return -EIO;
-	}
+
 	return 0;
 UPDATE_ERROR:
 	ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
@@ -379,7 +378,7 @@ static int bp_add_vlan1(struct core_ops *ops, struct vlan1 *vlan,
 
 		if (ret != GSW_statusOk) {
 			PR_ERR("Fail updating Extended VLAN entry (%u, %u).\n",
-				alloc.nExtendedVlanBlockId, i);
+			       alloc.nExtendedVlanBlockId, i);
 			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 			return -EIO;
 		}
@@ -468,7 +467,7 @@ static int bp_add_vlan2(struct core_ops *ops, struct vlan2 *vlan,
 
 		if (ret != GSW_statusOk) {
 			PR_ERR("Fail updating Extended VLAN entry (%u, %u).\n",
-				alloc.nExtendedVlanBlockId, i);
+			       alloc.nExtendedVlanBlockId, i);
 			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 			return -EIO;
 		}
@@ -539,7 +538,8 @@ static int bp_diff(u32 *bp0, u32 num_bp0, u32 *bp1)
 	u32 i, j;
 
 	for (i = 0; i < num_bp0; i++) {
-		for (j = 0; j < num_bp0 && bp0[j] != bp1[i]; j++);
+		for (j = 0; j < num_bp0 && bp0[j] != bp1[i]; j++)
+			;
 		if (j >= num_bp0)
 			break;
 	}

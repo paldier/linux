@@ -140,8 +140,9 @@ int dp_pmac_set_32(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 				igcfg.nTxDmaChanId =
 					pmac_cfg->ig_pmac.tx_dma_chan;
 			}
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops.
-				     Pmac_Ig_CfgGet, gswr_r, &igcfg);
+			gsw_core_api(
+				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Ig_CfgGet,
+				gswr_r, &igcfg);
 
 			/*update igcfg and write back to gsw */
 			if (pmac_cfg->ig_pmac_flags & IG_PMAC_F_ERR_DISC)
@@ -241,8 +242,9 @@ int dp_pmac_set_32(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 
 			DP_DEBUG(DP_DBG_FLAG_DBG, "\n");
 
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Ig_CfgSet, gswr_r, &igcfg);
+			gsw_core_api(
+				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Ig_CfgSet,
+				gswr_r, &igcfg);
 		}
 
 			kfree(dqport.deq_info);
@@ -263,8 +265,9 @@ int dp_pmac_set_32(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 			egcfg.nBslTrafficClass = i;
 
 			memset(&pmac_glb, 0, sizeof(pmac_glb));
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Gbl_CfgGet, gswr_r, &pmac_glb);
+			gsw_core_api(
+				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Gbl_CfgGet,
+				gswr_r, &pmac_glb);
 			egcfg.bProcFlagsSelect = pmac_glb.bProcFlagsEgCfgEna;
 			DP_DEBUG(DP_DBG_FLAG_DBG, "bProcFlagsSelect=%u\n",
 				 egcfg.bProcFlagsSelect);
@@ -397,8 +400,9 @@ int dp_pmac_set_32(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 					 egcfg.bMpe2Flag);
 			}
 #endif
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Eg_CfgSet, gswr_r, &egcfg);
+			gsw_core_api(
+				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Eg_CfgSet,
+				gswr_r, &egcfg);
 			;
 		}
 	}
@@ -419,8 +423,8 @@ int dp_set_gsw_parser_32(u8 flag, u8 cpu, u8 mpe1,
 	GSW_CPU_PortCfg_t param = {0};
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[0];/*gswip o */
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops
-			 .CPU_PortCfgGet, gsw_handle, &param)) {
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
+			 gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}
@@ -442,8 +446,8 @@ int dp_set_gsw_parser_32(u8 flag, u8 cpu, u8 mpe1,
 	if (flag & F_MPE1_MPE2)
 		param.eMPE1MPE2ParserCfg = mpe3;
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops
-			 .CPU_PortCfgSet, gsw_handle, &param)) {
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgSet,
+			 gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_SET\n");
 		return -1;
 	}
@@ -460,8 +464,8 @@ int dp_get_gsw_parser_32(u8 *cpu, u8 *mpe1, u8 *mpe2,
 	GSW_CPU_PortCfg_t param = {0};
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[0]; /*gswip 0*/
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops
-			 .CPU_PortCfgGet, gsw_handle, &param)) {
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
+			 gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}
@@ -512,7 +516,7 @@ int gsw_mib_reset_32(int dev, u32 flag)
 
 /* Return allocated ctp number */
 struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
-				u32 flags, struct dp_dev_data *data)
+				   u32 flags, struct dp_dev_data *data)
 {
 	GSW_CTP_portAssignment_t ctp_assign;
 	const struct ctp_assign *assign = &ctp_assign_def;
@@ -531,10 +535,9 @@ struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
 		ctp_assign.eMode = itf_assign[ep].mode;
 		ctp_assign.nFirstCtpPortId = itf_assign[ep].start;
 		ctp_assign.nNumberOfCtpPort = itf_assign[ep].n;
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops
-				 .CTP_PortAssignmentFree,
-				 gsw_handle,
-				 &ctp_assign) != 0) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortAssignmentFree,
+			gsw_handle, &ctp_assign) != 0) {
 			PR_ERR("Failed to allc CTP for ep=%d blk=%d mode=%d\n",
 			       ep, assign->num, assign->emode);
 			return NULL;
@@ -558,10 +561,10 @@ struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
 	ctp_assign.nBridgePortId = bp_default;
 	ctp_assign.nFirstCtpPortId = 0;
 	ctp_assign.nNumberOfCtpPort = num;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops
-			  .CTP_PortAssignmentAlloc,
-			  gsw_handle,
-			  &ctp_assign) != 0) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortAssignmentAlloc,
+		gsw_handle,
+		&ctp_assign) != 0) {
 		PR_ERR("Failed CTP Assignment for ep=%d blk size=%d mode=%s\n",
 		       ep, num, ctp_mode_string(assign->emode));
 		return NULL;
@@ -607,7 +610,7 @@ int set_port_lookup_mode_32(int inst, u8 ep, u32 flags)
 
 /*Allocate a bridge port with specified FID and hardcoded CPU port member */
 int alloc_bridge_port_32(int inst, int port_id, int subif_ix,
-		      int fid, int bp_member)
+			 int fid, int bp_member)
 {
 	GSW_BRIDGE_portAlloc_t bp = {0};
 	GSW_BRIDGE_portConfig_t bp_cfg = {0};
@@ -617,8 +620,9 @@ int alloc_bridge_port_32(int inst, int port_id, int subif_ix,
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
 	/*allocate a free bridge port */
 	memset(&bp, 0, sizeof(bp));
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_Alloc, gsw_handle, &bp);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Alloc,
+		gsw_handle, &bp);
 	if ((ret != GSW_statusOk) ||
 	    (bp.nBridgePortId < 0)) {
 		PR_ERR("Failed to get a bridge port\n");
@@ -633,8 +637,8 @@ int alloc_bridge_port_32(int inst, int port_id, int subif_ix,
 	/* By default Disable src mac learning for registered
 	 * non CPU bridge port with DP
 	 */
-	if (get_dp_port_subif(get_dp_port_info(inst, port_id), subif_ix)->
-	    mac_learn_dis == DP_MAC_LEARNING_DIS)
+	if (get_dp_port_subif(get_dp_port_info(inst, port_id),
+			      subif_ix)->mac_learn_dis == DP_MAC_LEARNING_DIS)
 		bp_cfg.bSrcMacLearningDisable = 1;
 	else
 		bp_cfg.bSrcMacLearningDisable = 0;
@@ -645,13 +649,15 @@ int alloc_bridge_port_32(int inst, int port_id, int subif_ix,
 	bp_cfg.nBridgeId = fid;
 
 	SET_BP_MAP(bp_cfg.nBridgePortMap, bp_member); /*CPU*/
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			     .BridgePort_ConfigSet, gsw_handle, &bp_cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+		gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to set bridge id(%d) and port map for bp= %d\n",
 		       fid, bp_cfg.nBridgePortId);
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			     .BridgePort_Free, gsw_handle, &bp);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
+			gsw_handle, &bp);
 		return -1;
 	}
 
@@ -660,23 +666,27 @@ int alloc_bridge_port_32(int inst, int port_id, int subif_ix,
 	 */
 	bp_cfg.nBridgePortId = bp_member;
 	bp_cfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_ConfigGet, gsw_handle, &bp_cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to get bridge port's member for bridgeport=%d\n",
 		       bp_cfg.nBridgePortId);
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			     .BridgePort_Free, gsw_handle, &bp);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
+			gsw_handle, &bp);
 		return -1;
 	}
 	SET_BP_MAP(bp_cfg.nBridgePortMap, bp.nBridgePortId);
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_ConfigSet, gsw_handle, &bp_cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+		gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to set bridge port's member for bridgeport=%d\n",
 		       bp_cfg.nBridgePortId);
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			     .BridgePort_Free, gsw_handle, &bp);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
+			gsw_handle, &bp);
 		return -1;
 	}
 
@@ -707,8 +717,9 @@ int free_bridge_port_32(int inst, int bp)
 	/*read out this delting bridge port's member*/
 	tmp->nBridgePortId = bp;
 	tmp->eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_ConfigGet, gsw_handle, tmp);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		gsw_handle, tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_GET: %d\n", bp);
 		goto EXIT;
@@ -723,19 +734,17 @@ int free_bridge_port_32(int inst, int bp)
 			tmp2->eMask =
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 			tmp2->nBridgePortId = i * 16 + j;
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					   ->gsw_brdgport_ops
-					   .BridgePort_ConfigGet, gsw_handle,
-					   tmp2);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+				gsw_handle, tmp2);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_GET\n");
 				goto EXIT;
 			}
 			UNSET_BP_MAP(tmp2->nBridgePortMap, bp);
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					   ->gsw_brdgport_ops
-					   .BridgePort_ConfigSet, gsw_handle,
-					   tmp2);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+				gsw_handle, tmp2);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_SET\n");
 				goto EXIT;
@@ -747,8 +756,9 @@ EXIT:
 	memset(tmp, 0, sizeof(*tmp));
 	tmp->nBridgePortId = bp;
 	tmp->eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_Free, gsw_handle, tmp);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
+		gsw_handle, tmp);
 	if (ret != GSW_statusOk)
 		PR_ERR("Failed to GSW_BRIDGE_PORT_FREE:%d\n", bp);
 FREE_EXIT:
@@ -771,8 +781,9 @@ int dp_gswip_mac_entry_add_32(int bport, int fid, int inst, u8 *addr)
 	SET_BP_MAP(tmp.nPortMap, bport);
 	tmp.nSubIfId = 0;
 	memcpy(tmp.nMAC, addr, GSW_MAC_ADDR_LEN);
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_swmac_ops.
-			   MAC_TableEntryAdd, gsw_handle, &tmp);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_swmac_ops.MAC_TableEntryAdd,
+		gsw_handle, &tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in setting MAC table static add entry\r\n");
 		return -1;
@@ -792,16 +803,18 @@ int dp_gswip_mac_entry_del_32(int bport, int fid, int inst, u8 *addr)
 	memset(&mac_query, 0, sizeof(mac_query));
 	mac_query.nFId = fid;
 	memcpy(mac_query.nMAC, addr, GSW_MAC_ADDR_LEN);
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_swmac_ops.
-			   MAC_TableEntryQuery, gsw_handle, &tmp);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_swmac_ops.MAC_TableEntryQuery,
+		gsw_handle, &tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting MAC query entry\r\n");
 		return -1;
 	}
 	tmp.nFId = fid;
 	memcpy(tmp.nMAC, addr, GSW_MAC_ADDR_LEN);
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_swmac_ops.
-			   MAC_TableEntryRemove, gsw_handle, &tmp);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_swmac_ops.MAC_TableEntryRemove,
+		gsw_handle, &tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in setting MAC static entry remove\r\n");
 		return -1;
@@ -818,16 +831,18 @@ int cpu_vlan_mod_dis_32(int inst)
 	ops = dp_port_prop[inst].ops[GSWIP_L];
 
 	cfg.nPortId = 0;
-	ret = gsw_core_api((dp_gsw_cb)ops->gsw_qos_ops.
-			   QoS_PortRemarkingCfgGet, ops, &cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)ops->gsw_qos_ops.QoS_PortRemarkingCfgGet,
+		ops, &cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("QoS_PortRemarkingCfgGet failed\n");
 		return -1;
 	}
 
 	cfg.bPCP_EgressRemarkingEnable = LTQ_FALSE;
-	ret = gsw_core_api((dp_gsw_cb)ops->gsw_qos_ops.
-			   QoS_PortRemarkingCfgSet, ops, &cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)ops->gsw_qos_ops.QoS_PortRemarkingCfgSet,
+		ops, &cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("QoS_PortRemarkingCfgSet failed\n");
 		return -1;
@@ -892,8 +907,9 @@ int dp_set_gsw_pmapper_32(int inst, int bport, int lport,
 		 "call switch api mode %d enable %d eMask 0x%x\n",
 		 bp_cfg.ePmapperMappingMode, bp_cfg.bPmapperEnable,
 		 bp_cfg.eMask);
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			     .BridgePort_ConfigSet, gsw_handle, &bp_cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+		gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in setting pmapper\r\n");
 		return -1;
@@ -922,8 +938,9 @@ int dp_get_gsw_pmapper_32(int inst, int bport, int lport,
 	bp_cfg.nDestLogicalPortId = lport;
 	bp_cfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_EGRESS_CTP_MAPPING;
 
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			     .BridgePort_ConfigGet, gsw_handle, &bp_cfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting pmapper\r\n");
 		return -1;
@@ -1181,7 +1198,8 @@ int dp_meter_add_32(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			goto err;
 		}
 		port_info =
-		get_dp_port_info(mtr_subif->subif.inst, mtr_subif->subif.port_id);
+		get_dp_port_info(mtr_subif->subif.inst,
+				 mtr_subif->subif.port_id);
 		if (!port_info) {
 			PR_ERR(" port_info is NULL\n");
 			bret = -1;
@@ -1541,10 +1559,9 @@ int gpid_port_assign(int inst, u8 ep, u32 flags)
 		gpid_base = get_dp_port_info(inst, ep)->gpid_base;
 		gpid_num = get_dp_port_info(inst, ep)->gpid_num;
 
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_gpid_ops
-				 .LpidToGpid_AssignmentSet,
-				 gsw_handle,
-				 &lp_gp_assign) != 0) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_gpid_ops.LpidToGpid_AssignmentSet,
+			gsw_handle, &lp_gp_assign) != 0) {
 			PR_ERR("Fail to assign Lpid->Gpid table %d in GSWIP\n",
 			       ep);
 			return DP_FAILURE;
@@ -1553,10 +1570,9 @@ int gpid_port_assign(int inst, u8 ep, u32 flags)
 		gp_lp_assign.nLogicalPortId = ep;
 		gp_lp_assign.nGlobalPortId = gpid_base;
 
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_gpid_ops
-				 .GpidToLpid_AssignmentSet,
-				 gsw_handle,
-				 &gp_lp_assign) != 0) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_gpid_ops.GpidToLpid_AssignmentSet,
+			gsw_handle, &gp_lp_assign) != 0) {
 			PR_ERR("Fail to assign GPID->LPID table %d in GSWIP\n",
 			       ep);
 			return DP_FAILURE;
@@ -1581,17 +1597,16 @@ int gpid_port_assign(int inst, u8 ep, u32 flags)
 		DP_ERR("Fail to alloc special GPID for dpid=%d\n", ep);
 		return DP_FAILURE;
 	}
-	DP_DEBUG(DP_DBG_FLAG_DBG, "Lpid->Gpid table ep=%d \n", ep);
+	DP_DEBUG(DP_DBG_FLAG_DBG, "Lpid->Gpid table ep=%d\n", ep);
 	PR_INFO("Alloc GPID=%d num=%d spl_GPID=%d\n", gpid_base, gpid_num,
 		gpid_spl);
 	lp_gp_assign.nLogicalPortId = ep;
 	lp_gp_assign.nFirstGlobalPortId = gpid_base;
 	lp_gp_assign.nNumberOfGlobalPort = gpid_num;
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_gpid_ops
-			 .LpidToGpid_AssignmentSet,
-			 gsw_handle,
-			 &lp_gp_assign) != 0) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_gpid_ops.LpidToGpid_AssignmentSet,
+		gsw_handle, &lp_gp_assign) != 0) {
 #if 0
 		PR_ERR("Fail to assign Lpid->Gpid table %d in GSWIP\n",
 		       ep);
@@ -1599,15 +1614,14 @@ int gpid_port_assign(int inst, u8 ep, u32 flags)
 		return DP_FAILURE;
 	}
 
-	DP_DEBUG(DP_DBG_FLAG_DBG, "Gpid->Lpid table ep=%d \n", ep);
+	DP_DEBUG(DP_DBG_FLAG_DBG, "Gpid->Lpid table ep=%d\n", ep);
 
 	gp_lp_assign.nLogicalPortId = ep;
 	gp_lp_assign.nGlobalPortId = gpid_base;
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_gpid_ops
-			 .GpidToLpid_AssignmentSet,
-			 gsw_handle,
-			 &gp_lp_assign) != 0) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_gpid_ops.GpidToLpid_AssignmentSet,
+		gsw_handle, &gp_lp_assign) != 0) {
 		PR_ERR("Fail to assign Gpid->Lpid table %d in GSWIP\n",
 		       ep);
 #if 0
@@ -1638,19 +1652,19 @@ int gpid_port_assign(int inst, u8 ep, u32 flags)
 	get_dp_port_info(inst, ep)->gpid_spl = gpid_spl;
 	if (gpid_spl >= 0)
 		priv->gp_dp_map[gpid_spl].dpid = ep;
-	for (i = 0; i < gpid_num; i++) {
+	for (i = 0; i < gpid_num; i++)
 		priv->gp_dp_map[gpid_base + i].dpid = ep;
-	}
+
 	priv->gp_dp_map[gpid_spl].dpid = ep;
 
 	/* alloc/configure speical GPID for this dp port */
-	PR_INFO("Try to add gpid_spl=%d\n", get_dp_port_info(inst, ep)->gpid_spl);
-	if (dp_add_pp_gpid(inst, ep, 0, get_dp_port_info(inst, ep)->gpid_spl, 1)) {
+	PR_INFO("Try to add gpid_spl=%d\n",
+		get_dp_port_info(inst, ep)->gpid_spl);
+	if (dp_add_pp_gpid(inst, ep, 0,
+			   get_dp_port_info(inst, ep)->gpid_spl, 1)) {
 		DP_ERR("dp_add_pp_gpid for dport/gpid=%d/%d\n", ep,
 		       get_dp_port_info(inst, ep)->gpid_spl);
 		return DP_FAILURE;
 	}
 	return DP_SUCCESS;
 }
-
-

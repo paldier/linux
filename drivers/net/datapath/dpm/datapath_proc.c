@@ -57,6 +57,7 @@ int dump_dc_info(struct seq_file *s, struct pmac_port_info *port)
 {
 	int i = 0;
 	u32 cid, pid, nid;
+
 	for (i = 0; i < port->num_tx_ring; i++) {
 		seq_printf(s, "    DC TxRing:      %d\n", i);
 		seq_printf(s, "      TXIN  DeqRingSize/paddr:      %d/0x%p\n",
@@ -114,7 +115,6 @@ int dump_dc_info(struct seq_file *s, struct pmac_port_info *port)
 
 	return 0;
 }
-
 
 int proc_port_dump(struct seq_file *s, int pos)
 {
@@ -287,17 +287,20 @@ int proc_port_dump(struct seq_file *s, int pos)
 			   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
 		seq_printf(s, "          : mac_learn_dis:    %d\n",
 			   sif->mac_learn_dis);
-		cid = _DMA_CONTROLLER(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
+		cid = _DMA_CONTROLLER(
+				dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		pid = _DMA_PORT(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
 		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst]) {
-			seq_printf(s, "          : tx_dma_ch:    0x%x(ref=%d)\n",
-				   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
-			   atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
-				       dma_ch_offset)->ref_cnt));
-			seq_printf(s, "          : dma-ctrl/port/channel:%d/%d/%d\n",
-				   cid, pid, nid);
+			seq_printf(s,
+				"          : tx_dma_ch:    0x%x(ref=%d)\n",
+				dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
+				atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
+						dma_ch_offset)->ref_cnt));
+			seq_printf(s,
+				"          : dma-ctrl/port/channel:%d/%d/%d\n",
+				cid, pid, nid);
 		}
 		seq_printf(s, "          : gpid:           %d\n",
 			   sif->gpid);
@@ -401,8 +404,7 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 			     "netif",
 			     (uintptr_t)sif->netif,
 			     "device_name",
-			     sif->netif ? sif->
-			     netif->name : "NULL/DSL",
+			     sif->netif ? sif->netif->name : "NULL/DSL",
 			     "name",
 			     sif->device_name);
 			PR_INFO("          : rx_fn_rxif_pkt =0x%08x\n",

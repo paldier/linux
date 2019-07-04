@@ -510,7 +510,7 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 		return -1;
 	}
 	subif = get_dp_port_subif(get_dp_port_info(info->inst, info->dp_port),
-			   info->ctp);
+				  info->ctp);
 	subif->qid = q.qid;
 	subif->q_node = q.qid;
 	info->qid = q.qid;
@@ -582,9 +582,9 @@ static int dp_gswip_remark_8P0D_set(int mode, int inst)
 	color_remark.nVal[13] = 11;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -614,9 +614,9 @@ static int dp_gswip_remark_7P1D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -646,9 +646,9 @@ static int dp_gswip_remark_6P2D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -678,9 +678,9 @@ static int dp_gswip_remark_5P3D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -710,9 +710,9 @@ static int dp_gswip_remark_dscp_set(int mode, int inst)
 	color_remark.nVal[13] = 36;
 	color_remark.nVal[14] = 36;
 	color_remark.nVal[15] = 36;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -854,9 +854,9 @@ static int dp_gswip_color_dscp_set(int mode, int inst)
 	color_mark.nColor[61] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[62] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[63] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -902,9 +902,9 @@ static int dp_gswip_color_5P3D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -950,9 +950,9 @@ static int dp_gswip_color_6P2D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -998,9 +998,9 @@ static int dp_gswip_color_7P1D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -1046,9 +1046,9 @@ static int dp_gswip_color_8P0D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -1142,10 +1142,10 @@ int dp_platform_queue_set(int inst, u32 flag)
 		DP_DEBUG(DP_DBG_FLAG_QOS, "cpu(%d) deq_port=%d",
 			 i, cpu_data.dq_tx_push_info[i].deq_port);
 		q_port.cqe_deq = cpu_data.dq_tx_push_info[i].deq_port;
-		q_port.tx_pkt_credit = cpu_data.dq_tx_push_info[i].
-							tx_pkt_credit;
-		q_port.tx_ring_addr = cpu_data.dq_tx_push_info[i].
-								txpush_addr_qos;
+		q_port.tx_pkt_credit =
+			cpu_data.dq_tx_push_info[i].tx_pkt_credit;
+		q_port.tx_ring_addr =
+			cpu_data.dq_tx_push_info[i].txpush_addr_qos;
 		q_port.tx_ring_size = cpu_data.dq_tx_push_info[i].tx_ring_size;
 
 		/*Sotre Ring Info */
@@ -1161,8 +1161,7 @@ int dp_platform_queue_set(int inst, u32 flag)
 		DP_DEBUG(DP_DBG_FLAG_QOS, "Store CPU ring info\n");
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address[%d]=0x%p\n",
 			 q_port.cqe_deq,
-			 (void *)dp_deq_port_tbl[inst][q_port.cqe_deq].
-								txpush_addr);
+			 (void *)dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr);
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address_push[%d]=0x%px\n",
 			 q_port.cqe_deq,
 			 dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr_qos);
@@ -1268,16 +1267,16 @@ static int dp_platform_set(int inst, u32 flag)
 #endif
 		/*disable egress VLAN modification for CPU port*/
 		port_remark.nPortId = 0;
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				 .QoS_PortRemarkingCfgGet,
-				 gsw_handle, &port_remark)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_PortRemarkingCfgGet,
+			gsw_handle, &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;
 		}
 		port_remark.bPCP_EgressRemarkingEnable = 0;
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				 .QoS_PortRemarkingCfgGet,
-				 gsw_handle, &port_remark)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_PortRemarkingCfgGet,
+			gsw_handle, &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;
 		}
@@ -1650,8 +1649,8 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 #endif
 	q_port.tx_pkt_credit =
 		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_pkt_credit;
-	q_port.tx_ring_addr = (u32)dp_deq_port_tbl[inst][q_port.cqe_deq].
-								txpush_addr_qos;
+	q_port.tx_ring_addr =
+		(u32)dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr_qos;
 	q_port.tx_ring_size =
 		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_size;
 	q_port.inst = inst;
@@ -1813,7 +1812,6 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		lookup.mpe1 = 0;
 	}
 	/* Map this port's lookup to its 1st queue only */
-	//lookup.mode = get_dp_port_info(inst, portid)->cqe_lu_mode; /*no need */
 	lookup.ep = portid;
 	lookup.sub_if_id = subif; /* Note:CQM API need full subif(15bits) */
 	/* For 1st subif and mode 0, use CBM_QUEUE_MAP_F_SUBIF_DONTCARE,

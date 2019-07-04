@@ -104,7 +104,7 @@
 			   *   For GRX500/PRX300, only support 1 ring
 			   *   For LGM, maximum up to 2 rings
 			   */
-#define DP_TX_RING_NUM 8 /*!< maximum number of ACA RXOUT ring
+#define DP_TX_RING_NUM 8  /*!< maximum number of ACA RXOUT ring
 			   *   For GRX500/PRX300, only support 1 ring
 			   *   For 5G, it needs to support up to 16 ring.
 			   */
@@ -394,8 +394,8 @@ typedef struct dp_subif {
 			       *   valid for dp_get_netif_subifid only
 			       */
 	u16 dfl_eg_sess[DP_DFL_SESS_NUM]; /*!< [out] default egress session id
-			*   This is for CPU TX to DC only
-			*/
+					   *   This is for CPU TX to DC only
+					   */
 } dp_subif_t;
 
 typedef dp_subif_t PPA_SUBIF; /*!< @brief structure type dp_subif PPA_SUBIF*/
@@ -847,7 +847,8 @@ struct dp_subif_data {
 				     */
 	#define DP_MAC_LEARNING_EN 0
 	#define DP_MAC_LEARNING_DIS 1
-	u16 mac_learn_disable; /*!< [in] To enable or disable mac learning for subif
+	u16 mac_learn_disable; /*!< [in] To enable or disable
+				* mac learning for subif
 				*/
 };
 
@@ -860,10 +861,10 @@ enum dp_port_data_flag {
 	DP_F_DATA_RESV_SCH = BIT(4), /*!< reserve QOS scheduler */
 	DP_F_DATA_FCS_DISABLE = BIT(5), /*!< Disable FCS for PON port on SOC */
 	DP_F_DATA_NO_CQM_DEQ = BIT(6), /*!< No mapped CQM dequeue port needed,
-				    *   instead DC device directly dequeue
-				    *   packet from PP QOS port via credit left
-				    *   and credit add
-				    */
+					*   instead DC device directly dequeue
+					*   packet from PP QOS port via credit
+					*   left and credit add
+					*/
 	DP_F_DATA_CONTINOUS_Q_RESV = BIT(7) /*!< reserve continous physical
 					     *   queue ID
 					     */
@@ -959,8 +960,8 @@ struct dp_buf_info {
 	int inst; /*!< [in] DP instance ID */
 	int dp_port; /*!< [in] DP port ID */
 	struct dp_dc_buf rx[DP_RX_RING_NUM]; /* [in] buffers in the rx ring
-						 * to free
-						 */
+					      * to free
+					      */
 	struct dp_dc_buf tx; /* [in] buffers in the rx ring to free */
 };
 
@@ -978,8 +979,10 @@ int dp_free_dc_buf(struct dp_buf_info *buf, int flag);
 /**
  * @brief dp_gpid_tx_info
  */
-#define DP_DFT_MAX_PKT_LEN 1600 /*!< Default maximal packet length ??? Not sure need or not */
-#define DP_DFT_MIN_PKT_LEN 60 /*!< Default minimal packet length ??? Not sure need or not */
+/* FIXME: ??? Not sure need or not */
+#define DP_DFT_MAX_PKT_LEN 1600 /*!< Default maximal packet length */
+/* FIXME: ??? Not sure need or not */
+#define DP_DFT_MIN_PKT_LEN 60 /*!< Default minimal packet length */
 /*! @addtogroup Datapath_Driver_Structures */
 /*! @brief  PPA Sub-interface Data structure
  *@param port_id  Datapath Port Id corresponds to PMAC Port Id
@@ -1036,7 +1039,7 @@ struct dp_rx_ring {
 				*   For LGM: it is CQM enqueue register address
 				*   If NULL, it means not valid
 				*/
-	void *out_enq_vaddr;	/*!< [out] rxout ring virtual address
+	void *out_enq_vaddr;   /*!< [out] rxout ring virtual address
 				*   For software testing or debugging
 				*   For GRX350/PRX300, it is DMA coherent
 				*     virtual address of DMA Descriptor base
@@ -1062,7 +1065,7 @@ struct dp_rx_ring {
 			       *   Note:
 			       *   1. GRX350/PRX300: not support
 			       */
-	void *in_alloc_vaddr;	/*!< [out] rxin ring buf allocation virtual
+	void *in_alloc_vaddr;  /*!< [out] rxin ring buf allocation virtual
 				*     address. It is for 4 ring case only
 				*   For software testing or debugging
 				*   Note:
@@ -1088,18 +1091,18 @@ struct dp_rx_ring {
 	void *pkt_base_paddr; /*!< [out] packet list base physical address,
 			       *    which stored  @prefill_pkt_num of packet
 			       *    physical addressin
-			       * For LGM, normally no need and caller just set it
-			       *     to 0.
+			       * For LGM, normally no need and caller just
+			       *     set it to 0.
 			       * For GRX350/PRX300, Normally needed to pre-fill
-			       *     The buffer size should based on @rx_pkt_size
-			       *     requirement
+			       *     The buffer size should based on
+			       *     @rx_pkt_size requirement
 			       */
-	void *pkt_base_vaddr;	/*!< [out] packet list base virtual address,
+	void *pkt_base_vaddr;  /*!< [out] packet list base virtual address,
 				*    which stored @prefill_pkt_num of packet
 				*    physical addresses
 				*    For software testing or debugging
 				*/
-	void *pkt_list_vaddr;	/*!< [out] virtual address of 2nd pkt list,
+	void *pkt_list_vaddr;  /*!< [out] virtual address of 2nd pkt list,
 				*    which stored @prefill_pkt_num of packet
 				*    virtual addresses
 				*    For software testing or debugging
@@ -1121,9 +1124,9 @@ struct dp_tx_ring {
 	void *in_deq_paddr; /*!< [out] txin ring/dequeue physical base
 			     *   address
 			     */
-	void *in_deq_vaddr;	/*!< [out] txin ring/dequeue virtual base address
-					* For software testing or debugging
-					*/
+	void *in_deq_vaddr; /*!< [out] txin ring/dequeue virtual base address
+			     * For software testing or debugging
+			     */
 	int out_free_ring_size;/*!< [out] txout ring/free buffer burst size,
 				*     the number of buffer can be freed in
 				*     in one free operation.
@@ -1131,9 +1134,9 @@ struct dp_tx_ring {
 	void *out_free_paddr; /*!< [out] txout/free buffer
 			       *     physica address
 			       */
-	void *out_free_vaddr;	/*!< [out] txout/free buffer virtual base address
-					* For software testing or debugging
-					*/
+	void *out_free_vaddr; /*!< [out] txout/free buffer virtual base address
+			       * For software testing or debugging
+			       */
 	u32 num_tx_pkt; /*!< [in] nuber of packet */
 	int tx_pkt_size; /*!< [in] maximum packet size
 			  *   requirement to the packet
@@ -1224,30 +1227,30 @@ struct dp_umt {
  *  applications
  */
 struct dp_dev_data {
-	u8 num_rx_ring;   /*!< [in] number of rx ring from DC device to Host.
-			    *   num_rx_ring requirement:
-			    *   @num_rings <= @DP_RX_RING_NUM
-			    *   GRX350/PRX300:1 rx ring
-			    *   LGM: up to 2 rx ring, like Docsis can use 2 rings
-			    *   For two ring case:
-			    *    1st rxout ring without qos
-			    *    2nd rxout ring with qos
-			    */
-	u8 num_tx_ring;   /*!< [in] number of tx ring from Host to DC device
-			    *   num_rx_ring requirement:
-			    *   @num_rings <= @DP_TX_RING_NUM
-			    *   Normally it is 1 TX ring only.
-			    *   But for 5G, it can support up to 8 TX ring
-			    *   For docsis, alhtough it is 16 dequeue port to WIB.
-			    *   But the final ring only 1, ie, WIB to Dcosis
-			    */
+	u8 num_rx_ring; /*!< [in] number of rx ring from DC device to Host.
+			 *   num_rx_ring requirement:
+			 *   @num_rings <= @DP_RX_RING_NUM
+			 *   GRX350/PRX300:1 rx ring
+			 *   LGM: up to 2 rx ring, like Docsis can use 2 rings
+			 *   For two ring case:
+			 *    1st rxout ring without qos
+			 *    2nd rxout ring with qos
+			 */
+	u8 num_tx_ring; /*!< [in] number of tx ring from Host to DC device
+			 *   num_rx_ring requirement:
+			 *   @num_rings <= @DP_TX_RING_NUM
+			 *   Normally it is 1 TX ring only.
+			 *   But for 5G, it can support up to 8 TX ring
+			 *   For docsis, alhtough it is 16 dequeue port to WIB.
+			 *   But the final ring only 1, ie, WIB to Dcosis
+			 */
 	u8 num_umt_port;   /*!< [in] number of UMT port.
 			    *    Normally is 1 only. But Docsis can use up to 2
 			    */
 	struct dp_rx_ring rx_ring[DP_RX_RING_NUM]; /*!< [in/out] DC rx ring info
 						    */
 	struct dp_tx_ring tx_ring[DP_TX_RING_NUM]; /*!< [in/out] DC tx ring info
-						     */
+						    */
 	struct dp_gpid_tx_info gpid_info; /*!< [in] for GPID tx information
 					   *   Valid only if @f_gpid valid.
 					   */
@@ -1537,7 +1540,8 @@ int dp_coc_new_stat_req(int new_state, uint32_t flag);
  */
 /*! DP's submodule to call it */
 /*int dp_set_rmon_threshold(struct dp_coc_threshold *threshold,
-			  uint32_t flags);*/
+ *			    uint32_t flags);
+ */
 #endif /*! CONFIG_INTEL_DATAPATH_CPUFREQ*/
 
 /*! get port flag. for TMU proc file cat /proc/tmu/queue1 and /proc/tmu/eqt */
@@ -1742,30 +1746,30 @@ struct dp_spl_conn {
 	int dp_port; /*!< [out] dp_port ID, normally it is CPU 0.
 		      *   if -1, then not applicable for this special connect
 		      */
-	u8 num_rx_ring;   /*!< [in] number of rx ring from DC device to Host.
-		    *   num_rx_ring requirement:
-		    *   @num_rings <= @DP_RX_RING_NUM
-		    *   GRX350/PRX300:1 rx ring
-		    *   LGM: up to 2 rx ring, like Docsis can use 2 rings
-		    *   For two ring case:
-		    *    1st rxout ring without qos
-		    *    2nd rxout ring with qos
-		    */
-	u8 num_tx_ring;   /*!< [in] number of tx ring from Host to DC device
-			    *   num_rx_ring requirement:
-			    *   @num_rings <= @DP_TX_RING_NUM
-			    *   Normally it is 1 TX ring only.
-			    *   But for 5G, it can support up to 8 TX ring
-			    *   For docsis, alhtough it is 16 dequeue port to WIB.
-			    *   But the final ring only 1, ie, WIB to Dcosis
-			    */
-	u8 num_umt_port;   /*!< [in] number of UMT port.
-			     *    Normally is 1 only. But Docsis can use up to 2
-			     */
+	u8 num_rx_ring; /*!< [in] number of rx ring from DC device to Host.
+			 *   num_rx_ring requirement:
+			 *   @num_rings <= @DP_RX_RING_NUM
+			 *   GRX350/PRX300:1 rx ring
+			 *   LGM: up to 2 rx ring, like Docsis can use 2 rings
+			 *   For two ring case:
+			 *    1st rxout ring without qos
+			 *    2nd rxout ring with qos
+			 */
+	u8 num_tx_ring; /*!< [in] number of tx ring from Host to DC device
+			 *   num_rx_ring requirement:
+			 *   @num_rings <= @DP_TX_RING_NUM
+			 *   Normally it is 1 TX ring only.
+			 *   But for 5G, it can support up to 8 TX ring
+			 *   For docsis, alhtough it is 16 dequeue port to WIB.
+			 *   But the final ring only 1, ie, WIB to Dcosis
+			 */
+	u8 num_umt_port; /*!< [in] number of UMT port.
+			  *    Normally is 1 only. But Docsis can use up to 2
+			  */
 	struct dp_rx_ring rx_ring[DP_RX_RING_NUM]; /*!< [in/out] DC rx ring info
 						    */
 	struct dp_tx_ring tx_ring[DP_TX_RING_NUM]; /*!< [in/out] DC tx ring info
-						     */
+						    */
 	struct dp_gpid_tx_info gpid_info; /*!< [in] for GPID tx information
 					   *   Valid only if @f_gpid valid.
 					   */

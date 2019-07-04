@@ -25,7 +25,6 @@ extern struct dp_hw_cap hw_cap_list[DP_MAX_HW_CAP];
 		(DP_F_FAST_WLAN | DP_F_FAST_DSL)) && \
 		!((flags) & (DP_TX_CAL_CHKSUM | DP_TX_DSL_FCS)))
 
-
 extern struct hlist_head dp_dev_list[DP_DEV_HASH_SIZE];
 u32 dp_dev_hash(struct net_device *dev, char *subif_name);
 struct dp_dev *dp_dev_lookup(struct hlist_head *head,

@@ -18,9 +18,9 @@
 #endif
 
 static void rx_dbg(u32 f, struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
-	       struct dma_rx_desc_1 *desc1, struct dma_rx_desc_2 *desc2,
-	       struct dma_rx_desc_3 *desc3, unsigned char *parser,
-	       struct pmac_rx_hdr *pmac, int paser_exist)
+		   struct dma_rx_desc_1 *desc1, struct dma_rx_desc_2 *desc2,
+		   struct dma_rx_desc_3 *desc3, unsigned char *parser,
+		   struct pmac_rx_hdr *pmac, int paser_exist)
 {
 	int inst = 0;
 
@@ -99,7 +99,7 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 	if (skb->data[PMAC_SIZE] & 0x1) {
 		/* multicast/broadcast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT mcast or broadcast\n");
-		if((STATS_GET(sif->rx_flag) <= 0)) {
+		if ((STATS_GET(sif->rx_flag) <= 0)) {
 			UP_STATS(mib->rx_fn_dropped);
 			return 1;
 		}
@@ -119,8 +119,8 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		/* unicast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
 		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s) ret(%d)\n",
-				 skb->dev->name ? skb->dev->name : "NULL", ret);
-		if((STATS_GET(sif->rx_flag) <= 0)) {
+			 skb->dev->name ? skb->dev->name : "NULL", ret);
+		if ((STATS_GET(sif->rx_flag) <= 0)) {
 			UP_STATS(mib->rx_fn_dropped);
 			dev_kfree_skb_any(skb);
 			return 0;
@@ -290,7 +290,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 			if (dp_port->lct_idx > 0)
 				ret_lct = dp_handle_lct(dp_port, skb, rx_fn);
 			if (ret_lct) {
-				if((STATS_GET(sif->rx_flag) <= 0)) {
+				if ((STATS_GET(sif->rx_flag) <= 0)) {
 					UP_STATS(mib->rx_fn_dropped);
 					goto RX_DROP2;
 				}
@@ -298,7 +298,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 				UP_STATS(mib->rx_fn_rxif_pkt);
 			}
 		} else {
-			if((STATS_GET(sif->rx_flag) <= 0)) {
+			if ((STATS_GET(sif->rx_flag) <= 0)) {
 				UP_STATS(mib->rx_fn_dropped);
 				goto RX_DROP2;
 			}
@@ -334,5 +334,3 @@ RX_DROP2:
 		dev_kfree_skb_any(skb);
 	return res;
 }
-
-

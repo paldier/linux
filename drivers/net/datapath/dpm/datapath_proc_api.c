@@ -81,6 +81,7 @@ int dp_split_buffer(char *buffer, char *array[], int max_param_num)
 		return 0;
 	while ((array[i] = strsep(&buffer, " ")) != NULL) {
 		size_t len = strlen(array[i]);
+
 		dp_replace_ch(array[i], len, ' ', 0);
 		dp_replace_ch(array[i], len, '\r', 0);
 		dp_replace_ch(array[i], len, '\n', 0);

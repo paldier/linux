@@ -264,10 +264,8 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 			 "flag=0x%x mpe3/2/1/cpu=%d/%d/%d/%d\n", flag, mpe3,
 			 mpe2, mpe1, cpu);
 		dp_set_gsw_parser_30(flag, cpu, mpe1, mpe2, mpe3);
-	} else if (dp_strncmpi(param_list[0],
-				     "refresh",
-					 strlen("refresh"))
-					 == 0) {
+	} else if (dp_strncmpi(param_list[0], "refresh",
+			       strlen("refresh")) == 0) {
 		dp_get_gsw_parser_30(NULL, NULL, NULL, NULL);
 		PR_INFO("value:cpu=%d mpe1=%d mpe2=%d mpe3=%d\n", pinfo[0].v,
 			pinfo[1].v, pinfo[2].v, pinfo[3].v);
@@ -308,8 +306,9 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce.action.bRMON_Action = 1;
 		pce.action.nRMON_Id = 0;	/*RMON_UDP_CNTR; */
 
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_tflow_ops
-				 .TFLOW_PceRuleWrite, gsw_handle, &pce)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_tflow_ops.TFLOW_PceRuleWrite,
+			gsw_handle, &pce)) {
 			PR_ERR("PCE rule add fail for GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
@@ -322,8 +321,9 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 		memset(&pce, 0, sizeof(pce));
 		pce.pattern.nIndex = pce_rule_id;
 		pce.pattern.bEnable = 0;
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_tflow_ops
-				 .TFLOW_PceRuleWrite, gsw_handle, &pce)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_tflow_ops.TFLOW_PceRuleWrite,
+			gsw_handle, &pce)) {
 			PR_ERR("PCE rule add fail for GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
@@ -692,9 +692,9 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 
 		for (i = 0; i < ARRAY_SIZE(gsw_r_rmon_mib); i++) {
 			gsw_r_rmon_mib[i].nPortId = i;
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					   ->gsw_rmon_ops.RMON_Port_Get,
-					   gsw_handle, &gsw_r_rmon_mib[i]);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
+				gsw_handle, &gsw_r_rmon_mib[i]);
 
 			if (ret != GSW_statusOk) {
 				PR_ERR("RMON_PORT_GET fail for Port %d\n", i);
@@ -704,9 +704,9 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 
 		/*read pmac rmon redirect mib */
 		memset(&gswr_rmon_redirect, 0, sizeof(gswr_rmon_redirect));
-		ret = gsw_core_api((dp_gsw_cb)gsw_handle
-				   ->gsw_rmon_ops.RMON_Redirect_Get, gsw_handle,
-				   &gswr_rmon_redirect);
+		ret = gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Redirect_Get,
+			gsw_handle, &gswr_rmon_redirect);
 
 		if (ret != GSW_statusOk) {
 			PR_ERR("GSW_RMON_REDIRECT_GET fail for Port %d\n", i);
@@ -717,10 +717,9 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 		gsw_handle = dp_port_prop[0].ops[GSWIP_L];
 		for (i = 0; i < ARRAY_SIZE(gsw_l_rmon_mib); i++) {
 			gsw_l_rmon_mib[i].nPortId = i;
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					   ->gsw_rmon_ops.RMON_Port_Get,
-					   gsw_handle,
-					   &gsw_l_rmon_mib[i]);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
+				gsw_handle, &gsw_l_rmon_mib[i]);
 			if (ret != GSW_statusOk) {
 				PR_ERR("RMON_PORT_GET fail for Port %d\n", i);
 				return -1;
@@ -1089,21 +1088,18 @@ static void pmac_eg_cfg(char *param_list[], int num, dp_pmac_cfg_t *pmac_cfg)
 				if (dp_atoi(param_list[i + 1]) > 0) {
 					pmac_cfg->eg_pmac.rm_l2hdr = 1;
 					value = dp_atoi(param_list[i + 1]);
-					egress_entries[j].
-					   egress_callback(pmac_cfg,
-							   value);
+					egress_entries[j].egress_callback(
+							pmac_cfg, value);
 					PR_INFO("egress pmac ep %s config ok\n",
-						egress_entries
-					     [j].name);
+						egress_entries[j].name);
 					break;
 				}
 				pmac_cfg->eg_pmac.rm_l2hdr =
 				    dp_atoi(param_list[i + 1]);
 			} else {
 				value = dp_atoi(param_list[i + 1]);
-				egress_entries[j].
-				    egress_callback(pmac_cfg,
-						    value);
+				egress_entries[j].egress_callback(pmac_cfg,
+								value);
 				PR_INFO("egress pmac ep %s configu ok\n",
 					egress_entries[j].name);
 				break;
@@ -1142,9 +1138,8 @@ ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 						strlen(ingress_entries[j].name))
 						== 0) {
 					value = dp_atoi(param_list[i + 1]);
-					ingress_entries[j].
-					    ingress_callback(&pmac_cfg,
-							     value);
+					ingress_entries[j].ingress_callback(
+							&pmac_cfg, value);
 					PR_INFO("ingress pmac ep %s configed\n",
 						ingress_entries[j].name);
 					break;

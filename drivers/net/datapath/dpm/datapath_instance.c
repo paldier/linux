@@ -128,11 +128,11 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	dp_port_prop[i].ops[0] = info->ops[0];
 	dp_port_prop[i].ops[1] = info->ops[1];
 
-	for(j = 0; j < DP_MAX_MAC_HANDLE; j++) {
+	for (j = 0; j < DP_MAX_MAC_HANDLE; j++) {
 		if (info->mac_ops[j])
 			dp_port_prop[i].mac_ops[j] = info->mac_ops[j];
 	}
-	
+
 	dp_port_prop[i].info = hw_cap_list[k].info;
 	dp_port_prop[i].cbm_inst = info->cbm_inst;
 	dp_port_prop[i].qos_inst = info->qos_inst;
@@ -209,7 +209,7 @@ struct dp_dev *dp_dev_lookup(struct hlist_head *head,
 }
 
 #if IS_ENABLED(CONFIG_PPA)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,13,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0)
 static int dp_ndo_setup_tc(struct net_device *dev, u32 handle,
 			   __be16 protocol, struct tc_to_netdev *tc)
 {
@@ -224,8 +224,8 @@ static int dp_ndo_setup_tc(struct net_device *dev, u32 handle,
 }
 #else
 static int dp_ndo_setup_tc(struct net_device *dev,
-				enum tc_setup_type type,
-				void *type_data)
+			   enum tc_setup_type type,
+			   void *type_data)
 {
 	return -1;
 }

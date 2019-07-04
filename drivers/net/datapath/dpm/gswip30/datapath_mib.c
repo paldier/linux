@@ -451,8 +451,9 @@ static int get_gsw_port_rmon(u32 ep, char *gsw_drv_name,
 		return -1;
 	memset(mib, 0, sizeof(*mib));
 	mib->nPortId = ep;
-	ret = gsw_core_api((dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops
-			   .RMON_Port_Get, dp_port_prop[0].ops[index], mib);
+	ret = gsw_core_api(
+		(dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Port_Get,
+		dp_port_prop[0].ops[index], mib);
 	if (ret) {
 		PR_ERR("GSW_RMON_PORT_GET failed(%d) from %s for port %d\n",
 		       ret, gsw_drv_name, ep);
@@ -473,8 +474,9 @@ static int get_gsw_redirect_rmon(u32 ep, int index,
 	}
 
 	memset(mib, 0, sizeof(*mib));
-	ret = gsw_core_api((dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops
-			   .RMON_Redirect_Get, dp_port_prop[0].ops[index], mib);
+	ret = gsw_core_api(
+		(dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Redirect_Get,
+		dp_port_prop[0].ops[index], mib);
 	if (ret) {
 		PR_ERR("GSW_RMON_REDIRECT_GET failed from %s\n",
 		       gsw_drv_name);
@@ -495,9 +497,9 @@ static int get_gsw_itf_rmon(u32 index, int index,
 	}
 	memset(mib, 0, sizeof(*mib));
 	mib->nIfId = index;
-	ret = gsw_core_api((dp_gsw_cb)dp_port_prop[0].ops[index]
-				 ->gsw_rmon_ops.RMON_If_Get,
-				 dp_port_prop[0].ops[index], mib);
+	ret = gsw_core_api(
+		(dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_If_Get,
+		dp_port_prop[0].ops[index], mib);
 	if (ret) {
 		PR_ERR
 		    ("GSW_RMON_PORT_GET GSW_RMON_IF_GET from %s: index %d\n",
@@ -541,8 +543,9 @@ int gsw_eth_wan_redirect_status(void)
 	q_cfg.nPortId = WAN_EP;
 	for (i = 0; i <= MAX_CLASS_NUM; i++) {
 		q_cfg.nTrafficClassId = i;
-		ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				   .QoS_QueuePortGet, gsw_handle, &q_cfg);
+		ret = gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_QueuePortGet,
+			gsw_handle, &q_cfg);
 		if (ret) {
 			PR_ERR("%s failed(%d) from %s for port %d\n",
 			       "GSW_QOS_QUEUE_PORT_GET",
@@ -630,8 +633,7 @@ static int update_port_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 						    port->vap_mask);
 				ret = tmu_hal_get_qos_m_local(NULL,
 							      &tmp, -1,
-							      &curr->
-								tmu_qos[i],
+							      &curr->tmu_qos[i],
 							      0);
 			}
 			if (ret) /*workaround */

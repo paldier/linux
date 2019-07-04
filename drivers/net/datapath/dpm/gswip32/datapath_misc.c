@@ -90,7 +90,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma3_mask_template[i].all = 0xFFFFFFFF;
 	}
 	if ((flags & DP_F_FAST_ETH_LAN) || (flags & DP_F_FAST_ETH_WAN) ||
-	    (flags & DP_F_GPON) || (flags & DP_F_EPON)|| (flags & DP_F_GINT)) {
+	    (flags & DP_F_GPON) || (flags & DP_F_EPON) || (flags & DP_F_GINT)) {
 		/*always with pmac */
 		for (i = 0; i < MAX_TEMPLATE; i++) {
 			/* Pmac Template */
@@ -177,9 +177,9 @@ static void init_dma_pmac_template(int portid, u32 flags)
 }
 
 void dump_rx_dma_desc_32(struct dma_rx_desc_0 *desc_0,
-		      struct dma_rx_desc_1 *desc_1,
-		      struct dma_rx_desc_2 *desc_2,
-		      struct dma_rx_desc_3 *desc_3)
+			 struct dma_rx_desc_1 *desc_1,
+			 struct dma_rx_desc_2 *desc_2,
+			 struct dma_rx_desc_3 *desc_3)
 {
 	if (!desc_0 || !desc_1 || !desc_2 || !desc_3) {
 		PR_ERR("rx desc_0/1/2/3 NULL\n");
@@ -198,12 +198,12 @@ void dump_rx_dma_desc_32(struct dma_rx_desc_0 *desc_0,
 		" lro_type=%d color=%d port=%d classid=%d\n",
 		desc_1->field.redir, desc_1->field.header_mode,
 		desc_1->field.pmac, desc_1->field.ts, desc_1->field.pre_l2,
-		desc_1->field.classen, desc_1->field.fcs, desc_1->field.pkt_type,
-		desc_1->field.src_pool, desc_1->field.dec, desc_1->field.enc,
-		desc_1->field.lro_type, desc_1->field.color, desc_1->field.ep,
-		desc_1->field.classid);
-	PR_INFO("  DW2: data_ptr=0x%08x ByteOffset=%d\n", desc_2->field.data_ptr,
-		desc_2->field.byte_offset);
+		desc_1->field.classen, desc_1->field.fcs,
+		desc_1->field.pkt_type, desc_1->field.src_pool,
+		desc_1->field.dec, desc_1->field.enc, desc_1->field.lro_type,
+		desc_1->field.color, desc_1->field.ep, desc_1->field.classid);
+	PR_INFO("  DW2: data_ptr=0x%08x ByteOffset=%d\n",
+		desc_2->field.data_ptr, desc_2->field.byte_offset);
 	PR_INFO("  DW3: own=%d c=%d sop=%d eop=%d dic=%d haddr=0x%08x"
 		" sp=%d pool_policy=%d data_len=%d\n",
 		desc_3->field.own, desc_3->field.c, desc_3->field.sop,
@@ -213,9 +213,9 @@ void dump_rx_dma_desc_32(struct dma_rx_desc_0 *desc_0,
 }
 
 void dump_tx_dma_desc_32(struct dma_tx_desc_0 *desc_0,
-		      struct dma_tx_desc_1 *desc_1,
-		      struct dma_tx_desc_2 *desc_2,
-		      struct dma_tx_desc_3 *desc_3)
+			 struct dma_tx_desc_1 *desc_1,
+			 struct dma_tx_desc_2 *desc_2,
+			 struct dma_tx_desc_3 *desc_3)
 {
 	int lookup;
 	int inst = 0;
@@ -236,18 +236,18 @@ void dump_tx_dma_desc_32(struct dma_tx_desc_0 *desc_0,
 		desc_0->field.flow_id, desc_0->field.dw0bit16,
 		"subif", desc_0->field.dest_sub_if_id);
 	PR_INFO("  DW1:redir=%d header_mode=%d pmac=%d ts=%d pre_l2=%d"
-		"classen=%d fcs=%d pkt_type=%d src_pool=%d dec=%d enc=%d"
-		"lro_type=%d color=%d port=%d classid=%d\n",
+		" classen=%d fcs=%d pkt_type=%d src_pool=%d dec=%d enc=%d"
+		" lro_type=%d color=%d port=%d classid=%d\n",
 		desc_1->field.redir, desc_1->field.header_mode,
 		desc_1->field.pmac, desc_1->field.ts, desc_1->field.pre_l2,
-		desc_1->field.classen, desc_1->field.fcs, desc_1->field.pkt_type,
-		desc_1->field.src_pool, desc_1->field.dec, desc_1->field.enc,
-		desc_1->field.lro_type, desc_1->field.color, desc_1->field.ep,
-		desc_1->field.classid);
+		desc_1->field.classen, desc_1->field.fcs,
+		desc_1->field.pkt_type, desc_1->field.src_pool,
+		desc_1->field.dec, desc_1->field.enc, desc_1->field.lro_type,
+		desc_1->field.color, desc_1->field.ep, desc_1->field.classid);
 	PR_INFO("  DW2:data_ptr=0x%08x ByteOffset=%d\n", desc_2->field.data_ptr,
 		desc_2->field.byte_offset);
 	PR_INFO("  DW3:own=%d c=%d sop=%d eop=%d dic=%d haddr=0x%08x"
-		"sp=%d pool_policy=%d data_len=%d\n",
+		" sp=%d pool_policy=%d data_len=%d\n",
 		desc_3->field.own, desc_3->field.c, desc_3->field.sop,
 		desc_3->field.eop, desc_3->field.dic, desc_3->field.haddr,
 		desc_3->field.sp, desc_3->field.pool_policy,
@@ -336,7 +336,7 @@ static void dump_rx_pmac(struct pmac_rx_hdr *pmac)
 		pmac->tcp_type);
 	/*byte 2 */
 	PR_INFO("  byte 2:class=%d res=%d src_dst_subif_id_14_12=%d\n",
-	pmac->class, pmac->res2, pmac->src_dst_subif_id_14_12);
+		pmac->class, pmac->res2, pmac->src_dst_subif_id_14_12);
 	/*byte 3 */
 	PR_INFO("  byte 3:pkt_type=%d ext=%d ins=%d pre_l2=%d oam=%d res32=%d\n",
 		pmac->pkt_type, pmac->ext, pmac->ins, pmac->pre_l2,
@@ -379,7 +379,7 @@ static void dump_tx_pmac(struct pmac_tx_hdr *pmac)
 		pmac->tcp_type);
 	/*byte 2 */
 	PR_INFO("  byte 2:igp_msb=%d res=%d\n", pmac->src_dst_subif_id_14_12,
-	pmac->res2);
+		pmac->res2);
 	/*byte 3 */
 	PR_INFO("  byte 3:%s=%d %s=%d %s=%d %s=%d %s=%d %s=%d %s=%d\n",
 		"pkt_type", pmac->pkt_type,
@@ -467,7 +467,7 @@ int alloc_q_to_port_32(struct ppv4_q_sch_port *info, u32 flag)
 		return -1;
 	}
 	subif = get_dp_port_subif(get_dp_port_info(info->inst, info->dp_port),
-			   info->ctp);
+				  info->ctp);
 	subif->qid = q.qid;
 	subif->q_node = q.qid;
 	info->qid = q.qid;
@@ -539,9 +539,9 @@ static int dp_gswip_remark_8P0D_set(int mode, int inst)
 	color_remark.nVal[13] = 11;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -571,9 +571,9 @@ static int dp_gswip_remark_7P1D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -603,9 +603,9 @@ static int dp_gswip_remark_6P2D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -635,9 +635,9 @@ static int dp_gswip_remark_5P3D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -667,9 +667,9 @@ static int dp_gswip_remark_dscp_set(int mode, int inst)
 	color_remark.nVal[13] = 36;
 	color_remark.nVal[14] = 36;
 	color_remark.nVal[15] = 36;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorReMarkingTableSet,
-				gsw_handle, &color_remark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
+		gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -811,9 +811,9 @@ static int dp_gswip_color_dscp_set(int mode, int inst)
 	color_mark.nColor[61] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[62] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[63] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -859,9 +859,9 @@ static int dp_gswip_color_5P3D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -907,9 +907,9 @@ static int dp_gswip_color_6P2D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -955,9 +955,9 @@ static int dp_gswip_color_7P1D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -1003,9 +1003,9 @@ static int dp_gswip_color_8P0D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				.QOS_ColorMarkingTableSet,
-				gsw_handle, &color_mark)) {
+	if (gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
+		gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -1027,6 +1027,7 @@ static int dp_platform_color_table_set(int inst)
 
 	return 0;
 }
+
 #define PER_CPU_PORTS 2 /* cqm dequeue ports per CPU*/
 
 int dp_platform_queue_set_32(int inst, u32 flag)
@@ -1124,8 +1125,8 @@ int dp_platform_queue_set_32(int inst, u32 flag)
 		       "cbm_cpu_port_get");
 		return -1;
 	}
-	gpid_base= alloc_gpid(inst, DP_DYN_GPID,
-			      CPU_GPID_NUM, CPU_PORT);
+	gpid_base = alloc_gpid(inst, DP_DYN_GPID,
+			       CPU_GPID_NUM, CPU_PORT);
 	if (gpid_base == DP_FAILURE) {
 		DP_ERR("alloc_gpid fail for CPU: %d\n", CPU_PORT);
 		return -1;
@@ -1147,13 +1148,14 @@ int dp_platform_queue_set_32(int inst, u32 flag)
 			DP_DEBUG(DP_DBG_FLAG_QOS, "cpu(%d)(%d) deq_port=%d",
 				 i, j, cpu.dq_tx_push_info[i][j].deq_port);
 			q_port.cqe_deq = cpu.dq_tx_push_info[i][j].deq_port;
-			q_port.tx_pkt_credit = cpu.dq_tx_push_info[i][j].
-								tx_pkt_credit;
-			q_port.tx_ring_addr = cpu.dq_tx_push_info[i][j].
-								txpush_addr_qos;
-			q_port.tx_ring_addr_push = cpu.dq_tx_push_info[i][j].
-								txpush_addr;
-			q_port.tx_ring_size = cpu.dq_tx_push_info[i][j].tx_ring_size;
+			q_port.tx_pkt_credit =
+				cpu.dq_tx_push_info[i][j].tx_pkt_credit;
+			q_port.tx_ring_addr =
+				cpu.dq_tx_push_info[i][j].txpush_addr_qos;
+			q_port.tx_ring_addr_push =
+				cpu.dq_tx_push_info[i][j].txpush_addr;
+			q_port.tx_ring_size =
+				cpu.dq_tx_push_info[i][j].tx_ring_size;
 
 			/*Sotre Ring Info */
 			dp_deq_port_tbl[inst][q_port.cqe_deq].tx_pkt_credit =
@@ -1183,9 +1185,11 @@ int dp_platform_queue_set_32(int inst, u32 flag)
 			q_port.dp_port = PMAC_CPU_ID;
 			DP_DEBUG(DP_DBG_FLAG_QOS, "CPU[%d] ring addr=%px\n", i,
 				 cpu.dq_tx_push_info[i][j].txpush_addr);
-			DP_DEBUG(DP_DBG_FLAG_QOS, "CPU[%d] ring addr push=%px\n", i,
+			DP_DEBUG(DP_DBG_FLAG_QOS,
+				 "CPU[%d] ring addr push=%px\n", i,
 				 cpu.dq_tx_push_info[i][j].txpush_addr_qos);
-			q_port.ctp = i; /*fake CTP for CPU port to store its qid*/
+			/* fake CTP for CPU port to store its qid */
+			q_port.ctp = i;
 			DP_DEBUG(DP_DBG_FLAG_QOS, "alloc_q_to_port_32...\n");
 			if (alloc_q_to_port_32(&q_port, 0)) { /* q_port.qid */
 				PR_ERR("alloc_q_to_port_32 fail for dp_port=%d\n",
@@ -1202,42 +1206,46 @@ int dp_platform_queue_set_32(int inst, u32 flag)
 			subif_info->cqm_deq_port = q_port.cqe_deq;
 			subif_info->policy_base = cpu.policy_base[i][j];
 			subif_info->policy_num = cpu.policy_num[i][j];
-			if(dp_add_pp_gpid(inst, CPU_PORT, vap,
-					  gpid_base + vap, 0)) {
+			if (dp_add_pp_gpid(inst, CPU_PORT, vap,
+					   gpid_base + vap, 0)) {
 				DP_ERR("dp_alloc_pp_gpid fail for CPU VAP=%d\n",
 				       vap);
 				return -1;
 			}
 			if (!f_cpu_q && (i == cpu.default_cpu)) {
 				f_cpu_q = 1;
-				/*Map all CPU port's lookup to its 1st queue only */
+				/* Map all CPU port's lookup
+				 * to its 1st queue only
+				 */
 				lookup.ep = PMAC_CPU_ID;
 				lookup.egflag = 0;
-				cbm_queue_map_set(dp_port_prop[inst].cbm_inst,
-						  q_port.qid,
-						  &lookup,
-						  CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE |
-						  CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE |
-						  CBM_QUEUE_MAP_F_SUBIF_DONTCARE |
-						  CBM_QUEUE_MAP_F_EN_DONTCARE |
-						  CBM_QUEUE_MAP_F_DE_DONTCARE |
-						  CBM_QUEUE_MAP_F_MPE1_DONTCARE |
-						  CBM_QUEUE_MAP_F_MPE2_DONTCARE |
-						  CBM_QUEUE_MAP_F_TC_DONTCARE |
-						  CBM_QUEUE_MAP_F_COLOR_DONTCARE);
+				cbm_queue_map_set(
+					dp_port_prop[inst].cbm_inst,
+					q_port.qid,
+					&lookup,
+					CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE |
+					CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE |
+					CBM_QUEUE_MAP_F_SUBIF_DONTCARE |
+					CBM_QUEUE_MAP_F_EN_DONTCARE |
+					CBM_QUEUE_MAP_F_DE_DONTCARE |
+					CBM_QUEUE_MAP_F_MPE1_DONTCARE |
+					CBM_QUEUE_MAP_F_MPE2_DONTCARE |
+					CBM_QUEUE_MAP_F_TC_DONTCARE |
+					CBM_QUEUE_MAP_F_COLOR_DONTCARE);
 				lookup.egflag = 1;
-				cbm_queue_map_set(dp_port_prop[inst].cbm_inst,
-						  q_port.qid,
-						  &lookup,
-						  CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE |
-						  CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE |
-						  CBM_QUEUE_MAP_F_SUBIF_DONTCARE |
-						  CBM_QUEUE_MAP_F_EN_DONTCARE |
-						  CBM_QUEUE_MAP_F_DE_DONTCARE |
-						  CBM_QUEUE_MAP_F_MPE1_DONTCARE |
-						  CBM_QUEUE_MAP_F_MPE2_DONTCARE |
-						  CBM_QUEUE_MAP_F_TC_DONTCARE |
-						  CBM_QUEUE_MAP_F_COLOR_DONTCARE);
+				cbm_queue_map_set(
+					dp_port_prop[inst].cbm_inst,
+					q_port.qid,
+					&lookup,
+					CBM_QUEUE_MAP_F_FLOWID_L_DONTCARE |
+					CBM_QUEUE_MAP_F_FLOWID_H_DONTCARE |
+					CBM_QUEUE_MAP_F_SUBIF_DONTCARE |
+					CBM_QUEUE_MAP_F_EN_DONTCARE |
+					CBM_QUEUE_MAP_F_DE_DONTCARE |
+					CBM_QUEUE_MAP_F_MPE1_DONTCARE |
+					CBM_QUEUE_MAP_F_MPE2_DONTCARE |
+					CBM_QUEUE_MAP_F_TC_DONTCARE |
+					CBM_QUEUE_MAP_F_COLOR_DONTCARE);
 				hostif.inst = inst;
 				hostif.gpid = gpid_base + vap;
 				hostif.qid = q_port.qid;
@@ -1249,18 +1257,20 @@ int dp_platform_queue_set_32(int inst, u32 flag)
 				}
 			}
 			/*Note:
-			 *    CPU port no DMA and don't set en_data.dma_chnl_init to 1
+			 *    CPU port no DMA and
+			 *    don't set en_data.dma_chnl_init to 1
 			 */
 			en_data.cbm_inst = dp_port_prop[inst].cbm_inst;
 			en_data.dp_inst = inst;
 			en_data.deq_port = cpu.dq_tx_push_info[i][j].deq_port;
 			if (cbm_dp_enable(NULL, PMAC_CPU_ID, &en_data, 0, 0)) {
-				PR_ERR("Fail to enable CPU[%d]\n", en_data.deq_port);
+				PR_ERR("Fail to enable CPU[%d]\n",
+				       en_data.deq_port);
 				return -1;
 			}
 		}
 	}
-	DP_INFO("CPU VAP %d are enabled now \n", vap_num);
+	DP_INFO("CPU VAP %d are enabled now\n", vap_num);
 
 	return 0;
 }
@@ -1275,6 +1285,7 @@ static int dp_platform_set(int inst, u32 flag)
 	/* For initialize */
 	if ((flag & DP_PLATFORM_INIT) == DP_PLATFORM_INIT) {
 		struct dp_subif_info *sif;
+
 		dp_port_prop[inst].priv_hal =
 			kzalloc(sizeof(*priv), GFP_KERNEL);
 		if (!dp_port_prop[inst].priv_hal) {
@@ -1316,16 +1327,16 @@ static int dp_platform_set(int inst, u32 flag)
 #endif
 		/*disable egress VLAN modification for CPU port*/
 		port_remark.nPortId = 0;
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				 .QoS_PortRemarkingCfgGet,
-				 gsw_handle, &port_remark)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_PortRemarkingCfgGet,
+			gsw_handle, &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;
 		}
 		port_remark.bPCP_EgressRemarkingEnable = 0;
-		if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-				 .QoS_PortRemarkingCfgGet,
-				 gsw_handle, &port_remark)) {
+		if (gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_PortRemarkingCfgGet,
+			gsw_handle, &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;
 		}
@@ -1626,7 +1637,7 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 				data->subif_data->ctp_dev->name : "NULL");
 		sif->mac_learn_dis = data->subif_data->mac_learn_disable;
 		bp = alloc_bridge_port_32(inst, portid,
-				       subif_ix, CPU_FID, CPU_BP);
+					  subif_ix, CPU_FID, CPU_BP);
 		if (bp < 0) {
 			PR_ERR("Fail to alloc bridge port\n");
 			return -1;
@@ -1672,7 +1683,8 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
 	if (unlikely(dp_dbg_flag & DP_DBG_FLAG_QOS)) {
 		DP_DEBUG(DP_DBG_FLAG_QOS, "cqe_deq=%d\n", q_port.cqe_deq);
-		DP_DEBUG(DP_DBG_FLAG_QOS, "priv=%px deq_port_stat=%px qdev=%px\n",
+		DP_DEBUG(DP_DBG_FLAG_QOS,
+			 "priv=%px deq_port_stat=%px qdev=%px\n",
 			 priv,
 			 priv ? priv->deq_port_stat : NULL,
 			 priv ? priv->qdev : NULL);
@@ -1837,14 +1849,11 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 		       portid, subif_ix);
 	}
 	if (subif_ix < port_info->gpid_num)
-		sif->gpid = port_info->gpid_base +
-						       subif_ix;
+		sif->gpid = port_info->gpid_base + subif_ix;
 	else
-		sif->gpid = port_info->gpid_base +
-						       port_info->gpid_num - 1;
+		sif->gpid = port_info->gpid_base + port_info->gpid_num - 1;
 
 	/* Map this port's lookup to its 1st queue only */
-	//lookup.mode = get_dp_port_info(inst, portid)->cqe_lu_mode; /*no need */
 	lookup.ep = portid;
 	lookup.sub_if_id = subif; /* Note:CQM API need full subif(15bits) */
 	/* For 1st subif and mode 0, use CBM_QUEUE_MAP_F_SUBIF_DONTCARE,
@@ -2023,7 +2032,7 @@ static int subif_platform_set_unexplicit(int inst, int port_id,
 	} else {
 		logic_dev->bp =
 			alloc_bridge_port_32(inst, port_id, logic_dev->ctp,
-					  CPU_FID, CPU_BP);
+					     CPU_FID, CPU_BP);
 	}
 
 	return 0;
@@ -2082,12 +2091,13 @@ static void set_pmac_subif(struct pmac_tx_hdr *pmac, int32_t subif)
 	pmac->src_dst_subif_id_lsb = subif & 0xff;
 	pmac->src_dst_subif_id_msb =  (subif >> 8) & 0x0f;
 	pmac->src_dst_subif_id_msb |= (((subif & 0x8000) >> 15) << 4);
-	pmac->src_dst_subif_id_14_12 =(subif & 0x7000) >> 12;
+	pmac->src_dst_subif_id_14_12 = (subif & 0x7000) >> 12;
 }
 
 static void get_pmac_subif(struct pmac_rx_hdr *pmac, int32_t *subif)
 {
-	*subif = pmac->src_dst_subif_id_lsb + ((pmac->src_dst_subif_id_msb & 0x0F) << 8);
+	*subif = pmac->src_dst_subif_id_lsb +
+		((pmac->src_dst_subif_id_msb & 0x0F) << 8);
 	*subif |= ((pmac->src_dst_subif_id_msb & 0x10 >> 4) << 15);
 	*subif |= (pmac->src_dst_subif_id_14_12 >> 12);
 }
@@ -2205,7 +2215,8 @@ int register_dp_cap_gswip32(int flag)
 	cap.info.swdev_alloc_bridge_id = dp_swdev_alloc_bridge_id_32;
 	cap.info.swdev_free_brcfg = dp_swdev_free_brcfg_32;
 	cap.info.swdev_bridge_cfg_set = dp_swdev_bridge_cfg_set_32;
-	cap.info.swdev_bridge_port_cfg_reset = dp_swdev_bridge_port_cfg_reset_32;
+	cap.info.swdev_bridge_port_cfg_reset =
+				dp_swdev_bridge_port_cfg_reset_32;
 	cap.info.swdev_bridge_port_cfg_set = dp_swdev_bridge_port_cfg_set_32;
 	cap.info.dp_mac_set = dp_gswip_mac_entry_add_32;
 	cap.info.dp_mac_reset = dp_gswip_mac_entry_del_32;

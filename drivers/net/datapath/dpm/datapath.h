@@ -31,14 +31,14 @@
 #include <net/pp_qos_drv_slim.h>
 #include <linux/pp_qos_api.h>
 #else
-	#if LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0)
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
 		#include <net/pp_qos_drv.h>
 	#else
 		#include <linux/pp_qos_api.h>
 	#endif
 #endif
 #if IS_ENABLED(CONFIG_INTEL_CBM_SKB) || \
-	LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0)
+	LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
 	#define DP_SKB_HACK
 #endif
 #include <net/datapath_api_qos.h>
@@ -149,7 +149,7 @@
 
 #define PARSER_FLAG_SIZE   40
 #define PARSER_OFFSET_SIZE 8
-#define DP_PMAC_OPS(gsw, cmd) (dp_gsw_cb)(gsw)->gsw_pmac_ops.cmd
+#define DP_PMAC_OPS(gsw, cmd) ((dp_gsw_cb)(gsw)->gsw_pmac_ops.cmd)
 
 #define PKT_PASER_FLAG_OFFSET   0
 #define PKT_PASER_OFFSET_OFFSET (PARSER_FLAG_SIZE)
@@ -438,7 +438,9 @@ struct dp_subif_info {
 #define DP_POLICY_PER_PORT 4
 	u16 policy_base;
 	u8 policy_num;
-	u16 pool_map; /* pool map: bit 0: POOL SIZE 0, bit 1: POOL_SIZE_1 and so on */
+	u16 pool_map;	/* pool map: bit 0: POOL SIZE 0
+			 *           bit 1: POOL_SIZE_1 and so on
+			 */
 	u8  pkt_only_en;
 	u8  seg_en;
 	u16 gpid;
@@ -514,7 +516,9 @@ struct pmac_port_info {
 			*/
 	u16 policy_base; /* policy base */
 	u8 policy_num;   /* policy number */
-	u16 pool_map; /* pool map: bit 0: POOL SIZE 0, bit 1: POOL_SIZE_1 and so on */
+	u16 pool_map;	/* pool map: bit 0: POOL SIZE 0
+			 *           bit 1: POOL_SIZE_1 and so on
+			 */
 	u32 num_dma_chan; /*For G.INT it's 8 or 16, for other 1*/
 	u32 lct_idx; /* LCT subif register flag */
 	u32 dma_ch_base; /*! Base entry index of dp_dma_chan_tbl */
@@ -867,7 +871,7 @@ extern int dp_init_ok;
 void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 		u32 ip_offset, int ip_off_hw_adjust, u32 tcp_h_offset);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,13,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0)
 extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev, u32 handle,
 					__be16 protocol,
 					struct tc_to_netdev *tc);

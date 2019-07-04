@@ -15,7 +15,7 @@ static int get_tsinfo(struct net_device *dev,
 
 	if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
 		PR_ERR("%s dp_get_netif_subifid failed for %s\n",
-				__func__, dev->name);
+		       __func__, dev->name);
 		return -EFAULT;
 	}
 	ops = dp_port_prop[inst].mac_ops[subif.port_id];

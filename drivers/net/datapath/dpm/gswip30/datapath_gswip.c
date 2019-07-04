@@ -64,8 +64,9 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 				igcfg.nTxDmaChanId =
 					pmac_cfg->ig_pmac.tx_dma_chan;
 			}
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Ig_CfgGet, gswr_r, &igcfg);
+			gsw_core_api(
+				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Ig_CfgGet,
+				gswr_r, &igcfg);
 
 			/*update igcfg and write back to gsw */
 			if (pmac_cfg->ig_pmac_flags & IG_PMAC_F_ERR_DISC)
@@ -164,8 +165,9 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 
 			DP_DEBUG(DP_DBG_FLAG_DBG, "\n");
 
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Ig_CfgSet, gswr_r, &igcfg);
+			gsw_core_api(
+				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Ig_CfgSet,
+				gswr_r, &igcfg);
 		}
 
 		kfree(dqport.deq_info);
@@ -285,8 +287,9 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 					 egcfg.bMpe2Flag);
 			}
 #endif
-			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
-				     .Pmac_Eg_CfgSet, gswr_r, &egcfg);
+			gsw_core_api(
+				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Eg_CfgSet,
+				gswr_r, &egcfg);
 
 			;
 		}
@@ -308,8 +311,8 @@ int dp_set_gsw_parser_30(u8 flag, u8 cpu, u8 mpe1,
 	GSW_CPU_PortCfg_t param = {0};
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[1]; /*pae*/
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops
-			 .CPU_PortCfgGet, gsw_handle, &param)) {
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
+			 gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}
@@ -331,8 +334,8 @@ int dp_set_gsw_parser_30(u8 flag, u8 cpu, u8 mpe1,
 	if (flag & F_MPE1_MPE2)
 		param.eMPE1MPE2ParserCfg = mpe3;
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops
-			 .CPU_PortCfgSet, gsw_handle, &param)) {
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgSet,
+			 gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_SET\n");
 		return -1;
 	}
@@ -349,8 +352,8 @@ int dp_get_gsw_parser_30(u8 *cpu, u8 *mpe1, u8 *mpe2,
 	GSW_CPU_PortCfg_t param = {0};
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[1]; /*pae*/
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops
-			 .CPU_PortCfgGet, gsw_handle, &param)) {
+	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
+			 gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}

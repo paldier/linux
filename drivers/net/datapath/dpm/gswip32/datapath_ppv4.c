@@ -14,37 +14,36 @@
 int (*qos_queue_remove_32)(struct pp_qos_dev *qos_dev, unsigned int id);
 int (*qos_queue_allocate_32)(struct pp_qos_dev *qos_dev, unsigned int *id);
 int (*qos_queue_info_get_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			  struct pp_qos_queue_info *info);
+			     struct pp_qos_queue_info *info);
 int (*qos_port_remove_32)(struct pp_qos_dev *qos_dev, unsigned int id);
 int (*qos_sched_allocate_32)(struct pp_qos_dev *qos_dev, unsigned int *id);
 int (*qos_sched_remove_32)(struct pp_qos_dev *qos_dev, unsigned int id);
 int (*qos_port_allocate_32)(struct pp_qos_dev *qos_dev,
-			 unsigned int physical_id,
-			 unsigned int *id);
+			    unsigned int physical_id, unsigned int *id);
 int (*qos_port_set_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-		    const struct pp_qos_port_conf *conf);
+		       const struct pp_qos_port_conf *conf);
 void (*qos_port_conf_set_default_32)(struct pp_qos_port_conf *conf);
 void (*qos_queue_conf_set_default_32)(struct pp_qos_queue_conf *conf);
 int (*qos_queue_set_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-		     const struct pp_qos_queue_conf *conf);
+			const struct pp_qos_queue_conf *conf);
 void (*qos_sched_conf_set_default_32)(struct pp_qos_sched_conf *conf);
 int (*qos_sched_set_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-		     const struct pp_qos_sched_conf *conf);
+			const struct pp_qos_sched_conf *conf);
 int (*qos_queue_conf_get_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			  struct pp_qos_queue_conf *conf);
+			     struct pp_qos_queue_conf *conf);
 int (*qos_queue_flush_32)(struct pp_qos_dev *qos_dev, unsigned int id);
 int (*qos_sched_conf_get_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			  struct pp_qos_sched_conf *conf);
+			     struct pp_qos_sched_conf *conf);
 int (*qos_sched_get_queues_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			    u16 *queue_ids, unsigned int size,
-			    unsigned int *queues_num);
+			       u16 *queue_ids, unsigned int size,
+			       unsigned int *queues_num);
 int (*qos_port_get_queues_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			   u16 *queue_ids, unsigned int size,
-				  unsigned int *queues_num);
+			      u16 *queue_ids, unsigned int size,
+			      unsigned int *queues_num);
 int (*qos_port_conf_get_32)(struct pp_qos_dev *qdev, unsigned int id,
-			 struct pp_qos_port_conf *conf);
+			    struct pp_qos_port_conf *conf);
 int (*qos_port_info_get_32)(struct pp_qos_dev *qdev, unsigned int id,
-			 struct pp_qos_port_info *info);
+			    struct pp_qos_port_info *info);
 struct pp_qos_dev *(*qos_dev_open_32)(unsigned int id);
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
@@ -329,7 +328,6 @@ void init_qos_fn_32(void)
 #endif /*CONFIG_INTEL_DATAPATH_DUMMY_QOS*/
 }
 
-
 int dp_pp_alloc_port_32(struct ppv4_port *info)
 {
 	int qos_p_id = 0;
@@ -338,8 +336,8 @@ int dp_pp_alloc_port_32(struct ppv4_port *info)
 	struct pp_qos_dev *qos_dev = priv->qdev;
 
 	if (qos_port_allocate_32(qos_dev,
-			      info->cqm_deq_port,
-			      &qos_p_id)) {
+				 info->cqm_deq_port,
+				 &qos_p_id)) {
 		PR_ERR("Failed to alloc QoS for deq_port=%d\n",
 		       info->cqm_deq_port);
 		return -1;
@@ -490,19 +488,19 @@ int init_ppv4_qos_32(int inst, int flag)
 	dp_deq_port_tbl[inst][idx].tx_ring_size = flush_port->tx_ring_size;
 	dp_deq_port_tbl[inst][idx].dp_port = 0;/* dummy one */
 	DP_DEBUG(DP_DBG_FLAG_QOS,
-			 "DP Flush port[%d]: ring addr/push=0x%px/0x%px size=%d pkt_credit=%d\n",
-			 priv->cqm_drop_p,
-			 dp_deq_port_tbl[inst][idx].txpush_addr_qos,
-		dp_deq_port_tbl[inst][idx].txpush_addr,
-		dp_deq_port_tbl[inst][idx].tx_ring_size,
-		dp_deq_port_tbl[inst][idx].tx_pkt_credit);
+		 "DP Flush port[%d]: ring addr/push=0x%px/0x%px size=%d pkt_credit=%d\n",
+		 priv->cqm_drop_p,
+		 dp_deq_port_tbl[inst][idx].txpush_addr_qos,
+		 dp_deq_port_tbl[inst][idx].txpush_addr,
+		 dp_deq_port_tbl[inst][idx].tx_ring_size,
+		 dp_deq_port_tbl[inst][idx].tx_pkt_credit);
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_QOS_HAL)
 	DP_DEBUG(DP_DBG_FLAG_DBG, "priv=%px deq_port_stat=%px q_dev=%px\n",
 		 priv, priv ? priv->deq_port_stat : NULL,
 		 priv ? priv->qdev : NULL);
 	if (qos_port_allocate_32(priv->qdev,
-			      priv->cqm_drop_p,
-			      &priv->ppv4_drop_p)) {
+				 priv->cqm_drop_p,
+				 &priv->ppv4_drop_p)) {
 		PR_ERR("Failed to alloc  qos drop port=%d\n",
 		       priv->cqm_drop_p);
 		goto EXIT;

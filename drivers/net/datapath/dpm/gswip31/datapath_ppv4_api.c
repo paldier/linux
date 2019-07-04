@@ -2167,9 +2167,9 @@ int dp_node_link_get_31(struct dp_node_link *info, int flag)
 
 		arbi = get_parent_arbi(info->inst, node_id, flag);
 
-		if (arbi == DP_FAILURE) {
+		if (arbi == DP_FAILURE)
 			return DP_FAILURE;
-		}
+
 		info->arbi = arbi;
 
 		if (info->arbi == ARBITRATION_WRR) {
@@ -2331,7 +2331,8 @@ static int dp_link_set(struct dp_node_link *info, int parent_node, int flag)
 			sched_cfg->sched_child_prop.priority = info->prio_wfq;
 		}
 
-		sched_cfg->sched_parent_prop.arbitration = arbi_dp2pp(info->arbi);
+		sched_cfg->sched_parent_prop.arbitration =
+						arbi_dp2pp(info->arbi);
 		node_id = info->node_id.sch_id;
 
 		DP_DEBUG(DP_DBG_FLAG_QOS,
@@ -2373,7 +2374,6 @@ ERROR_EXIT:
 	kfree(sched_cfg);
 	return res;
 }
-
 
 /* set_parent_arbi API
  * set arbitration of node_id's all children and return DP_SUCCESS
@@ -2577,9 +2577,9 @@ int dp_qos_link_prio_get_31(struct dp_node_prio *info, int flag)
 
 		arbi = get_parent_arbi(info->inst, node_id, flag);
 
-		if (arbi == DP_FAILURE) {
+		if (arbi == DP_FAILURE)
 			return DP_FAILURE;
-		}
+
 		info->arbi = arbi;
 		if (info->arbi == ARBITRATION_WRR) {
 			info->prio_wfq =
@@ -2609,9 +2609,9 @@ int dp_qos_link_prio_get_31(struct dp_node_prio *info, int flag)
 
 		arbi = get_parent_arbi(info->inst, info->id.sch_id, flag);
 
-		if (arbi == DP_FAILURE) {
+		if (arbi == DP_FAILURE)
 			return DP_FAILURE;
-		}
+
 		info->arbi = arbi;
 
 		if (info->arbi == ARBITRATION_WRR) {
@@ -2789,8 +2789,8 @@ int dp_node_unlink_31(struct dp_node_link *info, int flag)
 		if (!(priv->qos_queue_stat[info->node_id.q_id].flag &
 		    PP_NODE_ACTIVE)) {
 			PR_ERR("Wrong Queue[%d] Stat(%d):Expect ACTIVE\n",
-				info->node_id.q_id,
-				priv->qos_queue_stat[info->node_id.q_id].flag);
+			       info->node_id.q_id,
+			       priv->qos_queue_stat[info->node_id.q_id].flag);
 		}
 		cqm_qid2ep_map_set(info->node_id.q_id, priv->ppv4_drop_p);
 		DP_DEBUG(DP_DBG_FLAG_QOS, "%s qid:%d, dq_port:%d\n",
@@ -4055,7 +4055,7 @@ int dp_queue_map_get_31(struct dp_queue_map_get *cfg, int flag)
 		return DP_FAILURE;
 	}
 	if ((priv->qos_queue_stat[cfg->q_id].flag == PP_NODE_FREE) &&
-			(cfg->q_id != priv->ppv4_drop_q)) {
+	    (cfg->q_id != priv->ppv4_drop_q)) {
 		PR_ERR("Invalid Queue flag:%d\n",
 		       priv->qos_queue_stat[cfg->q_id].flag);
 		return DP_FAILURE;
@@ -4127,7 +4127,8 @@ int dp_queue_map_set_31(struct dp_queue_map_set *cfg, int flag)
 		PR_ERR("Invalid Queue ID:%d\n", cfg->q_id);
 		return DP_FAILURE;
 	}
-	if ((priv->qos_queue_stat[cfg->q_id].flag == PP_NODE_FREE)  && (cfg->q_id != priv->ppv4_drop_q)) {
+	if ((priv->qos_queue_stat[cfg->q_id].flag == PP_NODE_FREE) &&
+	    (cfg->q_id != priv->ppv4_drop_q)) {
 		PR_ERR("Invalid Queue flag:%d\n",
 		       priv->qos_queue_stat[cfg->q_id].flag);
 		return DP_FAILURE;

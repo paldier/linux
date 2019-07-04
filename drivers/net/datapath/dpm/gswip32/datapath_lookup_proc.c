@@ -412,7 +412,7 @@ int find_pattern(int port_id, struct seq_file *s, int qid)
 
 		if (lookup_match_qid[i] != priv->ppv4_drop_q) {
 			proc_printf(s, "    ");
-			for (j = LOOKUP_FIELD_BITS- 1; j >= 0; j--) {
+			for (j = LOOKUP_FIELD_BITS - 1; j >= 0; j--) {
 				if ((lookup_match_mask[i] >> j) & 1)
 					proc_printf(s, "%5c", 'x');
 				else
@@ -517,7 +517,8 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 		PR_INFO("Get lookup[%05u 0x%04x] ->     queue[%u]\n",
 			lookup_index, lookup_index, qid);
 		return count;
-	} else if (dp_strncmpi(param_list[0], "find", strlen("find") + 1) == 0) {
+	} else if (dp_strncmpi(param_list[0], "find",
+		   strlen("find") + 1) == 0) {
 		/*read out its all flags for specified qid */
 		int i;
 
@@ -526,7 +527,7 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 			find_pattern(i, NULL, qid);
 		return count;
 	} else if (dp_strncmpi(param_list[0], "find2",
-		   strlen("find2")+ 1) == 0) {
+		   strlen("find2") + 1) == 0) {
 		/*read out its all flags for specified qid */
 		qid = dp_atoi(param_list[1]);
 		lookup_table_via_qid(qid);
@@ -540,7 +541,7 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 			old_q, new_q);
 		return count;
 	}  else if (dp_strncmpi(param_list[0], "test",
-		   strlen("test")+ 1) == 0) {
+		   strlen("test") + 1) == 0) {
 		cbm_queue_map_entry_t lookup = {0};
 		int inst = 0;
 		int qid = dp_atoi(param_list[1]);
@@ -557,12 +558,12 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 		lookup.egflag = 0;
 		lookup.ep = 3;
 		cbm_queue_map_set(dp_port_prop[inst].cbm_inst, qid,
-			  &lookup, flag);
+				  &lookup, flag);
 		DP_INFO("cbm_queue_map_set ep=%d egflag=%d qid=%d flag=0x%x\n",
 			lookup.ep, lookup.egflag, qid, flag);
 		lookup.egflag = 1;
 		cbm_queue_map_set(dp_port_prop[inst].cbm_inst, qid,
-			  &lookup, flag);
+				  &lookup, flag);
 		DP_INFO("cbm_queue_map_set ep=%d egflag=%d qid=%d flag=0x%x\n",
 			lookup.ep, lookup.egflag, qid, flag);
 		return count;
@@ -707,7 +708,7 @@ void lookup_table_recursive(int k, int tmp_index, int set_flag, int qid)
 {
 	int i;
 	struct cbm_lookup lookup = {0};
-	
+
 	if (k < 0) {	/*finish recursive and start real read/set action */
 		if (set_flag) {
 			lookup.index = tmp_index;

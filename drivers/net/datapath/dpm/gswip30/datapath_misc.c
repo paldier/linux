@@ -312,16 +312,13 @@ static void dump_tx_dma_desc(struct dma_tx_desc_0 *desc_0,
 		desc_3->field.byte_offset, desc_3->field.qid,
 		desc_3->field.mpoa_pt, desc_3->field.mpoa_mode,
 		desc_3->field.data_len);
-	lookup =
-	    ((desc_0->field.flow_id >> 6) << 12) | ((desc_1->field.
-						     dec) << 11) | ((desc_1->
-								     field.
-								     enc) <<
-								    10) |
-	    ((desc_1->field.mpe2) << 9) | ((desc_1->field.
-					    mpe1) << 8) | ((desc_1->field.
-							    ep) << 4) |
-	    ((desc_1->field.classid) << 0);
+	lookup = ((desc_0->field.flow_id >> 6) << 12) |
+		((desc_1->field.dec) << 11) |
+		((desc_1->field.enc) << 10) |
+		((desc_1->field.mpe2) << 9) |
+		((desc_1->field.mpe1) << 8) |
+		((desc_1->field.ep) << 4) |
+		((desc_1->field.classid) << 0);
 	PR_INFO("  lookup index=0x%x qid=%d\n", lookup,
 		get_lookup_qid_via_index(lookup));
 }
@@ -458,7 +455,7 @@ static int dp_platform_set(int inst, u32 flag)
 }
 
 static int dev_platform_set(int inst, u8 ep, struct dp_dev_data *data,
-			     u32 flags)
+			    u32 flags)
 {
 	return 0;
 }

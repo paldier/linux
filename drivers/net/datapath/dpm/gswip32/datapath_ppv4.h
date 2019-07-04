@@ -31,7 +31,6 @@ struct pp_qos_dev {
 #define DEF_QRED_SLOP_YELLOW 70 /* yellow slop in queue */
 #define DEF_WRED_RATIO       5
 
-
 #define HAL(inst) ((struct hal_priv *)dp_port_prop[inst].priv_hal)
 #define PARENT(x) (x.queue_child_prop.parent)
 #define PARENT_S(x) (x.sched_child_prop.parent)
@@ -166,39 +165,42 @@ struct dp_lookup_entry {
 
 void init_qos_fn_32(void);
 extern int (*qos_queue_remove_32)(struct pp_qos_dev *qos_dev, unsigned int id);
-extern int (*qos_queue_allocate_32)(struct pp_qos_dev *qos_dev, unsigned int *id);
+extern int (*qos_queue_allocate_32)(struct pp_qos_dev *qos_dev,
+				    unsigned int *id);
 extern int (*qos_queue_info_get_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-				 struct pp_qos_queue_info *info);
+				    struct pp_qos_queue_info *info);
 extern int (*qos_port_remove_32)(struct pp_qos_dev *qos_dev, unsigned int id);
-extern int (*qos_sched_allocate_32)(struct pp_qos_dev *qos_dev, unsigned int *id);
+extern int (*qos_sched_allocate_32)(struct pp_qos_dev *qos_dev,
+				    unsigned int *id);
 extern int (*qos_sched_remove_32)(struct pp_qos_dev *qos_dev, unsigned int id);
 extern int (*qos_port_allocate_32)(struct pp_qos_dev *qos_dev,
-				unsigned int physical_id,
-				unsigned int *id);
+				   unsigned int physical_id, unsigned int *id);
 extern int (*qos_port_set_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			   const struct pp_qos_port_conf *conf);
+			      const struct pp_qos_port_conf *conf);
 extern void (*qos_port_conf_set_default_32)(struct pp_qos_port_conf *conf);
 extern void (*qos_queue_conf_set_default_32)(struct pp_qos_queue_conf *conf);
 extern int (*qos_queue_set_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			    const struct pp_qos_queue_conf *conf);
+			       const struct pp_qos_queue_conf *conf);
 extern void (*qos_sched_conf_set_default_32)(struct pp_qos_sched_conf *conf);
 extern int (*qos_sched_set_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-			    const struct pp_qos_sched_conf *conf);
+			       const struct pp_qos_sched_conf *conf);
 extern int (*qos_queue_conf_get_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-				 struct pp_qos_queue_conf *conf);
+				    struct pp_qos_queue_conf *conf);
 extern int (*qos_queue_flush_32)(struct pp_qos_dev *qos_dev, unsigned int id);
 extern int (*qos_sched_conf_get_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-				 struct pp_qos_sched_conf *conf);
-extern int (*qos_sched_get_queues_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-				   u16 *queue_ids, unsigned int size,
-				   unsigned int *queues_num);
-extern int (*qos_port_get_queues_32)(struct pp_qos_dev *qos_dev, unsigned int id,
-				  u16 *queue_ids, unsigned int size,
-				  unsigned int *queues_num);
+				    struct pp_qos_sched_conf *conf);
+extern int (*qos_sched_get_queues_32)(struct pp_qos_dev *qos_dev,
+				      unsigned int id, u16 *queue_ids,
+				      unsigned int size,
+				      unsigned int *queues_num);
+extern int (*qos_port_get_queues_32)(struct pp_qos_dev *qos_dev,
+				     unsigned int id, u16 *queue_ids,
+				     unsigned int size,
+				     unsigned int *queues_num);
 extern int (*qos_port_conf_get_32)(struct pp_qos_dev *qdev, unsigned int id,
-				struct pp_qos_port_conf *conf);
+				   struct pp_qos_port_conf *conf);
 extern int (*qos_port_info_get_32)(struct pp_qos_dev *qdev, unsigned int id,
-				struct pp_qos_port_info *info);
+				   struct pp_qos_port_info *info);
 extern struct pp_qos_dev *(*qos_dev_open_32)(unsigned int id);
 int dp_map_to_drop_q_32(int inst, int q_id, struct dp_lookup_entry *lookup);
 int dp_pp_alloc_port_32(struct ppv4_port *info);

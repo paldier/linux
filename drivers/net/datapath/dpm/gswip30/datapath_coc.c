@@ -397,16 +397,16 @@ int meter_set_default(void)
 
 	for (i = 0; i < PMAC_MAX_NUM; i++) {/*cp green setting to yellow/red*/
 		wred_p.nPortId = i;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-			     .QoS_WredPortCfgGet, gsw_handle,
-			     &wred_p);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredPortCfgGet,
+			gsw_handle, &wred_p);
 		wred_p.nYellow_Min = wred_p.nGreen_Min;
 		wred_p.nYellow_Max = wred_p.nGreen_Max;
 		wred_p.nRed_Min = wred_p.nGreen_Min;
 		wred_p.nRed_Max = wred_p.nGreen_Max;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-			     .QoS_WredPortCfgSet, gsw_handle,
-			     &wred_p);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredPortCfgSet,
+			gsw_handle, &wred_p);
 	}
 
 	/*#Enable Meter 0, configure the rate
@@ -434,8 +434,9 @@ int meter_set_default(void)
 		meter_port.nMeterId = meter_id;
 		meter_port.eDir = 1;
 		meter_port.nPortIngressId = i;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-			     .QoS_MeterPortAssign, gsw_handle, &meter_port);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_MeterPortAssign,
+			gsw_handle, &meter_port);
 	}
 
 	/*#Enable Port 0 Meter Based Flow control (Bit 2 MFCEN)
@@ -464,17 +465,17 @@ int meter_set_default(void)
 	memset(&wred_q, 0, sizeof(wred_q));
 	for (i = 0; i < 32; i++) {	/*copy green setting to yellow/red */
 		wred_q.nQueueId = i;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-			     .QoS_WredQueueCfgGet, gsw_handle,
-			     &wred_q);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredQueueCfgGet,
+			gsw_handle, &wred_q);
 
 		wred_q.nYellow_Min = wred_q.nGreen_Min;
 		wred_q.nYellow_Max = wred_q.nGreen_Max;
 		wred_q.nRed_Min = wred_q.nGreen_Min;
 		wred_q.nRed_Max = wred_q.nGreen_Max;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops
-			     .QoS_WredQueueCfgSet, gsw_handle,
-			     &wred_q);
+		gsw_core_api(
+			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredQueueCfgSet,
+			gsw_handle, &wred_q);
 	}
 
 	/*Configure Red and Yellow watermark for each queue (Yellow and Red
@@ -514,9 +515,8 @@ static void dp_rmon_polling(unsigned long data)
 	for (i = 0; i < PMAC_MAX_NUM; i++) {
 		memset(&curr, 0, sizeof(curr));
 		curr.nPortId = i;
-		gsw_core_api((dp_gsw_cb)gsw_handle->
-			     gsw_rmon_ops.RMON_Port_Get,
-				gsw_handle, &curr);
+		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
+			     gsw_handle, &curr);
 
 		coc_lock();
 		/*wrapround handling */

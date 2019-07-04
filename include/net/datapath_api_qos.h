@@ -1090,7 +1090,8 @@ enum dp_col_marking {
 	/*!< Mark all to green */
 	DP_NO_MARKING,
 	/*!< Internal marking derives the color of the packet from internal
-	     data flow instead of using VLAN tag or DSCP */
+	 *   data flow instead of using VLAN tag or DSCP
+	 */
 	DP_INTERNAL,
 	/*!< Drop eligible bit color marking */
 	DP_DEI,
@@ -1125,11 +1126,11 @@ enum dp_meter_traffic_type {
 };
 
 /*!
-* @struct dp_meter_cfg
-*
-* @brief This structure defines the exact meter configuration
-*
-*/
+ * @struct dp_meter_cfg
+ *
+ * @brief This structure defines the exact meter configuration
+ *
+ */
 struct dp_meter_cfg {
 	/*!< meter for ingressing traffic */
 #define DP_DIR_INGRESS 0
@@ -1164,11 +1165,11 @@ struct dp_meter_cfg {
 	 /*!< color marking mode */
 	enum dp_col_marking mode;
 	 /*!< traffic flow type for bridge/PCE rule mode only */
-	union dp_pce{
+	union dp_pce {
 		enum dp_meter_traffic_type flow;
 		/*!< PCE table rule index */
 		u32 pce_idx;
-	}dp_pce;
+	} dp_pce;
 };
 
 /*!< API dp_meter_alloc: allocate a meter resource

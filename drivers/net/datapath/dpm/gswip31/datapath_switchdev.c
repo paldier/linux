@@ -48,8 +48,9 @@ int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "Set current BP=%d inst:%d\n",
 		 brportcfg.nBridgePortId, inst);
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops.
-			   BridgePort_ConfigGet, gsw_handle, &brportcfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting bridge port config\r\n");
 		return -1;
@@ -64,8 +65,9 @@ int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 	brportcfg.nBridgePortId = bport;
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops.
-			   BridgePort_ConfigSet, gsw_handle, &brportcfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Fail in allocating/configuring bridge port\n");
 		return -1;
@@ -81,10 +83,9 @@ int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 				 brportcfg.nBridgePortId, inst);
 			brportcfg.eMask =
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					->gsw_brdgport_ops
-					.BridgePort_ConfigGet,
-					gsw_handle, &brportcfg);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR
 					("fail in getting br port config\r\n");
@@ -96,10 +97,9 @@ int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
 			brportcfg.eMask =
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					->gsw_brdgport_ops
-					.BridgePort_ConfigSet,
-					gsw_handle, &brportcfg);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Fail alloc/cfg bridge port\n");
 				return -1;
@@ -125,8 +125,9 @@ int dp_swdev_bridge_port_cfg_reset(struct br_info *br_item,
 		 brportcfg.nBridgePortId, inst);
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	/*Reset other members from current bport map*/
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_ConfigGet, gsw_handle, &brportcfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		/* Note: here may fail if this device is not removed from
 		 * linux bridge via brctl delif but user try to un-regiser
@@ -162,8 +163,9 @@ int dp_swdev_bridge_port_cfg_reset(struct br_info *br_item,
 	brportcfg.nBridgePortId = bport;
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 			  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdgport_ops
-			   .BridgePort_ConfigSet, gsw_handle, &brportcfg);
+	ret = gsw_core_api(
+		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Fail in configuring GSW_BRIDGE_portConfig_t in %s\r\n",
 		       __func__);
@@ -181,10 +183,9 @@ int dp_swdev_bridge_port_cfg_reset(struct br_info *br_item,
 			brportcfg.eMask =
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP |
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					 ->gsw_brdgport_ops
-					 .BridgePort_ConfigGet,
-					 gsw_handle, &brportcfg);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR("failed getting br port cfg\r\n");
 				return -1;
@@ -194,10 +195,9 @@ int dp_swdev_bridge_port_cfg_reset(struct br_info *br_item,
 			brportcfg.eMask =
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			ret = gsw_core_api((dp_gsw_cb)gsw_handle
-					 ->gsw_brdgport_ops
-					 .BridgePort_ConfigSet,
-					 gsw_handle, &brportcfg);
+			ret = gsw_core_api(
+				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Fail alloc/cfg br port\n");
 				return -1;
@@ -229,8 +229,8 @@ int dp_swdev_bridge_cfg_set(int inst, u16 fid)
 	brcfg.eForwardBroadcast = GSW_BRIDGE_FORWARD_FLOOD;
 	brcfg.eForwardUnknownMulticastNonIp = GSW_BRIDGE_FORWARD_FLOOD;
 	brcfg.eForwardUnknownUnicast = GSW_BRIDGE_FORWARD_FLOOD;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdg_ops
-			   .Bridge_ConfigSet, gsw_handle, &brcfg);
+	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdg_ops.Bridge_ConfigSet,
+			   gsw_handle, &brcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to set bridge id(%d)\n", brcfg.nBridgeId);
 		br.nBridgeId = fid;
@@ -309,23 +309,28 @@ int dp_gswip_ext_vlan(int inst, int vap, int ep)
 					 vlan_prop.in_proto, vlan_prop.in_vid);
 				DP_DEBUG(DP_DBG_FLAG_SWDEV,
 					 "VLAN out proto=%x, vid=%d\n",
-					 vlan_prop.out_proto, vlan_prop.out_vid);
-				vlan->vlan2_list[v2].outer_vlan.vid = vlan_prop.out_vid;
+					 vlan_prop.out_proto,
+					 vlan_prop.out_vid);
+				vlan->vlan2_list[v2].outer_vlan.vid =
+							vlan_prop.out_vid;
 				vlan->vlan2_list[v2].outer_vlan.tpid =
-								vlan_prop.out_proto;
+							vlan_prop.out_proto;
 				vlan->vlan2_list[v2].ether_type = 0;
-				vlan->vlan2_list[v2].inner_vlan.vid = vlan_prop.in_vid;
+				vlan->vlan2_list[v2].inner_vlan.vid =
+							vlan_prop.in_vid;
 				vlan->vlan2_list[v2].inner_vlan.tpid =
-								vlan_prop.in_proto;
+							vlan_prop.in_proto;
 				vlan->vlan2_list[v2].bp = tmp->bp;
 				v2 += 1;
 			} else if (vlan_prop.num == 1) {
 				DP_DEBUG(DP_DBG_FLAG_SWDEV,
 					 "outer VLAN proto=%x, vid=%d\n",
-					 vlan_prop.out_proto, vlan_prop.out_vid);
-				vlan->vlan1_list[v1].outer_vlan.vid = vlan_prop.out_vid;
+					 vlan_prop.out_proto,
+					 vlan_prop.out_vid);
+				vlan->vlan1_list[v1].outer_vlan.vid =
+							vlan_prop.out_vid;
 				vlan->vlan1_list[v1].outer_vlan.tpid =
-								vlan_prop.out_proto;
+							vlan_prop.out_proto;
 				vlan->vlan1_list[v1].bp = tmp->bp;
 				v1 += 1;
 			}

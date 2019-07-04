@@ -15,9 +15,9 @@
 #include "datapath_misc.h"
 
 static void rx_dbg(u32 f, struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
-	       struct dma_rx_desc_1 *desc1, struct dma_rx_desc_2 *desc2,
-	       struct dma_rx_desc_3 *desc3, unsigned char *parser,
-	       struct pmac_rx_hdr *pmac, int paser_exist)
+		   struct dma_rx_desc_1 *desc1, struct dma_rx_desc_2 *desc2,
+		   struct dma_rx_desc_3 *desc3, unsigned char *parser,
+		   struct pmac_rx_hdr *pmac, int paser_exist)
 
 {
 	int inst = 0;
@@ -97,7 +97,7 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 	if (skb->data[PMAC_SIZE] & 0x1) {
 		/* multicast/broadcast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT mcast or broadcast\n");
-		if((STATS_GET(sif->rx_flag) <= 0)) {
+		if ((STATS_GET(sif->rx_flag) <= 0)) {
 			UP_STATS(mib->rx_fn_dropped);
 			return 1;
 		}
@@ -117,7 +117,7 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
 		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s)\n",
 			 skb->dev->name ? skb->dev->name : "NULL");
-		if((STATS_GET(sif->rx_flag) <= 0)) {
+		if ((STATS_GET(sif->rx_flag) <= 0)) {
 			UP_STATS(mib->rx_fn_dropped);
 			dev_kfree_skb_any(skb);
 			return 0;
@@ -240,7 +240,8 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 		desc_3->all &= dma_rx_desc_mask3.all;
 		skb->priority = desc_1->field.classid;
 		skb->dev = sif->netif; /* note: for DSL ATM case, its driver
-					* will correct it in later stage */
+					* will correct it in later stage
+					*/
 		if (((dp_port->alloc_flags & DP_F_FAST_DSL) == 0) && /*non-dsl*/
 			sif->flags) { /*not de-registered */
 			dev = sif->netif;

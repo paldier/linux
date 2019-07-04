@@ -589,10 +589,8 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		 *need to do configuration HW
 		 */
 		if (port_info->status) {
-			if (dp_port_prop[inst].info.
-					subif_platform_set(inst, port_id, i,
-							   &platfrm_data,
-							   flags)) {
+			if (dp_port_prop[inst].info.subif_platform_set(
+				inst, port_id, i, &platfrm_data, flags)) {
 				PR_ERR("subif_platform_set fail\n");
 				goto EXIT;
 			} else {
@@ -961,7 +959,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 			port_info->status = PORT_ALLOCATED;
 			DP_CB(inst, dev_platform_set)(inst, port_id, data,
 						      flags);
-#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)			
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
 			if (port_info->umt_param.id)
 				dp_umt_release(&port_info->umt_param, flags);
 #endif
@@ -1014,7 +1012,6 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 				       port_id,
 				       cbm_data,
 				       port_info->alloc_flags)) {
-
 		DP_DEBUG(DP_DBG_FLAG_REG, "CBM port alloc failed\n");
 		kfree(cbm_data);
 		DP_LIB_UNLOCK(&dp_lock);
@@ -1498,14 +1495,14 @@ static int dp_register_dc(int inst, uint32_t port_id,
 	umt_param.daddr = (u32)data->umt->umt_msg_paddr;
 
 	if (dp_umt_request(&umt_param, 0)) {
-		PR_ERR("UMT request Fail!! DMA ID %x CQM_PID %d MSG_MODE %d"
+		PR_ERR("UMT request Fail!! DMA ID %x CQM_PID %d MSG_MODE %d "
 		       "PERIOD %d SW_MSG %d DADDR 0x%08x\n", umt_param.dma_id,
 		       umt_param.cqm_dq_pid, umt_param.msg_mode,
 		       umt_param.period, umt_param.sw_msg, umt_param.daddr);
 		return DP_FAILURE;
 	}
 	if (dp_umt_set(&umt_param, 0)) {
-		PR_ERR("UMT port set fail !! DMA ID %x CQM_PID %d MSG_MODE %d"
+		PR_ERR("UMT port set fail !! DMA ID %x CQM_PID %d MSG_MODE %d "
 		       "PERIOD %d SW_MSG %d DADDR 0x%08x\n", umt_param.dma_id,
 		       umt_param.cqm_dq_pid, umt_param.msg_mode,
 		       umt_param.period, umt_param.sw_msg, umt_param.daddr);
@@ -1517,6 +1514,7 @@ static int dp_register_dc(int inst, uint32_t port_id,
 #endif
 	return DP_SUCCESS;
 }
+
 /* return DP_SUCCESS -- found
  * return DP_FAILURE -- not found
  */

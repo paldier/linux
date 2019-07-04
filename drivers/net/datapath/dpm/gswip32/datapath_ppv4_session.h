@@ -14,9 +14,9 @@
 #define DP_CLASS_SIZE    4
 
 enum GPID_TYPE {
-	DP_RES_GPID = 0,  /* 0 - 15,    Dont Use, as it overlaps with LPID */
-	DP_DYN_GPID, 	  /* 16 - 239,  Dynamically allocated by DP */
-	DP_SPL_GPID 	  /* 240 - 255, 16 Special GPID per DPID */
+	DP_RES_GPID = 0, /*   0 -  15, Dont Use, as it overlaps with LPID */
+	DP_DYN_GPID,     /*  16 - 239, Dynamically allocated by DP */
+	DP_SPL_GPID      /* 240 - 255, 16 Special GPID per DPID */
 };
 
 #define DP_DYN_GPID_START	16
@@ -25,23 +25,23 @@ enum GPID_TYPE {
 #define DP_SPL_GPID_END		255
 
 #define IS_SPECIAL_GPID(gpid)	\
-	((gpid >= DP_SPL_GPID_START) && (gpid <= DP_SPL_GPID_END))?1:0
+	(((gpid >= DP_SPL_GPID_START) && (gpid <= DP_SPL_GPID_END)) ? 1 : 0)
 /* Get Special GPID via DPID with fixed algo:
-   DPID    special_gpid
-   15      255
-   14      254
-   13      253
-   ...
-   10 .... 250
+ * DPID    special_gpid
+ * 15      255
+ * 14      254
+ * 13      253
+ * ...
+ * 10 .... 250
  */
-#define SPL_GPID_VIA_DPID(dpid) (DP_SPL_GPID_END - (DP_DYN_GPID_START - 1 - dpid))
+#define SPL_GPID_VIA_DPID(dpid)	\
+	(DP_SPL_GPID_END - (DP_DYN_GPID_START - 1 - dpid))
 struct dp_dflt_hostif {
 	int inst;
 	int qid;
 	int gpid;
 	int color;
 };
-
 
 struct dp_session {
 	int inst; /* reserved for future */
