@@ -24,6 +24,7 @@
 			   (TYPE == DP_F_DEQ_MPE) ||\
 			   (TYPE == DP_F_DEQ_DL))
 #define FSQM_FRM_NUM (CQM_SRAM_SIZE / CQM_SRAM_FRM_SIZE)
+#define NUM_RX_RING 1
 static const char cqm_name[] = "cqm";
 static void __iomem *bufreq[CQM_PRX300_NUM_POOLS];
 static void __iomem *eqmdesc[4];
@@ -2242,6 +2243,13 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 	dma_addr_t dma_paddr;
 	u32 *vbase;
 
+	/* As of now, we are supporting only one rx ring for prx300 */
+	if (dp_data->num_rx_ring != NUM_RX_RING) {
+		dev_err(cqm_ctrl->dev, "%s: Invalid num_rx_ring %u\r\n",
+			__func__, dp_data->num_rx_ring);
+		return ret;
+	}
+
 	p_info = &dqm_port_info[dp_data->deq_port];
 
 	for (ring_idx = 0; ring_idx < dp_data->num_rx_ring; ring_idx++) {
@@ -3261,28 +3269,20 @@ static int get_bufsize(int size)
 	switch (size) {
 	case 128:
 		return 0;
-		break;
 	case 256:
 		return 1;
-		break;
 	case 512:
 		return 2;
-		break;
 	case 1024:
 		return 3;
-		break;
 	case 2048:
 		return 4;
-		break;
 	case 4096:
 		return 5;
-		break;
 	case 8192:
 		return 6;
-		break;
 	case 10240:
 		return 7;
-		break;
 	};
 	return 0;
 }
