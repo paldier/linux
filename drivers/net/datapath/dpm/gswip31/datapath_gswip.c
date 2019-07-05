@@ -169,7 +169,6 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 	s32 ret;
 	u32 pmacid;
 	struct core_ops *gswr_r;
-	GSW_PMAC_Glbl_Cfg_t pmac_glb;
 
 	if (!pmac_cfg || !port) {
 		PR_ERR("dp_pmac_set:wrong parameter(pmac_cfg/port NULL)\n");

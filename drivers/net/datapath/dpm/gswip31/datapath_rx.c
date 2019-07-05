@@ -88,7 +88,7 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 	struct sk_buff *lct_skb;
 	struct dp_subif_info *sif;
 	struct dev_mib *mib;
-	int vap, ret;
+	int vap;
 
 	vap = dp_port->lct_idx;
 	sif = get_dp_port_subif(dp_port, vap);
@@ -108,16 +108,15 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		}
 		lct_skb->dev = sif->netif;
 		UP_STATS(mib->rx_fn_rxif_pkt);
-		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s) ret(%d)\n",
-			 lct_skb->dev->name ? lct_skb->dev->name : "NULL",
-			 ret);
+		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s)\n",
+			 lct_skb->dev->name ? lct_skb->dev->name : "NULL");
 		rx_fn(lct_skb->dev, NULL, lct_skb, lct_skb->len);
 		return 1;
 	} else if (memcmp(skb->data + PMAC_SIZE, skb->dev->dev_addr, 6) == 0) {
 		/* unicast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
-		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s) ret(%d)\n",
-			 skb->dev->name ? skb->dev->name : "NULL", ret);
+		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s)\n",
+			 skb->dev->name ? skb->dev->name : "NULL");
 		if((STATS_GET(sif->rx_flag) <= 0)) {
 			UP_STATS(mib->rx_fn_dropped);
 			dev_kfree_skb_any(skb);
@@ -146,7 +145,7 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 	int vap; /*vap: 0-15 */
 	int paser_exist;
 	u32 port_id = ep; /*same with ep now, later set to sspid if ep is 0 */
-	struct net_device *dev;
+	struct net_device *dev = NULL;
 	dp_rx_fn_t rx_fn;
 	char decryp = 0;
 	u8 inst = 0;

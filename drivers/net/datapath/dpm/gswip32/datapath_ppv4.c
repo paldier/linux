@@ -649,34 +649,3 @@ int ppv4_port_free_32(int inst, int base, int deq_port_num)
 
 	return DP_SUCCESS;
 }
-
-/**
- * ppv4_alloc_ring_32 - Allocate ring buffer for port
- * @size:	size of the descriptor.
- * @phy:	Phy addr of ring.
- * @virt:	Virt addr of the ring.
- *
- * Allocate the ring buffer of @size(*DP_TXIN_RING_SIZE_DEF) requested by
- * caller.
- **/
-int ppv4_alloc_ring_32(int size, void **phy, void **virt)
-{
-	*virt = kmalloc(DP_TXIN_RING_SIZE_DEF * size, GFP_KERNEL);
-	if (!*virt)
-		return DP_FAILURE;
-
-	*phy = virt_to_phys(*virt);
-
-	return DP_SUCCESS;
-}
-
-/**
- * ppv4_ring_free_32 - Free ring buffer.
- * @ptr:	virt addr of the ring.
- *
- * Free the ring buffer allocated by ppv4_alloc_ring_32().
- **/
-void ppv4_ring_free_32(void *ptr)
-{
-	kfree(ptr);
-}
