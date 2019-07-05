@@ -139,6 +139,8 @@ sso_gpio_dir_out(struct gpio_chip *chip, unsigned int offset, int value)
 	sso_gpio_update_bit(priv->mmap, SSO_CPU, offset, value);
 	if (!priv->freq)
 		sso_gpio_update_bit(priv->mmap, SSO_CON0, SWU, 1);
+
+	return 0;
 }
 
 static int sso_gpio_get(struct gpio_chip *chip, unsigned int offset)
@@ -180,6 +182,7 @@ static int sso_gpio_freq_set(struct sso_gpio_priv *priv)
 
 	if (!priv->freq) {
 		us = US_SW;
+		off = US;
 	} else if (freq_idx < FPID_FREQ_RANK_MAX) {
 		mask = SSO_CON1_FPID_MASK;
 		off = SSO_CON1_FPID;
