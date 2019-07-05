@@ -18806,6 +18806,7 @@ GSW_return_t GSW_QOS_Dscp2PcpTableSet(void *cdev, GSW_DSCP2PCP_map_t *parm)
 
 	switch (parm->nIndex) {
 	case 0:
+	default:
 		reg_index = 0;
 		bitshift = 0;
 		break;
@@ -18884,6 +18885,7 @@ GSW_return_t GSW_QOS_Dscp2PcpTableGet(void *cdev, GSW_DSCP2PCP_map_t *parm)
 
 	switch (parm->nIndex) {
 	case 0:
+	default:
 		reg_index = 0;
 		bitshift = 0;
 		break;
@@ -20781,7 +20783,7 @@ GSW_return_t GSW_VlanFilterGet(void *cdev, GSW_VLANFILTER_config_t *parm)
 	pctbl_prog_t tbl_prog;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	u32 idx = 0;
-	u32 ret;
+	u32 ret = GSW_statusOk;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -20849,7 +20851,6 @@ GSW_return_t GSW_VlanFilterGet(void *cdev, GSW_VLANFILTER_config_t *parm)
 	}
 
 	parm->bDiscardMatched = (tbl_prog.val[0] & 0x1);
-	ret = GSW_statusOk;
 
 UNLOCK_AND_RETURN:
 
