@@ -153,7 +153,7 @@ int dp_deq_port_res_get(struct dp_dequeue_res *res, int flag)
 	if (!res || !dp_port_prop[res->inst].info.dp_qos_platform_set)
 		return DP_FAILURE;
 	if (res->dev) { /*fill dp_port if dev is provided */
-		subif = kzalloc(sizeof(*subif), GFP_KERNEL);
+		subif = kzalloc(sizeof(*subif), GFP_ATOMIC);
 		if (!subif)
 			return DP_FAILURE;
 		dp_get_netif_subifid(res->dev, NULL, NULL, NULL, subif, 0);

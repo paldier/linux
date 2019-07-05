@@ -972,7 +972,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 
 	DP_CB(inst, dev_platform_set)(inst, port_id, data, flags);
 
-	cbm_data = kzalloc(sizeof(*cbm_data), GFP_KERNEL);
+	cbm_data = kzalloc(sizeof(*cbm_data), GFP_ATOMIC);
 	if (!cbm_data) {
 		DP_LIB_UNLOCK(&dp_lock);
 		return res;
@@ -1117,7 +1117,7 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 	if (!(flags & DP_F_SUBIF_LOGICAL))
 		subifid_fn_t = port_info->cb.get_subifid_fn;
 
-	subif_id_sync = kmalloc(sizeof(*subif_id_sync) * 2, GFP_KERNEL);
+	subif_id_sync = kmalloc(sizeof(*subif_id_sync) * 2, GFP_ATOMIC);
 	if (!subif_id_sync) {
 		PR_ERR("Failed to alloc %zu bytes\n",
 		       sizeof(*subif_id_sync) * 2);

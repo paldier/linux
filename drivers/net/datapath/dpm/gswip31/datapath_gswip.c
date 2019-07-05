@@ -1210,7 +1210,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 
 	if (flag & DP_METER_ATTACH_PCE) {
 		/* pattern setting */
-		pce_rule = kzalloc(sizeof(GSW_PCE_rule_t), GFP_KERNEL);
+		pce_rule = kzalloc(sizeof(GSW_PCE_rule_t), GFP_ATOMIC);
 		if (!pce_rule) {
 			PR_ERR("ctp_cfg alloc failed\n");
 			bret = -1;
@@ -1236,7 +1236,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		ctp_cfg = kzalloc(sizeof(GSW_CTP_portConfig_t), GFP_KERNEL);
+		ctp_cfg = kzalloc(sizeof(GSW_CTP_portConfig_t), GFP_ATOMIC);
 		if (!ctp_cfg) {
 			PR_ERR("ctp_cfg alloc failed\n");
 			bret = -1;
@@ -1286,7 +1286,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		bp_cfg = kzalloc(sizeof(GSW_BRIDGE_portConfig_t), GFP_KERNEL);
+		bp_cfg = kzalloc(sizeof(GSW_BRIDGE_portConfig_t), GFP_ATOMIC);
 		if (!bp_cfg) {
 			PR_ERR("bp_cfg alloc failed\n");
 			bret = -1;
@@ -1338,7 +1338,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			goto err;
 		}
 	} else if (flag & DP_METER_ATTACH_BRIDGE) {
-		br_cfg = kzalloc(sizeof(GSW_BRIDGE_config_t), GFP_KERNEL);
+		br_cfg = kzalloc(sizeof(GSW_BRIDGE_config_t), GFP_ATOMIC);
 		if (!br_cfg) {
 			PR_ERR("br_cfg alloc failed\n");
 			bret = -1;
@@ -1407,7 +1407,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		return -1;
 
 	if (meter->dir & DP_METER_ATTACH_PCE) {
-		pce_rule = kzalloc(sizeof(GSW_PCE_rule_t), GFP_KERNEL);
+		pce_rule = kzalloc(sizeof(GSW_PCE_rule_t), GFP_ATOMIC);
 		if (!pce_rule) {
 			PR_ERR("ctp_cfg alloc failed\n");
 			bret = -1;
@@ -1432,7 +1432,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		ctp_cfg = kzalloc(sizeof(GSW_CTP_portConfig_t), GFP_KERNEL);
+		ctp_cfg = kzalloc(sizeof(GSW_CTP_portConfig_t), GFP_ATOMIC);
 		if (!ctp_cfg) {
 			PR_ERR("ctp_cfg alloc failed\n");
 			bret = -1;
@@ -1479,7 +1479,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		bp_cfg = kzalloc(sizeof(GSW_BRIDGE_portConfig_t), GFP_KERNEL);
+		bp_cfg = kzalloc(sizeof(GSW_BRIDGE_portConfig_t), GFP_ATOMIC);
 		if (!bp_cfg) {
 			PR_ERR("bp_cfg alloc failed\n");
 			bret = -1;
@@ -1528,7 +1528,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		}
 	}
 	if (flag & DP_METER_ATTACH_BRIDGE) {
-		br_cfg = kzalloc(sizeof(GSW_BRIDGE_config_t), GFP_KERNEL);
+		br_cfg = kzalloc(sizeof(GSW_BRIDGE_config_t), GFP_ATOMIC);
 		if (!br_cfg) {
 			PR_ERR("br_cfg alloc failed\n");
 			bret = -1;

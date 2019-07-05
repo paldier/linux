@@ -1273,7 +1273,7 @@ int32_t dp_update_subif(struct net_device *netif, void *data,
 	idx = dp_subif_hash(netif);
 	dp_subif = dp_subif_lookup_safe(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) { /*alloc new */
-		dp_subif = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
+		dp_subif = kzalloc(sizeof(*dp_subif), GFP_ATOMIC);
 		if (!dp_subif)
 			return -1;
 		memcpy(&dp_subif->subif, subif, sizeof(dp_subif_t));
@@ -1286,7 +1286,7 @@ int32_t dp_update_subif(struct net_device *netif, void *data,
 		hlist_add_head_rcu(&dp_subif->hlist, &dp_subif_list[idx]);
 		return 0;
 	} else {
-		dp_subif_new = kzalloc(sizeof(*dp_subif), GFP_KERNEL);
+		dp_subif_new = kzalloc(sizeof(*dp_subif), GFP_ATOMIC);
 		if (!dp_subif_new)
 			return -1;
 		memcpy(&dp_subif_new->subif, subif, sizeof(dp_subif_t));

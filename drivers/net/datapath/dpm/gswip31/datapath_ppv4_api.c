@@ -1821,7 +1821,7 @@ int dp_node_free_31(struct dp_node_alloc *node, int flag)
 		PR_ERR("priv is NULL cannot proceed!!\n");
 		return DP_FAILURE;
 	}
-	t = kzalloc(sizeof(*t), GFP_KERNEL);
+	t = kzalloc(sizeof(*t), GFP_ATOMIC);
 	if (!t) {
 		PR_ERR("fail to alloc %d bytes\n", sizeof(*t));
 		return DP_FAILURE;
@@ -2866,7 +2866,7 @@ int dp_node_link_add_31(struct dp_node_link *info, int flag)
 		       info->dp_port, DP_PORT(info).dp_port);
 		info->dp_port = DP_PORT(info).dp_port;
 	}
-	t = kzalloc(sizeof(*t), GFP_KERNEL);
+	t = kzalloc(sizeof(*t), GFP_ATOMIC);
 	if (!t) {
 		PR_ERR("fail to alloc %d bytes\n", sizeof(*t));
 		return DP_FAILURE;
@@ -3147,7 +3147,7 @@ int dp_queue_conf_set_31(struct dp_queue_conf *cfg, int flag)
 		return DP_FAILURE;
 	}
 
-	conf = kzalloc(sizeof(*conf), GFP_KERNEL);
+	conf = kzalloc(sizeof(*conf), GFP_ATOMIC);
 	if (!conf) {
 		PR_ERR("fail to alloc %d bytes\n", sizeof(*conf));
 		return DP_FAILURE;
@@ -3221,7 +3221,7 @@ int dp_queue_conf_get_31(struct dp_queue_conf *cfg, int flag)
 		return DP_FAILURE;
 	}
 
-	conf = kzalloc(sizeof(*conf), GFP_KERNEL);
+	conf = kzalloc(sizeof(*conf), GFP_ATOMIC);
 	if (!conf) {
 		PR_ERR("fail to alloc %d bytes\n", sizeof(*conf));
 		return DP_FAILURE;
