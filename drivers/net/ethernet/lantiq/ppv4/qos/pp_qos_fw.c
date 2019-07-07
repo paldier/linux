@@ -438,6 +438,7 @@ struct cmd_add_port {
 struct cmd_set_port {
 	struct cmd base;
 	unsigned int phy;
+	struct parent_node_properties parent_node_prop;
 	struct port_properties prop;
 	uint32_t modified;
 };
@@ -461,6 +462,7 @@ struct cmd_set_sched {
 	unsigned int phy;
 	unsigned int parent;
 	struct sched_properties prop;
+	struct parent_node_properties parent_node_prop;
 	uint32_t modified;
 };
 
@@ -511,9 +513,7 @@ struct cmd_parent_change {
 	struct cmd base;
 	unsigned int phy;
 	int type;
-	int arbitration;
-	int first;
-	unsigned int num;
+	struct parent_node_properties parent_node_prop;
 };
 
 struct cmd_get_queue_stats {
@@ -861,6 +861,7 @@ static void _create_set_port_cmd(
 		struct cmd_queue *q,
 		uint32_t *pos)
 {
+	const struct qos_node *node;
 	struct cmd_set_port cmd;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
@@ -871,6 +872,8 @@ static void _create_set_port_cmd(
 	} else {
 		memset(&cmd, 0, sizeof(cmd));
 		cmd_init(qdev, &(cmd.base), CMD_TYPE_SET_PORT, sizeof(cmd), 0);
+		node = get_const_node_from_phy(qdev->nodes, phy);
+		cmd.parent_node_prop = node->parent_prop;
 		cmd.phy = phy;
 		set_cmd_port_properties(&cmd.prop, conf);
 		cmd.modified = modified;
@@ -941,6 +944,7 @@ static void _create_set_sched_cmd(
 		unsigned int parent,
 		uint32_t modified)
 {
+	const struct qos_node *node;
 	struct cmd_set_sched cmd;
 
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
@@ -951,6 +955,8 @@ static void _create_set_sched_cmd(
 	} else {
 		memset(&cmd, 0, sizeof(cmd));
 		cmd_init(qdev, &(cmd.base), CMD_TYPE_SET_SCHED, sizeof(cmd), 0);
+		node = get_const_node_from_phy(qdev->nodes, phy);
+		cmd.parent_node_prop = node->parent_prop;
 		cmd.phy = phy;
 		set_cmd_sched_properties(&cmd.prop, conf);
 		cmd.modified = modified;
@@ -1128,15 +1134,13 @@ void create_parent_change_cmd(struct pp_qos_dev *qdev, unsigned int phy)
 	cmd_init(qdev, &(cmd.base), CMD_TYPE_PARENT_CHANGE, sizeof(cmd), 0);
 	cmd.phy = phy;
 	cmd.type = node->type;
-	cmd.arbitration = node->parent_prop.arbitration;
-	cmd.first = node->parent_prop.first_child_phy;
-	cmd.num = node->parent_prop.num_of_children;
+	cmd.parent_node_prop = node->parent_prop;
 	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_PARENT_CHANGE %u first:%u num:%d\n",
-			qdev->drvcmds.cmd_id,
-			qdev->drvcmds.cmd_fw_id,
-			phy,
-			cmd.first,
-			cmd.num);
+		      qdev->drvcmds.cmd_id,
+		      qdev->drvcmds.cmd_fw_id,
+		      phy,
+		      cmd.parent_node_prop.first_child_phy,
+		      cmd.parent_node_prop.num_of_children);
 	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
 	qdev->drvcmds.cmd_fw_id++;
 }
@@ -2030,14 +2034,38 @@ static void set_common(
 	common->valid = valid;
 }
 
+static void
+update_arbitration(uint32_t *valid,
+		   const struct parent_node_properties *parent_node_prop,
+		   struct fw_set_parent *parent)
+{
+	QOS_BITS_SET(*valid,
+		     TSCD_NODE_CONF_FIRST_CHILD |
+		     TSCD_NODE_CONF_LAST_CHILD  |
+		     TSCD_NODE_CONF_FIRST_WRR_NODE);
+
+	if (parent_node_prop->arbitration == PP_QOS_ARBITRATION_WSP)
+		parent->first_wrr = 0;
+	else
+		parent->first_wrr = parent_node_prop->first_child_phy;
+
+	parent->first = parent_node_prop->first_child_phy;
+	parent->last = parent_node_prop->first_child_phy +
+		parent_node_prop->num_of_children - 1;
+}
+
 static void set_parent(
 		const struct pp_qos_parent_node_properties *conf,
+		const struct parent_node_properties *parent_node_prop,
 		struct fw_set_parent *parent,
 		uint32_t modified)
 {
 	uint32_t valid;
 
 	valid = 0;
+	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_ARBITRATION))
+		update_arbitration(&valid, parent_node_prop, parent);
+
 	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_BEST_EFFORT)) {
 		QOS_BITS_SET(valid, TSCD_NODE_CONF_BEST_EFFORT_ENABLE);
 		parent->best_effort_enable = conf->best_effort_enable;
@@ -2054,13 +2082,13 @@ static void set_child(
 
 	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_BW_WEIGHT)) {
 		QOS_BITS_SET(valid, TSCD_NODE_CONF_NODE_WEIGHT);
-		child->bw_share = conf->bandwidth_share;
+		child->bw_share = conf->wrr_weight;
 	}
 
 	/* Should be changed. Currently both are using bw_share variable */
 	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_SHARED_GROUP_ID)) {
 		QOS_BITS_SET(valid, TSCD_NODE_CONF_SHARED_BWL_GROUP);
-		child->bw_share = conf->bandwidth_share;
+		child->bw_share = conf->wrr_weight;
 	}
 
 	child->valid = valid;
@@ -2196,7 +2224,8 @@ static uint32_t *set_port_cmd_wrapper(
 
 	modified = cmd->modified;
 	set_common(&cmd->prop.common, &fwdata->common, modified);
-	set_parent(&cmd->prop.parent, &fwdata->parent, modified);
+	set_parent(&cmd->prop.parent, &cmd->parent_node_prop,
+		   &fwdata->parent, modified);
 	fwdata->type_data.port.valid = 0;
 
 	if (QOS_BITS_IS_SET(modified, QOS_MODIFIED_DISABLE)) {
@@ -2243,7 +2272,8 @@ static uint32_t *set_sched_cmd_wrapper(
 
 	modified = cmd->modified;
 	set_common(&cmd->prop.common, &fwdata->common, modified);
-	set_parent(&cmd->prop.parent, &fwdata->parent, modified);
+	set_parent(&cmd->prop.parent, &cmd->parent_node_prop,
+		   &fwdata->parent, modified);
 	set_child(&cmd->prop.child, &fwdata->child, modified);
 	fwdata->type_data.sched.valid = 0;
 
@@ -2402,17 +2432,9 @@ static uint32_t *parent_change_cmd_wrapper(
 		const struct cmd_parent_change *cmd,
 		uint32_t flags)
 {
-	fwdata->parent.valid =
-		TSCD_NODE_CONF_FIRST_CHILD |
-		TSCD_NODE_CONF_LAST_CHILD |
-		TSCD_NODE_CONF_FIRST_WRR_NODE;
-	fwdata->parent.first = cmd->first;
-	fwdata->parent.last = cmd->first + cmd->num - 1;
-	if (cmd->arbitration == PP_QOS_ARBITRATION_WSP)
-		fwdata->parent.first_wrr = 0;
-	else
-		fwdata->parent.first_wrr = cmd->first;
-
+	update_arbitration(&fwdata->parent.valid,
+			   &cmd->parent_node_prop,
+			   &fwdata->parent);
 	fwdata->common.valid = 0;
 	if (cmd->type == TYPE_PORT) {
 		fwdata->type_data.port.valid  = 0;

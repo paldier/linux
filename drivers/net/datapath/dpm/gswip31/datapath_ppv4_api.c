@@ -2174,7 +2174,7 @@ int dp_node_link_get_31(struct dp_node_link *info, int flag)
 
 		if (info->arbi == ARBITRATION_WRR) {
 			info->prio_wfq =
-				queue_cfg.queue_child_prop.bandwidth_share;
+				queue_cfg.queue_child_prop.wrr_weight;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			info->prio_wfq =
 				queue_cfg.queue_child_prop.priority;
@@ -2206,7 +2206,7 @@ int dp_node_link_get_31(struct dp_node_link *info, int flag)
 
 		if (info->arbi == ARBITRATION_WRR) {
 			info->prio_wfq =
-				sched_cfg.sched_child_prop.bandwidth_share;
+				sched_cfg.sched_child_prop.wrr_weight;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			info->prio_wfq =
 				sched_cfg.sched_child_prop.priority;
@@ -2302,11 +2302,11 @@ static int dp_link_set(struct dp_node_link *info, int parent_node, int flag)
 		 */
 		node_id = priv->qos_queue_stat[info->node_id.q_id].node_id;
 		if (info->arbi == ARBITRATION_WRR) {
-			queue_cfg->queue_child_prop.bandwidth_share = 
+			queue_cfg->queue_child_prop.wrr_weight =
 				info->prio_wfq;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			queue_cfg->queue_child_prop.priority = info->prio_wfq;
-		}				
+		}
 		DP_DEBUG(DP_DBG_FLAG_QOS,
 			 "Try to link Q[%d/%d] to parent[%d/%d] port[%d]\n",
 			 info->node_id.q_id,
@@ -2325,12 +2325,12 @@ static int dp_link_set(struct dp_node_link *info, int parent_node, int flag)
 		sched_cfg->sched_child_prop.parent = parent_node;
 
 		if (info->arbi == ARBITRATION_WRR) {
-			sched_cfg->sched_child_prop.bandwidth_share = 
+			sched_cfg->sched_child_prop.wrr_weight =
 				info->prio_wfq;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			sched_cfg->sched_child_prop.priority = info->prio_wfq;
 		}
-		
+
 		sched_cfg->sched_parent_prop.arbitration = arbi_dp2pp(info->arbi);
 		node_id = info->node_id.sch_id;
 
@@ -2468,11 +2468,11 @@ int dp_qos_link_prio_set_31(struct dp_node_prio *info, int flag)
 			return DP_FAILURE;
 		}
 		if (info->arbi == ARBITRATION_WRR) {
-			queue_cfg.queue_child_prop.bandwidth_share = 
+			queue_cfg.queue_child_prop.wrr_weight =
 				info->prio_wfq;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			queue_cfg.queue_child_prop.priority = info->prio_wfq;
-		}		
+		}
 
 		DP_DEBUG(DP_DBG_FLAG_QOS_DETAIL,
 			 "Prio:%d paased to low level for queue[%d]\n",
@@ -2509,11 +2509,11 @@ int dp_qos_link_prio_set_31(struct dp_node_prio *info, int flag)
 			return DP_FAILURE;
 		}
 		if (info->arbi == ARBITRATION_WRR) {
-			sched_cfg.sched_child_prop.bandwidth_share = 
+			sched_cfg.sched_child_prop.wrr_weight =
 				info->prio_wfq;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			sched_cfg.sched_child_prop.priority = info->prio_wfq;
-		}				
+		}
 		DP_DEBUG(DP_DBG_FLAG_QOS_DETAIL,
 			 "Prio:%d paased to low level for Sched[%d]\n",
 			 info->prio_wfq, info->id.sch_id);
@@ -2583,7 +2583,7 @@ int dp_qos_link_prio_get_31(struct dp_node_prio *info, int flag)
 		info->arbi = arbi;
 		if (info->arbi == ARBITRATION_WRR) {
 			info->prio_wfq =
-				queue_cfg.queue_child_prop.bandwidth_share;
+				queue_cfg.queue_child_prop.wrr_weight;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			info->prio_wfq =
 				queue_cfg.queue_child_prop.priority;
@@ -2616,7 +2616,7 @@ int dp_qos_link_prio_get_31(struct dp_node_prio *info, int flag)
 
 		if (info->arbi == ARBITRATION_WRR) {
 			info->prio_wfq =
-				sched_cfg.sched_child_prop.bandwidth_share;
+				sched_cfg.sched_child_prop.wrr_weight;
 		} else if (info->arbi == ARBITRATION_WSP) {
 			info->prio_wfq =
 				sched_cfg.sched_child_prop.priority;
@@ -3559,7 +3559,7 @@ int dp_link_get_31(struct dp_qos_link *cfg, int flag)
 
 	if (cfg->q_arbi == ARBITRATION_WRR) {
 		cfg->q_prio_wfq =
-			queue_cfg.queue_child_prop.bandwidth_share;
+			queue_cfg.queue_child_prop.wrr_weight;
 	} else if (cfg->q_arbi == ARBITRATION_WSP) {
 		cfg->q_prio_wfq =
 			queue_cfg.queue_child_prop.priority;
@@ -3588,7 +3588,7 @@ int dp_link_get_31(struct dp_qos_link *cfg, int flag)
 
 			if (cfg->sch[i].arbi == ARBITRATION_WRR) {
 				cfg->sch[i].prio_wfq =
-					sched_cfg.sched_child_prop.bandwidth_share;
+					sched_cfg.sched_child_prop.wrr_weight;
 			} else if (cfg->sch[i].arbi == ARBITRATION_WSP) {
 				cfg->sch[i].prio_wfq =
 					sched_cfg.sched_child_prop.priority;
@@ -4303,7 +4303,7 @@ int ppv4_queue_port_example(int inst, int dp_port, int t_cont, int q_node)
 	queue_cfg.queue_child_prop.parent = qos_port_node;
 #ifdef EXT_BW
 	queue_cfg.max_burst  = 64;
-	queue_cfg.child.bandwidth_share = 50;
+	queue_cfg.child.wrr_weight = 50;
 	queue_cfg.queue_wred_min_guaranteed = 1;
 	queue_cfg.queue_wred_max_allowed = 10;
 #endif
@@ -4375,7 +4375,7 @@ int ppv4_queue_scheduler(int inst, int dp_port, int t_cont, int q_node,
 	queue_cfg.queue_child_prop.parent = sch_node1;
 #ifdef EXT_BW
 	queue_cfg.max_burst  = 64;
-	queue_cfg.child.bandwidth_share = 50;
+	queue_cfg.child.wrr_weight = 50;
 	queue_cfg.queue_wred_min_guaranteed = 1;
 	queue_cfg.queue_wred_max_allowed = 10;
 #endif

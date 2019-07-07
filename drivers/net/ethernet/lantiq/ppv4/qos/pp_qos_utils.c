@@ -1370,7 +1370,7 @@ static void send_bw_weight_command(struct pp_qos_dev *qdev,
 			&s_conf.sched_parent_prop,
 			&s_conf.sched_child_prop);
 
-		s_conf.sched_child_prop.bandwidth_share = bw_weight;
+		s_conf.sched_child_prop.wrr_weight = bw_weight;
 
 		create_set_sched_cmd(qdev,
 			&s_conf,
@@ -1382,7 +1382,7 @@ static void send_bw_weight_command(struct pp_qos_dev *qdev,
 				NULL,
 				&q_conf.queue_child_prop);
 
-		q_conf.queue_child_prop.bandwidth_share = bw_weight;
+		q_conf.queue_child_prop.wrr_weight = bw_weight;
 
 		create_set_queue_cmd(qdev,
 			&q_conf,
@@ -2120,6 +2120,14 @@ static int parent_cfg_valid(
 	unsigned int num;
 
 	QOS_ASSERT(node_parent(node), "node is not a parent\n");
+
+	if (node->parent_prop.arbitration != PP_QOS_ARBITRATION_WSP &&
+	    node->parent_prop.arbitration != PP_QOS_ARBITRATION_WRR &&
+	    node->parent_prop.arbitration != PP_QOS_ARBITRATION_WFQ) {
+		QOS_LOG_ERR("Unsupported arbitration\n");
+		return 0;
+	}
+
 	if (node->parent_prop.num_of_children > 8) {
 		QOS_LOG_ERR("node has %u children but max allowed is 8\n",
 				node->parent_prop.num_of_children);
@@ -2201,7 +2209,7 @@ int get_node_prop(const struct pp_qos_dev *qdev,
 		child->parent = get_id_from_phy(qdev->mapping,
 				get_virtual_parent_phy(qdev->nodes, node));
 		child->priority = node->child_prop.priority;
-		child->bandwidth_share = node->child_prop.virt_bw_share;
+		child->wrr_weight = node->child_prop.virt_bw_share;
 	}
 
 	return 0;
@@ -2271,8 +2279,8 @@ static int set_child(struct pp_qos_dev *qdev,
 		QOS_BITS_SET(*modified, QOS_MODIFIED_PARENT);
 	}
 
-	if (node->child_prop.virt_bw_share != child->bandwidth_share) {
-		node->child_prop.virt_bw_share = child->bandwidth_share;
+	if (node->child_prop.virt_bw_share != child->wrr_weight) {
+		node->child_prop.virt_bw_share = child->wrr_weight;
 		QOS_BITS_SET(*modified, QOS_MODIFIED_BW_WEIGHT);
 	}
 

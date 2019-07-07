@@ -1265,7 +1265,7 @@ static int _pp_qos_queue_set(
 			  conf->common_prop.shared_bandwidth_group,
 			  conf->queue_child_prop.parent,
 			  conf->queue_child_prop.priority,
-			  conf->queue_child_prop.bandwidth_share,
+			  conf->queue_child_prop.wrr_weight,
 			  conf->max_burst,
 			  conf->blocked,
 			  conf->wred_enable,
@@ -1948,7 +1948,7 @@ int pp_qos_sched_set(
 			  conf->sched_parent_prop.best_effort_enable,
 			  conf->sched_child_prop.parent,
 			  conf->sched_child_prop.priority,
-			  conf->sched_child_prop.bandwidth_share);
+			  conf->sched_child_prop.wrr_weight);
 
 	QOS_LOCK(qdev);
 	PP_QOS_ENTER_FUNC();

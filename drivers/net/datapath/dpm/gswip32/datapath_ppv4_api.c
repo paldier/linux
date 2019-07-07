@@ -4214,7 +4214,7 @@ int ppv4_queue_port_example(int inst, int dp_port, int t_cont, int q_node)
 	queue_cfg.queue_child_prop.parent = qos_port_node;
 #ifdef EXT_BW
 	queue_cfg.max_burst  = 64;
-	queue_cfg.child.bandwidth_share = 50;
+	queue_cfg.child.wrr_weight = 50;
 	queue_cfg.wred_min_guaranteed = 1;
 	queue_cfg.wred_max_allowed = 10;
 #endif
@@ -4286,7 +4286,7 @@ int ppv4_queue_scheduler(int inst, int dp_port, int t_cont, int q_node,
 	queue_cfg.queue_child_prop.parent = sch_node1;
 #ifdef EXT_BW
 	queue_cfg.max_burst  = 64;
-	queue_cfg.child.bandwidth_share = 50;
+	queue_cfg.child.wrr_weight = 50;
 	queue_cfg.wred_min_guaranteed = 1;
 	queue_cfg.wred_max_allowed = 10;
 #endif
@@ -4577,7 +4577,7 @@ int dp_qos_global_info_get_32(struct dp_qos_cfg_info *info, int flag)
 {
 	struct hal_priv *priv;
 	unsigned int quanta = 0;
-	
+
 	if (!info) {
 		PR_ERR("info cannot be NULL\n");
 		return DP_FAILURE;

@@ -651,8 +651,8 @@ static u16 create_sched_props(struct dbg_prop *props, u16 size,
 		&pconf->sched_child_prop.parent);
 	dbg_add_prop(props, &num, size, "priority",
 		"priority (0-7) in WSP", &pconf->sched_child_prop.priority);
-	dbg_add_prop(props, &num, size, "bw_share", "percentage from parent",
-		&pconf->sched_child_prop.bandwidth_share);
+	dbg_add_prop(props, &num, size, "wrr_weight", "percentage from parent",
+		     &pconf->sched_child_prop.wrr_weight);
 
 	return num;
 }
@@ -761,8 +761,8 @@ static u16 create_queue_props(struct dbg_prop *props, u16 size,
 		&pconf->queue_child_prop.parent);
 	dbg_add_prop(props, &num, size, "priority",
 		"priority (0-7) in WSP", &pconf->queue_child_prop.priority);
-	dbg_add_prop(props, &num, size, "bw_share", "percentage from parent",
-		&pconf->queue_child_prop.bandwidth_share);
+	dbg_add_prop(props, &num, size, "wrr_weight", "percentage from parent",
+		     &pconf->queue_child_prop.wrr_weight);
 	dbg_add_prop(props, &num, size, "max_burst", "in kbps (4KB steps)",
 		&pconf->max_burst);
 	dbg_add_prop(props, &num, size, "blocked", "drop enqueued packets",
