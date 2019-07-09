@@ -1204,7 +1204,9 @@ static int gptc_probe(struct platform_device *pdev)
 
 	gptc_of_init(np);
 
+#ifdef CONFIG_GPTC_SCHED_CLOCK
 	gptc_clocksource_init();
+#endif /* CONFIG_GPTC_SCHED_CLOCK */
 
 	/* Register immediately the clock event on BSP */
 	gptc_clkevent_init();
