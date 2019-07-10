@@ -567,7 +567,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			}
 		}
 		start = 0;
-		end = port_info->ctp_max;
+		end = port_info->subif_max;
 	} else {
 		/*caller provided subif. Try to get its vap value as start */
 		start = GET_VAP(subif_id->subif, port_info->vap_offset,
@@ -621,7 +621,6 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		strncpy(sif->device_name,
 			subif_name,
 		       sizeof(sif->device_name) - 1);
-		sif->flags = PORT_SUBIF_REGISTERED;
 		sif->subif_flag = flags;
 		STATS_SET(sif->rx_flag, 1);
 		port_info->status = PORT_SUBIF_REGISTERED;
@@ -728,7 +727,7 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		return res;
 	}
 
-	for (i = 0; i < port_info->ctp_max; i++) {
+	for (i = 0; i < port_info->subif_max; i++) {
 		sif = get_dp_port_subif(port_info, i);
 		if (sif->subif == subif_id->subif) {
 			find = 1;
@@ -1304,7 +1303,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 		}
 
 		/*search sub-interfaces/VAP */
-		for (i = 0; i < port->ctp_max; i++) {
+		for (i = 0; i < port->subif_max; i++) {
 			struct dp_subif_info *sif = get_dp_port_subif(port, i);
 
 			if (!sif->flags)
@@ -1531,7 +1530,7 @@ int dp_get_port_subitf_via_dev_private(struct net_device *dev,
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
 		struct pmac_port_info *port = get_dp_port_info(inst, i);
 
-		for (j = 0; j < port->ctp_max; j++) {
+		for (j = 0; j < port->subif_max; j++) {
 			struct dp_subif_info *sif = get_dp_port_subif(port, j);
 
 			if (!sif->flags)
@@ -1570,7 +1569,7 @@ int dp_get_port_subitf_via_ifname_private(char *ifname, dp_subif_t *subif)
 	for (i = 0; i < dp_port_prop[inst].info.cap.max_num_dp_ports; i++) {
 		struct pmac_port_info *port = get_dp_port_info(inst, i);
 
-		for (j = 0; j < port->ctp_max; j++) {
+		for (j = 0; j < port->subif_max; j++) {
 			struct dp_subif_info *sif = get_dp_port_subif(port, j);
 
 			if (strcmp(sif->device_name, ifname) == 0) {
@@ -1672,7 +1671,7 @@ void dp_clear_mib(dp_subif_t *subif, uint32_t flag)
 
 	if (subif->subif == -1) {
 		start_vap = 0;
-		end_vap = port_info->ctp_max;
+		end_vap = port_info->num_subif;
 	} else {
 		start_vap = GET_VAP(subif->subif, port_info->vap_offset,
 				    port_info->vap_mask);
@@ -1733,7 +1732,7 @@ int dp_get_drv_mib(dp_subif_t *subif, dp_drv_mib_t *mib, uint32_t flag)
 
 	if (!(flag & DP_F_STATS_SUBIF)) {
 		/*get all VAP's  mib counters if it is -1 */
-		for (i = 0; i < port_info->ctp_max; i++) {
+		for (i = 0; i < port_info->num_subif; i++) {
 			sif = get_dp_port_subif(port_info, i);
 			if (!sif->flags)
 				continue;

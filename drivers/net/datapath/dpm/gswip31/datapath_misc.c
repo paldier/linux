@@ -1533,6 +1533,21 @@ static char *q_flag_str(int q_flag)
 	return "sharing_queue";
 }
 
+static int dp_get_subif_share_bp(int inst, int portid)
+{
+	struct pmac_port_info *port_info;
+	struct dp_subif_info *sif;
+	int i;
+
+	port_info = get_dp_port_info(inst, portid);
+	for (i = 0; i < port_info->subif_max; i++) {
+		sif = get_dp_port_subif(port_info, i);
+		if (sif->flags == 1)
+			return sif->bp;
+	}
+	return -1;
+}
+
 static int subif_hw_set(int inst, int portid, int subif_ix,
 			struct subif_platform_data *data, u32 flags)
 {
@@ -1579,15 +1594,23 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 			 data->subif_data->ctp_dev ?
 				data->subif_data->ctp_dev->name : "NULL");
 		sif->mac_learn_dis = data->subif_data->mac_learn_disable;
-		bp = alloc_bridge_port(inst, portid,
-				       subif_ix, CPU_FID, CPU_BP);
+		if ((port_info->ctp_max == 1) && (port_info->num_subif > 0))
+			bp = dp_get_subif_share_bp(inst, portid);
+		else
+			bp = alloc_bridge_port(inst, portid,
+					       subif_ix, CPU_FID, CPU_BP);
 		if (bp < 0) {
 			PR_ERR("Fail to alloc bridge port\n");
 			return -1;
 		}
 	}
 	sif->bp = bp;
-	set_ctp_bp(inst, subif_ix, portid, sif->bp);
+	if (port_info->ctp_max == 1) {
+		if (port_info->num_subif == 0)
+			set_ctp_bp(inst, 0, portid, sif->bp);
+	} else {
+		set_ctp_bp(inst, subif_ix, portid, sif->bp);
+	}
 	data->act = 0;
 	if (flags & DP_F_SUBIF_LOGICAL) {
 		PR_ERR("need more for logical dev??\n");
@@ -1875,12 +1898,27 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 				 sif->device_name);
 		}
 	}
-
-	reset_ctp_bp(inst, subif_ix, portid, bp);
-	if (!dp_bp_dev_tbl[inst][bp].dev) /*NULL already, then free it */ {
-		DP_DEBUG(DP_DBG_FLAG_PAE, "Free BP[%d] vap=%d\n",
-			 bp, subif_ix);
-		free_bridge_port(inst, bp);
+	/* Check for max_ctp since CTP,BP is shared,
+	 * for all subif in case of DSL
+	 */
+	if (port_info->ctp_max == 1) {
+		if (port_info->num_subif == 0) {
+			reset_ctp_bp(inst, 0, portid, bp);
+			if (!dp_bp_dev_tbl[inst][bp].dev) {
+				/*NULL already, then free it */
+				DP_DEBUG(DP_DBG_FLAG_PAE,
+					 "Free BP[%d] vap=%d\n", bp, subif_ix);
+				free_bridge_port(inst, bp);
+			}
+		}
+	} else {
+		reset_ctp_bp(inst, subif_ix, portid, bp);
+		if (!dp_bp_dev_tbl[inst][bp].dev) {
+			/*NULL already, then free it */
+			DP_DEBUG(DP_DBG_FLAG_PAE, "Free BP[%d] vap=%d\n",
+				 bp, subif_ix);
+			free_bridge_port(inst, bp);
+		}
 	}
 #ifdef CONFIG_INTEL_DATAPATH_QOS_HAL
 	qid = sif->qid;

@@ -475,6 +475,7 @@ struct pmac_port_info {
 	struct net_device *dev;
 	u32 dev_port;
 	u32 num_subif;
+	u16 subif_max;
 	s32 port_id;
 	atomic_t tx_err_drop;
 	atomic_t rx_err_drop;

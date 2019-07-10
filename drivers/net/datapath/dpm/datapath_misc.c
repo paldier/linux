@@ -1320,7 +1320,7 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 	port = get_dp_port_info(0, subif_id->port_id);
 	if (!port)
 		return DP_FAILURE;
-	if (port->alloc_flags & DP_F_FAST_DSL && dev == NULL)
+	if ((port->alloc_flags & DP_F_FAST_DSL) && (dev == NULL))
 		subif_data = (void *)subif_name;
 	/*check flag for register / deregister to update/del */
 	if (flags & DP_F_DEREGISTER) {

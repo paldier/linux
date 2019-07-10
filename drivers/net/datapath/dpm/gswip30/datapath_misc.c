@@ -471,6 +471,7 @@ static int port_platform_set(int inst, u8 ep, struct dp_port_data *data,
 	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
 	port_info->ctp_max = MAX_SUBIF_PER_PORT;
+	port_info->subif_max = MAX_SUBIF_PER_PORT;
 	port_info->vap_offset = 8;
 	port_info->vap_mask = 0xF;
 	idx = port_info->deq_port_base;

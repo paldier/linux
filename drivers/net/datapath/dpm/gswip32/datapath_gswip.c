@@ -645,6 +645,8 @@ struct gsw_itf *ctp_port_assign_32(int inst, u8 ep, int bp_default,
 		 ctp_assign.nNumberOfCtpPort - 1;
 	itf_assign[ep].ep = ep;
 	port_info->ctp_max = ctp_assign.nNumberOfCtpPort;
+	/* TODO Later change subif_max to real value from assign structure */
+	port_info->subif_max = port_info->ctp_max;
 	port_info->vap_offset = assign->vap_offset;
 	port_info->vap_mask = assign->vap_mask;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)

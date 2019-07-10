@@ -38,6 +38,7 @@ struct ctp_assign {
 	u32 flag; /*Datapath Device Flag */
 	GSW_LogicalPortMode_t emode; /*mapped GSWIP CTP flag */
 	u16 num; /*Max CTP allowed for that GSWIP logical port*/
+	u16 num_subif; /*Max allowed number of subif for that logical port*/
 	u32 vap_offset; /*VAP offset */
 	u32 vap_mask;  /*VAP Mask after shift vap_offset bits */
 	u32 lookup_mode; /*CQE lookup mode  */
@@ -46,27 +47,30 @@ struct ctp_assign {
 
 static struct ctp_assign ctp_assign_info[] = {
 	/*note: multiple flags must put first */
-	{DP_F_CPU, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 8, 0xF, CQE_LU_MODE0, 8},
-	{DP_F_GPON, GSW_LOGICAL_PORT_GPON, 256, 0, 0xFF, CQE_LU_MODE1, 1},
-	{DP_F_EPON, GSW_LOGICAL_PORT_EPON, 256, 0, 0xFF, CQE_LU_MODE1, 1},
-	{DP_F_GINT, GSW_LOGICAL_PORT_GINT, 16, 0, 0xFF, CQE_LU_MODE1, 1},
+	{DP_F_CPU, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 16, 8, 0xF, CQE_LU_MODE0, 8},
+	{DP_F_GPON, GSW_LOGICAL_PORT_GPON, 256, 256, 0, 0xFF, CQE_LU_MODE1, 1},
+	{DP_F_EPON, GSW_LOGICAL_PORT_EPON, 256, 256, 0, 0xFF, CQE_LU_MODE1, 1},
+	{DP_F_GINT, GSW_LOGICAL_PORT_GINT, 16, 16, 0, 0xFF, CQE_LU_MODE1, 1},
 /*#define DP_ETH_TEST*/
 #ifndef DP_ETH_TEST
-	{DP_F_FAST_ETH_WAN, GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 0xF,
+	{DP_F_FAST_ETH_WAN, GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 8, 0xF,
 		CQE_LU_MODE2, 1},
 	{DP_F_FAST_ETH_LAN | DP_F_ALLOC_EXPLICIT_SUBIFID,
-		GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 0xF, CQE_LU_MODE2, 1},
-	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_8BIT_WLAN, 4, 8, 0xF,
+		GSW_LOGICAL_PORT_8BIT_WLAN, 8, 8, 8, 0xF, CQE_LU_MODE2, 1},
+	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_8BIT_WLAN, 4, 4, 8, 0xF,
 		CQE_LU_MODE2, 1},
 #else /*testing only */
-	{DP_F_FAST_ETH_WAN, GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
+	{DP_F_FAST_ETH_WAN, GSW_LOGICAL_PORT_OTHER, 1, 1, 8, 0xF,
+		CQE_LU_MODE2, 1},
 	{DP_F_FAST_ETH_LAN | DP_F_ALLOC_EXPLICIT_SUBIFID,
-		GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
-	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_OTHER, 1, 8, 0xF, CQE_LU_MODE2, 1},
+		GSW_LOGICAL_PORT_OTHER, 1, 1, 8, 0xF, CQE_LU_MODE2, 1},
+	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_OTHER, 1, 1, 8, 0xF, CQE_LU_MODE2, 1},
 #endif
-	{DP_F_VUNI, GSW_LOGICAL_PORT_8BIT_WLAN, 2, 8, 0xF, CQE_LU_MODE2, 1},
-	{DP_F_FAST_WLAN, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 8, 0xF, CQE_LU_MODE2, 1},
-	{DP_F_FAST_WLAN_EXT, GSW_LOGICAL_PORT_9BIT_WLAN, 8, 9, 0x7,
+	{DP_F_VUNI, GSW_LOGICAL_PORT_8BIT_WLAN, 2, 2, 8, 0xF, CQE_LU_MODE2, 1},
+	{DP_F_FAST_WLAN, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 16, 8, 0xF, CQE_LU_MODE2, 1},
+	{DP_F_FAST_DSL, GSW_LOGICAL_PORT_8BIT_WLAN, 1, 16, 8, 0xF,
+		CQE_LU_MODE0, 0},
+	{DP_F_FAST_WLAN_EXT, GSW_LOGICAL_PORT_9BIT_WLAN, 8, 8, 9, 0x7,
 		CQE_LU_MODE2, 1}
 };
 
@@ -638,6 +642,7 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	itf_assign[ep].end = ctp_assign.nFirstCtpPortId +
 		 ctp_assign.nNumberOfCtpPort - 1;
 	itf_assign[ep].ep = ep;
+	port_info->subif_max = assign->num_subif;
 	port_info->ctp_max = ctp_assign.nNumberOfCtpPort;
 	port_info->vap_offset = assign->vap_offset;
 	port_info->vap_mask = assign->vap_mask;

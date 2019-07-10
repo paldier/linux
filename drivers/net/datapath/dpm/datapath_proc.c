@@ -195,6 +195,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_puts(s, "\n");
 	seq_printf(s, "    mode:              %d\n", port->cqe_lu_mode);
 	seq_printf(s, "    LCT:               %d\n", port->lct_idx);
+	seq_printf(s, "    subif_max:	       %d\n", port->subif_max);
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	seq_printf(s, "    Swdev:             %d\n", port->swdev_en);
 #endif
@@ -229,7 +230,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	if (pos == 0)
 		loop = info->cap.max_num_subif_per_port;
 	else
-		loop = port->ctp_max;
+		loop = port->subif_max;
 	for (i = 0; i < loop; i++) {
 		struct dp_subif_info *sif = get_dp_port_subif(port, i);
 		struct dev_mib *mib = get_dp_port_subif_mib(sif);
