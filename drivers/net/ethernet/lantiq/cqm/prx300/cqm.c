@@ -2066,8 +2066,8 @@ static s32 cqm_dp_port_dealloc(struct module *owner, u32 dev_port,
 			}
 		}
 		dmam_free_coherent(cqm_ctrl->dev, p_info->deq_info.dma_size,
-					p_info->deq_info.pkt_base,
-					p_info->deq_info.pkt_base_paddr);
+				   p_info->deq_info.pkt_base,
+				   (dma_addr_t)p_info->deq_info.pkt_base_paddr);
 		ltq_dma_chan_desc_free(p_info->dma_ch);
 	}
 
@@ -2369,7 +2369,7 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 					cqm_buffer_free(cpu, (void *)buf, 1);
 				}
 				dmam_free_coherent(cqm_ctrl->dev, dma_size,
-						dma_vaddr, dma_paddr);
+						   dma_vaddr, dma_paddr);
 				ltq_free_dma(p_info->dma_ch);
 				break;
 			}
