@@ -29,7 +29,7 @@
 /* This represents the GSWIP SubSystem block, one instance per SubSystem
  * For xrx500 GSWIP-L device ID is 0
  * For xrx500 GSWIP-R device ID is 1
- * For Falcon-Mx device ID is 0
+ * For PRX300 device ID is 0
  */
 struct gswss {
 	/* Product ID, GRX500, PRX300, ..... */

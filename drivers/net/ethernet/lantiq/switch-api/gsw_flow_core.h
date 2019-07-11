@@ -854,7 +854,7 @@ typedef struct {
 	u8 	DiscardUntagged;
 	u8	DiscardUnMatchedTagged;
 	GSW_VlanFilterTciMask_t FilterMask;
-	/*Not available for Falcon-10G*/
+	/*Not available for PRX300-10G*/
 	u8	UseDefaultPortVid;
 } vlanfilter_entry_idx;
 

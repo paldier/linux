@@ -3620,7 +3620,7 @@ typedef struct {
 	/** Use default port VLAN ID for VLAN filtering
 
 	    \remarks
-	    This field is not available in Falcon-Mx. */
+	    This field is not available in PRX300. */
 	ltq_bool_t bUseDefaultPortVID;
 } GSW_VLANFILTER_alloc_t;
 
@@ -4081,7 +4081,7 @@ typedef struct {
 	/** If \ref GSW_BRIDGE_PORT_ALLOC is successful, a valid ID will be returned
 	    in this field. Otherwise, \ref INVALID_HANDLE is returned in this field.
 	    For \ref GSW_BRIDGE_PORT_FREE, this field should be valid ID returned by
-	    \ref GSW_BRIDGE_PORT_ALLOC. ID 0 is special for CPU port in Falcon-Mx
+	    \ref GSW_BRIDGE_PORT_ALLOC. ID 0 is special for CPU port in PRX300
 	    by mapping to CTP 0 (Logical Port 0 with Sub-interface ID 0), and
 	    pre-alloced during initialization. */
 	u32 nBridgePortId;
@@ -4471,7 +4471,7 @@ typedef struct {
 	/** Destination bridge port map. For GSWIP-3.1 only.
 
 	    \remarks
-	    Each bit stands for 1 bridge port. For Falcon-Mx (GSWIP-3.1 integrated),
+	    Each bit stands for 1 bridge port. For PRX300 (GSWIP-3.1 integrated),
 	    only index 0-7 is valid. */
 	u16 nPortmap[16];
 } GSW_MACFILTER_default_t;

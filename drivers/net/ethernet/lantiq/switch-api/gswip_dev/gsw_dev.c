@@ -19,7 +19,7 @@
 #include <gsw_flow_core.h>
 
 #define GRX500_MACH_NAME        		"lantiq,xrx500"
-#define FALC_MACH_NAME          		"intel,falconmx"
+#define PRX300_MACH_NAME          		"intel,prx300"
 #define DEVID_STR               		"intel,gsw-devid"
 #define EXTERNAL_SWITCH_DEVID    		"intel,gsw_ext-devid"
 #define EXTERNAL_SWITCH_PHYID			"intel,gsw_ext-phyid"
@@ -117,7 +117,7 @@ static struct resource grx500_core_res_r[] = {
 };
 
 /* Multi Functional Devices inside GSWIP Sub-System
- * for product Falcon-Mx
+ * for product PRX300
  */
 static struct gsw_cell gsw_dev_cells[] = {
 	/* MAC 0 */
@@ -151,7 +151,7 @@ static struct gsw_cell gsw_dev_cells[] = {
 		.resources = &falc_mac_res;
 
 	},
-	/* GSW CORE L or Falcon Mx */
+	/* GSW CORE L or PRX300 */
 	{
 		.name = CORE_DEV_NAME,
 		.cell_id = 3,
@@ -421,7 +421,7 @@ static int gsw_parse_dt(struct device_node *base_node)
 	if (of_machine_is_compatible(GRX500_MACH_NAME))
 		prod_id |= GRX500;
 
-	if (of_machine_is_compatible(FALC_MACH_NAME))
+	if (of_machine_is_compatible(PRX300_MACH_NAME))
 		prod_id |= PRX300;
 
 	if (!prod_id) {

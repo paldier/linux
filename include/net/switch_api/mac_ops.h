@@ -529,7 +529,7 @@ struct mac_ops {
 	/* This function Sets the MTU Configuration
 	 * param[in/out]IN:	ops	MAC ops Struct registered for MAC 0/1/2.
 	 * param[in/out]IN:	MTU
-	 *			Max MTU that can be set is 10000 for Falcon-Mx
+	 *			Max MTU that can be set is 10000 for PRX300
 	 * return	OUT	-1:	MTU set exceed the Max limit
 	 */
 	int (*set_mtu)(void *, u32);

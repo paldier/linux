@@ -25513,7 +25513,7 @@ GSW_return_t GSW_DefaultMacFilterSet(void *cdev, GSW_MACFILTER_default_t *param)
 	spin_lock_bh(&gswdev->lock_misc);
 #endif
 
-	/*   Each bit stands for 1 bridge port. For Falcon-Mx (GSWIP-3.1 integrated),
+	/*   Each bit stands for 1 bridge port. For PRX300 (GSWIP-3.1 integrated),
 	   only index 0-7 is valid. */
 	switch (param->eType) {
 	case GSW_MACFILTERTYPE_SRC:
@@ -25558,7 +25558,7 @@ GSW_return_t GSW_DefaultMacFilterGet(void *cdev, GSW_MACFILTER_default_t *param)
 	spin_lock_bh(&gswdev->lock_misc);
 #endif
 
-	/*   Each bit stands for 1 bridge port. For Falcon-Mx (GSWIP-3.1 integrated),
+	/*   Each bit stands for 1 bridge port. For PRX300 (GSWIP-3.1 integrated),
 	   only index 0-7 is valid. */
 	switch (param->eType) {
 	case GSW_MACFILTERTYPE_SRC:

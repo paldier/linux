@@ -1304,7 +1304,7 @@ void gsw_api_disable_switch_ports(void)
 EXPORT_SYMBOL(gsw_api_disable_switch_ports);
 
 static const struct of_device_id ltq_switch_api_match[] = {
-	{ .compatible = "intel,falconmx-gswapi" },
+	{ .compatible = "intel,prx300-gswapi" },
 	{},
 };
 

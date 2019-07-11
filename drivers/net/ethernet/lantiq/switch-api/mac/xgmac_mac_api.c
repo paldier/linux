@@ -1596,7 +1596,7 @@ int xgmac_set_hwtstamp_settings(void *pdev,
 	}
 
 	if (ptp_flgs.ptp_rx_en != 0) {
-		/* In FalconMx all packets have timestamp */
+		/* In PRX300 all packets have timestamp */
 		ptp_flgs.ptp_rx_en |= PTP_RX_EN_ALL;
 
 		MAC_SET_VAL(mac_tscr, MAC_TSTAMP_CR, TSENA, 1);
