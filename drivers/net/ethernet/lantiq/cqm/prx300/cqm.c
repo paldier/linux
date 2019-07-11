@@ -1916,7 +1916,8 @@ static void fill_dp_alloc_data(struct cbm_dp_alloc_data *data, int dp,
 			p_info->dma_ch = chan;
 			snprintf(p_info->dma_chan_str, DMA_CH_STR_LEN, "port%d",
 				 (port + idx));
-			data->dma_chan = p_info->dma_ch;
+			data->dma_chan = _DMA_C(p_info->dma_dt_ctrl, 0,
+						p_info->dma_dt_ch);
 			data->tx_pkt_credit = p_info->dq_txpush_num;
 		} else {
 			data->flags |= CBM_PORT_PKT_CRDT_SET;
