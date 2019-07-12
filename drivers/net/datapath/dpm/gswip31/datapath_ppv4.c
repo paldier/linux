@@ -703,7 +703,7 @@ int init_ppv4_qos(int inst, int flag)
 		PR_ERR("kzalloc fail: %d bytes\n", sizeof(*t));
 		return DP_FAILURE;
 	}
-	t->param.wred_total_avail_resources = 0x23000;
+	t->param.wred_total_avail_resources = 0x38000;
 	t->param.wred_p_const = 512;
 	t->param.wred_max_q_size = 0x3fffff;
 	/*reserve all ppv4 port to 1:1 sequnce link cqm port */
