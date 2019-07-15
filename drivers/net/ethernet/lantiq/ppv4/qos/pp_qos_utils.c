@@ -26,6 +26,7 @@
  */
 
 #include <linux/gcd.h>
+#include <linux/slab.h>
 #include "pp_qos_common.h"
 #include "pp_qos_fw.h"
 #include "pp_qos_utils.h"
@@ -2979,13 +2980,26 @@ void __dbg_dump_subtree(struct pp_qos_dev *qdev,
 {
 	u32 idx, tab_idx, n = 0;
 	u32 child_phy, node_id;
-	char tabs_str[PP_QOS_DBG_MAX_INPUT];
-	char indent_str[PP_QOS_DBG_MAX_INPUT];
+	char *tabs_str;
+	char *indent_str;
 	bool last_child;
 	struct qos_node *child;
 
 	if (depth > 6) {
 		pr_err("Maximum depth of 6 exceeded\n");
+		return;
+	}
+
+	tabs_str = kzalloc(PP_QOS_DBG_MAX_INPUT, GFP_KERNEL);
+	if (!tabs_str) {
+		QOS_LOG_ERR("Cannot allocate temp string\n");
+		return;
+	}
+
+	indent_str = kzalloc(PP_QOS_DBG_MAX_INPUT, GFP_KERNEL);
+	if (!indent_str) {
+		QOS_LOG_ERR("Cannot allocate temp string\n");
+		kfree(tabs_str);
 		return;
 	}
 
@@ -3017,6 +3031,9 @@ void __dbg_dump_subtree(struct pp_qos_dev *qdev,
 				   child->data.queue.rlm);
 		}
 	}
+
+	kfree(indent_str);
+	kfree(tabs_str);
 }
 
 void qos_dbg_tree_show(struct pp_qos_dev *qdev, struct seq_file *s)

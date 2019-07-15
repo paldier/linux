@@ -324,10 +324,10 @@ static ssize_t qos_dbg_props(struct file *fp,
 			     u16 num_props,
 			     void *user_data)
 {
-	int rc;
+	int rc = 0;
 	unsigned int first_prop = 1;
-	uint8_t cmd[PP_QOS_DBG_MAX_INPUT];
-	uint8_t field[PP_QOS_DBG_MAX_INPUT];
+	uint8_t *cmd;
+	uint8_t *field;
 	struct platform_device *pdev;
 	struct pp_qos_drv_data *pdata;
 	struct pp_qos_dev *qdev;
@@ -348,11 +348,24 @@ static ssize_t qos_dbg_props(struct file *fp,
 		return -EINVAL;
 	}
 
+	cmd = kzalloc(PP_QOS_DBG_MAX_INPUT, GFP_KERNEL);
+	if (!cmd) {
+		QOS_LOG_ERR("Cannot allocate temp string\n");
+		return -ENOMEM;
+	}
+
+	field = kzalloc(PP_QOS_DBG_MAX_INPUT, GFP_KERNEL);
+	if (!field) {
+		QOS_LOG_ERR("Cannot allocate temp string\n");
+		kfree(cmd);
+		return -ENOMEM;
+	}
+
 	rc =  simple_write_to_buffer(cmd, PP_QOS_DBG_MAX_INPUT, pos,
 				     user_buffer, cnt);
 	if (rc < 0) {
 		dev_err(&pdev->dev, "Write failed with %d\n", rc);
-		return rc;
+		goto out;
 	}
 
 	cmd[rc] = '\0';
@@ -367,7 +380,7 @@ static ssize_t qos_dbg_props(struct file *fp,
 		pval = strchr(field, '=');
 		if (!pval) {
 			dev_err(&pdev->dev, "Wrong format for prop %s\n", tok);
-			return rc;
+			goto out;
 		}
 
 		*pval = '\0';
@@ -382,7 +395,7 @@ static ssize_t qos_dbg_props(struct file *fp,
 			    cbs->first_prop_cb(qdev, field, res, user_data,
 					       pdata->dbg.raw_config)) {
 				dev_err(&pdev->dev, "first_prop_cb failed\n");
-				return rc;
+				goto out;
 			}
 		}
 
@@ -413,22 +426,26 @@ static ssize_t qos_dbg_props(struct file *fp,
 						     props[i].field,
 						     *props[i].dest);
 				} else {
-					QOS_LOG_INFO("%-30s%#x\n",
+					QOS_LOG_INFO("%-30s%#lx\n",
 						     props[i].field,
 						     (ulong)(*props[i].pdest));
 				}
 			}
 
-			return rc;
+			goto out;
 		}
 
 		if (cbs && cbs->done_props_cb) {
 			if (cbs->done_props_cb(qdev, id, user_data)) {
 				dev_err(&pdev->dev, "done_props_cb failed\n");
-				return rc;
+				goto out;
 			}
 		}
 	}
+
+out:
+	kfree(cmd);
+	kfree(field);
 
 	return rc;
 }
