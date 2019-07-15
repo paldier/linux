@@ -221,18 +221,10 @@ int gsw_misc_config(struct core_ops *ops)
 	}
 
 	/* Ignore Undersized frames and forward to CPU for the
-	 * Pmac Ports 0 and 1
-	 */
-	for (i = 0; i < 2; i++) {
-		reg.nRegAddr = (SDMA_PRIO_USIGN_OFFSET + (i * 6));
-		ops->gsw_common_ops.RegisterGet(ops, &reg);
-
-		reg.nData |= (1 << SDMA_PRIO_USIGN_SHIFT);
-		ops->gsw_common_ops.RegisterSet(ops, &reg);
-	}
-
-	/* Ignore Undersized frames and forward to CPU for the MAC ports
-	 * MAC logical ports start from 2
+	 * all logical ports
+	 * MAC ports need to ignore
+	 * PMAC ports need to ignore because of Insertion
+	 * Other logical ports need to ignore because of PON-HGU
 	 */
 	for (i = 0; i < gswdev->tpnum; i++) {
 		reg.nRegAddr = (SDMA_PRIO_USIGN_OFFSET + (i * 6));
@@ -546,6 +538,14 @@ static int pmac_glbl_cfg(struct core_ops *ops, u8 pmacid)
 	glbl_cfg.bLongFrmChkDis = 1;
 	glbl_cfg.bProcFlagsEgCfgEna = 1;
 	glbl_cfg.eProcFlagsEgCfg = GSW_PMAC_PROC_FLAGS_MIX;
+
+	/* For PON HGU, ARP or other small packet size generated from
+	 * CPU -> PONIP -> OLT -> STC is getting droped at OLT, due to underize.
+	 * Adding padding to all packets less than 64 bytes to PON IP at PMAC
+	 * level. Currently all packets to PON IP is through PMAC 1
+	 */
+	if (pmacid == PMAC_1)
+		glbl_cfg.bPadEna = 1;
 
 	ops->gsw_pmac_ops.Pmac_Gbl_CfgSet(ops, &glbl_cfg);
 
