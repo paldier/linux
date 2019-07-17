@@ -349,7 +349,7 @@ int dp_pp_alloc_port_32(struct ppv4_port *info)
 		 info->cqm_deq_port, qos_p_id);
 
 	qos_port_conf_set_default_32(&conf);
-	conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WRR;
+	conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WSP;
 	conf.ring_address = (unsigned long)info->tx_ring_addr_push;
 	conf.ring_size = info->tx_ring_size;
 	conf.packet_credit_enable = 1;
@@ -508,7 +508,7 @@ int init_ppv4_qos_32(int inst, int flag)
 		goto EXIT;
 	}
 	qos_port_conf_set_default_32(&t->p_conf);
-	t->p_conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WRR;
+	t->p_conf.port_parent_prop.arbitration = PP_QOS_ARBITRATION_WSP;
 	t->p_conf.ring_address =
 	(unsigned long)dp_deq_port_tbl[inst][idx].txpush_addr_qos;
 	t->p_conf.ring_size = dp_deq_port_tbl[inst][idx].tx_ring_size;
