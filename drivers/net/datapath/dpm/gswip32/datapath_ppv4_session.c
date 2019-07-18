@@ -65,7 +65,8 @@ void init_gpid_map_table(int inst)
 		 * Later Caller will change this
 		 */
 		if (i >= DP_SPL_GPID_START)
-			priv->gp_dp_map[i].dpid = (12 + (i-DP_SPL_GPID_START));
+			priv->gp_dp_map[i].dpid =
+				(12 + (i - DP_SPL_GPID_START));
 	}
 }
 
@@ -405,7 +406,7 @@ int dp_add_hostif(int inst, int dpid, int vap)
 		struct dp_subif_info *sif;
 
 		sif = get_dp_port_subif(cpu_info, 2 * i + 1);
-		if (sif->flags) { /* vaid VAP */
+		if (sif->flags) { /* valid VAP */
 			hif.dp.eg[i].qos_q = dp_get_q_logic_32(inst, sif->qid);
 			hif.dp.eg[i].pid = sif->gpid;
 		} else {

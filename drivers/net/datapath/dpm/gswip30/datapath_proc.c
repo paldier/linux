@@ -679,6 +679,7 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 	int i;
 	int ret = 0;
 	struct core_ops *gsw_handle;
+	struct rmon_ops *rmon;
 	char flag_buf[20];
 
 	if (!capable(CAP_NET_ADMIN))
@@ -689,12 +690,11 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 
 		/*read gswip-r rmon counter */
 		gsw_handle = dp_port_prop[0].ops[GSWIP_R];
-
+		rmon = &gsw_handle->gsw_rmon_ops;
 		for (i = 0; i < ARRAY_SIZE(gsw_r_rmon_mib); i++) {
 			gsw_r_rmon_mib[i].nPortId = i;
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
-				gsw_handle, &gsw_r_rmon_mib[i]);
+			ret = gsw_core_api((dp_gsw_cb)rmon->RMON_Port_Get,
+					   gsw_handle, &gsw_r_rmon_mib[i]);
 
 			if (ret != GSW_statusOk) {
 				PR_ERR("RMON_PORT_GET fail for Port %d\n", i);
@@ -704,9 +704,8 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 
 		/*read pmac rmon redirect mib */
 		memset(&gswr_rmon_redirect, 0, sizeof(gswr_rmon_redirect));
-		ret = gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Redirect_Get,
-			gsw_handle, &gswr_rmon_redirect);
+		ret = gsw_core_api((dp_gsw_cb)rmon->RMON_Redirect_Get,
+				   gsw_handle, &gswr_rmon_redirect);
 
 		if (ret != GSW_statusOk) {
 			PR_ERR("GSW_RMON_REDIRECT_GET fail for Port %d\n", i);
@@ -715,11 +714,11 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 
 		/*read gswip-l rmon counter */
 		gsw_handle = dp_port_prop[0].ops[GSWIP_L];
+		rmon = &gsw_handle->gsw_rmon_ops;
 		for (i = 0; i < ARRAY_SIZE(gsw_l_rmon_mib); i++) {
 			gsw_l_rmon_mib[i].nPortId = i;
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
-				gsw_handle, &gsw_l_rmon_mib[i]);
+			ret = gsw_core_api((dp_gsw_cb)rmon->RMON_Port_Get,
+					   gsw_handle, &gsw_l_rmon_mib[i]);
 			if (ret != GSW_statusOk) {
 				PR_ERR("RMON_PORT_GET fail for Port %d\n", i);
 				return -1;

@@ -46,7 +46,6 @@ int (*qos_port_info_get_32)(struct pp_qos_dev *qdev, unsigned int id,
 			    struct pp_qos_port_info *info);
 struct pp_qos_dev *(*qos_dev_open_32)(unsigned int id);
 
-
 void init_qos_fn_32(void)
 {
 #if (IS_ENABLED(CONFIG_LTQ_PPV4_QOS) || IS_ENABLED(CONFIG_PPV4))

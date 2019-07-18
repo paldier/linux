@@ -21,20 +21,18 @@ static void rx_dbg(u32 f, struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 
 {
 	int inst = 0;
+	int data_len = skb->len > dp_print_len ? skb->len : dp_print_len;
 
 	DP_DEBUG(DP_DBG_FLAG_DUMP_RX,
 		 "\ndp_rx:skb->data=%p Loc=%x offset=%d skb->len=%d\n",
 		 skb->data, desc2->field.data_ptr,
 		 desc3->field.byte_offset, skb->len);
 	if ((f) & DP_DBG_FLAG_DUMP_RX_DATA)
-		dp_dump_raw_data(skb->data,
-				(skb->len >
-				(dp_print_len)) ? skb->len : (dp_print_len),
-				"Original Data");
+		dp_dump_raw_data(skb->data, data_len, "Original Data");
 	DP_DEBUG(DP_DBG_FLAG_DUMP_RX, "parse hdr size = %d\n",
 		 paser_exist);
 	if ((f) & DP_DBG_FLAG_DUMP_RX_DESCRIPTOR)
-		dp_port_prop[inst].info.dump_rx_dma_desc(desc0, (desc1),
+		dp_port_prop[inst].info.dump_rx_dma_desc(desc0, desc1,
 							 desc2, desc3);
 	if (paser_exist && (dp_dbg_flag & DP_DBG_FLAG_DUMP_RX_PASER))
 		dump_parser_flag(parser);
@@ -70,10 +68,9 @@ static void rx_dbg_zero_port(struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 		dump_parser_flag(parser);
 	if (pmac)
 		dp_port_prop[inst].info.dump_rx_pmac(pmac);
-	dp_dump_raw_data((char *)(skb->data),
-			(skb->len >
-			 dp_print_len) ? skb->len : dp_print_len,
-			"Recv Data");
+	dp_dump_raw_data(skb->data,
+			 skb->len > dp_print_len ? skb->len : dp_print_len,
+			 "Recv Data");
 }
 
 /* clone skb to send one copy to lct dev for multicast/broadcast

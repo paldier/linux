@@ -55,7 +55,8 @@ static struct ctp_assign ctp_assign_info[] = {
 	{DP_F_FAST_ETH_LAN, GSW_LOGICAL_PORT_8BIT_WLAN, 4, 4, 8, 0xF,
 		CQE_LU_MODE2, 1},
 	{DP_F_VUNI, GSW_LOGICAL_PORT_8BIT_WLAN, 2, 2, 8, 0xF, CQE_LU_MODE2, 1},
-	{DP_F_FAST_WLAN, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 16, 8, 0xF, CQE_LU_MODE2, 1},
+	{DP_F_FAST_WLAN, GSW_LOGICAL_PORT_8BIT_WLAN, 16, 16, 8, 0xF,
+		CQE_LU_MODE2, 1},
 	{DP_F_FAST_DSL, GSW_LOGICAL_PORT_8BIT_WLAN, 1, 16, 8, 0xF,
 		CQE_LU_MODE0, 0},
 	{DP_F_FAST_WLAN_EXT, GSW_LOGICAL_PORT_9BIT_WLAN, 8, 8, 9, 0x7,
@@ -514,10 +515,12 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	int i, alloc_flag;
 	u16 num;
 	struct core_ops *gsw_handle;
+	struct ctp_ops *gsw_ctp;
 	struct pmac_port_info *port_info = get_dp_port_info(inst, ep);
 
 	memset(&ctp_assign, 0, sizeof(ctp_assign));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_ctp = &gsw_handle->gsw_ctp_ops;
 	alloc_flag = port_info->alloc_flags;
 
 	if (flags & DP_F_DEREGISTER) {
@@ -527,7 +530,7 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 		ctp_assign.nFirstCtpPortId = itf_assign[ep].start;
 		ctp_assign.nNumberOfCtpPort = itf_assign[ep].n;
 		if (gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortAssignmentFree,
+			(dp_gsw_cb)gsw_ctp->CTP_PortAssignmentFree,
 			gsw_handle,
 			&ctp_assign) != 0) {
 			PR_ERR("Failed to allc CTP for ep=%d blk=%d mode=%d\n",
@@ -554,7 +557,7 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	ctp_assign.nFirstCtpPortId = 0;
 	ctp_assign.nNumberOfCtpPort = num;
 	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortAssignmentAlloc,
+		(dp_gsw_cb)gsw_ctp->CTP_PortAssignmentAlloc,
 		gsw_handle,
 		&ctp_assign) != 0) {
 		PR_ERR("Failed CTP Assignment for ep=%d blk size=%d mode=%s\n",
@@ -695,8 +698,10 @@ int free_bridge_port(int inst, int bp)
 	int i, j;
 	GSW_return_t ret;
 	struct core_ops *gsw_handle;
+	struct brdgport_ops *gsw_bp;
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	if (bp == CPU_BP)
 		return 0;
 
@@ -709,7 +714,7 @@ int free_bridge_port(int inst, int bp)
 	tmp->nBridgePortId = bp;
 	tmp->eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
 		gsw_handle, tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_GET: %d\n", bp);
@@ -726,7 +731,7 @@ int free_bridge_port(int inst, int bp)
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 			tmp2->nBridgePortId = i * 16 + j;
 			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+				(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
 				gsw_handle, tmp2);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_GET\n");
@@ -734,7 +739,7 @@ int free_bridge_port(int inst, int bp)
 			}
 			UNSET_BP_MAP(tmp2->nBridgePortMap, bp);
 			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+				(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
 				gsw_handle, tmp2);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_SET\n");
@@ -748,7 +753,7 @@ EXIT:
 	tmp->nBridgePortId = bp;
 	tmp->eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
+		(dp_gsw_cb)gsw_bp->BridgePort_Free,
 		gsw_handle, tmp);
 	if (ret != GSW_statusOk)
 		PR_ERR("Failed to GSW_BRIDGE_PORT_FREE:%d\n", bp);

@@ -242,6 +242,8 @@ static int dp_swdev_clr_gswip_cfg(struct bridge_id_entry_item *br_item,
 				  u8 *addr)
 {
 	struct br_info *br_info;
+	struct pmac_port_info *p_info;
+	struct inst_info *i_info;
 	int ret;
 
 	if (br_item->flags == BRIDGE_NO_ACTION) {
@@ -252,26 +254,21 @@ static int dp_swdev_clr_gswip_cfg(struct bridge_id_entry_item *br_item,
 	br_info = dp_swdev_bridge_entry_lookup(br_item->br_device_name);
 	if (!br_info)
 		return 0;
-	if (dp_swdev_del_bport_from_list(br_info, br_item->portid)) {
-		if (get_dp_port_info(br_item->inst,
-				     br_item->dp_port)->swdev_en == 1) {
-			ret = dp_port_prop[br_item->inst].info.swdev_bridge_port_cfg_reset(
-							br_info, br_item->inst,
-							br_item->portid);
-			if (ret == DEL_BRENTRY) {
-				dp_port_prop[br_item->inst].info.swdev_free_brcfg(
-						br_item->inst, br_item->fid);
-				dp_swdev_remove_bridge_id_entry(br_info);
-				DP_DEBUG(DP_DBG_FLAG_SWDEV,
-					 "rem bport(%d),bridge(%s)\n",
-					 br_item->portid,
-					 br_item->br_device_name);
-			}
-			DP_DEBUG(DP_DBG_FLAG_SWDEV, "rem bport(%d)\n",
-				 br_item->portid);
-			return 0;
-		}
+	if (!dp_swdev_del_bport_from_list(br_info, br_item->portid))
+		return 0;
+	p_info = get_dp_port_info(br_item->inst, br_item->dp_port);
+	if (p_info->swdev_en != 1)
+		return 0;
+	i_info = &dp_port_prop[br_item->inst].info;
+	ret = i_info->swdev_bridge_port_cfg_reset(br_info, br_item->inst,
+						  br_item->portid);
+	if (ret == DEL_BRENTRY) {
+		i_info->swdev_free_brcfg(br_item->inst, br_item->fid);
+		dp_swdev_remove_bridge_id_entry(br_info);
+		DP_DEBUG(DP_DBG_FLAG_SWDEV, "rem bport(%d),bridge(%s)\n",
+			 br_item->portid, br_item->br_device_name);
 	}
+	DP_DEBUG(DP_DBG_FLAG_SWDEV, "rem bport(%d)\n", br_item->portid);
 	return 0;
 }
 
@@ -350,19 +347,25 @@ static int dp_swdev_filter_vlan(struct net_device *dev,
 static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 {
 	struct br_info *br_info;
+	struct pmac_port_info *p_info;
+	struct inst_info *i_info;
+	int ret;
 
+	p_info = get_dp_port_info(br_item->inst, br_item->dp_port);
+	i_info = &dp_port_prop[br_item->inst].info;
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "britem flags:%x\n", br_item->flags);
+
 	if (br_item->flags & ADD_BRENTRY) {
-		if (get_dp_port_info(br_item->inst,
-				     br_item->dp_port)->swdev_en == 0) {
+		if (p_info->swdev_en == 0) {
 			DP_DEBUG(DP_DBG_FLAG_SWDEV, "swdev disable for bp %d\n",
 				 br_item->portid);
 			return 0;
 		}
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "Add br entry %s\n",
 			 br_item->br_device_name);
-		if ((dp_port_prop[br_item->inst].info.swdev_bridge_cfg_set(
-				br_item->inst, br_item->fid) == 0)) {
+
+		ret = i_info->swdev_bridge_cfg_set(br_item->inst, br_item->fid);
+		if (ret == 0) {
 			br_info = kmalloc(sizeof(*br_info), GFP_KERNEL);
 			if (!br_info) {
 				PR_ERR
@@ -387,11 +390,11 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 			       br_item->br_device_name);
 			INIT_LIST_HEAD(&br_info->bp_list);
 			dp_swdev_insert_bridge_id_entry(br_info);
-			dp_swdev_add_bport_to_list(br_info,
-						   br_item->portid);
-			dp_port_prop[br_item->inst].info.swdev_bridge_port_cfg_set(
-							br_info, br_item->inst,
-							br_item->portid);
+			dp_swdev_add_bport_to_list(br_info, br_item->portid);
+
+			i_info->swdev_bridge_port_cfg_set(br_info,
+							  br_item->inst,
+							  br_item->portid);
 			br_item->flags &= ~ADD_BRENTRY;
 			DP_DEBUG(DP_DBG_FLAG_SWDEV,
 				 "added bport(%d),bridge(%s)\n",
@@ -407,11 +410,10 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 		if (br_item->flags & LOGIC_DEV_REGISTER)
 			br_info->flag = LOGIC_DEV_REGISTER;
 		dp_swdev_add_bport_to_list(br_info, br_item->portid);
-		if (get_dp_port_info(br_item->inst,
-				     br_item->dp_port)->swdev_en == 1) {
-			dp_port_prop[br_item->inst].info.swdev_bridge_port_cfg_set(
-							br_info, br_item->inst,
-							br_item->portid);
+		if (p_info->swdev_en == 1) {
+			i_info->swdev_bridge_port_cfg_set(br_info,
+							  br_item->inst,
+							  br_item->portid);
 		}
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "added bport(%d)\n",
 			 br_item->portid);
@@ -427,6 +429,8 @@ static int dp_swdev_add_if(struct net_device *dev,
 			   struct net_device *br_dev)
 {
 	struct br_info *br_info;
+	struct pmac_port_info *p_info;
+	struct inst_info *i_info;
 	struct bridge_id_entry_item *br_item;
 	int br_id = 0;
 	struct net_device *base;
@@ -434,11 +438,13 @@ static int dp_swdev_add_if(struct net_device *dev,
 	u32 flag = 0;
 	int port, inst;
 	u8 *addr = (u8 *)dev->dev_addr;
+	int32_t res;
 
 	/* SWITCHDEV_TRANS_PREPARE phase */
 	if (switchdev_trans_ph_prepare(trans)) {
 		/*Get current BPORT ID,instance from DP*/
-		if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
+		res = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
+		if (res) {
 			DP_DEBUG(DP_DBG_FLAG_SWDEV,
 				 "get subifid failed for %s, chk if vlan dev\n",
 				 dev->name);
@@ -447,37 +453,36 @@ static int dp_swdev_add_if(struct net_device *dev,
 			 *VLAN interface
 			 */
 			/*Check if dev is a VLAN device */
-			if (is_vlan_dev(dev)) {
-				base = get_base_dev(dev, -1);
-				DP_DEBUG(DP_DBG_FLAG_SWDEV,
-					 "base dev name:%s\n",
-					 base ? base->name : "NULL");
-				if (!base)
-					base = dev;
-				if (dp_get_netif_subifid(base, NULL, NULL,
-							 NULL, &subif, 0)) {
-					PR_ERR("dp_get_netif_subifid fail:%s\n",
-					       base->name);
-					return -EOPNOTSUPP;
-				}
-				port = subif.port_id;
-				inst = subif.inst;
-				subif.subif = -1;
-				if (dp_register_subif(
-					get_dp_port_info(inst, port)->owner,
-					dev, dev->name, &subif,
-					DP_F_SUBIF_LOGICAL)) {
-					PR_ERR("dp_register_subif fail: %s\n",
-					       dev->name);
-					return -EOPNOTSUPP;
-				}
-				flag = LOGIC_DEV_REGISTER;
-				DP_DEBUG(DP_DBG_FLAG_SWDEV,
-					 "registered subif,bp=%d port=%d\n",
-					 subif.bport, subif.port_id);
-			} else {
+			if (!is_vlan_dev(dev))
+				return -EOPNOTSUPP;
+
+			base = get_base_dev(dev, -1);
+			DP_DEBUG(DP_DBG_FLAG_SWDEV, "base dev name:%s\n",
+				 base ? base->name : "NULL");
+			if (!base)
+				base = dev;
+			res = dp_get_netif_subifid(base, NULL, NULL, NULL,
+						   &subif, 0);
+			if (res) {
+				PR_ERR("dp_get_netif_subifid fail:%s\n",
+				       base->name);
 				return -EOPNOTSUPP;
 			}
+			port = subif.port_id;
+			inst = subif.inst;
+			subif.subif = -1;
+			if (dp_register_subif(
+				get_dp_port_info(inst, port)->owner,
+				dev, dev->name, &subif,
+				DP_F_SUBIF_LOGICAL)) {
+				PR_ERR("dp_register_subif fail: %s\n",
+				       dev->name);
+				return -EOPNOTSUPP;
+			}
+			flag = LOGIC_DEV_REGISTER;
+			DP_DEBUG(DP_DBG_FLAG_SWDEV,
+				 "registered subif,bp=%d port=%d\n",
+				 subif.bport, subif.port_id);
 		}
 		br_item = kmalloc(sizeof(*br_item), GFP_KERNEL);
 		if (!br_item)
@@ -489,6 +494,8 @@ static int dp_swdev_add_if(struct net_device *dev,
 		br_item->dp_port = subif.port_id;
 		swdev_lock();
 		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
+		p_info = get_dp_port_info(br_item->inst, br_item->dp_port);
+		i_info = &dp_port_prop[br_item->inst].info;
 		if (br_info) {
 			strcpy(br_item->br_device_name,
 			       br_info->br_device_name);
@@ -496,10 +503,9 @@ static int dp_swdev_add_if(struct net_device *dev,
 			br_item->flags = flag;
 		} else {
 			br_item->flags = ADD_BRENTRY | flag;
-			if (get_dp_port_info(br_item->inst,
-					     br_item->dp_port)->swdev_en == 1) {
-				br_id = dp_port_prop[br_item->inst].info.swdev_alloc_bridge_id(
-								br_item->inst);
+			if (p_info->swdev_en == 1) {
+				br_id = i_info->swdev_alloc_bridge_id(
+							br_item->inst);
 				if (br_id) {
 					/* Store bridge information
 					 * to add in the table.

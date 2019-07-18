@@ -27,6 +27,8 @@ void dp_xmit_dbg(
 	int gso,
 	int checksum)
 {
+	int data_len;
+
 #if defined(DP_SKB_HACK)
 	DP_DEBUG(DP_DBG_FLAG_DUMP_TX,
 		 "%s: dp_xmit:skb->data/len=0x%p/%d data_ptr=%x from port=%d and subitf=%d\n",
@@ -35,18 +37,10 @@ void dp_xmit_dbg(
 		 ep, rx_subif->subif);
 #endif
 	if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX_DATA) {
-		if (pmac) {
+		data_len = skb->len > dp_print_len ? skb->len : dp_print_len;
+		if (pmac)
 			dp_dump_raw_data((char *)pmac, PMAC_SIZE, "Tx Data");
-			dp_dump_raw_data(skb->data,
-					(skb->len > dp_print_len) ?
-					skb->len :
-					dp_print_len,
-					"Tx Data");
-		} else
-			dp_dump_raw_data(skb->data,
-					(skb->len > dp_print_len) ?
-					skb->len : dp_print_len,
-					"Tx Data");
+		dp_dump_raw_data(skb->data, data_len, "Tx Data");
 	}
 	DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
 		 "ip_summed=%s(%d) encapsulation=%s\n",

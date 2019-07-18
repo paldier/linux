@@ -1103,7 +1103,7 @@ int dp_platform_queue_set(int inst, u32 flag)
 		DP_DEBUG(DP_DBG_FLAG_QOS, "Store CPU ring info\n");
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address[%d]=0x%p\n",
 			 q_port.cqe_deq,
-			 (void *)dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr);
+			 dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr);
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address_push[%d]=0x%px\n",
 			 q_port.cqe_deq,
 			 dp_deq_port_tbl[inst][q_port.cqe_deq].txpush_addr_qos);
@@ -1164,6 +1164,7 @@ static int dp_platform_set(int inst, u32 flag)
 {
 	GSW_QoS_portRemarkingCfg_t port_remark;
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	struct hal_priv *priv;
 
 	/* For initialize */
@@ -1180,6 +1181,7 @@ static int dp_platform_set(int inst, u32 flag)
 		priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
 		priv->ppv4_drop_q = MAX_QUEUE - 1; /*Need change later */
 		gsw_handle = dp_port_prop[inst].ops[0];
+		gsw_qos = &gsw_handle->gsw_qos_ops;
 		if (!inst)/*only inst zero need DMA descriptor */
 			init_dma_desc_mask();
 		if (!dp_port_prop[inst].ops[0] ||
@@ -1210,14 +1212,14 @@ static int dp_platform_set(int inst, u32 flag)
 		/*disable egress VLAN modification for CPU port*/
 		port_remark.nPortId = 0;
 		if (gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_PortRemarkingCfgGet,
+			(dp_gsw_cb)gsw_qos->QoS_PortRemarkingCfgGet,
 			gsw_handle, &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;
 		}
 		port_remark.bPCP_EgressRemarkingEnable = 0;
 		if (gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_PortRemarkingCfgGet,
+			(dp_gsw_cb)gsw_qos->QoS_PortRemarkingCfgGet,
 			gsw_handle, &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;

@@ -320,12 +320,10 @@ void dp_parser_info_refresh(u32 cpu, u32 mpe1, u32 mpe2,
 	pinfo[3].v = mpe3;
 
 	for (i = 0; i < ARRAY_SIZE(pinfo); i++) {
-		if (verify &&
-		    (pinfo[i].size != parser_size(pinfo[i].v)))
-			PR_ERR
-			 ("Lcal parser pinfo[%d](%d) != register cfg(%d)??\n",
-			 i, pinfo[i].size,
-			 parser_size(pinfo[i].v));
+		if (verify && (pinfo[i].size != parser_size(pinfo[i].v)))
+			PR_ERR("%s[%d](%d) != %s(%d)??\n",
+			       "Lcal parser pinfo", i, pinfo[i].size,
+			       "register cfg", parser_size(pinfo[i].v));
 
 		/*force to update */
 		pinfo[i].size = parser_size(pinfo[i].v);
@@ -343,14 +341,10 @@ void print_parser_status(struct seq_file *s)
 	if (!s)
 		return;
 
-	seq_printf(s, "REG.cpu  value=%u size=%u\n", pinfo[0].v,
-		   pinfo[0].size);
-	seq_printf(s, "REG.MPE1 value=%u size=%u\n", pinfo[1].v,
-		   pinfo[1].size);
-	seq_printf(s, "REG.MPE2 value=%u size=%u\n", pinfo[2].v,
-		   pinfo[2].size);
-	seq_printf(s, "REG.MPE3 value=%u size=%u\n", pinfo[3].v,
-		   pinfo[3].size);
+	seq_printf(s, "REG.cpu  value=%u size=%u\n", pinfo[0].v, pinfo[0].size);
+	seq_printf(s, "REG.MPE1 value=%u size=%u\n", pinfo[1].v, pinfo[1].size);
+	seq_printf(s, "REG.MPE2 value=%u size=%u\n", pinfo[2].v, pinfo[2].size);
+	seq_printf(s, "REG.MPE3 value=%u size=%u\n", pinfo[3].v, pinfo[3].size);
 }
 
 /*note: dev can be NULL */
@@ -395,9 +389,8 @@ static int32_t dp_alloc_port_private(int inst,
 
 	if (flags & DP_F_DEREGISTER) {	/*De-register */
 		if (port->status != PORT_ALLOCATED) {
-			PR_ERR
-			    ("No Deallocate for module %s w/o deregistered\n",
-			     owner->name);
+			PR_ERR("No Deallocate for module %s w/o deregistered\n",
+			       owner->name);
 			return DP_FAILURE;
 		}
 		cbm_data.deq_port = port->deq_port_base;
@@ -422,9 +415,8 @@ static int32_t dp_alloc_port_private(int inst,
 	}
 	if (cbm_dp_port_alloc(owner, dev, dev_port, port_id,
 			      &cbm_data, flags)) {
-		PR_ERR
-		    ("cbm_dp_port_alloc fail for %s/dev_port %d: %d\n",
-		     owner->name, dev_port, port_id);
+		PR_ERR("cbm_dp_port_alloc fail for %s/dev_port %d: %d\n",
+		       owner->name, dev_port, port_id);
 		return DP_FAILURE;
 	} else if (!(cbm_data.flags & CBM_PORT_DP_SET) &&
 		   !(cbm_data.flags & CBM_PORT_DQ_SET)) {
@@ -772,8 +764,7 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	sif->flags = 0;
 	sif->netif = NULL;
 	port_info->num_subif--;
-	if (dp_port_prop[inst].info.subif_platform_set(inst,
-						       port_id, i,
+	if (dp_port_prop[inst].info.subif_platform_set(inst, port_id, i,
 						       &platfrm_data, flags)) {
 		PR_ERR("subif_platform_set fail\n");
 		/*return res;*/
@@ -1224,9 +1215,8 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	rcu_read_unlock_bh();
 	if (subifid_fn_t) {
 		/*subif->subif will be set by callback api itself */
-		res =
-		    subifid_fn_t(netif, skb, subif_data, dst_mac, subif,
-				 flags);
+		res = subifid_fn_t(netif, skb, subif_data, dst_mac, subif,
+				   flags);
 		if (res != 0)
 			PR_ERR("get_netif_subifid callback function failed\n");
 	} else {
@@ -1507,17 +1497,25 @@ static int dp_register_dc(int inst, uint32_t port_id,
 	umt_param.daddr = (u32)data->umt->umt_msg_paddr;
 
 	if (dp_umt_request(&umt_param, 0)) {
-		PR_ERR("UMT request Fail!! DMA ID %x CQM_PID %d MSG_MODE %d "
-		       "PERIOD %d SW_MSG %d DADDR 0x%08x\n", umt_param.dma_id,
-		       umt_param.cqm_dq_pid, umt_param.msg_mode,
-		       umt_param.period, umt_param.sw_msg, umt_param.daddr);
+		PR_ERR("%s %s %x %s %d %s %d %s %d %s %d %s 0x%08x\n",
+		       "UMT request Fail!!",
+		       "DMA_ID", umt_param.dma_id,
+		       "CQM_PID", umt_param.cqm_dq_pid,
+		       "MSG_MODE", umt_param.msg_mode,
+		       "PERIOD", umt_param.period,
+		       "SW_MSG", umt_param.sw_msg,
+		       "DADDR", umt_param.daddr);
 		return DP_FAILURE;
 	}
 	if (dp_umt_set(&umt_param, 0)) {
-		PR_ERR("UMT port set fail !! DMA ID %x CQM_PID %d MSG_MODE %d "
-		       "PERIOD %d SW_MSG %d DADDR 0x%08x\n", umt_param.dma_id,
-		       umt_param.cqm_dq_pid, umt_param.msg_mode,
-		       umt_param.period, umt_param.sw_msg, umt_param.daddr);
+		PR_ERR("%s %s %x %s %d %s %d %s %d %s %d %s 0x%08x\n",
+		       "UMT port set fail!!",
+		       "DMA_ID", umt_param.dma_id,
+		       "CQM_PID", umt_param.cqm_dq_pid,
+		       "MSG_MODE", umt_param.msg_mode,
+		       "PERIOD", umt_param.period,
+		       "SW_MSG", umt_param.sw_msg,
+		       "DADDR", umt_param.daddr);
 		return DP_FAILURE;
 	}
 
@@ -1616,8 +1614,10 @@ int32_t dp_check_if_netif_fastpath_fn(struct net_device *netif,
 				      dp_subif_t *subif, char *ifname,
 				      uint32_t flags)
 {
-	int res = 1;
 	dp_subif_t tmp_subif = { 0 };
+	struct pmac_port_info *p_info;
+	int max_dp_ports;
+	int dp_flags;
 
 	DP_LIB_LOCK(&dp_lock);
 	if (unlikely(!dp_init_ok)) {
@@ -1632,17 +1632,16 @@ int32_t dp_check_if_netif_fastpath_fn(struct net_device *netif,
 	} else if (ifname) {
 		dp_get_port_subitf_via_ifname_private(ifname, &tmp_subif);
 	}
-
-	if (tmp_subif.port_id <= 0 && tmp_subif.port_id >=
-	    dp_port_prop[tmp_subif.inst].info.cap.max_num_dp_ports)
-		res = 0;
-	else if (!(get_dp_port_info(tmp_subif.inst, tmp_subif.port_id)->alloc_flags &
-		 (DP_F_FAST_DSL || DP_F_FAST_ETH_LAN ||
-		 DP_F_FAST_ETH_WAN || DP_F_FAST_WLAN)))
-		res = 0;
-
+	max_dp_ports = dp_port_prop[tmp_subif.inst].info.cap.max_num_dp_ports;
+	if (tmp_subif.port_id <= 0 || tmp_subif.port_id >= max_dp_ports)
+		return 0;
+	p_info = get_dp_port_info(tmp_subif.inst, tmp_subif.port_id);
+	dp_flags = DP_F_FAST_DSL || DP_F_FAST_ETH_LAN ||
+		   DP_F_FAST_ETH_WAN || DP_F_FAST_WLAN;
+	if (!(p_info->alloc_flags & dp_flags))
+		return 0;
 	DP_LIB_UNLOCK(&dp_lock);
-	return res;
+	return 1;
 }
 EXPORT_SYMBOL(dp_check_if_netif_fastpath_fn);
 
@@ -1651,8 +1650,7 @@ struct module *dp_get_module_owner(int ep)
 	int inst = 0; /*here hardcode for PPA only */
 
 	if (unlikely(!dp_init_ok)) {
-		PR_ERR
-		    ("dp_get_module_owner failed for datapath not init yet\n");
+		PR_ERR("dp_get_module_owner failed for dp not init yet\n");
 		return NULL;
 	}
 

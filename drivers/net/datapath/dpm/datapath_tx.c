@@ -88,7 +88,7 @@ void dp_tx_dbg(char *title, struct sk_buff *skb, s32 ep, s32 len, u32 flags,
 	else
 		DP_DEBUG(DP_DBG_FLAG_DUMP_TX_SUM,
 			 "ip start=0x%lx(%d), transport=0x%lx(%d)\n",
-			 (unsigned long) skb_network_header(skb),
+			 (unsigned long)skb_network_header(skb),
 			 (int)(skb_network_header(skb) - skb->data),
 			 (unsigned long)skb_transport_header(skb),
 			 (int)(skb_transport_header(skb) -

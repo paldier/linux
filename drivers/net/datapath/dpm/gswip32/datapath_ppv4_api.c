@@ -1393,7 +1393,7 @@ static int dp_alloc_qos_port(struct dp_node_alloc *node, int flag)
 	/* Configure QOS dequeue port */
 	qos_port_conf_set_default_32(&port_cfg);
 	port_cfg.ring_address =
-		(unsigned long)dp_deq_port_tbl[inst][cqm_deq_port].txpush_addr_qos;
+		dp_deq_port_tbl[inst][cqm_deq_port].txpush_addr_qos;
 	port_cfg.ring_size = dp_deq_port_tbl[inst][cqm_deq_port].tx_ring_size;
 	port_cfg.credit = dp_deq_port_tbl[inst][cqm_deq_port].tx_pkt_credit;
 	if (port_cfg.credit)

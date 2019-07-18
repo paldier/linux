@@ -40,8 +40,10 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 	struct bridge_member_port *bport_list = NULL;
 	GSW_BRIDGE_portConfig_t brportcfg;
 	struct core_ops *gsw_handle;
+	struct brdgport_ops *gsw_bp;
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	/*To set other members to the current bport*/
 	memset(&brportcfg, 0, sizeof(GSW_BRIDGE_portConfig_t));
 	brportcfg.nBridgePortId = bport;
@@ -49,7 +51,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 		 brportcfg.nBridgePortId, inst);
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
 		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting bridge port config\r\n");
@@ -66,7 +68,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+		(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
 		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Fail in allocating/configuring bridge port\n");
@@ -84,7 +86,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 			brportcfg.eMask =
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+				(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
 				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR
@@ -98,7 +100,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+				(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
 				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Fail alloc/cfg bridge port\n");
@@ -117,8 +119,10 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 	int i, cnt = 0, bp = 0;
 	GSW_return_t ret;
 	struct core_ops *gsw_handle;
+	struct brdgport_ops *gsw_bp;
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	memset(&brportcfg, 0, sizeof(GSW_BRIDGE_portConfig_t));
 	brportcfg.nBridgePortId = bport;
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "Reset BP=%d inst:%d\n",
@@ -126,7 +130,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	/*Reset other members from current bport map*/
 	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+		(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
 		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		/* Note: here may fail if this device is not removed from
@@ -164,7 +168,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 			  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+		(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
 		gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Fail in configuring GSW_BRIDGE_portConfig_t in %s\r\n",
@@ -184,7 +188,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP |
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
 			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
+				(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
 				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR("failed getting br port cfg\r\n");
@@ -196,7 +200,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
+				(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
 				gsw_handle, &brportcfg);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Fail alloc/cfg br port\n");
@@ -278,7 +282,8 @@ int dp_gswip_ext_vlan_32(int inst, int vap, int ep)
 	port = get_dp_port_info(inst, ep);
 	vlan = kzalloc(sizeof(*vlan), GFP_KERNEL);
 	if (!vlan) {
-		PR_ERR("failed to alloc ext_vlan of %zd bytes\n", sizeof(*vlan));
+		PR_ERR("failed to alloc ext_vlan of %zd bytes\n",
+		       sizeof(*vlan));
 		return 0;
 	}
 	vlan->vlan2_list = kzalloc(sizeof(*vlan->vlan2_list), GFP_KERNEL);

@@ -123,11 +123,13 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 			  gpid, dpid);
 
 	if (unlikely(!dpid)) { /*Normally shouldnot go to here */
-		DP_ERR("Impossible: DPID Invalid (0), Desc rx'd: D0: %08x D1: %08x D2: %08x D3: %08x\n",
+		DP_ERR("%s %s D0: %08x D1: %08x D2: %08x D3: %08x\n",
+		       "Impossible: DPID Invalid (0),", "Desc rx'd:",
 		       *(u32 *)desc_0, *(u32 *)desc_1,
 		       *(u32 *)desc_2, *(u32 *)desc_3);
-		DP_ERR("QoS Descriptor at buf_base %px Desc rx'd: D0: %08x D1: %08x D2: %08x D3: %08x\n",
-		       skb->buf_base, *(skb->buf_base),
+		DP_ERR("%s %px %s D0: %08x D1: %08x D2: %08x D3: %08x\n",
+		       "QoS Descriptor at buf_base", skb->buf_base,
+		       "Desc rx'd:", *skb->buf_base,
 		       *(skb->buf_base + sizeof(u32)),
 		       *(skb->buf_base + (2 * sizeof(u32))),
 		       *(skb->buf_base + (3 * sizeof(u32))));

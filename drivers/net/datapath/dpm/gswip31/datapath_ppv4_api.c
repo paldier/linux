@@ -2264,11 +2264,10 @@ static int dp_map_qid_to_cqmdeq(struct dp_node_link *info, int flag)
 					 q_link.cqm_deq_port, "child", idx, "Q",
 					 node.child[idx].id.q_id);
 				break;
-			} else {
-				node_info.node_type = node.child[idx].type;
-				node_info.node_id = node.child[idx].id;
-				dp_map_qid_to_cqmdeq(&node_info, flag);
 			}
+			node_info.node_type = node.child[idx].type;
+			node_info.node_id = node.child[idx].id;
+			dp_map_qid_to_cqmdeq(&node_info, flag);
 		}
 	}
 	return DP_SUCCESS;
