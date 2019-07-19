@@ -72,6 +72,24 @@ static int dp_ndo_ptp_ioctl(struct net_device *dev,
 	struct mac_ops *ops;
 	int inst = 0;
 	struct pmac_port_info *port;
+	u32 idx = 0;
+	struct dp_dev *dp_dev = NULL;
+
+	idx = dp_dev_hash(dev, NULL);
+	dp_dev = dp_dev_lookup(&dp_dev_list[idx], dev, NULL, 0);
+	if (!dp_dev) {
+		PR_ERR("\n dp_dev NULL\n");
+		return -EFAULT;
+	}
+
+	/* DP handles only SIOCSHWTSTAMP and SIOCGHWTSTAMP */
+	if ((cmd != SIOCSHWTSTAMP) && (cmd != SIOCGHWTSTAMP)) {
+		if (dp_dev->old_dev_ops->ndo_do_ioctl)
+			err = dp_dev->old_dev_ops->ndo_do_ioctl(dev, ifr, cmd);
+		else
+			return -EFAULT;
+		return err;
+	}
 
 	port = get_port_info_via_dev(dev);
 	if (!port)
