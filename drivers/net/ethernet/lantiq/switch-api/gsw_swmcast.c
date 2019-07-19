@@ -313,7 +313,14 @@ static int set_pce_hash_table(void *cdev, MCAST_HASHTBL *phtable, u32 loc)
 	pcetable.pcindex = loc;
 	pcetable.table = PCE_MULTICAST_SW_INDEX;
 
-	pcetable.key[0] = phtable->first_idx;
+	/* Cannot add 0x3FF to First Index, Msb Bit is used
+	 * for stopping search
+	 */
+	if (phtable->first_idx == 0xFFFF)
+		pcetable.key[0] = 0;
+	else
+		pcetable.key[0] = phtable->first_idx;
+	
 	pcetable.key[1] = phtable->nxt_idx;
 	pcetable.valid = phtable->valid;
 	pcetable.key[2] = ((phtable->src_ip_mode & 0x3) << 14);
