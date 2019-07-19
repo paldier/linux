@@ -185,6 +185,8 @@ static gsw_capdesc_t capdes[] = {
 	{ GSW_CAP_TYPE_RT_MTU, "Number of MTU Entries:"},
 	{ GSW_CAP_TYPE_RT_TUNNEL, "Number of Tunnel Entries:"},
 	{ GSW_CAP_TYPE_RT_RTP, "Number of RTP Entries:"},
+	{ GSW_CAP_TYPE_CTP, "Number of CTP ports"},
+	{ GSW_CAP_TYPE_BRIDGE_PORT, "Number of bridge ports"},
 	{ GSW_CAP_TYPE_LAST, "Last Capability Index"}
 };
 
@@ -11801,6 +11803,14 @@ GSW_return_t GSW_CapGet(void *cdev, GSW_cap_t *parm)
 
 	case GSW_CAP_TYPE_RT_RTP:
 		parm->nCap = gswdev->num_of_rt_rtp;
+		break;
+
+	case GSW_CAP_TYPE_CTP:
+		parm->nCap = gswdev->num_of_ctp;
+		break;
+
+	case GSW_CAP_TYPE_BRIDGE_PORT:
+		parm->nCap = gswdev->num_of_bridge_port;
 		break;
 
 	case GSW_CAP_TYPE_LAST:
