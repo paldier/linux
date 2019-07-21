@@ -120,13 +120,6 @@ config INTEL_DATAPATH_PTP1588_SW_WORKAROUND
         ---help---
           PTP1588 Software Workaround
 
-config INTEL_DATAPATH_DDR_SIMULATE_GSWIP31
-	bool "Force PRX300 SOC"
-	default n
-	depends on INTEL_DATAPATH
-	---help---
-	  test prx300 HAL in GRX350 boards
-
 config INTEL_DATAPATH_CPUFREQ
 	bool "Datapath DFS(COC) support"
 	depends on INTEL_DATAPATH && CPU_FREQ

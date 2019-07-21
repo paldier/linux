@@ -18,35 +18,29 @@
 #include "datapath_instance.h"
 #include "datapath_swdev_api.h"
 
-#if IS_ENABLED(CONFIG_PRX300_CQM)
-#define INTEL_DATAPATH_SOC_PRX300
-#endif
-
 int request_dp(u32 flag)
 {
 	struct dp_inst_info info;
 	int i = 0;
 	u32 mac_ifcnt = gsw_get_mac_subifcnt(0);
 
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SIMULATE_GSWIP32) || \
-	IS_ENABLED(CONFIG_LGM_CQM)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP32)
 	info.type = GSWIP32_TYPE;
 	info.ver = GSWIP32_VER;
 	info.ops[0] = gsw_get_swcore_ops(0);
 	info.ops[1] = gsw_get_swcore_ops(0);
 	info.mac_ops[0] = NULL;
 	info.mac_ops[1] = NULL;
-	for(i = 0; i < mac_ifcnt; i++)
+	for (i = 0; i < mac_ifcnt; i++)
 		info.mac_ops[i + 2] = gsw_get_mac_ops(0, i + 2);
-#elif IS_ENABLED(CONFIG_PRX300_CQM) || \
-	IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31) /*testing only */
+#elif IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP31)
 	info.type = GSWIP31_TYPE;
 	info.ver = GSWIP31_VER;
 	info.ops[0] = gsw_get_swcore_ops(0);
 	info.ops[1] = gsw_get_swcore_ops(0);
 	info.mac_ops[0] = NULL;
 	info.mac_ops[1] = NULL;
-	for(i = 0; i < mac_ifcnt; i++)
+	for (i = 0; i < mac_ifcnt; i++)
 		info.mac_ops[i + 2] = gsw_get_mac_ops(0, i + 2);
 #else
 	info.type = GSWIP30_TYPE;

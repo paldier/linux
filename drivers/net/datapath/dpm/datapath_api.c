@@ -187,7 +187,7 @@ int parser_enabled(int ep, struct dma_rx_desc_1 *desc_1)
 	}
 #endif
 
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SIMULATE_GSWIP32) || \
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP32) || \
 	IS_ENABLED(CONFIG_X86_INTEL_LGM)
 #else
 	if (!ep)

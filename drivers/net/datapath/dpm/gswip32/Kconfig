@@ -1,7 +1,7 @@
 menuconfig INTEL_DATAPATH_HAL_GSWIP32
 	bool "Datapath HAL_GSWIP32"
 	default y
-	depends on INTEL_DATAPATH && (X86_INTEL_LGM || INTEL_DATAPATH_SIMULATE_GSWIP32)
+	depends on INTEL_DATAPATH && X86_INTEL_LGM
 	---help---
 	  Datapath Lib is to provide common rx/tx wrapper Lib without taking
 	  care of much HW knowledge and also provide common interface for legacy

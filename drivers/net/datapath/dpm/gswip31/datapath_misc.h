@@ -179,22 +179,8 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type, u32 ip_offset,
 		int ip_off_hw_adjust, u32 tcp_h_offset);
 
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
-GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param);
-#define GSW_SIMUTE_DDR_NOT_MATCH  0x1234
-#endif
-
 static inline GSW_return_t gsw_core_api(dp_gsw_cb func, void *ops, void *param)
 {
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
-	{
-		GSW_return_t res;
-
-		res = gsw_core_api_ddr_simu31(func, ops, param);
-		if (res != GSW_SIMUTE_DDR_NOT_MATCH)
-			return res;
-	}
-#endif /*CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31*/
 	if (!func)
 		return DP_FAILURE;
 	return func(ops, param);

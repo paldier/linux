@@ -210,23 +210,8 @@ void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 
 int dp_lan_wan_bridging(int port_id, struct sk_buff *skb);
 
-
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP32)
-GSW_return_t gsw_core_api_ddr_simu32(dp_gsw_cb func, void *ops, void *param);
-#define GSW_SIMUTE_DDR_NOT_MATCH  0x1234
-#endif
-
 static inline GSW_return_t gsw_core_api(dp_gsw_cb func, void *ops, void *param)
 {
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP32)
-	{
-		GSW_return_t res;
-
-		res = gsw_core_api_ddr_simu32(func, ops, param);
-		if (res != GSW_SIMUTE_DDR_NOT_MATCH)
-			return res;
-	}
-#endif /*CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP32*/
 	return func(ops, param);
 }
 

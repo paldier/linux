@@ -13,9 +13,6 @@
 #include <net/datapath_api.h>
 #include "../datapath.h"
 #include "datapath_misc.h"
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
-#include "datapath_gswip_simulate.h"
-#endif
 
 #define GSW_CORE_API(_handle, a, b) ({ \
 	typeof(_handle) (handle) = (_handle); \
@@ -95,72 +92,6 @@ static char *ctp_mode_string(GSW_LogicalPortMode_t type)
 		return "OTHER";
 	return "Undef";
 }
-
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
-GSW_return_t gsw_core_api_ddr_simu31(dp_gsw_cb func, void *ops, void *param)
-{
-	if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdgport_ops.BridgePort_Alloc) {
-		return BridgePortAlloc(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdgport_ops.BridgePort_ConfigGet) {
-		return BridgePortConfigGet(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdgport_ops.BridgePort_ConfigSet) {
-		return BridgePortConfigSet(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdgport_ops.BridgePort_Free) {
-		return BridgePortFree(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdg_ops.Bridge_Alloc) {
-		return BridgeAlloc(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdg_ops.Bridge_ConfigSet) {
-		return BridgeConfigSet(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdg_ops.Bridge_ConfigGet) {
-		return BridgeConfigGet(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_brdg_ops.Bridge_Free) {
-		return BridgeFree(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_ctp_ops.CTP_PortAssignmentAlloc) {
-		return CTP_PortAssignmentAlloc
-			(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_ctp_ops.CTP_PortAssignmentFree) {
-		return CTP_PortAssignmentFree
-			(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_ctp_ops.CTP_PortAssignmentSet) {
-		return CTP_PortAssignmentSet
-			(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_ctp_ops.CTP_PortAssignmentGet) {
-		return CTP_PortAssignmentGet
-			(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_ctp_ops.CTP_PortConfigSet) {
-		return CtpPortConfigSet(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-	    gsw_ctp_ops.CTP_PortConfigGet) {
-		return CtpPortConfigGet(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-		   gsw_swmac_ops.MAC_TableEntryAdd) {
-		return MacTableAdd(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-		   gsw_swmac_ops.MAC_TableEntryRead) {
-		return MacTableRead(param);
-	} else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-		   gsw_swmac_ops.MAC_TableEntryRemove) {
-		return MacTableRemove(param);
-	}  else if (func == (dp_gsw_cb)dp_port_prop[0].ops[0]->
-		    gsw_swmac_ops.MAC_TableEntryQuery) {
-		return MacTableQuery(param);
-	}
-	return GSW_SIMUTE_DDR_NOT_MATCH;
-}
-#endif
 
 /*This API is only for GSWIP-R PMAC modification, not for GSWIP-L */
 int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
@@ -466,7 +397,6 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 #endif
 			gsw_core_api((dp_gsw_cb)gswr_r->gsw_pmac_ops
 				     .Pmac_Eg_CfgSet, gswr_r, &egcfg);
-			;
 		}
 	}
 

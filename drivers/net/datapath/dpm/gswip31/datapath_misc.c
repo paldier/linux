@@ -1126,14 +1126,7 @@ int dp_platform_queue_set(int inst, u32 flag)
 	/*Alloc queue/scheduler/port per CPU port */
 	cpu_data.dp_inst = inst;
 	cpu_data.cbm_inst = dp_port_prop[inst].cbm_inst;
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31)
-	cpu_data.dq_tx_push_info[0].deq_port = 0;
-	cpu_data.dq_tx_push_info[1].deq_port = -1;
-	cpu_data.dq_tx_push_info[2].deq_port = -1;
-	cpu_data.dq_tx_push_info[3].deq_port = -1;
-#else
 	ret = cbm_cpu_port_get(&cpu_data, 0);
-#endif
 	if (ret == -1) {
 		PR_ERR("%s fail for CPU Port. Why ???\n",
 		       "cbm_cpu_port_get");

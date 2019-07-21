@@ -1,11 +1,7 @@
-ifneq ($(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31),)
-obj-$(CONFIG_INTEL_DATAPATH) += datapath_gswip_simulate.o
-endif
-
 obj-$(CONFIG_INTEL_DATAPATH) += datapath_misc.o datapath_gswip.o datapath_proc.o
 obj-$(CONFIG_INTEL_DATAPATH) += datapath_ppv4.o
 obj-$(CONFIG_INTEL_DATAPATH) += datapath_lookup_proc.o datapath_ppv4_api.o
-obj-$(CONFIG_INTEL_DATAPATH) += datapath_rx.o datapath_tx.o 
+obj-$(CONFIG_INTEL_DATAPATH) += datapath_rx.o datapath_tx.o
 
 ifneq ($(CONFIG_INTEL_DATAPATH_HAL_GSWIP31_MIB),)
 obj-$(CONFIG_INTEL_DATAPATH) += datapath_mib.o

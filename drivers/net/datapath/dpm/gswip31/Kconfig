@@ -16,15 +16,6 @@ config INTEL_DATAPATH_HAL_GSWIP31_MIB
 	---help---
 	  It is to aggregate GSWIP-L/R, TMU and driver's MIB counter
 
-config INTEL_DATAPATH_DDR_SIMULATE_GSWIP31
-	bool "Datapath Simulation GSWIP3.1 based on GRX500 board"
-	default n
-	depends on INTEL_DATAPATH_DBG
-	---help---
-		Datapath Debug Tool for GSWIP DDR simulation
-		Only for debugging purpose
-		By default it should be disabled.
-
 config INTEL_DATAPATH_DUMMY_QOS
 	bool "datapath dummy QOS based on slim QOS driver or real QOS API with PRX300_test API"
 	depends on LTQ_PPV4_QOS_SLIM || (LTQ_PPV4_QOS || LTQ_PPV4)

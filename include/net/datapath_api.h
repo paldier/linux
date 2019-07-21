@@ -15,13 +15,12 @@
 #include <linux/atmdev.h>
 
 #ifndef DATAPATH_HAL_LAYER
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SIMULATE_GSWIP32) || \
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP32) || \
 	IS_ENABLED(CONFIG_SOC_LGM) || \
 	IS_ENABLED(CONFIG_X86_INTEL_LGM)
 #include <net/datapath_api_gswip32.h>
 #include <net/datapath_api_ppv4.h>
-#elif IS_ENABLED(CONFIG_PRX300_CQM) || \
-	IS_ENABLED(CONFIG_INTEL_DATAPATH_DDR_SIMULATE_GSWIP31) /*testing only */
+#elif IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP31)
 #include <net/datapath_api_gswip31.h>
 #elif IS_ENABLED(CONFIG_GRX500_CBM) /*GRX500 GSWIP30*/
 #include <net/datapath_api_gswip30.h>
