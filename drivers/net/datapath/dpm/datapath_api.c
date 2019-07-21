@@ -123,7 +123,7 @@ void dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops)
 {
 	if (inst < 0 || inst >= DP_MAX_INST || type >= DP_OPS_CNT) {
 		DP_DEBUG(DP_DBG_FLAG_REG, "wrong index\n");
-		return DP_FAILURE;
+		return;
 	}
 	dp_ops[inst][type] = ops;
 }

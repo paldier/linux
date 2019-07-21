@@ -12,21 +12,38 @@ static int get_tsinfo(struct net_device *dev,
 	dp_subif_t subif = {0};
 	int inst = 0;
 	int err = 0;
+	struct pmac_port_info *port_info;
 
 	if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
 		PR_ERR("%s dp_get_netif_subifid failed for %s\n",
 		       __func__, dev->name);
 		return -EFAULT;
 	}
-	ops = dp_port_prop[inst].mac_ops[subif.port_id];
-	if (!ops)
-		return -EFAULT;
-	err = ops->mac_get_ts_info(ops, ts_info);
-	if (err < 0)
-		return -EFAULT;
-	DP_DEBUG(DP_DBG_FLAG_INST,
-		 "get_tsinfo done:%s\n",
-		 dev->name);
+
+	port_info = get_dp_port_info(inst, subif.port_id);
+
+	/* PTP is applicable to only physical & non-physical
+	 * active Ethernet ports,
+	 * For Prx300 portid should be 2,3,4
+	 * For LGM portid should be 2 ... 10
+	 */
+	if (port_info->alloc_flags & (DP_F_FAST_ETH_LAN |
+				      DP_F_FAST_ETH_WAN)) {
+		ops = dp_port_prop[inst].mac_ops[subif.port_id];
+		if (!ops)
+			return -EFAULT;
+		err = ops->mac_get_ts_info(ops, ts_info);
+		if (err < 0)
+			return -EFAULT;
+		DP_DEBUG(DP_DBG_FLAG_INST,
+			 "get_tsinfo done:%s\n",
+			 dev->name);
+	}
+
+	/* NOTE: Timestamp should not be reported for all other ports and
+	 * subif, report back 0, otherwise tcpdump for non-physical ports will
+	 * fail
+	 */
 	return 0;
 }
 #endif
@@ -56,10 +73,10 @@ int dp_ops_set(void **dev_ops, int ops_cb_offset,
 			*dp_orig_ops_cb = NULL;
 		}
 		*dev_ops = dp_new_ops;
-			}
-		/* callback for ops  */
-		dev_ops_cb = (void **)((char *)dp_new_ops + ops_cb_offset);
-		*dev_ops_cb = new_ops_cb;
+	}
+	/* callback for ops  */
+	dev_ops_cb = (void **)((char *)dp_new_ops + ops_cb_offset);
+	*dev_ops_cb = new_ops_cb;
 
 	return	DP_SUCCESS;
 }
@@ -137,7 +154,7 @@ int dp_register_ptp_ioctl(struct dp_dev *dp_dev,
 	if (!cap.hw_ptp)
 		return DP_FAILURE;
 
-	    /* netdev ops register */
+	/* netdev ops register */
 	err = dp_ops_set((void **)&dev->netdev_ops,
 			 offsetof(const struct net_device_ops, ndo_do_ioctl),
 			 sizeof(*dev->netdev_ops),
