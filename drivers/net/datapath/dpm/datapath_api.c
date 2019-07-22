@@ -139,6 +139,18 @@ void *dp_get_ops(int inst, enum DP_OPS_TYPE type)
 }
 EXPORT_SYMBOL(dp_get_ops);
 
+struct inst_property *dp_port_prop_dbg(int inst)
+{
+	return get_dp_port_prop(inst);
+}
+EXPORT_SYMBOL(dp_port_prop_dbg);
+
+struct pmac_port_info *dp_port_info_dbg(int inst, int index)
+{
+	return get_dp_port_info(inst, index);
+}
+EXPORT_SYMBOL(dp_port_info_dbg);
+
 char *get_dp_port_type_str(int k)
 {
 	return dp_port_type_str[k];

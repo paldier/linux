@@ -733,6 +733,9 @@ static inline struct pmac_port_info *get_dp_port_info(int inst, int index)
 	return NULL;
 }
 
+struct inst_property *dp_port_prop_dbg(int inst);
+struct pmac_port_info *dp_port_info_dbg(int inst, int index);
+
 static inline struct dp_subif_info *get_dp_port_subif(
 	const struct pmac_port_info *port, u16 subif_id)
 {
