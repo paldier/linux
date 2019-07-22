@@ -260,6 +260,17 @@ enum DP_F_FLAG {
 #define DP_COC_REQ_ETHERNET	2 /*!< @brief COC request from ethernet */
 #define DP_COC_REQ_VRX318	4 /*!< @brief COC request from vrx318 */
 
+enum PMAC_TCP_TYPE {
+	TCP_OVER_IPV4 = 0,
+	UDP_OVER_IPV4,
+	TCP_OVER_IPV6,
+	UDP_OVER_IPV6,
+	TCP_OVER_IPV6_IPV4,
+	UDP_OVER_IPV6_IPV4,
+	TCP_OVER_IPV4_IPV6,
+	UDP_OVER_IPV4_IPV6
+};
+
 /*! @brief pmapper mode */
 enum DP_PMAP_MODE {
 	DP_PMAP_PCP = 1,  /*!< PCP Mapper:with omci unmark frame option 1
