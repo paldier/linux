@@ -10,12 +10,6 @@
 #ifndef DATAPATH_PPV4_H
 #define DATAPATH_PPV4_H
 
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
-struct pp_qos_dev {
-	int dq_port;
-};
-#endif
-
 #define MAX_PPV4_PORT 256
 #define MAX_CQM_DEQ   138
 #define MAX_QUEUE   512
@@ -53,9 +47,6 @@ struct ppv4_queue {
 	u16 parent; /* -1 means no parent.
 		     * it is used for shared dropping queueu purpose
 		     */
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
-	int dq_port; /* cqm dequeue port for qos slim driver queue alloc */
-#endif
 };
 
 struct ppv4_scheduler {

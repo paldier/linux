@@ -2302,9 +2302,6 @@ int dp_basic_proc(void)
 	if (dp_init_ok) /*alredy init */
 		return 0;
 	register_notifier(0);
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST)
-	PR_INFO("\n\n--prx300_test to simulate SLIM QOS drv---\n\n\n");
-#endif /*CONFIG_INTEL_DATAPATH_DUMMY_QOS_VIA_PRX300_TEST*/
 	register_dp_cap(0);
 	if (request_dp(0)) /*register 1st dp instance */ {
 		PR_ERR("register_dp instance fail\n");

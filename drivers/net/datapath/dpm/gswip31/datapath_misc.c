@@ -501,9 +501,6 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 	q.qid = -1;
 	q.parent = port.node_id;
 	q.inst = inst;
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_DUMMY_QOS)
-	q.dq_port = info->cqe_deq; /*for qos slim driver only */
-#endif
 	if (dp_pp_alloc_queue(&q)) {
 		PR_ERR("%s fail\n",
 		       "dp_pp_alloc_queue");
