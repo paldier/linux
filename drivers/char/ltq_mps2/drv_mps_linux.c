@@ -874,7 +874,7 @@ static void mps_proc_entrycreate ( struct proc_dir_entry *parent_node,
    Example entry of needed device tree nodes.
    \verbatim
    mps@107000 {
-      compatible = "lantiq,mps2-falconmx","lantiq,mps2-xrx500";
+      compatible = "lantiq,prx300-mps2","lantiq,mps2-xrx500";
       reg = <0x107000 0x400>;
       interrupt-parent = <&icu0>;
       interrupts = <154 155>;
