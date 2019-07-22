@@ -288,6 +288,7 @@ struct qos_dev_init_info {
 /******************************************************************************/
 #define QOS_LOG(format, arg...) QOS_LOG_DEBUG(format, ##arg)
 void stop_run(void);
+void resume_run(void);
 void qos_dbg_tree_show(struct pp_qos_dev *qdev, struct seq_file *s);
 int qos_dbg_qstat_show(struct pp_qos_dev *qdev, struct seq_file *s);
 

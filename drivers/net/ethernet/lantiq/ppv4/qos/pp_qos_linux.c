@@ -62,6 +62,16 @@ void stop_run(void)
 	}
 }
 
+void resume_run(void)
+{
+	struct pp_qos_drv_data *pdata;
+
+	if (cur_dev) {
+		pdata = dev_get_drvdata(cur_dev);
+		QOS_BITS_CLEAR(pdata->qdev->flags, PP_QOS_FLAGS_ASSERT);
+	}
+}
+
 void wake_uc(void *data)
 {
 	struct pp_qos_drv_data *pdata;

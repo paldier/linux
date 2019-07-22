@@ -689,10 +689,13 @@ void node_update_children(
 	unsigned int num;
 	struct qos_node *child;
 
-	child = get_node_from_phy(
-			qdev->nodes,
-			parent->parent_prop.first_child_phy);
-	num =  parent->parent_prop.num_of_children;
+	num = parent->parent_prop.num_of_children;
+	if (!num)
+		return;
+
+	child = get_node_from_phy(qdev->nodes,
+				  parent->parent_prop.first_child_phy);
+
 	for (; num; --num)  {
 		child->child_prop.parent_phy = new_phy;
 		++child;
@@ -3014,10 +3017,10 @@ void __dbg_dump_subtree(struct pp_qos_dev *qdev,
 		child = get_node_from_phy(qdev->nodes, child_phy);
 
 		if (last_child)
-			snprintf(indent_str, sizeof(indent_str), "%s'-- ",
+			snprintf(indent_str, PP_QOS_DBG_MAX_INPUT, "%s'-- ",
 				 tabs_str);
 		else
-			snprintf(indent_str, sizeof(indent_str), "%s|-- ",
+			snprintf(indent_str, PP_QOS_DBG_MAX_INPUT, "%s|-- ",
 				 tabs_str);
 
 		if (node_sched(child)) {

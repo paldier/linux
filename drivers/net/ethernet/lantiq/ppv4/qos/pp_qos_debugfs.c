@@ -909,6 +909,14 @@ static ssize_t queue_help(struct file *file,
 	return ret;
 }
 
+static ssize_t resume_run_dbg(struct file *file, char __user *user_buf,
+			      size_t count, loff_t *ppos)
+{
+	resume_run();
+
+	return 0;
+}
+
 static const struct file_operations debug_add_shared_bwl_group_fops = {
 	.open    = simple_open,
 	.read    = add_shared_bwl_group_help,
@@ -955,6 +963,12 @@ static const struct file_operations debug_queue_fops = {
 	.open    = simple_open,
 	.read    = queue_help,
 	.write   = queue,
+	.llseek  = default_llseek,
+};
+
+static const struct file_operations resume_run_fops = {
+	.open    = simple_open,
+	.read    = resume_run_dbg,
 	.llseek  = default_llseek,
 };
 
@@ -1678,6 +1692,7 @@ static struct debugfs_file qos_debugfs_files[] = {
 	{"port", &debug_port_fops, 0400},
 	{"sched", &debug_sched_fops, 0400},
 	{"queue", &debug_queue_fops, 0400},
+	{"resume_run", &resume_run_fops, 0400},
 };
 
 int qos_dbg_dev_init(struct platform_device *pdev)

@@ -674,10 +674,8 @@ static int _pp_qos_port_set(
 			  conf->common_prop.shared_bandwidth_group,
 			  conf->port_parent_prop.arbitration,
 			  conf->port_parent_prop.best_effort_enable,
-			  (unsigned long)conf->ring_address,
-			  conf->ring_size,
-			  conf->packet_credit_enable,
-			  conf->credit,
+			  (unsigned long)conf->ring_address, conf->ring_size,
+			  conf->packet_credit_enable, conf->credit,
 			  conf->disable);
 
 	nodep = get_conform_node(qdev, id, NULL);
@@ -1253,33 +1251,28 @@ static int _pp_qos_queue_set(
 	modified = 0;
 	nodep = NULL;
 
-	QOS_LOG_API_DEBUG("queue=%u bw=%u shared=%u parent=%u"
-			" priority=%u bw_share=%u max_burst=%u blocked=%u"
-			  " wred_enable=%u wred_fixed_drop_prob=%u"
-			  " wred_min_avg_green=%u wred_max_avg_green=%u"
-			  " wred_slope_green=%u wred_fixed_drop_prob_green=%u"
-			  " wred_min_avg_yellow=%u wred_max_avg_yellow=%u"
-			  " wred_slope_yellow=%u wred_fixed_drop_prob_yellow=%u"
-			  " wred_min_guaranteed=%u wred_max_allowed=%u > queue\n",
-			  id, conf->common_prop.bandwidth_limit,
-			  conf->common_prop.shared_bandwidth_group,
-			  conf->queue_child_prop.parent,
-			  conf->queue_child_prop.priority,
-			  conf->queue_child_prop.wrr_weight,
-			  conf->max_burst,
-			  conf->blocked,
-			  conf->wred_enable,
-			  conf->wred_fixed_drop_prob_enable,
-			  conf->queue_wred_min_avg_green,
-			  conf->queue_wred_max_avg_green,
-			  conf->queue_wred_slope_green,
-			  conf->queue_wred_fixed_drop_prob_green,
-			  conf->queue_wred_min_avg_yellow,
-			  conf->queue_wred_max_avg_yellow,
-			  conf->queue_wred_slope_yellow,
-			  conf->queue_wred_fixed_drop_prob_yellow,
-			  conf->queue_wred_min_guaranteed,
-			  conf->queue_wred_max_allowed);
+	QOS_LOG_API_DEBUG(
+		"queue=%u bw=%u shared=%u parent=%u"
+		" priority=%u wrr_weight=%u max_burst=%u blocked=%u"
+		" wred_enable=%u wred_fixed_drop_prob=%u"
+		" wred_min_avg_green=%u wred_max_avg_green=%u"
+		" wred_slope_green=%u wred_fixed_drop_prob_green=%u"
+		" wred_min_avg_yellow=%u wred_max_avg_yellow=%u"
+		" wred_slope_yellow=%u wred_fixed_drop_prob_yellow=%u"
+		" wred_min_guaranteed=%u wred_max_allowed=%u > queue\n",
+		id, conf->common_prop.bandwidth_limit,
+		conf->common_prop.shared_bandwidth_group,
+		conf->queue_child_prop.parent, conf->queue_child_prop.priority,
+		conf->queue_child_prop.wrr_weight, conf->max_burst,
+		conf->blocked, conf->wred_enable,
+		conf->wred_fixed_drop_prob_enable,
+		conf->queue_wred_min_avg_green, conf->queue_wred_max_avg_green,
+		conf->queue_wred_slope_green,
+		conf->queue_wred_fixed_drop_prob_green,
+		conf->queue_wred_min_avg_yellow,
+		conf->queue_wred_max_avg_yellow, conf->queue_wred_slope_yellow,
+		conf->queue_wred_fixed_drop_prob_yellow,
+		conf->queue_wred_min_guaranteed, conf->queue_wred_max_allowed);
 
 	rc = check_queue_conf_validity(qdev, id, conf,
 			&node, &modified, alias_node);
@@ -1941,7 +1934,7 @@ int pp_qos_sched_set(
 	int rc;
 
 	QOS_LOG_API_DEBUG("sched=%u bw=%u shared=%u arb=%u be=%u"
-			  " parent=%u priority=%u bw_share=%u > sched\n",
+			  " parent=%u priority=%u wrr_weight=%u > sched\n",
 			  id, conf->common_prop.bandwidth_limit,
 			  conf->common_prop.shared_bandwidth_group,
 			  conf->sched_parent_prop.arbitration,
