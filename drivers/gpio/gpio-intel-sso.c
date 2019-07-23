@@ -179,10 +179,11 @@ static int sso_gpio_freq_set(struct sso_gpio_priv *priv)
 
 	freq_idx = sso_gpio_get_freq_idx(priv->freq);
 	val = freq_idx % FPID_FREQ_RANK_MAX;
+	off = 0;
+	mask = 0;
 
 	if (!priv->freq) {
 		us = US_SW;
-		off = US;
 	} else if (freq_idx < FPID_FREQ_RANK_MAX) {
 		mask = SSO_CON1_FPID_MASK;
 		off = SSO_CON1_FPID;
@@ -193,9 +194,15 @@ static int sso_gpio_freq_set(struct sso_gpio_priv *priv)
 		us = US_GPTC;
 	}
 
-	/* Update FSC/GPT Divider and US for LED  */
+	/* Update FSC/GPT Divider/BLINK_R and US for LED  */
 	sso_gpio_write_mask(priv->mmap, SSO_CON1, US, US_MASK, us);
-	sso_gpio_write_mask(priv->mmap, SSO_CON1, off, mask, val);
+	/* Update BLINK_R and update src only for non software update */
+	if(priv->freq) {
+		sso_gpio_update_bit(priv->mmap, SSO_CON0, BLINK_R, 1);
+		sso_gpio_write_mask(priv->mmap, SSO_CON1, off, mask, val);
+	} else {
+		sso_gpio_update_bit(priv->mmap, SSO_CON0, BLINK_R, 0);
+	}
 
 	return 0;
 }
@@ -279,9 +286,6 @@ static int sso_gpio_hw_init(struct sso_gpio_priv *priv)
 
 	/* update edge */
 	if (sso_gpio_update_bit(priv->mmap, SSO_CON0, RZFL, priv->edge))
-		return -ENOTSUPP;
-
-	if (sso_gpio_update_bit(priv->mmap, SSO_CON0, BLINK_R, 1))
 		return -ENOTSUPP;
 
 	/* Set GPIO update rate */
