@@ -4183,23 +4183,36 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 
 			case GSW_PCE_ACTION_PORTMAP_CPU:
 			case GSW_PCE_ACTION_PORTMAP_ALTERNATIVE:
-				if (gswdev->gipver <= LTQ_GSWIP_3_0) {
-					/* CPU port-map */ //Govind - Need to test for 3.0 with MC router.
+				if (IS_VRSN_BELOW_31(gswdev->gipver)) {
 					ptbl.val[1] = (paction->nForwardPortMap[0] & 0xFFFF);
-				}
 
-				if (IS_VRSN_31(gswdev->gipver)) {
-					for (i = 0; i <= 7; i++)
-						ptbl.val[i + 10] = (paction->nForwardPortMap[i]);
-				}
+					if (paction->ePortMapAction == GSW_PCE_ACTION_PORTMAP_CPU) {
+						/* Applicable for 2.1/2.2/3.0
+						   or multicast hardware enabled */
+						/* set to 'MC router' portmap MUX control */
+						ptbl.val[4] &= ~(0x3 << 2);
+						ptbl.val[4] |= (0x1 << 2);
+					}
+				} else {
+					u16 map = 0;
 
-				//If CPU type set to 'MC router' portmap MUX control.
-				if ((paction->ePortMapAction == GSW_PCE_ACTION_PORTMAP_CPU) &&
-					((IS_VRSN_BELOW_31(gswdev->gipver)) ||
-					(gswdev->mcsthw_snoop == MCAST_HWSNOOP_EN))) {
-					/*Applicable for 3.0 and when multicast hardware enabled */
-					ptbl.val[4] &= ~(0x3 << 2);
-					ptbl.val[4] |= (0x1 << 2); /* set to 'MC router' portmap MUX control */
+					for (i = 0; i < 8; i++) {
+						ptbl.val[i + 10] = paction->nForwardPortMap[i];
+						map |= paction->nForwardPortMap[i];
+					}
+
+					if (paction->ePortMapAction == GSW_PCE_ACTION_PORTMAP_CPU) {
+						if (gswdev->mcsthw_snoop == MCAST_HWSNOOP_EN) {
+							/* Applicable for 2.1/2.2/3.0
+							   or multicast hardware enabled */
+							/* set to 'MC router' portmap MUX control */
+							ptbl.val[4] &= ~(0x3 << 2);
+							ptbl.val[4] |= (0x1 << 2);
+						} else if (map == 0) {
+							map = 1 << (gswdev->cport % 16);
+							ptbl.val[10 + gswdev->cport / 16] = map;
+						}
+					}
 				}
 
 				break;

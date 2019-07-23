@@ -2559,7 +2559,7 @@ static void get_gsw_hw_cap(void *cdev)
 		gsw_r32(cdev, ETHSW_CAP_16_MCASTHW_OFFSET,
 			ETHSW_CAP_16_MCASTHW_SHIFT,
 			ETHSW_CAP_16_MCASTHW_SIZE, &reg_val);
-		gswdev->mcsthw_snoop = reg_val;
+		gswdev->mcsthw_snoop = reg_val ? MCAST_HWSNOOP_DIS : MCAST_HWSNOOP_EN;
 
 		gsw_r32(cdev, ETHSW_CAP_17_BRG_OFFSET,
 			ETHSW_CAP_17_BRG_SHIFT,
