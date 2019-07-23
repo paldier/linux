@@ -10,7 +10,7 @@
 /*!
  * @file Datapath_api_qos.h
  *
- *  @brief &nbsp; Datapath QOS HAL API
+ *  @brief Datapath QOS HAL API
  *<PRE>
  *  Purpose: try to provide common QOS HAL API and hide HW difference inside
  *           Datapath QOS HAL
@@ -1252,7 +1252,6 @@ int dp_ingress_ctp_tc_map_set(struct dp_tc_cfg *tc, int flag);
 struct dp_qos_cfg_info {
 	int inst; /*!< input: dp instance. For SOC side, it is always zero */
 	u32 quanta; /*!< QoS quanta for scheduler */
-	
 };
 
 /*!< API dp_qos_global_info_get: Helps to retrieve global QoS
