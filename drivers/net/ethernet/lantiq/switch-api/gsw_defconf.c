@@ -539,14 +539,6 @@ static int pmac_glbl_cfg(struct core_ops *ops, u8 pmacid)
 	glbl_cfg.bProcFlagsEgCfgEna = 1;
 	glbl_cfg.eProcFlagsEgCfg = GSW_PMAC_PROC_FLAGS_MIX;
 
-	/* For PON HGU, ARP or other small packet size generated from
-	 * CPU -> PONIP -> OLT -> STC is getting droped at OLT, due to underize.
-	 * Adding padding to all packets less than 64 bytes to PON IP at PMAC
-	 * level. Currently all packets to PON IP is through PMAC 1
-	 */
-	if (pmacid == PMAC_1)
-		glbl_cfg.bPadEna = 1;
-
 	ops->gsw_pmac_ops.Pmac_Gbl_CfgSet(ops, &glbl_cfg);
 
 	return 0;
