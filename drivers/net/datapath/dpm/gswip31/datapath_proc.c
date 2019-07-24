@@ -275,10 +275,10 @@ int proc_print_ctp_bp_info(struct seq_file *s, int inst,
 	int bp = sif->bp;
 	unsigned char *buf = kmalloc(MAX_BP_NUM * 5 + 1, GFP_KERNEL);
 
-	seq_printf(s, "          : bp=%d(member:%s)\n", bp,
+	seq_printf(s, "           bp=%d(member:%s)\n", bp,
 		   get_bp_member_string(inst, bp, buf));
 	list_for_each_entry(tmp, &sif->logic_dev, list) {
-		seq_printf(s, "             %s: bp=%d(member:%s\n",
+		seq_printf(s, "             %s: bp=%d(member:%s)\n",
 			   tmp->dev->name, tmp->bp,
 			   get_bp_member_string(inst, tmp->bp, buf));
 	}

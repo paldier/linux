@@ -59,7 +59,7 @@ int dump_dc_info(struct seq_file *s, struct pmac_port_info *port)
 	u32 cid, pid, nid;
 
 	for (i = 0; i < port->num_tx_ring; i++) {
-		seq_printf(s, "    DC TxRing:      %d\n", i);
+		seq_printf(s, "    DC TxRing:         %d\n", i);
 		seq_printf(s, "      TXIN  DeqRingSize/paddr:      %d/0x%p\n",
 			   port->tx_ring[i].in_deq_ring_size,
 			   port->tx_ring[i].in_deq_paddr);
@@ -77,7 +77,7 @@ int dump_dc_info(struct seq_file *s, struct pmac_port_info *port)
 	}
 
 	for (i = 0; i < port->num_rx_ring; i++) {
-		seq_printf(s, "    DC RxRing:      %d\n", i);
+		seq_printf(s, "    DC RxRing:         %d\n", i);
 		seq_printf(s, "      RXOUT EnqRingSize/paddr/pid:  %d/0x%p/%d\n",
 			   port->rx_ring[i].out_enq_ring_size,
 			   port->rx_ring[i].out_enq_paddr,
@@ -129,6 +129,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	u32 cid, pid, nid;
 	int loop;
 	struct inst_info *info = NULL;
+	struct dma_chan_info *dma;
 
 	if (!capable(CAP_SYS_PACCT))
 		return -1;
@@ -153,10 +154,10 @@ int proc_port_dump(struct seq_file *s, int pos)
 						  * CPU port no ctp/bridge port
 						  */
 				print_ctp_bp(s, tmp_inst, port, 0, 0);
-			seq_printf(s, "          : qid/node:    %d/%d\n",
+			seq_printf(s, "           qid/node:       %d/%d\n",
 				   sif->qid,
 				   sif->q_node);
-			seq_printf(s, "          : port/node:    %d/%d\n",
+			seq_printf(s, "           port/node:      %d/%d\n",
 				   sif->cqm_deq_port,
 				   sif->qos_deq_port);
 		} else
@@ -195,7 +196,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_puts(s, "\n");
 	seq_printf(s, "    mode:              %d\n", port->cqe_lu_mode);
 	seq_printf(s, "    LCT:               %d\n", port->lct_idx);
-	seq_printf(s, "    subif_max:	       %d\n", port->subif_max);
+	seq_printf(s, "    subif_max:         %d\n", port->subif_max);
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	seq_printf(s, "    Swdev:             %d\n", port->swdev_en);
 #endif
@@ -214,12 +215,12 @@ int proc_port_dump(struct seq_file *s, int pos)
 	seq_printf(s, "    dma_chan:          0x%x\n", port->dma_chan);
 	seq_printf(s, "    gpid_base:         %d\n", port->gpid_base);
 	seq_printf(s, "    gpid_num:          %d\n", port->gpid_num);
-	seq_printf(s, "    gpid_base:         %d\n", port->policy_base);
-	seq_printf(s, "    gpid_num:          %d\n", port->policy_num);
+	seq_printf(s, "    policy_base:       %d\n", port->policy_base);
+	seq_printf(s, "    policy_num:        %d\n", port->policy_num);
 	seq_printf(s, "    tx_pkt_credit:     %d\n", port->tx_pkt_credit);
 	seq_printf(s, "    tx_b_credit:       %02d\n", port->tx_b_credit);
-	seq_printf(s, "    txpush_addr:      0x%px\n", port->txpush_addr);
-	seq_printf(s, "    txpush_addr_qos: 0x%px\n", port->txpush_addr_qos);
+	seq_printf(s, "    txpush_addr:       0x%px\n", port->txpush_addr);
+	seq_printf(s, "    txpush_addr_qos:   0x%px\n", port->txpush_addr_qos);
 	seq_printf(s, "    tx_ring_size:      %d\n", port->tx_ring_size);
 	seq_printf(s, "    tx_ring_offset:    %d(to next dequeue port)\n",
 		   port->tx_ring_offset);
@@ -237,55 +238,45 @@ int proc_port_dump(struct seq_file *s, int pos)
 
 		if (!sif->flags)
 			continue;
-		seq_printf(s,
-			   "      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
-			i,
-			"subif",
-			sif->subif,
-			"netif",
-			(uintptr_t)sif->netif,
-			"netif",
-			sif->netif ?
-			sif->netif->name : "NULL/DSL",
-			"device_name",
-			sif->device_name);
-		seq_puts(s, "          : subif_flag = ");
+		seq_printf(s, "      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
+			   i, "subif", sif->subif,
+			   "netif", (uintptr_t)sif->netif,
+			   "netif", sif->netif ? sif->netif->name : "NULL/DSL",
+			   "device_name", sif->device_name);
+
+		seq_puts(s, "           subif_flag:     ");
 		for (j = 0; j < get_dp_port_type_str_size(); j++) {
-			if (!sif->subif_flag) {
-				seq_printf(s, "%s ", "NULL");
-				break;
+			if (sif->subif_flag & dp_port_flag[j]) {
+				seq_puts(s, dp_port_type_str[j]);
+				seq_puts(s, " ");
 			}
-			if (sif->subif_flag & dp_port_flag[j])
-				seq_printf(s, "%s ", dp_port_type_str[j]);
 		}
 		seq_puts(s, "\n");
-		seq_printf(s, "          : rx_fn_rxif_pkt =0x%08x\n",
+		seq_printf(s, "           rx_fn_rxif_pkt =0x%08x\n",
 			   STATS_GET(mib->rx_fn_rxif_pkt));
-		seq_printf(s, "          : rx_fn_txif_pkt =0x%08x\n",
+		seq_printf(s, "           rx_fn_txif_pkt =0x%08x\n",
 			   STATS_GET(mib->rx_fn_txif_pkt));
-		seq_printf(s, "          : rx_fn_dropped  =0x%08x\n",
+		seq_printf(s, "           rx_fn_dropped  =0x%08x\n",
 			   STATS_GET(mib->rx_fn_dropped));
-		seq_printf(s, "          : tx_cbm_pkt     =0x%08x\n",
+		seq_printf(s, "           tx_cbm_pkt     =0x%08x\n",
 			   STATS_GET(mib->tx_cbm_pkt));
-		seq_printf(s, "          : tx_tso_pkt     =0x%08x\n",
+		seq_printf(s, "           tx_tso_pkt     =0x%08x\n",
 			   STATS_GET(mib->tx_tso_pkt));
-		seq_printf(s, "          : tx_pkt_dropped =0x%08x\n",
+		seq_printf(s, "           tx_pkt_dropped =0x%08x\n",
 			   STATS_GET(mib->tx_pkt_dropped));
-		seq_printf(s, "          : tx_clone_pkt   =0x%08x\n",
+		seq_printf(s, "           tx_clone_pkt   =0x%08x\n",
 			   STATS_GET(mib->tx_clone_pkt));
-		seq_printf(s, "          : tx_hdr_room_pkt=0x%08x\n",
+		seq_printf(s, "           tx_hdr_room_pkt=0x%08x\n",
 			   STATS_GET(mib->tx_hdr_room_pkt));
 		if (print_ctp_bp)
 			print_ctp_bp(s, tmp_inst, port, i, 0);
-		seq_printf(s, "          : qid/node:    %d/%d\n",
-			   sif->qid,
-			   sif->q_node);
+		seq_printf(s, "           qid/node:       %d/%d\n",
+			   sif->qid, sif->q_node);
 		cqm_p = sif->cqm_deq_port;
-		seq_printf(s, "          : port/node:    %d/%d(ref=%d)\n",
-			   cqm_p,
-			   sif->qos_deq_port,
+		seq_printf(s, "           port/node:      %d/%d(ref=%d)\n",
+			   cqm_p, sif->qos_deq_port,
 			   dp_deq_port_tbl[tmp_inst][cqm_p].ref_cnt);
-		seq_printf(s, "          : mac_learn_dis:    %d\n",
+		seq_printf(s, "           mac_learn_dis:  %d\n",
 			   sif->mac_learn_dis);
 		cid = _DMA_CONTROLLER(
 				dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
@@ -293,24 +284,19 @@ int proc_port_dump(struct seq_file *s, int pos)
 		nid = _DMA_CHANNEL(dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan);
 		dma_ch_offset = dp_deq_port_tbl[tmp_inst][cqm_p].dma_ch_offset;
 		if (port->num_dma_chan && dp_dma_chan_tbl[tmp_inst]) {
-			seq_printf(s,
-				"          : tx_dma_ch:    0x%x(ref=%d)\n",
-				dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
-				atomic_read(&(dp_dma_chan_tbl[tmp_inst] +
-						dma_ch_offset)->ref_cnt));
-			seq_printf(s,
-				"          : dma-ctrl/port/channel:%d/%d/%d\n",
-				cid, pid, nid);
+			dma = dp_dma_chan_tbl[tmp_inst] + dma_ch_offset;
+			seq_printf(s, "           tx_dma_ch:      0x%x(ref=%d,dma-ctrl=%d,port=%d,channel=%d)\n",
+				   dp_deq_port_tbl[tmp_inst][cqm_p].dma_chan,
+				   atomic_read(&dma->ref_cnt), cid, pid, nid);
 		}
-		seq_printf(s, "          : gpid:           %d\n",
-			   sif->gpid);
-		if (sif->ctp_dev &&
-		    sif->ctp_dev->name)
-			seq_printf(s, "          : ctp_dev = %s\n",
-				   sif->ctp_dev->name);
+		seq_printf(s, "           gpid:           %d\n", sif->gpid);
+		seq_puts(s, "           ctp_dev:        ");
+		if (sif->ctp_dev && sif->ctp_dev->name)
+			seq_puts(s, sif->ctp_dev->name);
 		else
-			seq_puts(s, "          : ctp_dev = NULL\n");
-		seq_printf(s, "          : rx_en_flag = %d\n",
+			seq_puts(s, "NULL");
+		seq_puts(s, "\n");
+		seq_printf(s, "           rx_en_flag:     %d\n",
 			   STATS_GET(sif->rx_flag));
 	}
 	seq_printf(s, "    rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",

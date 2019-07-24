@@ -279,10 +279,10 @@ int proc_print_ctp_bp_info_32(struct seq_file *s, int inst,
 	if (!(port->alloc_flags & DP_F_CPU)) {
 		buf = kmalloc(MAX_BP_NUM * 5 + 1, GFP_KERNEL);
 		p = get_bp_member_string_32(inst, bp, buf);
-		seq_printf(s, "          : bp=%d(member:%s)\n", bp,
+		seq_printf(s, "           bp=%d(member:%s)\n", bp,
 			   p ? p : "");
 		list_for_each_entry(tmp, &sif->logic_dev, list) {
-			seq_printf(s, "             %s: bp=%d(member:%s\n",
+			seq_printf(s, "             %s: bp=%d(member:%s)\n",
 				   tmp->dev->name, tmp->bp,
 				   get_bp_member_string_32(inst, tmp->bp, buf));
 		}
