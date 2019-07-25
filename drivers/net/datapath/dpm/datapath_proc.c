@@ -105,12 +105,12 @@ int dump_dc_info(struct seq_file *s, struct pmac_port_info *port)
 	}
 #if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
 	seq_printf(s, "    UMT id/CqmDeqPid/msg_mode:      %d/%d/%d\n",
-		   port->umt_param.id,
-		   port->umt_param.cqm_dq_pid,
-		   port->umt_param.msg_mode);
+		   port->umt.ctl.id,
+		   port->umt.res.cqm_dq_pid,
+		   port->umt.ctl.msg_mode);
 	seq_printf(s, "    UMT period/daddr:               %d/0x%08x\n",
-		   port->umt_param.period,
-		   port->umt_param.daddr);
+		   port->umt.ctl.msg_interval,
+		   port->umt.ctl.daddr);
 #endif
 
 	return 0;

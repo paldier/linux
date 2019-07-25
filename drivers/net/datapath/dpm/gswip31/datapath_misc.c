@@ -2050,8 +2050,8 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 		/*get the real source port from VAP for ipsec */
 		/* related tunnel decap case */
 		*ep = GET_VAP((u32)pmac->src_dst_subif_id_lsb +
-			(u32)(pmac->src_dst_subif_id_msb << 8),
-			pi->vap_offset, pi->vap_mask);
+			      (u32)(pmac->src_dst_subif_id_msb << 8),
+			      pi->vap_offset, pi->vap_mask);
 		*vap = 0;
 		*decryp = 1;
 	} else {
@@ -2059,10 +2059,12 @@ static void update_port_vap(int inst, u32 *ep, int *vap,
 #if defined(DP_SKB_HACK)
 		desc_1 = (struct dma_rx_desc_1 *)&skb->DW1;
 #else
-	//error "Please add proper logic here"
-	return;
+		//error "Please add proper logic here"
+		return;
 #endif
-		*vap = desc_1->field.session_id;
+		*vap = GET_VAP(desc_1->field.session_id,
+			       pi->vap_offset,
+			       pi->vap_mask);
 	}
 }
 

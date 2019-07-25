@@ -854,7 +854,10 @@ struct cbm_dp_alloc_complete_data {
 						    */
 	struct dp_tx_ring tx_ring[DP_TX_RING_NUM]; /*!< [in/out] DC tx ring info
 						    */
-	struct dp_umt umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+
+#if !IS_ENABLED(CONFIG_GRX500_CBM) /*GRX500 GSWIP30*/
+	struct dp_umt_port umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+#endif
 	u32 enable_cqm_meta : 1; /*!< enable CQM buffer meta data marking */
 	int alloc_flags; /*!< original alloc flags used in the dp_alloc_port */
 	u32 deq_port;	/* [in] port id which was returned in the alloc */

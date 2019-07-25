@@ -119,13 +119,15 @@ int aca_portid = -1;
 
 static void *dp_ops[DP_MAX_INST][DP_OPS_CNT];
 
-void dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops)
+int dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops)
 {
 	if (inst < 0 || inst >= DP_MAX_INST || type >= DP_OPS_CNT) {
 		DP_DEBUG(DP_DBG_FLAG_REG, "wrong index\n");
-		return;
+		return DP_FAILURE;
 	}
 	dp_ops[inst][type] = ops;
+
+	return DP_SUCCESS;
 }
 EXPORT_SYMBOL(dp_register_ops);
 
@@ -395,7 +397,7 @@ static int32_t dp_alloc_port_private(int inst,
 		}
 		cbm_data.deq_port = port->deq_port_base;
 		cbm_data.dma_chan = port->dma_chan;
-		cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data, flags);
+		cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data, port->alloc_flags | flags);
 		dp_inst_insert_mod(owner, port_id, inst, 0);
 		DP_DEBUG(DP_DBG_FLAG_REG, "de-alloc port %d\n", port_id);
 		DP_CB(inst, port_platform_set)(inst, port_id, data, flags);
@@ -950,6 +952,16 @@ int32_t dp_register_dev(struct module *owner, uint32_t port_id,
 }
 EXPORT_SYMBOL(dp_register_dev);
 
+static int remove_umt(int inst, const struct dp_umt_port *umt)
+{
+	struct umt_ops *ops = dp_get_umt_ops(inst);
+
+	if (!ops)
+		return -ENODEV;
+
+	return ops->umt_release(ops->umt_dev, umt->ctl.id);
+}
+
 int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 			    dp_cb_t *dp_cb, struct dp_dev_data *data,
 			    uint32_t flags)
@@ -991,8 +1003,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 			DP_CB(inst, dev_platform_set)(inst, port_id, data,
 						      flags);
 #if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
-			if (port_info->umt_param.id)
-				dp_umt_release(&port_info->umt_param, flags);
+			remove_umt(inst, &port_info->umt);
 #endif
 			res = DP_SUCCESS;
 		} else {
@@ -1488,9 +1499,10 @@ static int dp_register_dc(int inst, uint32_t port_id,
 			  struct cbm_dp_alloc_complete_data *cbm_data,
 			  struct dp_dev_data *data, uint32_t flags)
 {
-	struct dp_umt_param umt_param = {0};
-	int i = 0;
 	struct pmac_port_info *port = get_dp_port_info(inst, port_id);
+	struct umt_port_res *res;
+	struct umt_ops *ops = dp_get_umt_ops(inst);
+	int i, ret;
 
 	/* Fill in the output data to the the DCDP driver for the RX rings
 	 * and Save Info for debugging
@@ -1515,49 +1527,23 @@ static int dp_register_dc(int inst, uint32_t port_id,
 
 	/* UMT Interface is not supported for old products */
 #if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
-	umt_param.id = 0xFF;
-
+        res = &data->umt->res;
 	/* For PRX300, RXOUT is to DMA Channel,
 	 * For LGM, RXOUT is to CQEM Deq port
 	 */
-	umt_param.rx_src = DP_UMT_RX_FROM_DMA;
-	umt_param.dma_id = data->rx_ring[0].out_dma_ch_to_gswip;
-	umt_param.dma_ch_num = data->rx_ring[0].num_out_tx_dma_ch;
+	res->rx_src     = UMT_RX_SRC_DMA;
+	res->dma_id     = data->rx_ring[0].out_dma_ch_to_gswip;
+	res->dma_ch_num = data->rx_ring[0].num_out_tx_dma_ch;
+	res->cqm_dq_pid = port->deq_port_base;
 
-	/* For PRX300/LGM, TXIN counter is from CQM Deq port,
-	 * Message Mode is SelfCounting
-	 */
-	umt_param.cqm_dq_pid = port->deq_port_base;
-	umt_param.msg_mode = data->umt->umt_mode;
-	umt_param.period =  data->umt->umt_msg_timer;
-	umt_param.sw_msg = DP_UMT_MSG0_MSG1;
-	umt_param.daddr = (u32)data->umt->umt_msg_paddr;
-
-	if (dp_umt_request(&umt_param, 0)) {
-		PR_ERR("%s %s %x %s %d %s %d %s %d %s %d %s 0x%08x\n",
-		       "UMT request Fail!!",
-		       "DMA_ID", umt_param.dma_id,
-		       "CQM_PID", umt_param.cqm_dq_pid,
-		       "MSG_MODE", umt_param.msg_mode,
-		       "PERIOD", umt_param.period,
-		       "SW_MSG", umt_param.sw_msg,
-		       "DADDR", umt_param.daddr);
-		return DP_FAILURE;
-	}
-	if (dp_umt_set(&umt_param, 0)) {
-		PR_ERR("%s %s %x %s %d %s %d %s %d %s %d %s 0x%08x\n",
-		       "UMT port set fail!!",
-		       "DMA_ID", umt_param.dma_id,
-		       "CQM_PID", umt_param.cqm_dq_pid,
-		       "MSG_MODE", umt_param.msg_mode,
-		       "PERIOD", umt_param.period,
-		       "SW_MSG", umt_param.sw_msg,
-		       "DADDR", umt_param.daddr);
-		return DP_FAILURE;
+	if (!ops) {
+		DP_ERR("No UMT driver registered\n");
+		return -ENODEV;
 	}
 
-	/* Save umt params */
-	memcpy(&port->umt_param, &umt_param, sizeof(struct dp_umt_param));
+	ret = ops->umt_request(ops->umt_dev, data->umt);
+	memcpy(&port->umt, data->umt, sizeof(struct dp_umt_port));
+	return ret;
 #endif
 	return DP_SUCCESS;
 }

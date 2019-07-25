@@ -76,6 +76,9 @@ Module.symvers
 include/config
 include/generated
 arch/*/include/generated
+arch/mips/boot/compressed/ashldi3.c
+arch/mips/boot/compressed/bswapsi.c
+user_headers/
 
 # stgit generated dirs
 patches-*

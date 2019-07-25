@@ -22,13 +22,15 @@
 #include <net/datapath_api_ppv4.h>
 #elif IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP31)
 #include <net/datapath_api_gswip31.h>
-#elif IS_ENABLED(CONFIG_GRX500_CBM) /*GRX500 GSWIP30*/
+#elif IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30) /*GRX500 GSWIP30*/
 #include <net/datapath_api_gswip30.h>
 #else
 #error "wrong DP HAL selected"
 #endif
 #endif /*DATAPATH_HAL_LAYER */
-#include <net/intel_datapath_umt.h>
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30) /*GRX500 GSWIP30*/
+#include <net/datapath_api_umt.h>
+#endif
 #include <net/datapath_api_vlan.h>
 #include <net/switch_api/lantiq_gsw_api.h>
 #include <net/switch_api/lantiq_gsw_flow.h>
@@ -1019,34 +1021,15 @@ enum DP_DEV_DATA_FLAG {
  *                only 13 bits in PAE are handled [14, 11:0]
  *\note
  */
-enum DP_UMT_MODE {
-	DP_UMT_MODE_HW_SELF, /*!< HW UMT self couting mode */
-	DP_UMT_MODE_HW_USER, /*!< HW UMT user Mode */
-	DP_UMT_MODE_SW, /*!< SW UMT: no need to call UMT API */
-};
 
-enum DP_UMT_MSG_MODE {
-	DP_UMT_MSG_MODE_ACCU,  /*!< Accumulated msg mode */
-	DP_UMT_MSG_MODE_INCRE, /*!< Accumulated msg mode */
-	DP_UMT_MSG_MODE_MAX  /*!< Not valid UMT msg mode */
-};
 
-enum DP_RXOUT_MSG_MODE {
-	DP_RXOUT_MSG_ADD = 0, /*!< rxout_add */
-	DP_RXOUT_MSG_SUB, /*!< rxout_sub */
-};
 
 enum DP_RXOUT_QOS_MODE {
 	DP_RXOUT_BYPASS_QOS_ONLY = 0, /*!< bypass QOS but with FSQM */
 	DP_RXOUT_QOS, /*!< with QOS */
 	DP_RXOUT_BYPASS_QOS_FSQM, /*!< bypass QOS and FSQM */
 	DP_RXOUT_QOS_MAX /*!< Not valid RXOUT qos mode */
-};
 
-enum DP_UMT_MSG_ENDIAN {
-	DP_UMT_MSG_ENDIAN_LITTLE = 0, /*!< UMT message in little endian */
-	DP_UMT_MSG_ENDIAN_BIG, /*!< UMT message in big endian */
-	DP_UMT_MSG_ENDIAN_MAX  /*!< Not valid UMT msg endian */
 };
 
 /*! @brief struct dp_rx_ring, which is used for DirectConnected (DC)
@@ -1136,7 +1119,9 @@ struct dp_rx_ring {
 				*    virtual addresses
 				*    For software testing or debugging
 				*/
-	enum DP_RXOUT_MSG_MODE out_msg_mode; /*!< [in] rxout msg mode */
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30) /*GRX500 GSWIP30*/
+	enum umt_rx_msg_mode out_msg_mode; /*!< [in] rxout msg mode */
+#endif
 	enum DP_RXOUT_QOS_MODE out_qos_mode; /*!< [in] rxout qos mode */
 };
 
@@ -1221,37 +1206,6 @@ struct dp_tx_ring {
 				  */
 };
 
-/*! @brief struct dp_umt, which only used for DirectConnected (DC)
- *  applications
- */
-struct dp_umt {
-	u8 enable : 1; /*!< [in] enable flag to indicate whether need to
-			*   use this UMT or not
-			*/
-	u32 umt_msg_timer; /*!< [in] UMT msg update interval in us */
-
-	void *umt_msg_paddr; /*!< [in] umt message physical base address.
-			      *   Note: umt rx/tx share same base address.
-			      *   The msg sequence is rx first, followed by tx
-			      *   For SW UMT case, it should be NULL
-			      */
-	void *umt_msg_vaddr; /*!< [in] umt message virtual base address
-			      *    If HW UMT , it should be NULL
-			      */
-	enum DP_UMT_MODE umt_mode; /*!< [in] UMT mode */
-	enum DP_UMT_MSG_MODE umt_msg_mode; /*!< [in] UMT RX MSG mode
-					    */
-	/* Note: remove enum dp_umt_rx_src umt_rx_src for LGM;
-	 * Basic rule to set inside DP:
-	 *     1) bypass both QOS and FSQM: set mode DP_UMT_RX_FROM_DMA
-	 *     2) otherwise set mode DP_UMT_RX_FROM_CQEM
-	 */
-	enum dp_umt_sw_msg usr_msg; /*!< [in] For UMT HW user mode only
-				     *    For HW_SELF counting mode, always with
-				     *      msg rx + tx
-				     */
-};
-
 /*! @brief struct dp_dev_data, which used for DirectConnected (DC)
  *  applications
  */
@@ -1287,7 +1241,9 @@ struct dp_dev_data {
 	struct dp_gpid_tx_info gpid_info; /*!< [in] for GPID tx information
 					   *   Valid only if @f_gpid valid.
 					   */
-	struct dp_umt umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30) /*GRX500 GSWIP30*/
+	struct dp_umt_port umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+#endif
 	u32 enable_cqm_meta : 1; /*!< enable CQM buffer meta data marking */
 
 	u16 max_ctp;    /*!< [in] maximum subif required which will be mapped to
@@ -1814,7 +1770,9 @@ struct dp_spl_conn {
 	struct dp_gpid_tx_info gpid_info; /*!< [in] for GPID tx information
 					   *   Valid only if @f_gpid valid.
 					   */
-	struct dp_umt umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30) /*GRX500 GSWIP30*/
+	struct dp_umt_port umt[DP_MAX_UMT]; /*!< [in/out] DC umt information */
+#endif
 };
 
 /*!
@@ -1841,8 +1799,9 @@ enum DP_OPS_TYPE {
  *@param[in] type: ops type
  *@param[in] ops: pointer to ops structure
  *@note  set to NULL to deregister
+ *@return return 0 if OK / -1 if error
  */
-void dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops);
+int dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops);
 
 /*!
  *@brief get ops registration
@@ -1853,4 +1812,30 @@ void dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops);
 void *dp_get_ops(int inst, enum DP_OPS_TYPE type);
 int dp_get_mtu_size(struct net_device *dev, u32 *mtu_size);
 
+/*!
+ *@brief get UMT ops registration
+ *@param[in] inst: DP instance ID
+ *@return UMT ops pointer if registered, or NULL if not registered
+ */
+static inline struct umt_ops *dp_get_umt_ops(int inst)
+{
+	return (struct umt_ops *)dp_get_ops(inst, DP_OPS_UMT);
+}
+
+/*!
+ *@brief parse dma ID
+ *@param[in] inst     : DMA ID
+ *@param[out] cid     : DMA Controller ID
+ *@param[out] pid     : DMA Port ID
+ *@param[out] chid    : DMA Channel ID
+ */
+static inline void dp_dma_parse_id(u32 dma_id, u8 *cid, u8 *pid, u16 *chid)
+{
+	if (cid)
+		*cid = dma_id >> 24;
+	if (pid)
+		*pid = (dma_id >> 16) & 0xff;
+	if (chid)
+		*chid = dma_id & 0xffff;
+}
 #endif /*DATAPATH_API_H */

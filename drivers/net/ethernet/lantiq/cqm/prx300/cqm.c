@@ -2262,43 +2262,12 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 			break;
 		}
 
-		/* in_alloc_ring_size should be 0 - 32 */
-		if ((dp_data->rx_ring[ring_idx].in_alloc_ring_size < 0) ||
-		    (dp_data->rx_ring[ring_idx].in_alloc_ring_size >
-		     p_info->deq_info.num_desc)) {
-			dev_err(cqm_ctrl->dev, "%s Inv in_alloc_ring_size %u\n",
-				__func__,
-				dp_data->rx_ring[ring_idx].in_alloc_ring_size);
-			break;
-		} else if (!dp_data->rx_ring[ring_idx].in_alloc_ring_size) {
-			dp_data->rx_ring[ring_idx].in_alloc_ring_size =
-						p_info->deq_info.num_desc;
-		}
-
-		/* out_enq_ring_size should be 0 - 32 */
-		if ((dp_data->rx_ring[ring_idx].out_enq_ring_size < 0) ||
-		    (dp_data->rx_ring[ring_idx].out_enq_ring_size >
-		     p_info->deq_info.num_desc)) {
-			dev_err(cqm_ctrl->dev, "%s Inv out_enq_ring_size %u\n",
+		/* out_enq_ring_size fixed to 4096 */
+		if (dp_data->rx_ring[ring_idx].out_enq_ring_size >= CQM_KB(4)) {
+			dev_err(cqm_ctrl->dev, "%s out_enq_ring_size %u\n",
 				__func__,
 				dp_data->rx_ring[ring_idx].out_enq_ring_size);
 			break;
-		} else if (!dp_data->rx_ring[ring_idx].out_enq_ring_size) {
-			dp_data->rx_ring[ring_idx].out_enq_ring_size =
-						p_info->deq_info.num_desc;
-		}
-
-		/* prefill_pkt_num  should be 0 - 32 */
-		if ((dp_data->rx_ring[ring_idx].prefill_pkt_num < 0) ||
-		    (dp_data->rx_ring[ring_idx].prefill_pkt_num >
-		     p_info->deq_info.num_desc)) {
-			dev_err(cqm_ctrl->dev, "%s Inv prefill_pkt_num %u\n",
-				__func__,
-				dp_data->rx_ring[ring_idx].prefill_pkt_num);
-			break;
-		} else if (!dp_data->rx_ring[ring_idx].prefill_pkt_num) {
-			dp_data->rx_ring[ring_idx].prefill_pkt_num =
-						p_info->deq_info.num_desc;
 		}
 
 		if (p_info->dma_dt_init_type != DEQ_DMA_CHNL) {
@@ -2316,7 +2285,7 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 
 		if (ltq_dma_chan_desc_alloc(
 			p_info->dma_ch,
-			dp_data->rx_ring[ring_idx].in_alloc_ring_size)) {
+			dp_data->rx_ring[ring_idx].out_enq_ring_size)) {
 			ltq_free_dma(p_info->dma_ch);
 			dev_err(cqm_ctrl->dev, "%s: dma alloc failed\r\n",
 				__func__);
@@ -2331,9 +2300,6 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 			(void *)ltq_dma_chan_get_desc_phys_base(p_info->dma_ch);
 		dp_data->rx_ring[ring_idx].out_enq_vaddr =
 			(void *)ltq_dma_chan_get_desc_vir_base(p_info->dma_ch);
-
-		cbm_w32((cqm_ctrl->enq + EQ_DMA_PORT(dp_data->deq_port, dptr)),
-			(dp_data->rx_ring[ring_idx].out_enq_ring_size  - 1));
 
 		tbl_size = dp_data->rx_ring[ring_idx].prefill_pkt_num
 				* sizeof(u32);
