@@ -47,8 +47,10 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	}
 	*res = kmalloc_array(idx, sizeof(struct resource),
 					 GFP_KERNEL);
-	if (!*res)
+	if (!*res) {
 		pr_info("error allocating memory\n");
+		goto err_free_pdata;
+	}
 	memcpy(*res, resource, (sizeof(struct resource) * idx));
 	cqm_pdata->num_resources = idx;
 	*num_res = idx;
@@ -63,6 +65,8 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	cqm_pdata->num_intrs = idx;
 	cqm_pdata->intrs = kmalloc_array(idx, sizeof(unsigned int),
 						   GFP_KERNEL);
+	if (!cqm_pdata->intrs)
+		goto err_free_pdata;
 	memcpy(cqm_pdata->intrs, intr, (sizeof(unsigned int) * idx));
 	cqm_pdata->rcu_reset = of_reset_control_get(node, "cqm");
 	if (IS_ERR(cqm_pdata->rcu_reset))
@@ -85,7 +89,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 
 	if (cqm_pdata->num_pools != pool_size) {
 		pr_err("buff num and buff size mismatch\n");
-		return NULL;
+		goto err_free_pdata;
 	}
 
 	pool_size = 0;
@@ -101,7 +105,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 
 	if (cqm_pdata->num_pools_a1 != pool_size) {
 		pr_err("buff num and buff size mismatch\n");
-		return NULL;
+		goto err_free_pdata;
 	}
 
 	for_each_available_child_of_node(node, cpu_deq_port) {
@@ -129,7 +133,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 	gsw_node = of_find_node_by_name(NULL, "gsw_core");
 	if (!gsw_node) {
 		pr_err("Unable to get node gsw_core\n");
-		return NULL;
+		goto err_free_pdata;
 	}
 	cqm_pdata->gsw_mode = 0;
 	of_property_read_u32(gsw_node, "gsw_mode", &cqm_pdata->gsw_mode);
@@ -137,6 +141,7 @@ struct device_node *parse_dts(int j, void **pdata, struct resource **res,
 
 err_free_pdata:
 	kfree(pdata);
+	kfree(res);
 	return NULL;
 }
 

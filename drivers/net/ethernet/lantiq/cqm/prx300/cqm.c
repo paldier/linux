@@ -4147,7 +4147,10 @@ bool fsqm_check(uint16_t len)
 	head = fsq.head;
 	tail = fsq.tail;
 	dev_info(cqm_ctrl->dev, "start with head: 0x%x tail: 0x%x", head, tail);
-	touched[head] = true;
+	if (head < FSQM_FRM_NUM)
+		touched[head] = true;
+	else
+		return false;
 
 	for (cnt = 0; cnt < (len - 1); cnt++) {
 		next =  cbm_r32(FSQM_LLT_RAM(fsqm, head));
