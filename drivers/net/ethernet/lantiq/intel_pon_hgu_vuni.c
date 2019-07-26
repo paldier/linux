@@ -380,7 +380,6 @@ static int intel_vuni_dev_reg(struct net_device *dev_0, struct vuni_hw *hw,
 			      u32 dp_port, int start, int end)
 {
 	int i, err;
-	char name[16];
 	struct intel_vuni_priv *priv;
 	struct net_device *dev = dev_0;
 
@@ -405,12 +404,13 @@ static int intel_vuni_dev_reg(struct net_device *dev_0, struct vuni_hw *hw,
 		sprintf(priv->owner->name, "module%02d", priv->id);
 		if (start == i) {
 			priv->vani = 1;
-			sprintf(name, "VANI%d", hw->num_devs);
+			snprintf(eth_dev[hw->num_devs][i]->name, IFNAMSIZ,
+				 "VANI%d", hw->num_devs);
 		} else {
 			priv->vani = 0;
-			sprintf(name, "VUNI%d_%d",  hw->num_devs, i - 1);
+			snprintf(eth_dev[hw->num_devs][i]->name, IFNAMSIZ,
+				 "VUNI%d_%d",  hw->num_devs, i - 1);
 		}
-		strcpy(eth_dev[hw->num_devs][i]->name, name);
 
 		eth_dev[hw->num_devs][i]->netdev_ops = &intel_vuni_drv_ops;
 		ltq_eth_drv_eth_addr_setup(eth_dev[hw->num_devs][i],
