@@ -17,6 +17,8 @@
 #include <linux/regmap.h>
 #include <linux/reset.h>
 #include <linux/phy/phy.h>
+#include <linux/debugfs.h>
+#include <linux/uaccess.h>
 
 #define CLK_100MHZ	100000000	/* 100MHZ */
 #define CLK_156MHZ	156250000	/* 156.25Mhz */
@@ -33,12 +35,24 @@
 #define COMBO_PHY_ID(x)	((x)->parent->id)
 #define PHY_ID(x)	((x)->id)
 
-#define PHY_RXADAPT_POLL_CNT	5000
+#define PHY_RXADAPT_POLL_CNT		5000
 #define RAWLANEN_RX_OV_IN_3		0x3008
-#define LANEN_RX_ADPT_ATT_STAT			0x106B
-#define LANEN_RX_ADPT_VGA_STAT			0x106C
+#define LANEN_RX_ADPT_ATT_STAT		0x106B
+#define LANEN_RX_ADPT_VGA_STAT		0x106C
 #define LANEN_RX_ADPT_CTLE_STAT		0x106D
 #define LANEN_RX_ADPT_DFETAP1_STAT	0x106E
+#define TX_MAIN_CUR			0x4008
+#define TX_MAIN_CUR_MASK		0x3F
+#define TX_MAIN_CUR_OFF			9
+#define MAIN_CURSOR_OVRD		15
+#define TX_PRE_CUR			0x400C
+#define TX_PRE_CUR_MASK			0x1F
+#define TX_PRE_CUR_OFF			0
+#define POST_OVRD_EN			6
+#define TX_POST_CUR			0x400C
+#define TX_POST_CUR_MASK		0x3F
+#define TX_POST_CUR_OFF			7
+#define PRE_OVRD_EN			13
 
 static const char * const intel_phy_names[] = {"pcie", "xpcs", "sata"};
 
@@ -142,6 +156,7 @@ struct intel_combo_phy {
 
 	const struct intel_cbphy_soc_data *soc_data;
 	struct phy_ctx phy[PHY_MAX_NUM];
+	struct dentry *debugfs;
 };
 
 static const struct phy_ops intel_cbphy_ops = {
@@ -1091,6 +1106,135 @@ static int intel_combo_phy_sysfs_init(struct intel_combo_phy *priv)
 	return sysfs_create_groups(&priv->dev->kobj, combo_phy_groups);
 }
 
+#if IS_ENABLED(CONFIG_DEBUG_FS)
+static ssize_t
+intel_combo_phy_serdes_write(struct file *s, const char __user *buffer,
+			     size_t count, loff_t *pos)
+{
+	struct phy_ctx *iphy = file_inode(s)->i_private;
+	u32 main_cur = 0, pre_cur = 0, post_cur = 0;
+	char buf[32] = {0};
+	size_t buf_size;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
+	if (count > sizeof(buf) - 1)
+		return -EINVAL;
+
+	memset(buf, 0, sizeof(buf));
+	buf_size = min(count, sizeof(buf) - 1);
+	if (copy_from_user(buf, buffer, buf_size))
+		return -EFAULT;
+
+	if (strcmp(buf, "help") == 0)
+		goto __write_help;
+
+	if (sscanf(buf, "%u %u %u", &main_cur, &pre_cur, &post_cur) != 3)
+		goto __write_help;
+
+	/* Cursor */
+	combo_phy_w32_off_mask(iphy->cr_base, TX_MAIN_CUR_OFF,
+			       TX_MAIN_CUR_MASK, main_cur, TX_MAIN_CUR);
+	combo_phy_w32_off_mask(iphy->cr_base, TX_PRE_CUR_OFF,
+			       TX_PRE_CUR_MASK, pre_cur, TX_PRE_CUR);
+	combo_phy_w32_off_mask(iphy->cr_base, TX_POST_CUR_OFF,
+			       TX_POST_CUR_MASK, post_cur, TX_POST_CUR);
+
+	/* Override */
+	combo_phy_reg_bit_set(iphy->cr_base, MAIN_CURSOR_OVRD, TX_MAIN_CUR);
+	combo_phy_reg_bit_set(iphy->cr_base, POST_OVRD_EN, TX_PRE_CUR);
+	combo_phy_reg_bit_set(iphy->cr_base, PRE_OVRD_EN, TX_POST_CUR);
+
+	return count;
+
+__write_help:
+	dev_info(iphy->dev, "echo <main_cur> <pre_cur> <post_cur> > /sys/kernel/debug/combophy/phy0_serdes (or) phy1_serdes\n");
+	return count;
+}
+
+static int intel_combo_phy_seq_read(struct seq_file *s, void *v)
+{
+	struct phy_ctx *iphy = s->private;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
+	dev_info(iphy->dev, "TX_MAIN_CUR\t%u\n",
+		 ((combo_phy_r32(iphy->cr_base, TX_MAIN_CUR) &
+		 (TX_MAIN_CUR_MASK << TX_MAIN_CUR_OFF)) >> TX_MAIN_CUR_OFF));
+	dev_info(iphy->dev, "TX_PRE_CUR\t%u\n",
+		 ((combo_phy_r32(iphy->cr_base, TX_PRE_CUR) &
+		 (TX_PRE_CUR_MASK << TX_PRE_CUR_OFF)) >> TX_PRE_CUR_OFF));
+	dev_info(iphy->dev, "TX_POST_CUR\t%u\n",
+		 ((combo_phy_r32(iphy->cr_base, TX_POST_CUR) &
+		 (TX_POST_CUR_MASK << TX_POST_CUR_OFF)) >> TX_POST_CUR_OFF));
+
+	return 0;
+}
+
+static int intel_combo_phy_seq_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, intel_combo_phy_seq_read, inode->i_private);
+}
+
+static const struct file_operations intel_combophy_fops = {
+	.owner = THIS_MODULE,
+	.open = intel_combo_phy_seq_open,
+	.read = seq_read,
+	.write = intel_combo_phy_serdes_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int intel_combophy_debugfs_init(struct intel_combo_phy *priv)
+{
+	char phy_dir[64] = {0};
+	char name[16];
+	struct phy_ctx *iphy;
+	int idx;
+
+	strlcpy(phy_dir, priv->dev->of_node->name, sizeof(phy_dir));
+	priv->debugfs = debugfs_create_dir(phy_dir, NULL);
+
+	if (!priv->debugfs)
+		return -ENOMEM;
+
+	for (idx = 0; idx < PHY_MAX_NUM; idx++) {
+		iphy = &priv->phy[idx];
+		snprintf(name, sizeof(name), "phy%d_serdes", idx);
+		if (iphy->enable && iphy->phy_mode == PHY_XPCS_MODE) {
+			if (!debugfs_create_file(name, 0644, priv->debugfs,
+						 iphy, &intel_combophy_fops))
+				goto __debugfs_err;
+		}
+	}
+
+	return 0;
+
+__debugfs_err:
+	debugfs_remove_recursive(priv->debugfs);
+	return -ENOMEM;
+}
+
+static int intel_combophy_debugfs_exit(struct intel_combo_phy *priv)
+{
+	debugfs_remove_recursive(priv->debugfs);
+	priv->debugfs = NULL;
+	return 0;
+}
+#else
+static int intel_combophy_debugfs_init(struct intel_combo_phy *priv)
+{
+	return 0;
+}
+
+static int intel_combophy_debugfs_exit(struct intel_combo_phy *priv)
+{
+	return 0;
+}
+#endif /* CONFIG_DEBUG_FS */
+
 static int intel_combo_phy_probe(struct platform_device *pdev)
 {
 	int id;
@@ -1146,7 +1290,15 @@ static int intel_combo_phy_probe(struct platform_device *pdev)
 	if (intel_combo_phy_sysfs_init(priv))
 		return -EINVAL;
 
+	if (intel_combophy_debugfs_init(priv))
+		return -EINVAL;
+
 	return 0;
+}
+
+static int intel_combo_phy_remove(struct platform_device *pdev)
+{
+	return intel_combophy_debugfs_exit(platform_get_drvdata(pdev));
 }
 
 /* TwinHill platform data */
@@ -1287,6 +1439,7 @@ MODULE_DEVICE_TABLE(of, of_intel_combo_phy_match);
 
 static struct platform_driver intel_combo_phy_driver = {
 	.probe = intel_combo_phy_probe,
+	.remove = intel_combo_phy_remove,
 	.driver = {
 		.name = "intel-combo-phy",
 		.of_match_table = of_match_ptr(of_intel_combo_phy_match),

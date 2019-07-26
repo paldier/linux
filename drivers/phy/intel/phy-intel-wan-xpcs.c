@@ -21,11 +21,25 @@
 #include <linux/reset.h>
 #include <linux/mfd/syscon.h>
 #include <linux/regmap.h>
+#include <linux/debugfs.h>
+#include <linux/uaccess.h>
 
 /* chiptop aon/pon config; this is platform specific */
 #define CHIP_TOP_IFMUX_CFG 0x120
 #define WAN_MUX_AON        0x1
 #define WAN_MUX_MASK       0x1
+#define TX_MAIN_CUR			0x4008
+#define TX_MAIN_CUR_MASK		0x3F
+#define TX_MAIN_CUR_OFF			9
+#define MAIN_CURSOR_OVRD		15
+#define TX_PRE_CUR			0x400C
+#define TX_PRE_CUR_MASK			0x1F
+#define TX_PRE_CUR_OFF			0
+#define POST_OVRD_EN			6
+#define TX_POST_CUR			0x400C
+#define TX_POST_CUR_MASK		0x3F
+#define TX_POST_CUR_OFF			7
+#define PRE_OVRD_EN			13
 
 enum {
 	PHY_RST,
@@ -45,7 +59,155 @@ struct intel_wan_xpcs_phy {
 	u32                    clk_freq;
 	struct regmap          *syscfg;
 	struct reset_control   *resets[MAX_RST];
+	void __iomem *base;
+	struct dentry *debugfs;
 };
+
+static u32 intel_wan_xpcs_r32(void __iomem *base, u32 reg)
+{
+	return readl(base + reg);
+}
+
+static void intel_wan_xpcs_w32(void __iomem *base, u32 val,  u32 reg)
+{
+	writel(val, base + reg);
+}
+
+static void intel_wan_xpcs_w32_off_mask(void __iomem *base, u32 off,
+					       u32 mask, u32 set, u32 reg)
+{
+	u32 val;
+
+	val = intel_wan_xpcs_r32(base, reg) & (~(mask << off));
+	val |= (set & mask) << off;
+	intel_wan_xpcs_w32(base, val, reg);
+}
+
+static void intel_wan_xpcs_reg_bit_set(void __iomem *base, u32 off, u32 reg)
+{
+	intel_wan_xpcs_w32_off_mask(base, off, 1, 1, reg);
+}
+
+#if IS_ENABLED(CONFIG_DEBUG_FS)
+static ssize_t
+intel_wan_xpcs_phy_serdes_write(struct file *s, const char __user *buffer,
+				size_t count, loff_t *pos)
+{
+	struct intel_wan_xpcs_phy *priv = file_inode(s)->i_private;
+	u32 main_cur = 0, pre_cur = 0, post_cur = 0;
+	char buf[32] = {0};
+	size_t buf_size;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
+	if (count > sizeof(buf) -1)
+		return -EINVAL;
+
+	memset(buf, 0, sizeof(buf));
+	buf_size = min(count, sizeof(buf) -1);
+	if (copy_from_user(buf, buffer, buf_size))
+		return -EFAULT;
+
+	if (strcmp(buf, "help") == 0)
+		goto __write_help;
+
+	if (sscanf(buf, "%u %u %u", &main_cur, &pre_cur, &post_cur) != 3)
+		goto __write_help;
+
+	/* Cursor */
+	intel_wan_xpcs_w32_off_mask(priv->base, TX_MAIN_CUR_OFF,
+				    TX_MAIN_CUR_MASK, main_cur, TX_MAIN_CUR);
+	intel_wan_xpcs_w32_off_mask(priv->base, TX_PRE_CUR_OFF,
+				    TX_PRE_CUR_MASK, pre_cur, TX_PRE_CUR);
+	intel_wan_xpcs_w32_off_mask(priv->base, TX_POST_CUR_OFF,
+				    TX_POST_CUR_MASK, post_cur, TX_POST_CUR);
+
+	/* Override */
+	intel_wan_xpcs_reg_bit_set(priv->base, MAIN_CURSOR_OVRD,
+				   TX_MAIN_CUR);
+	intel_wan_xpcs_reg_bit_set(priv->base, POST_OVRD_EN, TX_PRE_CUR);
+	intel_wan_xpcs_reg_bit_set(priv->base, PRE_OVRD_EN, TX_POST_CUR);
+
+	return count;
+
+__write_help:
+	dev_info(priv->dev, "echo <main_cur> <pre_cur> <post_cur> > /sys/kernel/debug/phy/wan_xpcs_serdes\n");
+	return count;
+}
+
+static int intel_wan_xpcs_phy_seq_read(struct seq_file *s, void *v)
+{
+	struct intel_wan_xpcs_phy *priv = s->private;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
+	dev_info(priv->dev, "TX_MAIN_CUR\t%u\n",
+		 ((intel_wan_xpcs_r32(priv->base, TX_MAIN_CUR) &
+		 (TX_MAIN_CUR_MASK << TX_MAIN_CUR_OFF)) >> TX_MAIN_CUR_OFF));
+	dev_info(priv->dev, "TX_PRE_CUR\t%u\n",
+		 ((intel_wan_xpcs_r32(priv->base, TX_PRE_CUR) &
+		 (TX_PRE_CUR_MASK << TX_PRE_CUR_OFF)) >> TX_PRE_CUR_OFF));
+	dev_info(priv->dev, "TX_POST_CUR\t%u\n",
+		 ((intel_wan_xpcs_r32(priv->base, TX_POST_CUR) &
+		 (TX_POST_CUR_MASK << TX_POST_CUR_OFF)) >> TX_POST_CUR_OFF));
+
+	return 0;
+}
+
+static int intel_wan_xpcs_phy_seq_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, intel_wan_xpcs_phy_seq_read, inode->i_private);
+}
+
+static const struct file_operations intel_wan_xpcs_fops = {
+	.owner = THIS_MODULE,
+	.open = intel_wan_xpcs_phy_seq_open,
+	.read = seq_read,
+	.write = intel_wan_xpcs_phy_serdes_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int intel_wan_xpcs_phy_debugfs_init(struct intel_wan_xpcs_phy *priv)
+{
+	char wan_xpcs_dir[64] = {0};
+
+	strlcpy(wan_xpcs_dir, priv->dev->of_node->name, sizeof(wan_xpcs_dir));
+	priv->debugfs = debugfs_create_dir(wan_xpcs_dir, NULL);
+
+	if (!priv->debugfs)
+		return -ENOMEM;
+
+	if (!debugfs_create_file("wan_xpcs_serdes", 0644, priv->debugfs,
+				 priv, &intel_wan_xpcs_fops))
+		goto __debugfs_err;
+
+	return 0;
+
+__debugfs_err:
+	debugfs_remove_recursive(priv->debugfs);
+	return -ENOMEM;
+}
+
+static int intel_wan_xpcs_phy_debugfs_exit(struct intel_wan_xpcs_phy *priv)
+{
+	debugfs_remove_recursive(priv->debugfs);
+	priv->debugfs = NULL;
+	return 0;
+}
+#else
+static int intel_wan_xpcs_phy_debugfs_init(struct intel_wan_xpcs_phy *priv)
+{
+	return 0;
+}
+
+static int intel_wan_xpcs_phy_debugfs_exit(struct intel_wan_xpcs_phy *priv)
+{
+	return 0;
+}
+#endif /* CONFIG_DEBUG_FS */
 
 static int intel_wan_xpcs_phy_init(struct phy *phy)
 {
@@ -120,6 +282,7 @@ static int intel_wan_xpcs_phy_dt_parse(struct intel_wan_xpcs_phy *priv)
 {
 	struct device *dev = priv->dev;
 	struct device_node *np = dev->of_node;
+	struct resource *res;
 	int i;
 
 	priv->clk = devm_clk_get(dev, NULL);
@@ -146,6 +309,20 @@ static int intel_wan_xpcs_phy_dt_parse(struct intel_wan_xpcs_phy *priv)
 	if (IS_ERR(priv->syscfg)) {
 		dev_err(dev, "No phandle specified for xpcs-phy syscon\n");
 		return PTR_ERR(priv->syscfg);
+	}
+
+	res = platform_get_resource(priv->pdev, IORESOURCE_MEM, 0);
+
+	if (!res) {
+		dev_err(dev, "Failed to get wan_serdes iomem resource!\n");
+		return PTR_ERR(res);
+	}
+
+	priv->base = devm_ioremap_resource(dev, res);
+
+	if (IS_ERR(priv->base)) {
+		dev_err(dev, "Failed to ioremap resource: %p\n", res);
+		return PTR_ERR(priv->base);
 	}
 
 	return 0;
@@ -191,7 +368,15 @@ static int intel_wan_xpcs_phy_probe(struct platform_device *pdev)
 		return PTR_ERR(phy_provider);
 	}
 
+	if (intel_wan_xpcs_phy_debugfs_init(priv))
+		return -EINVAL;
+
 	return 0;
+}
+
+static int intel_wan_xpcs_phy_remove(struct platform_device *pdev)
+{
+	return intel_wan_xpcs_phy_debugfs_exit(platform_get_drvdata(pdev));
 }
 
 static const struct of_device_id of_intel_wan_xpcs_phy_match[] = {
@@ -202,6 +387,7 @@ MODULE_DEVICE_TABLE(of, of_intel_wan_xpcs_phy_match);
 
 static struct platform_driver intel_wan_xpcs_phy_driver = {
 	.probe = intel_wan_xpcs_phy_probe,
+	.remove = intel_wan_xpcs_phy_remove,
 	.driver = {
 		.name = "intel-wan-xpcs-phy",
 		.of_match_table = of_match_ptr(of_intel_wan_xpcs_phy_match),
