@@ -33,8 +33,8 @@ int dp_swdev_alloc_bridge_id_32(int inst)
 	return br.nBridgeId;
 }
 
-int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
-				 int inst, int bport)
+int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
+				    int inst, int bport)
 {
 	GSW_return_t ret;
 	struct bridge_member_port *bport_list = NULL;
@@ -278,18 +278,18 @@ int dp_gswip_ext_vlan_32(int inst, int vap, int ep)
 	port = get_dp_port_info(inst, ep);
 	vlan = kzalloc(sizeof(*vlan), GFP_KERNEL);
 	if (!vlan) {
-		PR_ERR("failed to alloc ext_vlan of %d bytes\n", sizeof(*vlan));
+		PR_ERR("failed to alloc ext_vlan of %zd bytes\n", sizeof(*vlan));
 		return 0;
 	}
 	vlan->vlan2_list = kzalloc(sizeof(*vlan->vlan2_list), GFP_KERNEL);
 	if (!vlan->vlan2_list) {
-		PR_ERR("failed to alloc ext_vlan of %d bytes\n",
+		PR_ERR("failed to alloc ext_vlan of %zd bytes\n",
 		       sizeof(*vlan->vlan2_list));
 		goto EXIT;
 	}
 	vlan->vlan1_list = kzalloc(sizeof(*vlan->vlan1_list), GFP_KERNEL);
 	if (!vlan->vlan1_list) {
-		PR_ERR("failed to alloc ext_vlan of %d bytes\n",
+		PR_ERR("failed to alloc ext_vlan of %zd bytes\n",
 		       sizeof(*vlan->vlan1_list));
 		goto EXIT;
 	}

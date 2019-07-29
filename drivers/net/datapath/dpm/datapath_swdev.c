@@ -366,7 +366,7 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 			br_info = kmalloc(sizeof(*br_info), GFP_KERNEL);
 			if (!br_info) {
 				PR_ERR
-				("Switch cfg Failed as kmalloc %d bytes fail\n",
+				("Switch cfg Fail as kmalloc %zd bytes fail\n",
 				 sizeof(*br_info));
 				/*TODO need to check return value
 				 *for switchdev commit
@@ -846,8 +846,6 @@ static int dp_swdev_port_obj_add(struct net_device *dev,
 	case SWITCHDEV_OBJ_ID_PORT_VLAN:
 		err = dp_swdev_filter_vlan(obj->orig_dev, obj, trans, br_dev);
 		break;
-	case SWITCHDEV_OBJ_ID_PORT_FDB:
-		break;
 	default:
 		err = -EOPNOTSUPP;
 		break;
@@ -884,6 +882,7 @@ static int dp_swdev_port_obj_del(struct net_device *dev,
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 static int dp_swdev_port_fdb_dump(struct net_device *dev,
 				  struct switchdev_obj_port_fdb *fdb_obj,
 				  switchdev_obj_dump_cb_t *cb)
@@ -920,13 +919,11 @@ static int dp_swdev_port_obj_dump(struct net_device *dev,
 
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "dp_swdev_port_obj_dump\r\n");
 	switch (obj->id) {
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 	case SWITCHDEV_OBJ_ID_PORT_VLAN:
 		err = dp_swdev_port_vlan_dump(mlxsw_sp_port,
 					      SWITCHDEV_OBJ_PORT_VLAN(obj),
 					      cb);
 		break;
-#endif
 	case SWITCHDEV_OBJ_ID_PORT_FDB:
 		err = dp_swdev_port_fdb_dump(dev,
 					     SWITCHDEV_OBJ_PORT_FDB(obj),
@@ -991,6 +988,7 @@ int dp_ndo_bridge_dellink(struct net_device *dev, struct nlmsghdr *nlh,
 		return -EINVAL;
 	return switchdev_port_bridge_dellink(dev, nlh, flags);
 }
+#endif
 
 int dp_notif_br_alloc(struct net_device *br_dev)
 {
@@ -1004,7 +1002,7 @@ int dp_notif_br_alloc(struct net_device *br_dev)
 			br_info = kmalloc(sizeof(*br_info), GFP_KERNEL);
 			if (!br_info) {
 				PR_ERR
-				("Switch cfg Failed as kmalloc %d bytes fail\n",
+				("Switch cfg Fail as kmalloc %zd bytes fail\n",
 				 sizeof(*br_info));
 				return -1;
 			}
@@ -1026,6 +1024,7 @@ int dp_notif_br_alloc(struct net_device *br_dev)
 	return br_id;
 }
 
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 /*Register netdev_ops for switchdev*/
 static int dp_set_netdev_ops(struct dp_dev *dp_dev,
 			     struct net_device *dp_port)
@@ -1090,6 +1089,7 @@ static int dp_set_netdev_ops(struct dp_dev *dp_dev,
 		return DP_FAILURE;
 	return 0;
 }
+#endif
 
 /* This function registers the created port in datapath to switchdev */
 int dp_port_register_switchdev(struct dp_dev  *dp_dev,
@@ -1143,6 +1143,7 @@ int dp_port_register_switchdev(struct dp_dev  *dp_dev,
 			 &dp_swdev_port_obj_del);
 	if (err)
 		return DP_FAILURE;
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWDEV_TEST)
 	err = dp_ops_set((void **)&dp_port->switchdev_ops,
 			 offsetof(const struct switchdev_ops,
 				  switchdev_port_obj_dump),
@@ -1153,6 +1154,7 @@ int dp_port_register_switchdev(struct dp_dev  *dp_dev,
 	if (err)
 		return DP_FAILURE;
 	dp_set_netdev_ops(dp_dev, dp_port);
+#endif
 	}
 	return 0;
 }
