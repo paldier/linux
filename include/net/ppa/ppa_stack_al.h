@@ -1729,15 +1729,6 @@ int32_t ppa_if_is_pppoa(PPA_NETIF *netif, PPA_IFNAME *ifname);
 	\note
  */
 uint32_t ppa_is_session_equal(PPA_SESSION *p_session1, PPA_SESSION *p_session2);
-/*! \brief Returns true if the session is bridged tunnel like EoGRE.
-	\param[in] ppp_buf Pointer to the PPA buffer.
-	\param[in] p_session Pointer to the PPA session.
-	\return This function returns the one of the following values: \n
-	- IFX_TRUE if the session is bridged tunnel like EoGRE. \n
-	- IFX_FALSE if the session is not a bridged tunnel. \n
-	\note
- */
-bool ppa_session_is_bridged_tunnel(PPA_BUF *ppa_buf, PPA_SESSION *p_session);
 /*! \brief Get the Stack session Helper function for connection tracking. Such helper functions exist when a Connection tracking / SPI logic for the application protocol of that session. Examples are FTP control session, SIP signalling session etc.
 	\param[in] p_session Pointer to the PPA Session.
 	\return This function returns the one of the following values: \n

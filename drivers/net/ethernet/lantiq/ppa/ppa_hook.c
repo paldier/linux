@@ -774,6 +774,34 @@ static unsigned int ppa_localin_hook_fn(void *priv,
  
 	return NF_ACCEPT;
 }
+
+static unsigned int ppa_localout_hook_fn(void *priv,
+					 struct sk_buff *skb,
+					 const struct nf_hook_state *state)
+{
+	struct nf_conn *ct = NULL;
+	enum ip_conntrack_info ctinfo;
+
+	u32 flags;
+
+	if (ppa_hook_session_add_fn) {
+		ct = nf_ct_get(skb, &ctinfo);
+
+		if (ct)
+			ct = nf_ct_is_confirmed(ct) ? ct : NULL;
+
+		flags = PPA_F_BEFORE_NAT_TRANSFORM;
+		flags |= PPA_F_SESSION_LOCAL_OUT;
+		flags |= (CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL)
+				? PPA_F_SESSION_ORG_DIR
+				: PPA_F_SESSION_REPLY_DIR;
+
+		ppa_hook_session_add_fn(skb, ct, flags);
+	}
+
+	return NF_ACCEPT;
+}
+
 static struct nf_hook_ops ipt_hook_ops[] __read_mostly = {
 	/* hook for pre-routing ipv4 packets */
 	{
@@ -819,15 +847,15 @@ static struct nf_hook_ops ipt_hook_ops[] __read_mostly = {
 	},
 	/* hook for local-out ipv4 packets */
 	{
-		.hook 		= ppa_prert_hook_fn,
-		.hooknum 	= 3, /*NF_IP_LOCAL_OUT*/
+		.hook		= ppa_localout_hook_fn,
+		.hooknum	= 3, /*NF_IP_LOCAL_OUT*/
 		.pf		= PF_INET,
 		.priority	= NF_IP_PRI_LAST,
 	},
 	/* hook for local-out ipv6 packets */
 	{
-		.hook 		= ppa_prert_hook_fn,
-		.hooknum 	= 3, /*NF_IP_LOCAL_OUT*/
+		.hook		= ppa_localout_hook_fn,
+		.hooknum	= 3, /*NF_IP_LOCAL_OUT*/
 		.pf		= PF_INET6,
 		.priority	= NF_IP6_PRI_LAST,
 	}
