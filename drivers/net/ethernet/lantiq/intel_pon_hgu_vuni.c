@@ -281,8 +281,14 @@ static int vuni_xmit(struct sk_buff *skb, struct net_device *dev)
 	int len;
 	struct net_device *vuni_dev;
 
+	if (skb_put_padto(skb, ETH_ZLEN)) {
+		priv->stats.tx_dropped++;
+		return NETDEV_TX_OK;
+	}
+
 	if (strcmp(dev->name, eth_dev[priv->id][0]->name) != 0) {
 		/*drop the packet*/
+		priv->stats.tx_dropped++;
 		kfree_skb(skb);
 		return 0;
 	}
