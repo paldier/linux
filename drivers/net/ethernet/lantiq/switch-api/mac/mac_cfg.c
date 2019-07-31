@@ -575,6 +575,13 @@ int mac_set_mtu(void *pdev, u32 mtu)
 	spin_lock_bh(&pdata->mac_lock);
 #endif
 
+	if (gswss_get_mac_rxfcs_op(pdev) == (RX_FCS_REMOVE % 4))
+		mtu -= ETHERNET_FCS_SIZE;
+	if (gswss_get_mac_rxtime_op(pdev) == (RX_TIME_INSERT % 4))
+		mtu += TIMESTAMP80_SIZE;
+	if (gswss_get_mac_rxsptag_op(pdev) == (RX_SPTAG_INSERT % 4))
+		mtu += SPTAG_SIZE;
+
 	if (mtu > FALCON_MAX_MTU) {
 		ret = -1;
 		goto err;
@@ -605,6 +612,13 @@ int mac_get_mtu(void *pdev)
 #endif
 
 	mtu = gswss_get_mtu(pdev);
+
+	if (gswss_get_mac_rxfcs_op(pdev) == (RX_FCS_REMOVE % 4))
+		mtu += ETHERNET_FCS_SIZE;
+	if (gswss_get_mac_rxtime_op(pdev) == (RX_TIME_INSERT % 4))
+		mtu -= TIMESTAMP80_SIZE;
+	if (gswss_get_mac_rxsptag_op(pdev) == (RX_SPTAG_INSERT % 4))
+		mtu -= SPTAG_SIZE;
 
 #ifdef __KERNEL__
 	spin_unlock_bh(&pdata->mac_lock);
@@ -674,13 +688,11 @@ int mac_oper_cfg(void *pdev, MAC_OPER_CFG oper)
 int mac_get_oper_cfg(void *pdev, MAC_OPER_CFG oper)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
-	u32 mode;
 	int ret = 0;
 
 #ifdef __KERNEL__
 	spin_lock_bh(&pdata->mac_lock);
 #endif
-	mode = oper % 4;
 
 	switch (oper) {
 	case TX_FCS_NO_INSERT:
@@ -912,6 +924,10 @@ int mac_enable_ts(void *pdev)
 
 	//mac_printf("MAC %d: Enable Timestamp operations\n", pdata->mac_idx);
 
+	/* Adjust MTU */
+	if (gswss_get_mac_rxtime_op(pdev) != MODE1)
+		gswss_set_mtu(pdev, gswss_get_mtu(pdev) + TIMESTAMP80_SIZE);
+
 	/* Tell adaption layer to attach Timestamp */
 	gswss_set_mac_rxtime_op(pdev, MODE1);
 
@@ -955,9 +971,12 @@ int mac_disable_ts(void *pdev)
 #endif
 	mac_printf("MAC %d: Disable Timestamp operations\n", pdata->mac_idx);
 
+	/* Adjust MTU */
+	if (gswss_get_mac_rxtime_op(pdev) == MODE1)
+		gswss_set_mtu(pdev, gswss_get_mtu(pdev) - TIMESTAMP80_SIZE);
+
 	gswss_set_mac_rxtime_op(pdev, MODE0);
 	gswss_set_mac_txsptag_op(pdev, MODE0);
-	gswss_set_mac_rxsptag_op(pdev, MODE0);
 
 	xgmac_disable_tstamp(pdev);
 

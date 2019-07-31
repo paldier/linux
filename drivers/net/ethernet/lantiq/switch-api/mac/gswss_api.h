@@ -162,6 +162,10 @@
 #define FREEZE				0
 #define UNFREEZE			1
 
+#define ETHERNET_FCS_SIZE		4
+#define SPTAG_SIZE			8
+#define TIMESTAMP80_SIZE		10
+
 enum {
 	XGMAC = 0,
 	LMAC,
