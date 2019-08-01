@@ -206,7 +206,7 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 	/*As new SWAS 3.7 required, MPE1/Color/FlowID is set by applications */
 	desc_0->all &= dma_tx_desc_mask0.all;
 	desc_1->all &= dma_tx_desc_mask1.all;
-	/*desc_2->all = 0;*/ /*remove since later it will be set properly */
+
 	if (desc_3->field.dic) {
 		desc_3->all = 0; /*keep DIC bit to support test tool*/
 		desc_3->field.dic = 1;
@@ -229,11 +229,12 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 							dp_info);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		} else if (flags & DP_TX_INSERT) {
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_INSERT, &pmac,
 							desc_0, desc_1,
 							dp_info);
+
+			/* Set the GSWIP Logical Port ID to insert */
 			SET_PMAC_IGP_EGP(&pmac, ep);
 
 			/* if DP_TX_INSERT_POINT Ins Point 1, else Ins Point 0
@@ -248,7 +249,6 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
 							desc_0, desc_1,
 							dp_info);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		}
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
@@ -275,6 +275,7 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 			pmac.record_id_msb = rec_id;
 		}
 #endif
+
 	} else if (dp_info->alloc_flags & DP_F_FAST_DSL) { /*some with pmac*/
 		if (unlikely(flags & DP_TX_CAL_CHKSUM)) { /* w/ pmac*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
@@ -282,22 +283,12 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 							dp_info);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-#endif
 		} else if (flags & DP_TX_DSL_FCS) {/* after checksum check */
 			/* w/ pmac for FCS purpose*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
 							desc_0, desc_1,
 							dp_info);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 			insert_pmac_f = 1;
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-#endif
 		} else { /*no pmac */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
 							desc_0, desc_1,
@@ -311,43 +302,15 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 							dp_info);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_ACA_CSUM_WORKAROUND)
-			if (aca_portid > 0)
-				desc_1->field.ep = aca_portid;
-#endif
 		} else { /*no pmac*/
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, NULL,
 							desc_0, desc_1,
 							dp_info);
 		}
-	} else if (dp_info->alloc_flags & DP_F_DIRECTLINK) { /*always w/ pmac*/
-		if (unlikely(flags & DP_TX_CAL_CHKSUM)) { /* w/ pmac*/
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM, &pmac,
-							desc_0, desc_1,
-							dp_info);
-			set_chksum(&pmac, tcp_type, ip_offset,
-				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		} else if (flags & DP_TX_TO_DL_MPEFW) { /*w/ pmac*/
-			/*copy from checksum's pmac template setting,
-			 *but need to reset tcp_chksum in TCP header
-			 */
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_OTHERS, &pmac,
-							desc_0, desc_1,
-							dp_info);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		} else { /*do like normal directpath with pmac */
-			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
-							desc_0, desc_1,
-							dp_info);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
-		}
 	}  else if (dp_info->alloc_flags & DP_F_VUNI) {
 		DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
 						desc_0, desc_1,
 						dp_info);
-		DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 	} else { /*normal directpath: always w/ pmac */
 		if (unlikely(tx_chksum_flag)) {
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_CHECKSUM,
@@ -357,15 +320,19 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 							dp_info);
 			set_chksum(&pmac, tcp_type, ip_offset,
 				   ip_offset_hw_adjust, tcp_h_offset);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		} else { /*w/ pmac */
 			DP_CB(inst, get_dma_pmac_templ)(TEMPL_NORMAL, &pmac,
 							desc_0, desc_1,
 							dp_info);
-			DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 		}
 	}
 	desc_3->field.data_len = skb->len;
+
+	/* Subifid is taken from PMAC header for
+	 * Egress Port 2/3/4
+	 */
+	if (insert_pmac_f)
+		DP_CB(inst, set_pmac_subif)(&pmac, rx_subif->subif);
 
 	if (unlikely(dp_dbg_flag)) {
 		if (insert_pmac_f)

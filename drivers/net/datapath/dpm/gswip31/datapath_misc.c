@@ -104,61 +104,6 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma0_template[TEMPL_INSERT].field.redir = 0;
 		dp_info->dma0_mask_template[TEMPL_INSERT].field.redir = 0;
 
-	} else if (flags & DP_F_DIRECTLINK) { /*always with pmac*/
-		/*normal dirctpath without checksum support
-		 *but with pmac to Switch for accelerate
-		 */
-		dp_info->pmac_template[TEMPL_NORMAL].igp_msb = portid;
-		dp_info->pmac_template[TEMPL_NORMAL].class_en = 1;
-		SET_PMAC_IGP_EGP(&dp_info->pmac_template[TEMPL_NORMAL], portid);
-
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.enc = 1;
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.dec = 1;
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.mpe2 = 0;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
-		/*dirctpath with checksum support */
-		dp_info->pmac_template[TEMPL_CHECKSUM].igp_msb = portid;
-		dp_info->dma0_template[TEMPL_CHECKSUM].field.redir = 1;
-		dp_info->dma0_mask_template[TEMPL_CHECKSUM].field.redir = 0;
-		dp_info->pmac_template[TEMPL_CHECKSUM].tcp_chksum = 1;
-		dp_info->pmac_template[TEMPL_CHECKSUM].class_en = 1;
-		SET_PMAC_IGP_EGP(&dp_info->pmac_template[TEMPL_CHECKSUM],
-				 portid);
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.enc = 1;
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.dec = 1;
-		dp_info->dma1_template[TEMPL_CHECKSUM].field.mpe2 = 1;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
-
-		/*dirctpath without checksum support but send packet to MPE
-		 * DL FW
-		 */
-		dp_info->pmac_template[TEMPL_OTHERS].igp_msb = portid;
-		dp_info->dma0_template[TEMPL_OTHERS].field.redir = 1;
-		dp_info->dma0_mask_template[TEMPL_OTHERS].field.redir = 0;
-		dp_info->pmac_template[TEMPL_OTHERS].class_en = 1;
-		SET_PMAC_IGP_EGP(&dp_info->pmac_template[TEMPL_OTHERS], portid);
-#if defined(CONFIG_ACCL_11AC_CS2) || defined(CONFIG_ACCL_11AC_CS2_MODULE)
-			/* CPU traffic to PAE via cbm to apply PCE rule */
-		dp_info->dma1_template[TEMPL_OTHERS].field.enc = 1;
-		dp_info->dma1_template[TEMPL_OTHERS].field.dec = 1;
-		dp_info->dma1_template[TEMPL_OTHERS].field.mpe2 = 0;
-		dp_info->dma1_mask_template[TEMPL_OTHERS].field.enc = 0;
-		dp_info->dma1_mask_template[TEMPL_OTHERS].field.dec = 0;
-		dp_info->dma1_mask_template[TEMPL_OTHERS].field.mpe2 = 0;
-#else
-		/* No need since already set to zero by default
-		 *dp_info->dma1_template[TEMPL_OTHERS].field.enc = 0;
-		 *dp_info->dma1_template[TEMPL_OTHERS].field.dec = 0;
-		 *dp_info->dma1_template[TEMPL_OTHERS].field.mpe2 = 0;
-		 *dp_info->dma1_mask_template[TEMPL_OTHERS].field.enc = 0;
-		 *dp_info->dma1_mask_template[TEMPL_OTHERS].field.dec = 0;
-		 *dp_info->dma1_mask_template[TEMPL_OTHERS].field.mpe2 = 0;
-		 */
-#endif
 	} else if (flags & DP_F_FAST_DSL) { /*sometimes with pmac*/
 		/* For normal single DSL upstream, there is no pmac at all*/
 		dp_info->dma1_template[TEMPL_NORMAL].field.dec = 1;
