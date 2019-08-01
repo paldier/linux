@@ -69,6 +69,7 @@
 	OP(CMD_TYPE_ADD_SHARED_GROUP)		\
 	OP(CMD_TYPE_PUSH_DESC)			\
 	OP(CMD_TYPE_GET_NODE_INFO)		\
+	OP(CMD_TYPE_READ_TABLE_ENTRY)		\
 	OP(CMD_TYPE_REMOVE_SHARED_GROUP)	\
 	OP(CMD_TYPE_SET_SHARED_GROUP)		\
 	OP(CMD_TYPE_FLUSH_QUEUE)		\
@@ -82,11 +83,6 @@ enum cmd_type {
 static const char *const cmd_str[] = {
 	FW_CMDS(GEN_STR)
 };
-
-static void update_moved_nodes(
-		struct pp_qos_dev *qdev,
-		unsigned int src,
-		unsigned int dst);
 
 struct ppv4_qos_fw_hdr {
 	uint32_t major;
@@ -387,6 +383,8 @@ struct cmd_init_qos {
 	unsigned int wred_max_q_size;
 	unsigned int num_of_ports;
 	unsigned int qos_clock;
+	unsigned int bwl_temp_buff;
+	unsigned int sbwl_temp_buff;
 };
 
 struct cmd_move {
@@ -546,6 +544,13 @@ struct cmd_get_node_info {
 	struct pp_qos_node_info *info;
 };
 
+struct cmd_read_table_entry {
+	struct cmd base;
+	u32    phy;
+	u32    table_type;
+	u32    addr;
+};
+
 struct stub_cmd {
 	struct cmd cmd;
 	uint8_t data;
@@ -592,6 +597,7 @@ union driver_cmd {
 	struct cmd_remove_shared_group remove_shared_group;
 	struct cmd_push_desc	pushd;
 	struct cmd_get_node_info node_info;
+	struct cmd_read_table_entry    read_table_entry;
 	struct cmd_flush_queue flush_queue;
 	struct cmd_get_system_info sys_info;
 	struct cmd_internal	internal;
@@ -677,6 +683,8 @@ void create_init_qos_cmd(struct pp_qos_dev *qdev)
 	cmd.wred_max_q_size = qdev->hwconf.wred_max_q_size;
 	cmd.num_of_ports = qdev->max_port + 1;
 	cmd.qos_clock = qdev->hwconf.qos_clock;
+	cmd.bwl_temp_buff = qdev->hwconf.bwl_ddr_phys;
+	cmd.sbwl_temp_buff = qdev->hwconf.sbwl_ddr_phys;
 	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_INIT_QOS\n",
 			qdev->drvcmds.cmd_id,
 			qdev->drvcmds.cmd_fw_id);
@@ -696,7 +704,11 @@ void create_move_cmd(
 	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
 		return;
 
-	node = get_const_node_from_phy(qdev->nodes, dst);
+	/* If moving from tmp node, use the stored information */
+	if (src == PP_QOS_TMP_NODE)
+		node = get_const_node_from_phy(qdev->nodes, src);
+	else
+		node = get_const_node_from_phy(qdev->nodes, dst);
 
 	cmd_init(qdev, &(cmd.base), CMD_TYPE_MOVE, sizeof(cmd), 0);
 	cmd.src = src;
@@ -718,7 +730,6 @@ void create_move_cmd(
 			cmd.rlm,
 			dst_port);
 
-	update_moved_nodes(qdev, src, dst);
 	cmd_queue_put(qdev->drvcmds.cmdq, (uint8_t *)&cmd, sizeof(cmd));
 	add_suspend_port(qdev, dst_port);
 	qdev->drvcmds.cmd_fw_id++;
@@ -1234,6 +1245,30 @@ void create_get_node_info_cmd(
 	qdev->drvcmds.cmd_fw_id++;
 }
 
+void create_get_table_entry_cmd(struct pp_qos_dev *qdev, u32 phy,
+				u32 addr, u32 table_type)
+{
+	struct cmd_read_table_entry cmd;
+
+	if (PP_QOS_DEVICE_IS_ASSERT(qdev))
+		return;
+
+	memset(&cmd, 0, sizeof(cmd));
+	cmd_init(qdev, &cmd.base, CMD_TYPE_READ_TABLE_ENTRY, sizeof(cmd), 0);
+
+	cmd.phy = phy;
+	cmd.table_type = table_type;
+	cmd.addr =  addr;
+
+	QOS_LOG_DEBUG("cmd %u:%u CMD_TYPE_READ_TABLE_ENTRY %u from phy %u\n",
+		      qdev->drvcmds.cmd_id,
+		      qdev->drvcmds.cmd_fw_id,
+		      table_type, phy);
+
+	cmd_queue_put(qdev->drvcmds.cmdq, &cmd, sizeof(cmd));
+	qdev->drvcmds.cmd_fw_id++;
+}
+
 void create_get_sys_info_cmd(struct pp_qos_dev *qdev,
 			     unsigned int addr,
 			     struct qos_hw_info *info)
@@ -1409,11 +1444,6 @@ struct fw_internal {
 	unsigned int suspend_ports_index;
 	unsigned int num_suspend_ports;
 	unsigned int suspend_ports[QOS_MAX_PORTS];
-	unsigned int moved_nodes_index;
-	unsigned int num_moved_nodes;
-	struct move_info {
-		unsigned int phy;
-	} moved_nodes[16 * MAX_MOVING_NODES];
 	unsigned int	pushed;
 	int		ongoing;	/* Suspend ports indication */
 };
@@ -1445,50 +1475,6 @@ void add_suspend_port(struct pp_qos_dev *qdev, unsigned int port)
 	internals->suspend_ports[internals->num_suspend_ports] = port;
 	++(internals->num_suspend_ports);
 }
-
-/*
- * Maintains a list of destinations for nodes that were moved.
- * This list is used to instruct firmware to resume suspend this nodes,
- * to workaround HW inability to maintain the work available signal when node
- * are moved.
- * The logic is as follow:
- * If the src of the new moved node is in that list - node is removed from list
- * If dst of new moved node is not in that list - node is added to the list
- */
-static void update_moved_nodes(
-		struct pp_qos_dev *qdev,
-		unsigned int src,
-		unsigned int dst)
-{
-	unsigned int i;
-	unsigned int j;
-	struct fw_internal *internals;
-	struct move_info *info;
-	int found;
-
-	internals = qdev->fwbuf;
-	j = internals->num_moved_nodes;
-	found = 0;
-
-	for (i = 0; i < j; ++i) {
-		info = internals->moved_nodes + i;
-		if (src == info->phy) {
-			info->phy = internals->moved_nodes[j - 1].phy;
-			--j;
-		}
-		if (dst == info->phy)
-			found = 1;
-	}
-
-	internals->num_moved_nodes = j;
-	QOS_ASSERT(internals->num_moved_nodes < 16 * MAX_MOVING_NODES,
-			"Moved ports buffer is full\n");
-	if (!found) {
-		internals->moved_nodes[j].phy = dst;
-		++(internals->num_moved_nodes);
-	}
-}
-
 
 int init_fwdata_internals(struct pp_qos_dev *qdev)
 {
@@ -1532,7 +1518,7 @@ static uint32_t *fw_write_init_qos_cmd(
 {
 	*buf++ = qos_u32_to_uc(UC_QOS_CMD_INIT_QOS);
 	*buf++ = qos_u32_to_uc(flags);
-	*buf++ = qos_u32_to_uc(10);
+	*buf++ = qos_u32_to_uc(12);
 	*buf++ = qos_u32_to_uc(cmd->qm_ddr_start & 0xFFFFFFFF);
 	*buf++ = qos_u32_to_uc(cmd->qm_num_pages);
 	*buf++ = qos_u32_to_uc(cmd->wred_total_avail_resources);
@@ -1543,6 +1529,8 @@ static uint32_t *fw_write_init_qos_cmd(
 	*buf++ = qos_u32_to_uc(cmd->qos_clock);
 	*buf++ = qos_u32_to_uc(0); /* BM push address for CoDel. LGM ONLY */
 	*buf++ = qos_u32_to_uc(ltq_get_soc_rev());
+	*buf++ = qos_u32_to_uc(cmd->bwl_temp_buff);
+	*buf++ = qos_u32_to_uc(cmd->sbwl_temp_buff);
 	return buf;
 }
 
@@ -1967,6 +1955,20 @@ static uint32_t *fw_write_get_node_info(
 	return buf;
 }
 
+static uint32_t *fw_read_table_entry(u32 *buf,
+				     const struct cmd_read_table_entry *cmd,
+				     u32 flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_CMD_DEBUG_READ_NODE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(3);
+	*buf++ = qos_u32_to_uc(cmd->phy);
+	*buf++ = qos_u32_to_uc(cmd->table_type);
+	*buf++ = qos_u32_to_uc(cmd->addr);
+
+	return buf;
+}
+
 static uint32_t *fw_update_tree_cmd(uint32_t* buf, u32 phy, u32 flags,
 				    const struct fw_set_common *common,
 				    struct fw_set_parent *parent,
@@ -2006,6 +2008,16 @@ static uint32_t *fw_update_tree_cmd(uint32_t* buf, u32 phy, u32 flags,
 		*buf++ = qos_u32_to_uc(bitmap_word[word_idx]);
 
 	kfree(bitmap_word);
+
+	return buf;
+}
+
+static uint32_t *fw_suspend_tree_cmd(u32 *buf, u32 phy, u32 flags)
+{
+	*buf++ = qos_u32_to_uc(UC_QOS_CMD_SUSPEND_PORT_TREE);
+	*buf++ = qos_u32_to_uc(flags);
+	*buf++ = qos_u32_to_uc(1);
+	*buf++ = qos_u32_to_uc(phy);
 
 	return buf;
 }
@@ -2863,47 +2875,14 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 	port.valid = 0;
 
 	if (!internals->ongoing) {
-		common.suspend = 1;
-		for (i = internals->moved_nodes_index;
-		     i < internals->num_moved_nodes; ++i) {
-			// Verify space for a command (suspend)
-			if (remain < MAX_FW_CMD_SIZE) {
-				internals->moved_nodes_index = i;
-				QOS_LOG_DEBUG("reentry required: remain %d, move ind %u, num moved %u\n",
-					      remain,
-					      internals->moved_nodes_index,
-					      internals->num_moved_nodes);
-				goto signal_uc;
-			}
-
-			prev = cur;
-			cur = suspend_node(qdev,
-					internals->moved_nodes[i].phy,
-					common.suspend,
-					cur,
-					&prev,
-					&cmd_internal);
-			if (cur != prev) {
-				pushed += 1;
-				remain = cmdbuf_sz - ((uintptr_t)cur - (uintptr_t)start);
-			}
-		}
-
-		internals->moved_nodes_index = i;
-
 		for (i = 0; i < internals->num_suspend_ports; ++i) {
 			prev = cur;
-			QOS_LOG_DEBUG("CMD_INTERNAL_SUSPEND_PORT port: %u\n",
-					internals->suspend_ports[i]);
+			QOS_LOG_DEBUG("CMD_INTERNAL_SUSPEND_TREE port: %u\n",
+				      internals->suspend_ports[i]);
 
-			cur = fw_write_set_port_cmd(
-					prev,
-					internals->suspend_ports[i],
-					flags,
-					&common,
-					&parent,
-					&port);
-
+			cur = fw_suspend_tree_cmd(prev,
+						  internals->suspend_ports[i],
+						  flags);
 			if (cur != prev) {
 				cmd_internal.base.pos = prev;
 				cmd_queue_put(
@@ -2916,8 +2895,6 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 		}
 		if (pushed)
 			internals->ongoing = 1;
-
-		internals->moved_nodes_index = 0;
 	}
 
 	while ((remain >= MAX_FW_CMD_SIZE) &&
@@ -3090,6 +3067,11 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 					flags);
 			break;
 
+		case CMD_TYPE_READ_TABLE_ENTRY:
+			cur = fw_read_table_entry(prev, &dcmd.read_table_entry,
+						  flags);
+			break;
+
 		case CMD_TYPE_FLUSH_QUEUE:
 			cur = fw_write_flush_queue_cmd(
 					prev,
@@ -3114,33 +3096,6 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 
 	if (cmd_queue_is_empty(qdev->drvcmds.cmdq)) {
 		common.suspend = 0;
-		for (i = internals->moved_nodes_index;
-		     i < internals->num_moved_nodes; ++i) {
-			// Verify space for a command (resume)
-			if (remain < MAX_FW_CMD_SIZE) {
-				internals->moved_nodes_index = i;
-				QOS_LOG_DEBUG("reentry required: remain %d, move ind %u, num moved %u\n",
-					      remain,
-					      internals->moved_nodes_index,
-					      internals->num_moved_nodes);
-				goto signal_uc;
-			}
-
-			prev = cur;
-			cur = suspend_node(qdev,
-					internals->moved_nodes[i].phy,
-					common.suspend,
-					cur,
-					&prev,
-					&cmd_internal);
-			if (cur != prev) {
-				pushed += 1;
-				remain = cmdbuf_sz - ((uintptr_t)cur - (uintptr_t)start);
-			}
-		}
-
-		internals->moved_nodes_index = i;
-
 		for (i = internals->suspend_ports_index;
 		     i < internals->num_suspend_ports; ++i) {
 			/* In case port was suspended, and it was removed,
@@ -3160,6 +3115,9 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 					      internals->num_suspend_ports);
 				goto signal_uc;
 			}
+
+			/* Update BWL buffer before tree update */
+			update_bwl_buffer(qdev, internals->suspend_ports[i]);
 
 			prev = cur;
 			QOS_LOG_DEBUG("CMD_INTERNAL_UPDATE_PORT_TREE port:%u\n",
@@ -3225,8 +3183,6 @@ void enqueue_cmds(struct pp_qos_dev *qdev)
 		/* No pending suspended ports/moving nodes - Reset counters */
 		internals->suspend_ports_index = 0;
 		internals->num_suspend_ports = 0;
-		internals->moved_nodes_index = 0;
-		internals->num_moved_nodes = 0;
 		internals->ongoing = 0;
 	}
 

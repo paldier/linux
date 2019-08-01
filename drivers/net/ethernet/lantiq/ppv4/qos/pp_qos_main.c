@@ -664,6 +664,7 @@ static int _pp_qos_port_set(
 	struct qos_node node;
 	struct qos_node *nodep;
 	uint16_t phy;
+	bool new_port = false;
 
 	modified = 0;
 
@@ -686,6 +687,7 @@ static int _pp_qos_port_set(
 	if (node.type != TYPE_PORT) {
 		node.type = TYPE_PORT;
 		QOS_BITS_SET(modified, QOS_MODIFIED_NODE_TYPE);
+		new_port = true;
 	}
 
 	rc = set_node_prop(
@@ -711,6 +713,11 @@ static int _pp_qos_port_set(
 		phy = get_phy_from_node(qdev->nodes, nodep);
 		create_set_port_cmd(qdev, conf, phy, modified);
 	}
+
+	if (!new_port &&
+	    (modified & (QOS_MODIFIED_BANDWIDTH_LIMIT |
+			 QOS_MODIFIED_SHARED_GROUP_ID)))
+		add_suspend_port(qdev, get_port(qdev->nodes, phy));
 
 	return 0;
 }
@@ -1334,6 +1341,10 @@ static int _pp_qos_queue_set(
 		}
 	}
 
+	if (modified & (QOS_MODIFIED_BANDWIDTH_LIMIT |
+			QOS_MODIFIED_SHARED_GROUP_ID))
+		add_suspend_port(qdev, get_port(qdev->nodes, phy));
+
 	if (modified != QOS_MODIFIED_PARENT)
 		create_set_queue_cmd(
 				qdev,
@@ -1911,6 +1922,10 @@ static int _pp_qos_sched_set(
 		}
 	}
 
+	if (modified & (QOS_MODIFIED_BANDWIDTH_LIMIT |
+			QOS_MODIFIED_SHARED_GROUP_ID))
+		add_suspend_port(qdev, get_port(qdev->nodes, phy));
+
 	if (modified != QOS_MODIFIED_PARENT)
 		create_set_sched_cmd(
 				qdev,
@@ -2454,10 +2469,22 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 			initinfo->pl_data.fw_logger_start;
 		qdev->hwconf.fw_stat = initinfo->pl_data.fw_stat;
 		qdev->hwconf.qos_clock = initinfo->pl_data.qos_clock;
+
 		qdev->hwconf.max_allowed_ddr_virt =
 			initinfo->pl_data.max_allowed_ddr_virt;
 		qdev->hwconf.max_allowed_ddr_phys =
 			initinfo->pl_data.max_allowed_ddr_phys;
+
+		qdev->hwconf.bwl_ddr_virt =
+			(unsigned int *)initinfo->pl_data.bwl_ddr_virt;
+		qdev->hwconf.bwl_ddr_phys =
+			initinfo->pl_data.bwl_ddr_phys;
+
+		qdev->hwconf.sbwl_ddr_virt =
+			(unsigned char *)initinfo->pl_data.sbwl_ddr_virt;
+		qdev->hwconf.sbwl_ddr_phys =
+			initinfo->pl_data.sbwl_ddr_phys;
+
 		memcpy(&qdev->fwcom, &initinfo->fwcom, sizeof(struct fw_com));
 		rc = init_fwdata_internals(qdev);
 		if (rc)

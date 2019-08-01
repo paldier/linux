@@ -400,6 +400,42 @@ static int pp_qos_config_from_of_node(
 		 pdata->max_allowed_ddr_phys,
 		 pdata->max_allowed_ddr_virt);
 
+	pdata->bwl_sz = PAGE_ALIGN(NUM_OF_NODES * sizeof(u32));
+	pdata->bwl_ddr_virt = dmam_alloc_coherent(
+			dev,
+			pdata->bwl_sz,
+			&pdata->bwl_ddr_phys,
+			GFP_KERNEL | __GFP_ZERO);
+
+	if (pdata->bwl_ddr_virt == NULL) {
+		dev_err(dev, "Couldn't alloc %u bytes for bwl buffer\n",
+			pdata->bwl_sz);
+		return -ENOMEM;
+	}
+
+	dev_dbg(dev, "Dma allocated %u bytes for bwl buffer, bus address is 0x%08X, virtual addr is %p\n",
+		pdata->bwl_sz,
+		pdata->bwl_ddr_phys,
+		pdata->bwl_ddr_virt);
+
+	pdata->sbwl_sz = PAGE_ALIGN(NUM_OF_NODES * sizeof(u8));
+	pdata->sbwl_ddr_virt = dmam_alloc_coherent(
+			dev,
+			pdata->sbwl_sz,
+			&pdata->sbwl_ddr_phys,
+			GFP_KERNEL | __GFP_ZERO);
+
+	if (pdata->sbwl_ddr_virt == NULL) {
+		dev_err(dev, "Couldn't alloc %u bytes for sbwl buffer\n",
+			pdata->sbwl_sz);
+		return -ENOMEM;
+	}
+
+	dev_dbg(dev, "Dma allocated %u bytes for sbwl buffer, bus address is 0x%08X, virtual addr is %p\n",
+		pdata->sbwl_sz,
+		pdata->sbwl_ddr_phys,
+		pdata->sbwl_ddr_virt);
+
 	return 0;
 }
 

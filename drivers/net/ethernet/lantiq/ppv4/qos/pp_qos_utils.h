@@ -225,6 +225,10 @@ struct hw_conf {
 	unsigned int	qos_clock; /* In MHZ. */
 	void*		max_allowed_ddr_virt;
 	dma_addr_t	max_allowed_ddr_phys;
+	unsigned int	*bwl_ddr_virt;
+	dma_addr_t	bwl_ddr_phys;
+	unsigned char	*sbwl_ddr_virt;
+	dma_addr_t	sbwl_ddr_phys;
 };
 
 struct fw_ver {
@@ -266,14 +270,20 @@ struct ppv4_qos_platform_data  {
 	unsigned int	max_port;
 	unsigned int	wred_prioritize_pop;
 	unsigned int	qm_ddr_start;
-	void*		qm_ddr_start_virt;
+	void		*qm_ddr_start_virt;
 	unsigned int	qm_num_pages;
 	unsigned int	fw_logger_start;
 	unsigned int	fw_stat;
 	unsigned int	qos_clock; /* In MHZ. */
-	void*		max_allowed_ddr_virt;
+	void		*max_allowed_ddr_virt;
 	dma_addr_t	max_allowed_ddr_phys;
 	size_t		max_allowed_sz;
+	void		*bwl_ddr_virt;
+	dma_addr_t	bwl_ddr_phys;
+	size_t		bwl_sz;
+	void		*sbwl_ddr_virt;
+	dma_addr_t	sbwl_ddr_phys;
+	size_t		sbwl_sz;
 };
 
 /* Info needed to create descriptor */
@@ -601,6 +611,14 @@ void get_active_port_rlms(struct pp_qos_dev *qdev, u32 phy,
 void get_node_queues(struct pp_qos_dev *qdev, unsigned int phy,
 		     uint16_t *queue_ids,
 		     unsigned int size, unsigned int *queues_num);
+
+/**
+ * update_bwl_buffer() - Update all bw limit node values in temp
+ *        buffer
+ * @qdev:
+ * @phy:       Phy of subtree's node
+ */
+void update_bwl_buffer(struct pp_qos_dev *qdev, unsigned int phy);
 
 /**
  * get_node_queues() - Return all active queues on a subtree

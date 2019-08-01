@@ -96,6 +96,9 @@ void create_get_node_info_cmd(
 		unsigned int addr,
 		struct pp_qos_node_info *info);
 
+void create_get_table_entry_cmd(struct pp_qos_dev *qdev, u32 phy,
+				u32 addr, u32 table_type);
+
 void create_flush_queue_cmd(struct pp_qos_dev *qdev, unsigned int rlm);
 int do_load_firmware(
 		struct pp_qos_dev *qdev,
@@ -135,6 +138,7 @@ void create_get_sys_info_cmd(struct pp_qos_dev *qdev,
 #define create_get_queue_stats_cmd(qdev, phy, rlm, addr, qstat)
 #define create_get_port_stats_cmd(qdev, phy, addr, pstat)
 #define create_get_node_info_cmd(qdev, phy, addr, info)
+#define create_get_table_entry_cmd(qdev, phy, addr, table_type)
 #define create_push_desc_cmd(qdev, queue, size, color, addr)
 #define create_get_sys_info_cmd(qdev, addr, sys_info)
 #define add_suspend_port(qdev, port)
@@ -160,6 +164,7 @@ void create_get_sys_info_cmd(struct pp_qos_dev *qdev,
 #define create_get_queue_stats_cmd(qdev, phy, rlm, addr, qstat)
 #define create_get_port_stats_cmd(qdev, phy, addr, pstat)
 #define create_get_node_info_cmd(qdev, phy, addr, info)
+#define create_get_table_entry_cmd(qdev, phy, addr, table_type)
 #define create_push_desc_cmd(qdev, queue, size, color, addr)
 #define create_flush_queue_cmd(qdev, rlm)
 #define create_get_sys_info_cmd(qdev, addr, sys_info)

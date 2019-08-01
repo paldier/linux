@@ -45,6 +45,73 @@ static struct {
 #define PP_QOS_DEBUGFS_DIR "ppv4_qos"
 #define PP_QOS_DBG_MAX_BUF	(1024)
 
+static ssize_t read_table_entry(struct file *file, const char __user *buf,
+				size_t count, loff_t *pos)
+{
+	char *lbuf;
+	struct pp_qos_dev *qdev;
+	u32 physical_id;
+	u32 table_id;
+	struct platform_device *pdev;
+	struct pp_qos_drv_data *pdata;
+	u32 id = 0;
+	s32 ret;
+
+	pdev = (struct platform_device *)(file->private_data);
+	pdata = platform_get_drvdata(pdev);
+	qdev = pdata->qdev;
+
+	if (count >= PP_QOS_DBG_MAX_INPUT)
+		return count;
+
+	lbuf = kzalloc(count, GFP_KERNEL);
+	if (!lbuf)
+		return -ENOMEM;
+
+	if (copy_from_user(lbuf, buf, count))
+		goto read_table_entry_done;
+
+	lbuf[count - 1] = '\0';
+
+	if (sscanf(lbuf, "%u %u", &physical_id, &table_id) != 2) {
+		QOS_LOG_ERR("sscanf err\n");
+		goto read_table_entry_done;
+	}
+
+	QOS_LOG_INFO("Sending read table entry (%u) from phy (%u)\n",
+		     table_id, physical_id);
+	create_get_table_entry_cmd(qdev, physical_id,
+				   qdev->hwconf.qm_ddr_start,
+				   table_id);
+	update_cmd_id(&qdev->drvcmds);
+	transmit_cmds(qdev);
+
+read_table_entry_done:
+	kfree(lbuf);
+	return count;
+}
+
+static ssize_t read_table_entry_help(struct file *file,
+				     char __user *user_buf,
+				     size_t count,
+				     loff_t *ppos)
+{
+	char *buff;
+	u32  len = 0;
+	ssize_t ret = 0;
+
+	buff = kmalloc(PP_QOS_DBG_MAX_BUF, GFP_KERNEL);
+	if (!buff)
+		return -ENOMEM;
+
+	len = scnprintf(buff, PP_QOS_DBG_MAX_BUF,
+			"<physical node/rlm> <table id>\n");
+	ret = simple_read_from_buffer(user_buf, count, ppos, buff, len);
+	kfree(buff);
+
+	return ret;
+}
+
 static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
 				    size_t count, loff_t *pos)
 {
@@ -63,6 +130,8 @@ static ssize_t add_shared_bwl_group(struct file *file, const char __user *buf,
 		return count;
 
 	lbuf = kzalloc(count, GFP_KERNEL);
+	if (!lbuf)
+		return -ENOMEM;
 
 	if (copy_from_user(lbuf, buf, count))
 		goto add_shared_bwl_group_done;
@@ -120,6 +189,8 @@ static ssize_t remove_shared_bwl_group(struct file *file,
 		return count;
 
 	lbuf = kzalloc(count, GFP_KERNEL);
+	if (!lbuf)
+		return -ENOMEM;
 
 	if (copy_from_user(lbuf, buf, count))
 		goto remove_shared_bwl_group_done;
@@ -176,6 +247,8 @@ static ssize_t remove_node(struct file *file,
 		return count;
 
 	lbuf = kzalloc(count, GFP_KERNEL);
+	if (!lbuf)
+		return -ENOMEM;
 
 	if (copy_from_user(lbuf, buf, count))
 		goto remove_node_done;
@@ -239,6 +312,8 @@ static ssize_t allocate_node(struct file *file,
 		return count;
 
 	lbuf = kzalloc(count, GFP_KERNEL);
+	if (!lbuf)
+		return -ENOMEM;
 
 	if (copy_from_user(lbuf, buf, count))
 		goto allocate_node_done;
@@ -916,6 +991,13 @@ static ssize_t resume_run_dbg(struct file *file, char __user *user_buf,
 
 	return 0;
 }
+
+static const struct file_operations debug_read_table_entry_fops = {
+	.open    = simple_open,
+	.read    = read_table_entry_help,
+	.write   = read_table_entry,
+	.llseek  = default_llseek,
+};
 
 static const struct file_operations debug_add_shared_bwl_group_fops = {
 	.open    = simple_open,
@@ -1686,6 +1768,7 @@ static struct debugfs_file qos_debugfs_files[] = {
 	{"tree", &debug_tree_fops, 0400},
 	{"destroy_tree", &debug_tree_remove_fops, 0400},
 	{"add_shared_bwl_group", &debug_add_shared_bwl_group_fops, 0400},
+	{"read_table_entry", &debug_read_table_entry_fops, 0400},
 	{"remove_shared_bwl_group", &debug_remove_shared_bwl_group_fops, 0400},
 	{"allocate", &debug_allocate_node_fops, 0400},
 	{"remove", &debug_remove_node_fops, 0400},

@@ -1706,6 +1706,18 @@ static int update_ids_container(struct pp_qos_dev *qdev,
 	return 1;
 }
 
+static int update_bwl_buffer_node(struct pp_qos_dev *qdev,
+				  struct qos_node *node, void *data)
+{
+	unsigned int phy;
+
+	phy = get_phy_from_node(qdev->nodes, node);
+	qdev->hwconf.bwl_ddr_virt[phy] = node->bandwidth_limit;
+	qdev->hwconf.sbwl_ddr_virt[phy] = node->shared_bandwidth_group;
+
+	return 1;
+}
+
 struct rlm_container_metadata {
 	u32 next;
 	u16 *rlm;
@@ -1753,6 +1765,20 @@ void get_node_queues(struct pp_qos_dev *qdev,
 	*queues_num = post_order_travers_tree(qdev, phy,
 			node_queue_wrapper, NULL,
 			update_ids_container, &data);
+}
+
+static int node_bw_limited_wrapper(const struct pp_qos_dev *qdev,
+				   const struct qos_node *node, void *data)
+{
+	return node_used(node) &&
+		(node->bandwidth_limit || node->shared_bandwidth_group);
+}
+
+void update_bwl_buffer(struct pp_qos_dev *qdev, unsigned int phy)
+{
+	post_order_travers_tree(qdev, phy,
+				node_bw_limited_wrapper, NULL,
+				update_bwl_buffer_node, NULL);
 }
 
 void get_active_node_queues(struct pp_qos_dev *qdev,
@@ -2938,6 +2964,12 @@ void update_children_position(
 	cnt = parent->parent_prop.num_of_children;
 	dst_port = get_port(qdev->nodes, old_phy);
 	nodes_modify_used_status(qdev, old_phy, 1, 0);
+
+	/* Store old node info in tmp node */
+	memcpy(get_node_from_phy(qdev->nodes, PP_QOS_TMP_NODE),
+	       get_node_from_phy(qdev->nodes, old_phy),
+	       sizeof(struct qos_node));
+
 	create_move_cmd(qdev, PP_QOS_TMP_NODE, old_phy, dst_port);
 
 	id = get_id_from_phy(qdev->mapping, old_phy);
@@ -2947,6 +2979,10 @@ void update_children_position(
 		octet_nodes_shift(qdev, new_phy, old_phy - new_phy, 1);
 
 	create_move_cmd(qdev, new_phy, PP_QOS_TMP_NODE, dst_port);
+
+	/* Reset tmp node */
+	memset(get_node_from_phy(qdev->nodes, PP_QOS_TMP_NODE),
+	       0, sizeof(struct qos_node));
 
 	map_id_phy(qdev->mapping, id, new_phy);
 
