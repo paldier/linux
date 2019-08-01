@@ -1225,6 +1225,7 @@ typedef struct {
 	uint64_t tx_diff_L1; /*!< tx bytes plus L1 overheader since last read */
 	uint64_t tx_diff_jiffy; /*!< jiffy diff since last read */
 	uint32_t sys_hz; /*!< system HZ value. For debugging purpose */
+	uint32_t q_occ; /*!< instantaneous number of packets present in this queue */
 } PPA_QOS_MIB;
 typedef struct {
 	uint32_t portid;
