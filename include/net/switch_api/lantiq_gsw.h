@@ -1882,8 +1882,10 @@ typedef enum {
 	GSW_CAP_TYPE_CTP = 24,
 	/** Number of bridge ports - for GSWIP-3.1 only. */
 	GSW_CAP_TYPE_BRIDGE_PORT = 25,
+	/** Number of COMMON PCE Rules. */
+	GSW_CAP_TYPE_COMMON_TFLOW_RULES = 26,
 	/** Last Capability Index */
-	GSW_CAP_TYPE_LAST	= 26
+	GSW_CAP_TYPE_LAST	= 27
 } GSW_capType_t;
 
 /** \brief Capability structure.
@@ -4547,6 +4549,28 @@ typedef struct {
 	ltq_bool_t bBtagEnable;
 	GSW_B_TAG_Config_t sBtag;
 } GSW_PBB_Tunnel_Template_Config_t;
+
+/** \brief TRAFFIC FLOW TABLE  Allocation.
+ *	Used by \ref GSW_TFLOW_ALLOC and \ref GSW_TFLOW_FREE.
+ */
+typedef struct {
+	/** Number of traffic flow table entries are
+	 * associated to CTP port.Ingress traffic from this CTP
+	 *	port will go through PCE rules search ending at
+	 *	(nFirstFlowEntryIndex+nNumberOfFlowEntries)-1. Should
+	 *	be times of 4. Proper value should be given
+	 *	for \ref GSW_TFLOW_ALLOC.
+	 *	This field is ignored for \ref GSW_TFLOW_FREE.
+	 */
+	u32 num_of_pcerules;
+	/** If \ref GSW_TFLOW_ALLOC is successful, a valid ID will be returned
+	 *  in this field. Otherwise, \ref INVALID_HANDLE is
+	 *	returned in this field.
+	 *  For \ref GSW_TFLOW_FREE, this field should be valid ID returned by
+	 *  \ref GSW_TFLOW_ALLOC.
+	 */
+	u32 tflowblockid;
+} gsw_tflow_alloc_t;
 
 /*@}*/ /* GSW_IOCTL_GSWIP31 */
 
@@ -7687,6 +7711,7 @@ typedef struct {
 #define GSW_DEBUG_PRINT_PCEIRQ_LIST 		_IO(GSW_DEBUG_MAGIC, 0x16)
 #define GSW_DEBUG_RMON_PORT_GET				_IOWR(GSW_DEBUG_MAGIC, 0x17, GSW_Debug_RMON_Port_cnt_t)
 #define GSW_DEBUG_TUNNELTEMP_STATUS 		_IOWR(GSW_DEBUG_MAGIC, 0x18, GSW_debug_t)
+#define GSW_DEBUG_TFLOWTABLE_STATUS _IOWR(GSW_DEBUG_MAGIC, 0x19, GSW_debug_t)
 
 /**
    \brief Following are for GSWIP IRQ operation

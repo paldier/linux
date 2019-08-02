@@ -26,6 +26,8 @@
 #define EXTERNAL_SWITCH_BASEADDR		"intel,gsw_ext-baseaddr"
 #define EXTERNAL_SWITCH_SGMIIBASEADDR   "intel,gsw_ext-sgmiibaseaddr"
 #define GSW_DPU                         "intel,gsw-dpu"
+#define GSW_GLOBAL_PCE_RULE_NUM         "intel,gsw-globalpce-rules"
+
 /* Structure for GSWIP Subsystem operations
  * used to start Sub-Functional Drivers
  */
@@ -316,6 +318,9 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 
 	of_property_read_u32(gsw_dpu, GSW_DPU,
 			     &switch_pdata->dpu);
+	/* Get the Number of Common/Global TFLOW Rules */
+	of_property_read_u32(gsw_dev_cell->of_node, GSW_GLOBAL_PCE_RULE_NUM,
+			     &switch_pdata->num_of_global_rules);
 #ifndef CONFIG_OF
 
 	if (gsw_dev[devid].prod_id == GRX500) {

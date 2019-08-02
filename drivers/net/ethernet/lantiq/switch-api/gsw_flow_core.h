@@ -126,6 +126,7 @@ Where as CLEAR_FILL_CTRL_REG takes care of clear then fill.
 #define METER_TABLE_SIZE            128
 #define SHAPER_TABLE_SIZE           32
 #define PMAPPER_TABLE_SIZE          32
+#define GSW_TFLOW_TABLE_SIZE		512
 #define CLEAR_U16(var) var &= ((u16)~(0xFFFF))
 /*-------------------------------------*/
 
@@ -176,6 +177,8 @@ Where as CLEAR_FILL_CTRL_REG takes care of clear then fill.
 #define IS_VRSN_30_31(ver) \
 	((ver == LTQ_GSWIP_3_0) || (ver == LTQ_GSWIP_3_1))
 
+#define IS_VRSN_30_31_32(ver) \
+	((ver == LTQ_GSWIP_3_0) || (ver == LTQ_GSWIP_3_1) || (ver == LTQ_GSWIP_3_2))
 #define IS_VRSN_31_OR_32(ver) \
 	((ver == LTQ_GSWIP_3_1) || (ver == LTQ_GSWIP_3_2))
 
@@ -190,6 +193,11 @@ Where as CLEAR_FILL_CTRL_REG takes care of clear then fill.
     ((ver == LTQ_GSWIP_3_0) || (ver == LTQ_GSWIP_2_2_ETC) \
     || (ver == LTQ_GSWIP_2_2) || (ver == LTQ_GSWIP_2_1) \
     || (ver == LTQ_GSWIP_2_0))
+
+/* Features compared with less than 3.0 GSWIP versions */
+#define IS_VRSN_BELOW_30(ver) \
+	((ver == LTQ_GSWIP_2_2_ETC)  || (ver == LTQ_GSWIP_2_2)\
+	 ||  (ver == LTQ_GSWIP_2_1) || (ver == LTQ_GSWIP_2_0))
 
 #define GSW_BRIDGE_PORT_SRC_IP_LOOKUP_DISABLE 1
 
@@ -505,6 +513,7 @@ typedef enum {
 #define BRDG_CONF_ENTRY_INVALID 0xFFFF
 #define BRDG_PORTCONF_ENTRY_INVALID 0xFFFF
 #define METER_ENTRY_INVALID 0xFFFF
+#define TFLOW_ENTRY_INVALID 0xFFFF
 
 typedef enum {
 	PCE_VLANFILTER_INDEX = 0x2,
@@ -897,6 +906,17 @@ struct pce_irq_linklist {
 };
 
 typedef struct {
+	u16 tflowblockid;
+	u8 indexinuse;
+	u16 indexinusagecnt;
+} gsw_tflow_entry_t;
+
+typedef struct {
+	gsw_tflow_entry_t flow_idx[GSW_TFLOW_TABLE_SIZE];
+	u16 usedentry;
+} gsw_tflow_t;
+
+typedef struct {
 	gsw_devtype_t	sdev;
 	port_config_t pconfig[MAX_PORT_NUMBER];
 	avlan_tbl_t avtable[VLAN_ACTIVE_TABLE_SIZE];
@@ -912,6 +932,7 @@ typedef struct {
 	gsw_meter_t meter_idx[METER_TABLE_SIZE];
 	gsw_shaper_t shaper_idx[SHAPER_TABLE_SIZE];
 	gsw_pmapper_t pmapper_idx[PMAPPER_TABLE_SIZE];
+	gsw_tflow_t tflow_idx;
 	void *raldev;
 	/*platform device struct*/
 	void *pdev;
@@ -981,6 +1002,7 @@ typedef struct {
 	void *gsw_base;  			/*Base address GSWITCH */
 	u32 gsw_mode;				/* GSWIP Mode 0 "short_cut", 1 "full_qos" */
 	u32 dpu;			        /* DPU = 1, pmac G.INT config, DPU = 0, Non-G.INT config */
+	u32 num_of_global_rules;    /* Number of Global(Common) TFLOW Rules */
 
 #ifdef __KERNEL__
 	spinlock_t lock_pce;

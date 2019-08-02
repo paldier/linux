@@ -1,5 +1,5 @@
 /******************************************************************************
-				Copyright (c) 2016, 2017 Intel Corporation
+				Copyright (c) 2016, 2019 Intel Corporation
 
 ******************************************************************************/
 /*****************************************************************************
@@ -8,7 +8,6 @@
 	For licensing information, see the file 'LICENSE' in the root folder of
 	this software module.
 ******************************************************************************/
-
 #ifdef __KERNEL__
 #include <linux/jiffies.h>
 #include <linux/timer.h>
@@ -3176,7 +3175,7 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	ethsw_api_dev_t *PrvData;
 	struct core_ops *ops;
 	void *cdev;
-	u32 ret = 0;
+	u32 ret = 0, i = 0, reg_val;
 
 #ifdef __KERNEL__
 
@@ -3266,6 +3265,33 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 
 	/** TFlow Table Init */
 	pce_table_init(&PrvData->phandler);
+
+	if (!PrvData->num_of_global_rules) {
+		if (IS_VRSN_30_31_32(PrvData->gipver)) {
+			gsw_r32(cdev, PCE_TFCR_NUM_NUM_OFFSET,
+				PCE_TFCR_NUM_NUM_SHIFT,
+				PCE_TFCR_NUM_NUM_SIZE, &PrvData->num_of_global_rules);
+			PrvData->num_of_global_rules = PrvData->num_of_global_rules << 2;
+		} else if (IS_VRSN_BELOW_30(PrvData->gipver))
+			PrvData->num_of_global_rules = PrvData->tftblsize;
+	}
+
+	/* Mark the tflow global rule indexes are in  inuse */
+	for (i = 0; i < PrvData->num_of_global_rules; i++) {
+		PrvData->tflow_idx.flow_idx[i].indexinuse = 1;
+		PrvData->tflow_idx.usedentry++;
+		PrvData->tflow_idx.flow_idx[i].indexinusagecnt++;
+	}
+
+	if (IS_VRSN_30_31_32(PrvData->gipver)) {
+		/* First Entry of Common Region in TFLOW Table */
+		gsw_w32(cdev, PCE_TFCR_ID_INDEX_OFFSET, PCE_TFCR_ID_INDEX_SHIFT,
+			PCE_TFCR_ID_INDEX_SIZE, 0x0);
+		reg_val = PrvData->num_of_global_rules;
+		/* Number of Entries of Common Region in TFLOW Table */
+		gsw_w32(cdev, PCE_TFCR_NUM_NUM_OFFSET, PCE_TFCR_NUM_NUM_SHIFT,
+			PCE_TFCR_NUM_NUM_SIZE, (reg_val >> 2));
+	}
 
 	/** Parser Micro Code Init */
 #if defined(CONFIG_USE_EMULATOR)
@@ -11813,6 +11839,10 @@ GSW_return_t GSW_CapGet(void *cdev, GSW_cap_t *parm)
 		parm->nCap = gswdev->num_of_bridge_port;
 		break;
 
+	case GSW_CAP_TYPE_COMMON_TFLOW_RULES:
+		parm->nCap = gswdev->num_of_global_rules;
+		break;
+
 	case GSW_CAP_TYPE_LAST:
 		parm->nCap = GSW_CAP_TYPE_LAST;
 		break;
@@ -18041,6 +18071,65 @@ GSW_return_t GSW_IrqStatusClear(void *cdev, GSW_irq_t *parm)
 	return GSW_statusOk;
 }
 
+/**
+ * GSW_PceRuleManage - To Manage the TFLOW Table Rule
+ * @cdev: device pointer
+ * @parm: parm Pointer to \ref GSW_PCE_rule_t
+ * Description: this is to Manage TFLOW Table Rule
+ */
+static GSW_return_t gsw_pcerulemanage(void *cdev, GSW_PCE_rule_t *parm)
+{
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	u32 idx, firstidx, lastidx;
+	int ret = GSW_statusOk;
+	GSW_CTP_portConfig_t ctpget;
+	/*TFlow table index */
+	idx = parm->pattern.nIndex;
+
+	if (!gswdev) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
+
+	switch (parm->region) {
+	case GSW_TFLOW_COMMMON_REGION:
+		if (idx >= gswdev->num_of_global_rules) {
+			pr_err("\n\tERROR: Index %d is greater than common region Entries = %d\n",
+			       idx, gswdev->num_of_global_rules);
+			return GSW_statusErr;
+		}
+
+		break;
+
+	case GSW_TFLOW_CTP_REGION:
+		ctpget.nLogicalPortId = parm->logicalportid;
+		ctpget.nSubIfIdGroup = parm->subifidgroup;
+		ctpget.eMask =  GSW_CTP_PORT_CONFIG_FLOW_ENTRY;
+		GSW_CtpPortConfigGet(cdev, &ctpget);
+		firstidx = ctpget.nFirstFlowEntryIndex;
+		lastidx = ctpget.nFirstFlowEntryIndex + ctpget.nNumberOfFlowEntries;
+
+		if (idx < firstidx || idx >= lastidx) {
+			pr_err("\n\tERROR: Index %d is Didn't match CTP region Entries, StartEntryIndex = %d NumberofEntries = %d\n",
+			       idx, ctpget.nFirstFlowEntryIndex,
+				   ctpget.nNumberOfFlowEntries);
+			return GSW_statusErr;
+		}
+
+		break;
+
+	case GSW_TFLOW_DEBUG:
+		PCE_ASSERT(idx >= (gswdev->tftblsize));
+		break;
+
+	default:
+		pr_err("\n\tERROR: TFLOW Table doesn't support This Region\n");
+		return GSW_statusErr;
+	}
+
+	return ret;
+}
+
 GSW_return_t GSW_PceRuleRead(void *cdev, GSW_PCE_rule_t *parm)
 {
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
@@ -18051,6 +18140,8 @@ GSW_return_t GSW_PceRuleRead(void *cdev, GSW_PCE_rule_t *parm)
 		return  GSW_statusErr;
 	}
 
+	if (GSW_statusOk != gsw_pcerulemanage(cdev, parm))
+		return GSW_statusErr;
 #ifdef __KERNEL__
 	spin_lock_bh(&gswdev->lock_pce);
 #endif
@@ -18080,6 +18171,8 @@ GSW_return_t GSW_PceRuleWrite(void *cdev, GSW_PCE_rule_t *parm)
 		return GSW_statusErr;
 	}
 
+	if (GSW_statusOk != gsw_pcerulemanage(cdev, parm))
+		return GSW_statusErr;
 #ifdef __KERNEL__
 	spin_lock_bh(&gswdev->lock_pce);
 #endif
@@ -23888,7 +23981,7 @@ GSW_return_t GSW_CtpPortConfigSet(void *cdev, GSW_CTP_portConfig_t *param)
 	pctbl_prog_t tbl_prog_ctpport_ingress;
 	pctbl_prog_t tbl_prog_ctpport_egress;
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
-	u32 idx = 0, FirstIdx, LastIdx, pmapper_idx, ctp_port;
+	u32 idx = 0, FirstIdx, LastIdx, pmapper_idx, ctp_port, ctplastidx;
 	u32 BlkSize = 0;
 	u32 ret;
 	GSW_CTP_portAssignment_t ctp_get;
@@ -24785,6 +24878,42 @@ GSW_return_t GSW_CtpPortConfigSet(void *cdev, GSW_CTP_portConfig_t *param)
 	}
 
 	if (param->eMask & GSW_CTP_PORT_CONFIG_FLOW_ENTRY) {
+		if (param->nFirstFlowEntryIndex > gswdev->tftblsize) {
+			ret = GSW_statusErr;
+			goto UNLOCK_AND_RETURN;
+		}
+
+		/*Check whether this index is InUse
+		 *Since it will be marked as InUse during allocation.
+		 */
+		if (!gswdev->tflow_idx.flow_idx[param->nFirstFlowEntryIndex].indexinuse) {
+			ret = GSW_statusErr;
+			goto UNLOCK_AND_RETURN;
+		}
+
+		/*Check whether this index belongs to this BlockID
+		 *Since it will be marked during allocation.
+		 */
+		if (gswdev->tflow_idx.flow_idx[param->nFirstFlowEntryIndex].tflowblockid
+		    != param->nFirstFlowEntryIndex) {
+			ret = GSW_statusErr;
+			goto UNLOCK_AND_RETURN;
+		}
+
+		/*Search for the Last Index of this block.
+		 *Note: The Blocks are always allocated contiguously.
+		 */
+		ctplastidx = param->nFirstFlowEntryIndex;
+
+		while (gswdev->tflow_idx.flow_idx[ctplastidx].tflowblockid ==
+			   param->nFirstFlowEntryIndex &&
+			   gswdev->tflow_idx.flow_idx[ctplastidx].indexinuse) {
+			   ctplastidx++;
+		}
+
+		param->nNumberOfFlowEntries = ctplastidx - param->nFirstFlowEntryIndex;
+		gswdev->tflow_idx.flow_idx[param->nFirstFlowEntryIndex].indexinuse = 1;
+		gswdev->tflow_idx.flow_idx[param->nFirstFlowEntryIndex].indexinusagecnt++;
 		tbl_prog_ctpport_ingress.val[7] &= ~(0x7F << 2);
 		tbl_prog_ctpport_ingress.val[7] |= (param->nFirstFlowEntryIndex & 0x1FC);
 		tbl_prog_ctpport_ingress.val[8] &= ~(0xFF << 2);
@@ -25478,6 +25607,13 @@ GSW_return_t GSW_CtpPortConfigReset(void *cdev, GSW_CTP_portConfig_t *param)
 		gswdev->ctpportconfig_idx[ctp_port].IngressBridgeBypassPmapperAssigned = 0;
 		gswdev->ctpportconfig_idx[ctp_port].IngressBridgeBypassPmappperIdx = 0;
 	}
+
+	param->nFirstFlowEntryIndex = (tbl_prog_ctpport_ingress.val[7] & 0x1FC);
+	param->nNumberOfFlowEntries = (tbl_prog_ctpport_ingress.val[8] & 0x3FC);
+
+	if (param->nNumberOfFlowEntries)
+		/*Release this TFLOW blk from this CTP Port*/
+		gswdev->tflow_idx.flow_idx[param->nFirstFlowEntryIndex].indexinusagecnt--;
 
 	/*Zero the ingress/egress ctp port table index*/
 	/*Same ctp port idx for ingress and egress ctp port configuration*/
@@ -26492,6 +26628,179 @@ GSW_return_t GSW_UnFreeze(void)
 
 	return 0;
 }
+
+static u8 gsw_search_tflowcontiguousblock
+		(ethsw_api_dev_t *gswdev,
+		u32 blockid, u32 numberofentries)
+{
+	u32 i;
+
+	for (i = blockid; i <= (blockid + numberofentries); i++) {
+		if (gswdev->tflow_idx.flow_idx[i].indexinuse)
+			return 0;
+	}
+
+	return 1;
+}
+
+GSW_return_t gsw_tflow_alloc(void *cdev, gsw_tflow_alloc_t *parm)
+{
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	u16 tflowindex = 0;
+	u8 contiguousblockfound = 0;
+	u32 i, ret = GSW_statusOk;
+
+	if (!gswdev) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
+
+#ifdef __KERNEL__
+	spin_lock_bh(&gswdev->lock_alloc);
+#endif
+
+	parm->num_of_pcerules = (parm->num_of_pcerules + 3) & ~0x03;
+	if (parm->num_of_pcerules >
+		(gswdev->tftblsize -
+		gswdev->tflow_idx.usedentry)) {
+		pr_err(" nNumberOfRules requested is more than TFLOW index limit  %s:%s:%d",
+		       __FILE__, __func__, __LINE__);
+		ret = GSW_statusErr;
+		goto UNLOCK_AND_RETURN;
+	}
+
+	/*Allocate New Block as per the number of table Entries requested
+	 *The Block must be allocated with contiguous table index
+	 */
+	for (tflowindex = gswdev->num_of_global_rules;
+		tflowindex < gswdev->tftblsize  &&
+		!contiguousblockfound; tflowindex++) {
+		/*Table Index not in use*/
+		if (!gswdev->tflow_idx.flow_idx[tflowindex].indexinuse) {
+			contiguousblockfound =
+				gsw_search_tflowcontiguousblock
+				(gswdev, tflowindex, parm->num_of_pcerules);
+		}
+
+		/*Contiguous block found in the table*/
+		if (contiguousblockfound) {
+			parm->tflowblockid = tflowindex;
+
+			/*Mark the contiguous table indexes as InUse
+			 *and tag it with block id
+			 */
+			for (i = parm->tflowblockid; i <
+			     (parm->tflowblockid + parm->num_of_pcerules);
+				 i++) {
+				gswdev->tflow_idx.flow_idx[i].indexinuse = 1;
+				gswdev->tflow_idx.flow_idx[i].tflowblockid =
+				   parm->tflowblockid;
+				gswdev->tflow_idx.usedentry++;
+			}
+		}
+	}
+
+	/*Contiguous block not found in the table*/
+	if (!contiguousblockfound) {
+		pr_err(" ContiguousBlock NotFound %s:%s:%d",
+		       __FILE__, __func__, __LINE__);
+		ret = GSW_statusErr;
+		goto UNLOCK_AND_RETURN;
+	}
+
+UNLOCK_AND_RETURN:
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&gswdev->lock_alloc);
+#endif
+	return ret;
+}
+
+GSW_return_t gsw_tflow_free(void *cdev, gsw_tflow_alloc_t *parm)
+{
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	u32 ret = GSW_statusOk, idx = 0;
+
+	if (!gswdev) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
+
+#ifdef __KERNEL__
+	spin_lock_bh(&gswdev->lock_pce);
+#endif
+
+	if (parm->tflowblockid >= gswdev->tftblsize) {
+		pr_err("tflowblockid %d out of range Supported num_of_tflowrules = %d]\n",
+		       parm->tflowblockid, gswdev->tftblsize);
+		ret = GSW_statusErr;
+		goto UNLOCK_AND_RETURN;
+	}
+
+	/*tflow blockid should be in use,if not in use return error*/
+	if (!gswdev->tflow_idx.flow_idx[parm->tflowblockid].indexinuse) {
+		pr_err("Blockid %u is Not inUse -> need to allocate before freeing\n",
+		       parm->tflowblockid);
+		ret = GSW_statusErr;
+		goto UNLOCK_AND_RETURN;
+	}
+
+	/*if this ntflowblockid usage count is not zero,
+	 *that means it is used by some one.
+	 * This Block can be deleted,
+	 *only if that some one release this block
+	 */
+	if (gswdev->tflow_idx.flow_idx[parm->tflowblockid].indexinusagecnt) {
+		pr_err("ERROR :TFLOW block %u is used by some resource,can not delete\n",
+		       parm->tflowblockid);
+		ret = GSW_statusErr;
+		goto UNLOCK_AND_RETURN;
+	}
+
+	idx = parm->tflowblockid;
+	parm->num_of_pcerules = 0;
+
+	if (gswdev->tflow_idx.flow_idx[idx].tflowblockid !=
+	    parm->tflowblockid) {
+		ret = GSW_statusErr;
+		goto UNLOCK_AND_RETURN;
+	}
+
+	/*Condition to delete idx
+	 *	1. idx should belong to this block
+	 *	2. idx should be in Use
+	 *	3. idx should be with in valid TFLOW
+	 *	table range (Entry 0-511 is valid)
+	 */
+	while (gswdev->tflow_idx.flow_idx[idx].indexinuse &&
+	       idx < gswdev->tftblsize &&
+		   (gswdev->tflow_idx.flow_idx[idx].tflowblockid ==
+		   parm->tflowblockid)) {
+		/*free this idx and decrement the the number
+		 *of used table entries/idx
+		 */
+		gswdev->tflow_idx.flow_idx[idx].indexinuse = 0;
+		gswdev->tflow_idx.flow_idx[idx].tflowblockid =
+				TFLOW_ENTRY_INVALID;
+		gswdev->tflow_idx.usedentry--;
+		/*A reference for the user, how many entries has
+		 *been deleted in this block
+		 *debugging purpose
+		 */
+		parm->num_of_pcerules++;
+		/*increment the idx,since the block's allocation
+		 *in ADD is Contiguous
+		 */
+		idx++;
+	}
+
+UNLOCK_AND_RETURN:
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&gswdev->lock_pce);
+#endif
+	return ret;
+}
 static GSW_return_t gsw_init_fn_ptrs(struct core_ops *ops)
 {
 
@@ -26556,6 +26865,10 @@ static GSW_return_t gsw_init_fn_ptrs(struct core_ops *ops)
 	ops->gsw_tflow_ops.TFLOW_PceRuleDelete			= GSW_PceRuleDelete;
 	ops->gsw_tflow_ops.TFLOW_PceRuleRead			= GSW_PceRuleRead;
 	ops->gsw_tflow_ops.TFLOW_PceRuleWrite			= GSW_PceRuleWrite;
+	ops->gsw_tflow_ops.tflow_pcealloc				=
+				gsw_tflow_alloc;
+	ops->gsw_tflow_ops.tflow_pcefree				=
+				gsw_tflow_free;
 
 	/*QOS operations*/
 	ops->gsw_qos_ops.QoS_MeterCfgGet				= GSW_QoS_MeterCfgGet;
@@ -26754,6 +27067,8 @@ static GSW_return_t gsw_init_fn_ptrs(struct core_ops *ops)
 	ops->gsw_debug_ops.DEBUG_Def_PceBypQmap			= GSW_Debug_PceBypassTable;
 	ops->gsw_debug_ops.DEBUG_GetLpStatistics		= GSW_Debug_GetLpStatistics;
 	ops->gsw_debug_ops.DEBUG_GetCtpStatistics 		= GSW_Debug_GetCtpStatistics;
+	ops->gsw_debug_ops.debug_tflowtablestatus       =
+				gsw_debug_tflow_tablestatus;
 	ops->gsw_debug_ops.Xgmac						= GSW_XgmacCfg;
 	ops->gsw_debug_ops.Gswss						= GSW_GswssCfg;
 	ops->gsw_debug_ops.Lmac							= GSW_LmacCfg;

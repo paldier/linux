@@ -150,6 +150,10 @@ struct tflow_ops {
 	GSW_return_t (*TFLOW_PceRuleRead)(void *, GSW_PCE_rule_t *);
 	/* Command: GSW_PCE_RULE_WRITE ; Index: 0x03 */
 	GSW_return_t (*TFLOW_PceRuleWrite)(void *, GSW_PCE_rule_t *);
+	/* Command: GSW_TFLOW_ALLOC ; Index: 0x04 */
+	GSW_return_t (*tflow_pcealloc)(void *, gsw_tflow_alloc_t *);
+	/* Command: GSW_TFLOW_FREE ; Index: 0x05 */
+	GSW_return_t (*tflow_pcefree)(void *, gsw_tflow_alloc_t *);
 };
 
 /*QOS operations*/
@@ -581,6 +585,8 @@ struct debug_ops {
 	GSW_return_t (*DEBUG_RMON_Port_Get)(void *, GSW_Debug_RMON_Port_cnt_t *);
 	/* Command: GSW_DEBUG_TUNNELTEMP_STATUS ; Index: 0x18 */
 	GSW_return_t (*DEBUG_TunnelTempTableStatus)(void *, GSW_debug_t *);
+	/* Command: GSW_DEBUG_TFLOWTABLE_STATUS ; Index: 0x19 */
+	GSW_return_t (*debug_tflowtablestatus)(void *, GSW_debug_t *);
 };
 
 struct irq_ops {

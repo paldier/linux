@@ -1189,3 +1189,46 @@ GSW_return_t GSW_MacsecCfg(void *cdev, GSW_MAC_cfg_t *macsec_cfg)
 	return GSW_statusOk;
 }
 
+GSW_return_t gsw_debug_tflow_tablestatus(void *cdev, GSW_debug_t *parm)
+{
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	u32 i, blockid = 0;
+
+	if (!gswdev) {
+		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
+		return GSW_statusErr;
+	}
+
+	pr_info("\n");
+
+	if (parm->nCheckIndexInUse) {
+		for (i = 0; i < gswdev->tftblsize; i++) {
+			if (gswdev->tflow_idx.flow_idx[i].indexinuse) {
+				blockid = gswdev->tflow_idx.flow_idx[i].tflowblockid;
+				pr_info("TFLOW Table Index  %d = InUse, Associated to TFLOW Block Id %d.\n",
+					i, blockid);
+			}
+		}
+
+		return GSW_statusOk;
+	}
+
+	if (parm->nForceSet) {
+		gswdev->tflow_idx.flow_idx[parm->nTableIndex].indexinuse = 1;
+		gswdev->tflow_idx.flow_idx[parm->nTableIndex].tflowblockid = parm->nblockid;
+		gswdev->tflow_idx.usedentry++;
+		pr_info("TFLOW Table Index  %d is Forced to InUSe\n",
+			parm->nTableIndex);
+	} else {
+		pr_info("TFLOW  Table Index %d:\n\n",
+			parm->nTableIndex);
+		pr_info("BlockId						= %d\n",
+			gswdev->tflow_idx.flow_idx[parm->nTableIndex].tflowblockid);
+		pr_info("IndexInUse					= %d\n",
+			gswdev->tflow_idx.flow_idx[parm->nTableIndex].indexinuse);
+		pr_info("IndexInUsageCnt				= %d\n",
+			gswdev->tflow_idx.flow_idx[parm->nTableIndex].indexinusagecnt);
+	}
+
+	return GSW_statusOk;
+}

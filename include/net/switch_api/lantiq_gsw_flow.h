@@ -885,6 +885,23 @@ typedef struct {
 	GSW_PCE_MacTableMacinMacSelect eMacTableMacinMacSelect;
 } GSW_PCE_ActionPBB_t;
 
+/** \brief Trafiic Flow Table Mangaement.
+ *   Used by \ref GSW_PCE_rule_t.
+ */
+typedef enum {
+	/** TFLOW TABLE COMMON Region Selection.
+	 *	The parameter 'nRegion' specifies the relative TFLOW Region.
+	 */
+	GSW_TFLOW_COMMMON_REGION = 0,
+	/** TFLOW TABLE CTP Region Selection.
+	 *  The parameter 'nRegion' specifies the relative TFLOW Region.
+	 */
+	GSW_TFLOW_CTP_REGION = 1,
+	/** TFLOW TABLE Debug selection */
+	GSW_TFLOW_DEBUG	= 2
+} gsw_tflowregion_t;
+
+
 /** \brief Packet Classification Engine Action Configuration.
     GSWIP-3.0 extension actions are explicitly indicated.
     Used by \ref GSW_PCE_rule_t. */
@@ -1079,6 +1096,14 @@ typedef struct {
 /** \brief Parameter to add/read a rule to/from the packet classification engine.
     Used by \ref GSW_PCE_RULE_WRITE and \ref GSW_PCE_RULE_READ. */
 typedef struct {
+	/** Logical Port Id. The valid range is hardware dependent. */
+	u32 logicalportid;
+	/** Sub interface ID group,
+	 *The valid range is hardware/protocol dependent.
+	 */
+	u32 subifidgroup;
+	/** PCE TABLE Region */
+	gsw_tflowregion_t region;
 	/** PCE Rule Pattern Part. */
 	GSW_PCE_pattern_t	pattern;
 	/** PCE Rule Action Part. */
@@ -1396,6 +1421,30 @@ typedef struct {
 */
 #define GSW_PCE_RULE_DELETE  _IOWR(GSW_TFLOW_MAGIC, 0x01, GSW_PCE_ruleDelete_t)
 
+/**
+ *\brief Allocate TFLOW  block.
+ *It allocates consecutive TFLOW configuration entries and return the block ID
+ *for further operations: \ref GSW_TFLOW_FREE.
+
+ *\param gsw_tflow_alloc_t Pointer to \ref gsw_tflow_alloc_t.
+
+ *\return Return value as follows:
+ *- GSW_statusOk: if successful
+ *- An error code in case an error occurs
+ */
+#define GSW_TFLOW_ALLOC	_IOWR(GSW_TFLOW_MAGIC, 0x04, gsw_tflow_alloc_t)
+/**
+ *\brief Release TFLOW Configuration block.
+ *It is used to release TFLOW Configuration block allocated by
+ *\ref GSW_TFLOW_ALLOC.
+
+ *\param gsw_tflow_alloc_t Pointer to \ref gsw_tflow_alloc_t.
+
+ *\return Return value as follows:
+ *- GSW_statusOk: if successful
+ *- An error code in case an error occurs
+ */
+#define GSW_TFLOW_FREE	_IOWR(GSW_TFLOW_MAGIC, 0x05, gsw_tflow_alloc_t)
 
 /*@}*/ /* GSW_IOCTL_CLASS */
 
