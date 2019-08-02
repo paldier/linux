@@ -2372,7 +2372,7 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 				dmam_free_coherent(cqm_ctrl->dev, dma_size,
 						   dma_vaddr, dma_paddr);
 				ltq_free_dma(p_info->dma_ch);
-				break;
+				return CBM_FAILURE;
 			}
 			p_info->deq_info.pkt_base[idx] =
 					__pa(buf - CQM_POOL_METADATA);
