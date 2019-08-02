@@ -1085,6 +1085,7 @@ int mac_get_int_sts(void *pdev)
 int mac_init(void *pdev)
 {
 	struct mac_prv_data *pdata = GET_MAC_PDATA(pdev);
+
 #if defined(PC_UTILITY) || defined(CHIPTEST)
 	int i = 0;
 
@@ -1172,6 +1173,19 @@ int mac_init(void *pdev)
 
 	/* Tell adaption layer to remove FCS in Rx Direction */
 	gswss_set_mac_rxfcs_op(pdev, MODE3);
+
+	/* Insert Dummy Special tag from GSWIP Subsys
+	 * Bug Fix for Insertion was not getting hit in PCE rule
+	 * Default Insert a dummy Special Tag to all packets entering from MAC
+         * MAC -> GSWIP
+	 */
+	gswss_set_mac_rxsptag_op(pdev, (RX_SPTAG_INSERT % 4));
+
+	/* By default setting FDMA Don't Remove FCS @ Tx
+	 * PMAC is now set as no dummy FCS addition @ Tx,
+	 * Otherwise Insertion case will have 4 Extra Byte 0's
+	 */
+	gswss_set_mac_txfcs_rm_op(pdev, (TX_FCS_NO_REMOVE % 4));
 
 	/* Set XGMAC Port to MDIO Clause 22 */
 	mdio_set_clause(pdev, 1, (pdata->mac_idx - MAC_2));
