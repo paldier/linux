@@ -398,6 +398,9 @@
 #define PMA_RX_RATE_CTRL_RX_RATE_3_POS		12
 #define PMA_RX_RATE_CTRL_RX_RATE_3_WIDTH	2
 
+#define PMA_RX_GENCTRL1_RX_DIV16P5_CLK_EN_POS   13
+#define PMA_RX_GENCTRL1_RX_DIV16P5_CLK_EN_WIDTH 3
+
 #define PMA_TX_GENCTRL1_VBOOST_EN_0_POS		4
 #define PMA_TX_GENCTRL1_VBOOST_EN_0_WIDTH	1
 #define PMA_TX_GENCTRL1_VBOOST_LVL_POS		8
@@ -427,6 +430,8 @@
 #define PMA_MPLLA_C2_MPLLA_DIV10_CLK_EN_WIDTH	1
 #define PMA_MPLLA_C2_MPLLA_DIV8_CLK_EN_POS	8
 #define PMA_MPLLA_C2_MPLLA_DIV8_CLK_EN_WIDTH	1
+#define PMA_MPLLA_C2_MPLLA_DIV_CLK_EN_POS	7
+#define PMA_MPLLA_C2_MPLLA_DIV_CLK_EN_WIDTH	1
 
 #define PMA_MPLLB_C2_MPLLB_DIV_CLK_EN_POS	7
 #define PMA_MPLLB_C2_MPLLB_DIV_CLK_EN_WIDTH	1
@@ -447,6 +452,8 @@
 
 #define PMA_MISC_C0_RX_VREF_CTRL_POS		8
 #define PMA_MISC_C0_RX_VREF_CTRL_WIDTH		5
+#define PMA_MISC_C0_CR_PARA_SEL_POS		14
+#define PMA_MISC_C0_CR_PARA_SEL_WIDTH		1
 
 #define PMA_REF_CLK_CTRL_REF_USE_PAD_POS	1
 #define PMA_REF_CLK_CTRL_REF_USE_PAD_WIDTH	1
@@ -555,7 +562,7 @@ enum {
 	TENG_KR_MODE = 0,
 	TENG_XAUI_MODE,
 	ONEG_XAUI_MODE,
-	TWOP5G_GMII_MODE,
+	TWOP5G_SGMII_MODE,
 	MAX_XPCS_MODE,
 };
 
@@ -632,9 +639,11 @@ struct xpcs_mode_cfg {
 	u32 mplla_div165_clk_en;
 	u32 mplla_div10_clk_en;
 	u32 mplla_div8_clk_en;
+	u32 mplla_div_clk_en;
 	u32 mpllb_div_clk_en;
 	u32 mpllb_div10_clk_en;
 	u32 mpllb_div8_clk_en;
+	u32 rx_div165_clk_en;
 	u32 tx_eq_main;
 	u32 tx_eq_pre;
 	u32 tx_eq_post;
