@@ -65,7 +65,7 @@ static const struct intel_clk_early_data prx300_early_clks[] __initconst = {
 	{ PLL0A_CFG0, 0, 4, "earlycpu", pll_p, 0,
 	  0, 0, PLL_DIV_WIDTH,
 	  0, 0, PLL_DIV_WIDTH,
-	  PLL_PFM_V2, TYPE_ROPLL, pll_div
+	  PLL_PFM_PRX300, TYPE_ROPLL, pll_div
 	},
 };
 
@@ -93,22 +93,22 @@ static const struct intel_pll_rate_table ljpll5_clk_vco[] __initconst = {
 };
 
 static const struct intel_pll_clk_data prx300_pll_clks[] __initconst = {
-	[PLL0A] = INTEL_PLL(PRX300_CLK_PLL0A, PLL_PFM_V2, "pll0a", pll_p,
+	[PLL0A] = INTEL_PLL(PRX300_CLK_PLL0A, PLL_PFM_PRX300, "pll0a", pll_p,
 			    CLK_IGNORE_UNUSED, PLL0A_CFG0, NULL, TYPE_ROPLL),
-	[PLL0B] = INTEL_PLL(PRX300_CLK_PLL0B, PLL_PFM_V2, "pll0b", pll_p,
+	[PLL0B] = INTEL_PLL(PRX300_CLK_PLL0B, PLL_PFM_PRX300, "pll0b", pll_p,
 			    CLK_IGNORE_UNUSED, PLL0B_CFG0, NULL, TYPE_ROPLL),
-	[PLL1] = INTEL_PLL(PRX300_CLK_PLL1, PLL_PFM_V2, "pll1", pll_p,
+	[PLL1] = INTEL_PLL(PRX300_CLK_PLL1, PLL_PFM_PRX300, "pll1", pll_p,
 			   CLK_IGNORE_UNUSED, PLL1_CFG0, pll1_clk_vco,
 			   TYPE_ROPLL),
-	[PLL2] = INTEL_PLL(PRX300_CLK_PLL2, PLL_PFM_V2, "pll2", pll_p,
+	[PLL2] = INTEL_PLL(PRX300_CLK_PLL2, PLL_PFM_PRX300, "pll2", pll_p,
 			   CLK_IGNORE_UNUSED, PLL2_CFG0, NULL, TYPE_ROPLL),
-	[LJPLL3] = INTEL_PLL(PRX300_CLK_LJPLL3, PLL_PFM_V2, "ljpll3", pll_p,
+	[LJPLL3] = INTEL_PLL(PRX300_CLK_LJPLL3, PLL_PFM_PRX300, "ljpll3", pll_p,
 			     CLK_IGNORE_UNUSED, LJPLL3_CFG0, ljpll3_clk_vco,
 			     TYPE_LJPLL),
-	[LJPLL4] = INTEL_PLL(PRX300_CLK_LJPLL4, PLL_PFM_V2, "ljpll4", pll_p,
+	[LJPLL4] = INTEL_PLL(PRX300_CLK_LJPLL4, PLL_PFM_PRX300, "ljpll4", pll_p,
 			     CLK_IGNORE_UNUSED, LJPLL4_CFG0, ljpll4_clk_vco,
 			     TYPE_LJPLL),
-	[LJPLL5] = INTEL_PLL(PRX300_CLK_LJPLL5, PLL_PFM_V2, "ljpll5", pll_p,
+	[LJPLL5] = INTEL_PLL(PRX300_CLK_LJPLL5, PLL_PFM_PRX300, "ljpll5", pll_p,
 			     CLK_IGNORE_UNUSED, LJPLL5_CFG0, ljpll5_clk_vco,
 			     TYPE_LJPLL),
 };
@@ -198,14 +198,14 @@ static const struct intel_clk_branch prx300_branch_clks[] __initconst = {
 		   31, GATE_CLK_HW, 0),
 
 	/* Gate2 clock */
-	INTEL_GATE(PRX300_GCLK_PCIE_CTRL0, "g_ctrl0", NULL, 0, CGU_GATE2,
-		   1, GATE_CLK_HW, 0),
+	INTEL_GATE(PRX300_GCLK_PCIE_CTRL0, "pcie0", "pcie", CLK_SET_RATE_PARENT,
+		   CGU_GATE2, 1, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_MSI0, "g_msi0", NULL, 0, CGU_GATE2,
 		   2, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_PD0, "g_pd0", NULL, 0, CGU_GATE2,
 		   7, GATE_CLK_HW, 0),
-	INTEL_GATE(PRX300_GCLK_PCIE_CTRL1, "g_ctrl1", NULL, 0, CGU_GATE2,
-		   17, GATE_CLK_HW, 0),
+	INTEL_GATE(PRX300_GCLK_PCIE_CTRL1, "pcie1", "pcie", CLK_SET_RATE_PARENT,
+		   CGU_GATE2, 17, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_MSI1, "g_msi1", NULL, 0, CGU_GATE2,
 		   18, GATE_CLK_HW, 0),
 	INTEL_GATE(PRX300_GCLK_PD1, "g_pd1", NULL, 0, CGU_GATE2,

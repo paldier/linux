@@ -8,8 +8,9 @@
 #define __INTEL_CLK_PLL_H
 
 enum pll_platform {
-	PLL_PFM_V1, /* GRX500 */
-	PLL_PFM_V2, /* PRX300, LGM */
+	PLL_PFM_GRX500,
+	PLL_PFM_PRX300,
+	PLL_PFM_LGM,
 };
 
 enum pll_type {

@@ -146,9 +146,9 @@ int intel_clk_register_early(struct intel_clk_provider *ctx,
 
 		memset(&init, 0, sizeof(init));
 		init.name = list->name;
-		if (list->platform == PLL_PFM_V1) {
+		if (list->platform == PLL_PFM_GRX500) {
 			init.ops = &grx500_clk_early_ops;
-		} else if (list->platform == PLL_PFM_V2) {
+		} else if (list->platform == PLL_PFM_PRX300) {
 			init.ops = &prx300_clk_early_ops;
 		} else {
 			pr_err("%s: platform not support: %u\n",
@@ -284,7 +284,7 @@ static int prx300_pll_enable(struct clk_hw *hw)
 	return intel_pll_wait_for_lock(pll);
 }
 
-static void prx300_pll_disable(struct clk_hw *hw)
+static void __maybe_unused prx300_pll_disable(struct clk_hw *hw)
 {
 	struct intel_clk_pll *pll = to_intel_clk_pll(hw);
 
@@ -352,7 +352,6 @@ static const struct clk_ops intel_prx300_pll_ops = {
 	.recalc_rate	= prx300_pll_recalc_rate,
 	.is_enabled	= prx300_pll_is_enabled,
 	.enable		= prx300_pll_enable,
-	.disable	= prx300_pll_disable,
 	.round_rate	= prx300_pll_round_rate,
 	.set_rate	= prx300_pll_set_rate,
 };
@@ -368,9 +367,9 @@ static struct clk_hw
 	const struct intel_pll_rate_table *table = list->rate_table;
 	int ret, i;
 
-	if (list->platform == PLL_PFM_V1) {
+	if (list->platform == PLL_PFM_GRX500) {
 		init.ops = &intel_grx500_pll_ops;
-	} else if (list->platform == PLL_PFM_V2) {
+	} else if (list->platform == PLL_PFM_PRX300) {
 		init.ops = &intel_prx300_pll_ops;
 	} else {
 		dev_err(dev, "%s: pll platform %d not supported!\n",
