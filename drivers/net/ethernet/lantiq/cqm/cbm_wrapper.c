@@ -25,6 +25,15 @@ s32 cbm_enable_backpressure(s32 port_id, bool flag)
 }
 EXPORT_SYMBOL(cbm_enable_backpressure);
 
+s32 cbm_get_mtu_size(u32 *mtu_size)
+{
+	if (g_cbm_ops->cbm_get_mtu_size)
+		return g_cbm_ops->cbm_get_mtu_size(mtu_size);
+	else
+		return CBM_FAILURE;
+}
+EXPORT_SYMBOL(cbm_get_mtu_size);
+
 s32 cbm_queue_map_get(int cbm_inst, s32 queue_id, s32 *num_entries,
 		      cbm_queue_map_entry_t **entries, u32 flags)
 {

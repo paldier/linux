@@ -887,10 +887,13 @@ static int ltq_eth_init(struct net_device *dev)
 		 priv->dp_subif.subif, dev->name);
 
 	/* get the minimum MTU and call the change mtu */
-	if( !(dev->mtu > LTQ_ETH_MIN_MTU && dev->mtu < g_soc_data.mtu_limit))
+	dp_get_mtu_size(dev, &g_soc_data.mtu_limit);
+
+	if (!(dev->mtu > LTQ_ETH_MIN_MTU && dev->mtu < g_soc_data.mtu_limit))
 		dev->mtu = g_soc_data.mtu_limit;
 
-	ltq_change_mtu(dev, dev->mtu);
+	if (g_eth_switch_mode != 0)
+		ltq_change_mtu(dev, dev->mtu);
 
 	return 0;
 }
@@ -2209,7 +2212,6 @@ static int ltq_eth_drv_init(struct platform_device *pdev)
 	struct device_node *node = pdev->dev.of_node;
 	struct device_node *mdio_np, *iface_np;
 	struct mii_bus *bus;
-	u32 mtu_limit = 0;
 
 	memset(g_ltq_eth_module, 0, sizeof(g_ltq_eth_module));
 
@@ -2241,12 +2243,7 @@ static int ltq_eth_drv_init(struct platform_device *pdev)
 		ret = 0;
 	}
 
-	of_property_read_u32(node, "lantiq,prx300-mtu-a1",
-			     &mtu_limit);
-	if (!ltq_get_soc_rev() && mtu_limit)
-		g_soc_data.mtu_limit = mtu_limit;
-	else
-		g_soc_data.mtu_limit = LTQ_ETH_MAX_DATA_LEN;
+	g_soc_data.mtu_limit = LTQ_ETH_MAX_DATA_LEN;
 
 	/* bring up the mdio bus */
 	mdio_np = of_find_compatible_node(node, NULL,

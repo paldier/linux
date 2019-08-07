@@ -212,6 +212,7 @@ struct cbm_ops {
 	void (*cbm_setup_DMA_p2p)(void);
 	int (*cbm_turn_on_DMA_p2p)(void);
 	s32 (*cbm_enable_backpressure)(s32 port_id, bool flag);
+	s32 (*cbm_get_mtu_size)(u32 *mtu_size);
 };
 
 static inline void set_val(void __iomem *reg, u32 val, u32 mask, u32 offset)

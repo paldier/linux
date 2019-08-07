@@ -3960,6 +3960,14 @@ static void cqm_rst(struct cqm_data *lpp)
 	cqm_rst_deassert(lpp);
 }
 
+static int cqm_get_mtu_size(u32 *mtu_size)
+{
+	/* Always last pool */
+	*mtu_size = (cqm_ctrl->prx300_pool_size[cqm_ctrl->num_pools - 1] -
+		     BSL_THRES);
+	return CBM_SUCCESS;
+}
+
 static const struct cbm_ops cqm_ops = {
 	.cbm_igp_delay_set = cqm_igp_delay_set,
 	.cbm_igp_delay_get = cqm_igp_delay_get,
@@ -3990,6 +3998,7 @@ static const struct cbm_ops cqm_ops = {
 	.set_lookup_qid_via_index = set_lookup_qid_via_index_prx300,
 	.get_lookup_qid_via_index = get_lookup_qid_via_idx_prx300,
 	.cbm_enable_backpressure = enable_backpressure,
+	.cbm_get_mtu_size = cqm_get_mtu_size,
 };
 
 static const struct of_device_id cqm_prx300_match[] = {

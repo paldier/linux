@@ -1642,6 +1642,7 @@ void reset_deq_counter(uint32_t index);
 int32_t cbm_get_egress_port_info(uint32_t cbm_port, uint32_t *tx_ch,
 				 uint32_t *flags);
 int cbm_buff_resv_bytes_get(int cbm_inst, int size);
+s32 cbm_get_mtu_size(u32 *mtu_size);
 /*
  * cbm_eqm_ctrl_t
  * cbm_dqm_ctrl_t

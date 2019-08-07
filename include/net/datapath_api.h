@@ -1810,5 +1810,6 @@ void dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops);
  *@return ops pointer if registered, or NULL if not registered
  */
 void *dp_get_ops(int inst, enum DP_OPS_TYPE type);
+int dp_get_mtu_size(struct net_device *dev, u32 *mtu_size);
 
 #endif /*DATAPATH_API_H */

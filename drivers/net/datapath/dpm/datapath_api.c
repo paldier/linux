@@ -2344,6 +2344,19 @@ int dp_basic_proc(void)
 	}
 }
 
+/*!
+*@brief get network device's MTU
+*@param[in] dev: network device pointer
+*@param[out] mtu_size: return the MTU value in the specified memory if valid.
+*@Returns DP_SUCCESS on succeed and DP_FAILURE on failure
+*/
+/* This API will be enhanced later based on netdevice */
+int dp_get_mtu_size(struct net_device *dev, u32 *mtu_size)
+{
+	return cbm_get_mtu_size(mtu_size);
+}
+EXPORT_SYMBOL(dp_get_mtu_size);
+
 MODULE_LICENSE("GPL");
 
 static int __init dp_dbg_lvl_set(char *str)
