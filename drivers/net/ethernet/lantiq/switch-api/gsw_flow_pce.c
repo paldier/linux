@@ -3026,9 +3026,9 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	if (IS_VRSN_31(gswdev->gipver)) {
 		/*Inner vlan -CTAG VLAN index*/
 		if ((ptbl.key[20] & 0x1FFF) != 0x1FFF) {
-			parm->pattern.bVid = 1;
+			parm->pattern.bVid = LTQ_TRUE;
 			parm->pattern.nVid = ptbl.key[20] & 0xFFF;
-			parm->pattern.bVid_Original = (ptbl.key[20] >> 15) & 1;
+			parm->pattern.bVid_Original = ~(ptbl.key[20] >> 15) & 1;
 
 			if ((ptbl.key[21] & 0xFFF) != 0) {
 				parm->pattern.bVidRange_Select = 1;
@@ -3038,9 +3038,9 @@ int pce_rule_read(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 
 		/*Outer vlan -STAG VLAN index*/
 		if ((ptbl.key[18] & 0x1FFF) != 0x1FFF) {
-			parm->pattern.bSLAN_Vid = 1;
+			parm->pattern.bSLAN_Vid = LTQ_TRUE;
 			parm->pattern.nSLAN_Vid = ptbl.key[18] & 0xFFF;
-			parm->pattern.bOuterVid_Original = (ptbl.key[18] >> 15) & 1;
+			parm->pattern.bOuterVid_Original = ~(ptbl.key[18] >> 15) & 1;
 
 			if ((ptbl.key[19] & 0xFFF) != 0) {
 				parm->pattern.bSVidRange_Select = 1;
@@ -4018,9 +4018,9 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 	/* Pattern field - VID value */
 	if (IS_VRSN_31(gswdev->gipver)) {
 		/* Pattern field - inner VID */
-		if (parm->pattern.bVid == 1) {
+		if (parm->pattern.bVid) {
 			ptbl.key[20] |= (parm->pattern.nVid & 0x0FFF);
-			ptbl.key[20] |= (parm->pattern.bVid_Original << 15);
+			ptbl.key[20] |= parm->pattern.bVid_Original ? 0 : BIT(15);
 
 			if (parm->pattern.bVidRange_Select)
 				ptbl.key[21] |= (parm->pattern.nVidRange & 0xFFF);
@@ -4029,9 +4029,9 @@ int pce_rule_write(void *cdev, ltq_pce_table_t *pthandle, GSW_PCE_rule_t *parm)
 		}
 
 		/* Pattern field - outer VID */
-		if (parm->pattern.bSLAN_Vid == 1) {
+		if (parm->pattern.bSLAN_Vid) {
 			ptbl.key[18] |= (parm->pattern.nSLAN_Vid & 0x0FFF);
-			ptbl.key[18] |= (parm->pattern.bOuterVid_Original << 15);
+			ptbl.key[18] |= parm->pattern.bOuterVid_Original ? 0 : BIT(15);
 
 			if (parm->pattern.bSVidRange_Select)
 				ptbl.key[19] |= (parm->pattern.nOuterVidRange & 0xFFF);
