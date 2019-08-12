@@ -314,6 +314,26 @@ static int tps65273_remove(struct i2c_client *client)
 	return 0;
 }
 
+static void tps65273_shutdown(struct i2c_client *client)
+{
+	struct tps65273 *tps = i2c_get_clientdata(client);
+	int i, ret = 0;
+
+	dev_dbg(&client->dev, "function %s is called\n", __func__);
+
+	for (i = 0; i < TPS65273_NUM_REGULATOR; i++) {
+		struct regulator_dev *rdev = tps->rdev[i];
+		ret = regmap_update_bits(tps->regmap,
+					TPS65273_REG_VOUT1_SEL + i,
+					TPS65273_VOUT_SEL_GO_BIT, 0);
+		if (ret < 0) {
+			dev_err(&client->dev,
+				"shutdown regulator failed: (%d)\n", ret);
+			return ret;
+		}
+	}
+}
+
 static struct of_device_id tps65273_of_match[] = {
 	{ .compatible	 = "ti,tps65273" },
 	{},
@@ -335,6 +355,7 @@ static struct i2c_driver tps65273_i2c_driver = {
 		.of_match_table	= of_match_ptr(tps65273_of_match),
 	},
 	.probe		= tps65273_probe,
+	.shutdown	= tps65273_shutdown,
 	.remove		= tps65273_remove,
 	.id_table	= tps65273_id,
 };
