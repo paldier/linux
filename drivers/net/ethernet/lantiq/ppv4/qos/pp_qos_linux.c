@@ -40,6 +40,7 @@
 #include "pp_qos_common.h"
 #include "pp_qos_utils.h"
 #include "pp_qos_fw.h"
+#include "lantiq.h"
 
 /*
  * TODO - this obstruct multi instances but helps debug
@@ -362,6 +363,10 @@ static int pp_qos_config_from_of_node(
 			     &pdrvdata->fw_sec_data_stack.is_in_dccm);
 	p = of_prop_next_u32(prop, p, &pdrvdata->fw_sec_data_stack.dccm_offset);
 	p = of_prop_next_u32(prop, p, &pdrvdata->fw_sec_data_stack.max_size);
+
+	/* dccm is not available for A Step */
+	if (ltq_get_soc_rev() == 0)
+		pdrvdata->fw_sec_data_stack.is_in_dccm = 0;
 
 	addr = dmam_alloc_coherent(
 			dev,
