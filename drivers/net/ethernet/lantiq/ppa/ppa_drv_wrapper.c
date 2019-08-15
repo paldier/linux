@@ -216,6 +216,15 @@ int ppa_drv_directpath_register(PPA_SUBIF *subif, PPA_NETIF *netif,
 		return PPA_EINVAL;
 	return ppa_drv_directpath_register_hook(subif, netif, pDirectpathCb, index, flags);
 }
+int (*tmu_hal_remove_dp_egress_connectivity_hook_fn)(struct net_device *netdev, uint32_t pmac_port) = NULL;
+EXPORT_SYMBOL(tmu_hal_remove_dp_egress_connectivity_hook_fn);
+int (*tmu_hal_setup_dp_egress_connectivity_hook_fn)(struct net_device *netdev, uint32_t pmac_port) = NULL;
+EXPORT_SYMBOL(tmu_hal_setup_dp_egress_connectivity_hook_fn);
+
+int (*tmu_hal_remove_dp_ingress_connectivity_hook_fn)(struct net_device *netdev, uint32_t pmac_port) = NULL;
+EXPORT_SYMBOL(tmu_hal_remove_dp_ingress_connectivity_hook_fn);
+int (*tmu_hal_setup_dp_ingress_connectivity_hook_fn)(struct net_device *netdev, uint32_t pmac_port) = NULL;
+EXPORT_SYMBOL(tmu_hal_setup_dp_ingress_connectivity_hook_fn);
 
 int32_t (*tmu_hal_set_checksum_queue_map_hook_fn)(uint32_t pmac_port) = NULL;
 EXPORT_SYMBOL(tmu_hal_set_checksum_queue_map_hook_fn);
