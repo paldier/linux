@@ -271,6 +271,16 @@ static struct phy_driver lantiq_phy[] = {
 		.did_interrupt	= vr9_gphy_did_interrupt,
 		.config_intr	= vr9_gphy_config_intr,
 	}, {
+		.phy_id		= 0xd565a401,
+		.phy_id_mask	= 0xffffffff,
+		.name		= "Intel GPHY PEF7072",
+		.features	= (PHY_GBIT_FEATURES | SUPPORTED_Pause),
+		.config_init	= vr9_gphy_config_init,
+		.config_aneg	= vr9_gphy_config_aneg,
+		.read_status	= genphy_read_status,
+		.ack_interrupt	= vr9_gphy_ack_interrupt,
+		.did_interrupt	= vr9_gphy_did_interrupt,
+	}, {
 		.phy_id		= 0x030260D0,
 		.phy_id_mask	= 0xfffffff0,
 		.name		= "Lantiq XWAY VR9 GPHY 11G v1.3",
