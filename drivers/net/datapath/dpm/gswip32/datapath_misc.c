@@ -2184,6 +2184,7 @@ int register_dp_cap_gswip32(int flag)
 	cap.info.dp_meter_alloc = dp_meter_alloc_32;
 	cap.info.dp_meter_add = dp_meter_add_32;
 	cap.info.dp_meter_del = dp_meter_del_32;
+	cap.info.dp_set_bp_attr = dp_set_bp_attr_32;
 	cap.info.dp_rx = dp_rx_32;
 	cap.info.dp_tx = dp_xmit_32;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP31_MIB)

@@ -454,6 +454,7 @@ struct dp_subif_info {
 	u8  pkt_only_en;
 	u8  seg_en;
 	u16 gpid;
+	bool cpu_port_en;
 };
 
 struct vlan_info {

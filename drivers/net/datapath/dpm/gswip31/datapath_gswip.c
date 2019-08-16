@@ -1466,3 +1466,34 @@ err:
 	kfree(pce_rule);
 	return bret;
 }
+
+int dp_set_bp_attr_31(struct dp_bp_attr *conf, int bport, uint32_t flag)
+{
+	GSW_return_t ret;
+	GSW_BRIDGE_portConfig_t brportcfg;
+	struct core_ops *ops = dp_port_prop[conf->inst].ops[0];
+
+	memset(&brportcfg, 0, sizeof(GSW_BRIDGE_portConfig_t));
+
+	brportcfg.nBridgePortId = bport;
+	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
+
+	ret = ops->gsw_brdgport_ops.BridgePort_ConfigGet(ops, &brportcfg);
+	if (ret != GSW_statusOk) {
+		PR_ERR("fail in getting bridge port config\r\n");
+		return DP_FAILURE;
+	}
+
+	if (conf->en)
+		SET_BP_MAP(brportcfg.nBridgePortMap, CPU_PORT);
+	else
+		UNSET_BP_MAP(brportcfg.nBridgePortMap, CPU_PORT);
+
+	ret = ops->gsw_brdgport_ops.BridgePort_ConfigSet(ops, &brportcfg);
+	if (ret != GSW_statusOk) {
+		PR_ERR("Fail in allocating/configuring bridge port\n");
+		return DP_FAILURE;
+	}
+
+	return DP_SUCCESS;
+}

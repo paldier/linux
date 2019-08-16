@@ -2204,6 +2204,41 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 }
 EXPORT_SYMBOL(dp_vlan_set);
 
+int dp_set_bp_attr(struct dp_bp_attr *conf, uint32_t flag)
+{
+	struct pmac_port_info *port_info;
+	dp_subif_t subif = {0};
+	int ret = DP_SUCCESS;
+
+	if (!conf) {
+		DP_DEBUG(DP_DBG_FLAG_DBG, "conf passed is (%s)\n",
+			 conf ? conf->dev->name : "NULL");
+		return DP_FAILURE;
+	}
+
+	DP_LIB_LOCK(&dp_lock);
+
+	if (dp_get_netif_subifid_priv(conf->dev, NULL, NULL, NULL, &subif, 0)) {
+		DP_LIB_UNLOCK(&dp_lock);
+		return DP_FAILURE;
+	}
+
+	port_info = get_dp_port_info(conf->inst, subif.port_id);
+	port_info->subif_info->cpu_port_en = conf->en;
+
+	DP_LIB_UNLOCK(&dp_lock);
+
+	/* Null check is needed since some platforms dont have this API */
+	if (!dp_port_prop[subif.inst].info.dp_set_bp_attr)
+		return DP_FAILURE;
+
+	ret = dp_port_prop[subif.inst].info.dp_set_bp_attr(conf, subif.bport,
+			flag);
+
+	return ret;
+}
+EXPORT_SYMBOL(dp_set_bp_attr);
+
 /*Return the table entry index based on dev:
  *success: >=0
  *fail: DP_FAILURE

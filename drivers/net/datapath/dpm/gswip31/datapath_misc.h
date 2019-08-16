@@ -180,6 +180,7 @@ int32_t dp_xmit_31(struct net_device *rx_if, dp_subif_t *rx_subif,
 		   struct sk_buff *skb, int32_t len, uint32_t flags);
 void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type, u32 ip_offset,
 		int ip_off_hw_adjust, u32 tcp_h_offset);
+int dp_set_bp_attr_31(struct dp_bp_attr *conf, int bport, uint32_t flag);
 
 static inline char *parser_flag_str(u8 f)
 {

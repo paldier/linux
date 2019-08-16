@@ -209,6 +209,7 @@ int32_t dp_xmit_32(struct net_device *rx_if, dp_subif_t *rx_subif,
 void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 		u32 ip_offset, int ip_off_hw_adjust,
 		u32 tcp_h_offset);
+int dp_set_bp_attr_32(struct dp_bp_attr *conf, int bport, uint32_t flag);
 
 int dp_lan_wan_bridging(int port_id, struct sk_buff *skb);
 

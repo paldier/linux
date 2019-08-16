@@ -1838,4 +1838,22 @@ static inline void dp_dma_parse_id(u32 dma_id, u8 *cid, u8 *pid, u16 *chid)
 	if (chid)
 		*chid = dma_id & 0xffff;
 }
+
+/*!
+ *@brief struct dp_bp_attr enable/disable CPU port in the BP member list
+ */
+struct dp_bp_attr {
+	int inst; /*!< [in] DP instance ID */
+	struct net_device *dev; /*!< [in] Network device pointer */
+	bool en; /*!< [in] DP enable/disable CPU port in the BP member list.*/
+};
+
+/*!
+ *@brief dp_set_bp_attr API
+ *@param[in/out] conf: bp attribute
+ *@param[in] flag: reserved for future
+ *@return DP_SUCCESS on succeed and DP_FAILURE on failure
+ */
+int dp_set_bp_attr(struct dp_bp_attr *conf, uint32_t flag);
+
 #endif /*DATAPATH_API_H */

@@ -128,6 +128,8 @@ struct inst_info {
 			    struct dp_meter_cfg *meter, int flag,
 			    struct dp_meter_subif *mtr_subif);
 
+	int (*dp_set_bp_attr)(struct dp_bp_attr *bp_attr, int bport, u32 flags);
+
 	int32_t (*dp_rx)(struct sk_buff *skb, uint32_t flags);
 	int32_t (*dp_tx)(struct net_device *rx_if, dp_subif_t *rx_subif,
 			 struct sk_buff *skb, int32_t len, uint32_t flags);
