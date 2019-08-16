@@ -654,6 +654,8 @@ static irqreturn_t ltq_i2c_isr_prot(struct ltq_i2c *priv)
 	u32 i_pro = i2c_r32(p_irqss);
 	int ret = IRQ_HANDLED;
 
+	i2c_w32_mask(LTQ_I2C_IMSC_DEFAULT_MASK, 0, imsc);
+
 	if (i_pro)
 		i2c_w32(i_pro, p_irqsc);
 
@@ -703,6 +705,8 @@ static irqreturn_t ltq_i2c_isr_prot(struct ltq_i2c *priv)
 			}
 		}
 	}
+
+	i2c_w32_mask(0, LTQ_I2C_IMSC_DEFAULT_MASK, imsc);
 	return ret;
 }
 
