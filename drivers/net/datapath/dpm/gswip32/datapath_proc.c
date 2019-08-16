@@ -55,11 +55,13 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 	static GSW_PCE_rule_t pce;
 	int inst = 0;
 	struct core_ops *gsw_handle;
+	struct tflow_ops *gsw_tflow;
 
 	if (!capable(CAP_NET_ADMIN))
 		return -EPERM;
 	memset(&pce, 0, sizeof(pce));
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
+	gsw_tflow = &gsw_handle->gsw_tflow_ops;
 	len = (sizeof(str) > count) ? count : sizeof(str) - 1;
 	len -= copy_from_user(str, buf, len);
 	str[len] = 0;
@@ -204,9 +206,7 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce.action.bRMON_Action = 1;
 		pce.action.nRMON_Id = 0;	/*RMON_UDP_CNTR; */
 
-		if (gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_tflow_ops.TFLOW_PceRuleWrite,
-			gsw_handle, &pce)) {
+		if (gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, &pce)) {
 			PR_ERR("PCE rule add fail: GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
@@ -217,9 +217,7 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce_rule_id = dp_atoi(param_list[1]);
 		pce.pattern.nIndex = pce_rule_id;
 		pce.pattern.bEnable = 0;
-		if (gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_tflow_ops.TFLOW_PceRuleWrite,
-			gsw_handle, &pce)) {
+		if (gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, &pce)) {
 			PR_ERR("PCE rule add fail:GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
@@ -242,17 +240,17 @@ char *get_bp_member_string_32(int inst, u16 bp, char *buf)
 	GSW_BRIDGE_portConfig_t bp_cfg;
 	int i, ret;
 	struct core_ops *gsw_handle;
+	struct brdgport_ops *gsw_bp;
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	if (!buf)
 		return NULL;
 	buf[0] = 0;
 	bp_cfg.nBridgePortId = bp;
 	bp_cfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP |
 		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
-		gsw_handle, &bp_cfg);
+	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to get bridge port's member for bridgeport=%d\n",
 		       bp_cfg.nBridgePortId);

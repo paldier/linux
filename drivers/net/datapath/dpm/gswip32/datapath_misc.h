@@ -212,11 +212,6 @@ void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
 
 int dp_lan_wan_bridging(int port_id, struct sk_buff *skb);
 
-static inline GSW_return_t gsw_core_api(dp_gsw_cb func, void *ops, void *param)
-{
-	return func(ops, param);
-}
-
 static inline char *parser_flag_str(u8 f)
 {
 	if (f == DP_PARSER_F_DISABLE)

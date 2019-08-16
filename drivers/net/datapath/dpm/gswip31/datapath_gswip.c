@@ -14,10 +14,6 @@
 #include "../datapath.h"
 #include "datapath_misc.h"
 
-#define GSW_CORE_API(_handle, a, b) ({ \
-	typeof(_handle) (handle) = (_handle); \
-	gsw_core_api((dp_gsw_cb)(handle)->a, (handle), (b)); })
-
 #define BP_CFG(bp_cfg, _index, bflag, id) ({ \
 	typeof(_index) (index) = (_index); \
 	(bp_cfg)->bEgressSubMeteringEnable[(index)] = bflag; \
@@ -132,9 +128,7 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 				igcfg.nTxDmaChanId =
 					pmac_cfg->ig_pmac.tx_dma_chan;
 			}
-			gsw_core_api(
-				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Ig_CfgGet,
-				gswr_r, &igcfg);
+			gswr_r->gsw_pmac_ops.Pmac_Ig_CfgGet(gswr_r, &igcfg);
 
 			/*update igcfg and write back to gsw */
 			if (pmac_cfg->ig_pmac_flags & IG_PMAC_F_ERR_DISC)
@@ -234,9 +228,7 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 
 			DP_DEBUG(DP_DBG_FLAG_DBG, "\n");
 
-			gsw_core_api(
-				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Ig_CfgSet,
-				gswr_r, &igcfg);
+			gswr_r->gsw_pmac_ops.Pmac_Ig_CfgSet(gswr_r, &igcfg);
 		}
 
 			kfree(dqport.deq_info);
@@ -258,9 +250,7 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 			egcfg.bProcFlagsSelect = 1;
 			DP_DEBUG(DP_DBG_FLAG_DBG, "bProcFlagsSelect=%u\n",
 				 egcfg.bProcFlagsSelect);
-			gsw_core_api(
-				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Eg_CfgGet,
-				gswr_r, &egcfg);
+			gswr_r->gsw_pmac_ops.Pmac_Eg_CfgGet(gswr_r, &egcfg);
 
 			/*update egcfg and write back to gsw */
 			if (pmac_cfg->eg_pmac_flags & EG_PMAC_F_FCS)
@@ -390,9 +380,7 @@ int dp_pmac_set_31(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 					 egcfg.bMpe2Flag);
 			}
 #endif
-			gsw_core_api(
-				(dp_gsw_cb)gswr_r->gsw_pmac_ops.Pmac_Eg_CfgSet,
-				gswr_r, &egcfg);
+			gswr_r->gsw_pmac_ops.Pmac_Eg_CfgSet(gswr_r, &egcfg);
 		}
 	}
 
@@ -412,9 +400,7 @@ int dp_set_gsw_parser_31(u8 flag, u8 cpu, u8 mpe1,
 	GSW_CPU_PortCfg_t param = {0};
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[0];/*gswip o */
 
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
-		gsw_handle, &param)) {
+	if (gsw_handle->gsw_common_ops.CPU_PortCfgGet(gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}
@@ -436,9 +422,7 @@ int dp_set_gsw_parser_31(u8 flag, u8 cpu, u8 mpe1,
 	if (flag & F_MPE1_MPE2)
 		param.eMPE1MPE2ParserCfg = mpe3;
 
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgSet,
-		gsw_handle, &param)) {
+	if (gsw_handle->gsw_common_ops.CPU_PortCfgSet(gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_SET\n");
 		return -1;
 	}
@@ -455,9 +439,7 @@ int dp_get_gsw_parser_31(u8 *cpu, u8 *mpe1, u8 *mpe2,
 	GSW_CPU_PortCfg_t param = {0};
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[0]; /*gswip 0*/
 
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
-		gsw_handle, &param)) {
+	if (gsw_handle->gsw_common_ops.CPU_PortCfgGet(gsw_handle, &param)) {
 		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}
@@ -496,8 +478,7 @@ int gsw_mib_reset_31(int dev, u32 flag)
 
 	gsw_handle = dp_port_prop[0].ops[0];
 	rmon_clear.eRmonType = GSW_RMON_ALL_TYPE;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Clear,
-			   gsw_handle, &rmon_clear);
+	ret = gsw_handle->gsw_rmon_ops.RMON_Clear(gsw_handle, &rmon_clear);
 
 	if (ret != GSW_statusOk) {
 		PR_ERR("R:GSW_RMON_CLEAR failed for GSW_RMON_ALL_TYPE\n");
@@ -529,10 +510,7 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 		ctp_assign.eMode = itf_assign[ep].mode;
 		ctp_assign.nFirstCtpPortId = itf_assign[ep].start;
 		ctp_assign.nNumberOfCtpPort = itf_assign[ep].n;
-		if (gsw_core_api(
-			(dp_gsw_cb)gsw_ctp->CTP_PortAssignmentFree,
-			gsw_handle,
-			&ctp_assign) != 0) {
+		if (gsw_ctp->CTP_PortAssignmentFree(gsw_handle, &ctp_assign)) {
 			PR_ERR("Failed to allc CTP for ep=%d blk=%d mode=%d\n",
 			       ep, assign->num, assign->emode);
 			return NULL;
@@ -556,10 +534,7 @@ struct gsw_itf *ctp_port_assign(int inst, u8 ep, int bp_default,
 	ctp_assign.nBridgePortId = bp_default;
 	ctp_assign.nFirstCtpPortId = 0;
 	ctp_assign.nNumberOfCtpPort = num;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_ctp->CTP_PortAssignmentAlloc,
-		gsw_handle,
-		&ctp_assign) != 0) {
+	if (gsw_ctp->CTP_PortAssignmentAlloc(gsw_handle, &ctp_assign)) {
 		PR_ERR("Failed CTP Assignment for ep=%d blk size=%d mode=%s\n",
 		       ep, num, ctp_mode_string(assign->emode));
 		return NULL;
@@ -609,14 +584,14 @@ int alloc_bridge_port(int inst, int port_id, int subif_ix,
 	GSW_BRIDGE_portAlloc_t bp = {0};
 	GSW_BRIDGE_portConfig_t bp_cfg = {0};
 	struct core_ops *gsw_handle;
+	struct brdgport_ops *gsw_bp;
 	GSW_return_t ret;
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	/*allocate a free bridge port */
 	memset(&bp, 0, sizeof(bp));
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Alloc,
-		gsw_handle, &bp);
+	ret = gsw_bp->BridgePort_Alloc(gsw_handle, &bp);
 	if ((ret != GSW_statusOk) ||
 	    (bp.nBridgePortId < 0)) {
 		PR_ERR("Failed to get a bridge port\n");
@@ -643,15 +618,11 @@ int alloc_bridge_port(int inst, int port_id, int subif_ix,
 	bp_cfg.nBridgeId = fid;
 
 	SET_BP_MAP(bp_cfg.nBridgePortMap, bp_member); /*CPU*/
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
-		gsw_handle, &bp_cfg);
+	ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to set bridge id(%d) and port map for bp= %d\n",
 		       fid, bp_cfg.nBridgePortId);
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
-			gsw_handle, &bp);
+		gsw_bp->BridgePort_Free(gsw_handle, &bp);
 		return -1;
 	}
 
@@ -660,27 +631,19 @@ int alloc_bridge_port(int inst, int port_id, int subif_ix,
 	 */
 	bp_cfg.nBridgePortId = bp_member;
 	bp_cfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
-		gsw_handle, &bp_cfg);
+	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to get bridge port's member for bridgeport=%d\n",
 		       bp_cfg.nBridgePortId);
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
-			gsw_handle, &bp);
+		gsw_bp->BridgePort_Free(gsw_handle, &bp);
 		return -1;
 	}
 	SET_BP_MAP(bp_cfg.nBridgePortMap, bp.nBridgePortId);
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
-		gsw_handle, &bp_cfg);
+	ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to set bridge port's member for bridgeport=%d\n",
 		       bp_cfg.nBridgePortId);
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_Free,
-			gsw_handle, &bp);
+		gsw_bp->BridgePort_Free(gsw_handle, &bp);
 		return -1;
 	}
 
@@ -713,9 +676,7 @@ int free_bridge_port(int inst, int bp)
 	/*read out this delting bridge port's member*/
 	tmp->nBridgePortId = bp;
 	tmp->eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
-		gsw_handle, tmp);
+	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_GET: %d\n", bp);
 		goto EXIT;
@@ -730,17 +691,13 @@ int free_bridge_port(int inst, int bp)
 			tmp2->eMask =
 				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 			tmp2->nBridgePortId = i * 16 + j;
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
-				gsw_handle, tmp2);
+			ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, tmp2);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_GET\n");
 				goto EXIT;
 			}
 			UNSET_BP_MAP(tmp2->nBridgePortMap, bp);
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
-				gsw_handle, tmp2);
+			ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, tmp2);
 			if (ret != GSW_statusOk) {
 				PR_ERR("Failed GSW_BRIDGE_PORT_CONFIG_SET\n");
 				goto EXIT;
@@ -752,9 +709,8 @@ EXIT:
 	memset(tmp, 0, sizeof(tmp));
 	tmp->nBridgePortId = bp;
 	tmp->eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_bp->BridgePort_Free,
-		gsw_handle, tmp);
+	ret = gsw_bp->BridgePort_Free(gsw_handle,
+				      (GSW_BRIDGE_portAlloc_t *)tmp);
 	if (ret != GSW_statusOk)
 		PR_ERR("Failed to GSW_BRIDGE_PORT_FREE:%d\n", bp);
 FREE_EXIT:
@@ -777,9 +733,7 @@ int dp_gswip_mac_entry_add(int bport, int fid, int inst, u8 *addr)
 	SET_BP_MAP(tmp.nPortMap, bport);
 	tmp.nSubIfId = 0;
 	memcpy(tmp.nMAC, addr, GSW_MAC_ADDR_LEN);
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_swmac_ops.MAC_TableEntryAdd,
-		gsw_handle, &tmp);
+	ret = gsw_handle->gsw_swmac_ops.MAC_TableEntryAdd(gsw_handle, &tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in setting MAC table static add entry\r\n");
 		return -1;
@@ -793,24 +747,22 @@ int dp_gswip_mac_entry_del(int bport, int fid, int inst, u8 *addr)
 	GSW_MAC_tableQuery_t mac_query;
 	GSW_return_t ret;
 	struct core_ops *gsw_handle;
+	struct swmac_ops *gsw_swmac;
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_swmac = &gsw_handle->gsw_swmac_ops;
 	memset(&tmp, 0, sizeof(tmp));
 	memset(&mac_query, 0, sizeof(mac_query));
 	mac_query.nFId = fid;
 	memcpy(mac_query.nMAC, addr, GSW_MAC_ADDR_LEN);
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_swmac_ops.MAC_TableEntryQuery,
-		gsw_handle, &tmp);
+	ret = gsw_swmac->MAC_TableEntryQuery(gsw_handle, &mac_query);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting MAC query entry\r\n");
 		return -1;
 	}
 	tmp.nFId = fid;
 	memcpy(tmp.nMAC, addr, GSW_MAC_ADDR_LEN);
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_swmac_ops.MAC_TableEntryRemove,
-		gsw_handle, &tmp);
+	ret = gsw_swmac->MAC_TableEntryRemove(gsw_handle, &tmp);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in setting MAC static entry remove\r\n");
 		return -1;
@@ -827,16 +779,14 @@ int cpu_vlan_mod_dis(int inst)
 	ops = dp_port_prop[inst].ops[GSWIP_L];
 
 	cfg.nPortId = 0;
-	ret = gsw_core_api((dp_gsw_cb)ops->gsw_qos_ops.QoS_PortRemarkingCfgGet,
-			   ops, &cfg);
+	ret = ops->gsw_qos_ops.QoS_PortRemarkingCfgGet(ops, &cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("QoS_PortRemarkingCfgGet failed\n");
 		return -1;
 	}
 
 	cfg.bPCP_EgressRemarkingEnable = LTQ_FALSE;
-	ret = gsw_core_api((dp_gsw_cb)ops->gsw_qos_ops.QoS_PortRemarkingCfgSet,
-			   ops, &cfg);
+	ret = ops->gsw_qos_ops.QoS_PortRemarkingCfgSet(ops, &cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("QoS_PortRemarkingCfgSet failed\n");
 		return -1;
@@ -850,13 +800,14 @@ int dp_set_gsw_pmapper_31(int inst, int bport, int lport,
 {
 	GSW_BRIDGE_portConfig_t bp_cfg = {0};
 	struct core_ops *gsw_handle;
+	struct brdgport_ops *gsw_bp;
 	GSW_return_t ret;
 	int i, index;
 	int ctp;
 	struct pmac_port_info *port_info = get_dp_port_info(inst, lport);
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
-
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	DP_DEBUG(DP_DBG_FLAG_DBG,
 		 "set pmapper bport %d inst %d lport %d\n",
 		 bport, inst, lport);
@@ -901,9 +852,7 @@ int dp_set_gsw_pmapper_31(int inst, int bport, int lport,
 		 "call switch api mode %d enable %d eMask 0x%x\n",
 		 bp_cfg.ePmapperMappingMode, bp_cfg.bPmapperEnable,
 		 bp_cfg.eMask);
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigSet,
-		gsw_handle, &bp_cfg);
+	ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in setting pmapper\r\n");
 		return -1;
@@ -916,6 +865,7 @@ int dp_get_gsw_pmapper_31(int inst, int bport, int lport,
 {
 	GSW_BRIDGE_portConfig_t bp_cfg = {0};
 	struct core_ops *gsw_handle;
+	struct brdgport_ops *gsw_bp;
 	GSW_return_t ret;
 	int i, index;
 	struct hal_priv *priv;
@@ -924,7 +874,7 @@ int dp_get_gsw_pmapper_31(int inst, int bport, int lport,
 
 	priv = (struct hal_priv *)dp_port_prop[inst].priv_hal;
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
-
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	DP_DEBUG(DP_DBG_FLAG_DBG,
 		 "get bport %d inst %d lport %d\n",
 		 bport, inst, lport);
@@ -932,9 +882,7 @@ int dp_get_gsw_pmapper_31(int inst, int bport, int lport,
 	bp_cfg.nDestLogicalPortId = lport;
 	bp_cfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_EGRESS_CTP_MAPPING;
 
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdgport_ops.BridgePort_ConfigGet,
-		gsw_handle, &bp_cfg);
+	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting pmapper\r\n");
 		return -1;
@@ -980,6 +928,7 @@ int dp_get_gsw_pmapper_31(int inst, int bport, int lport,
 int dp_meter_alloc_31(int inst, int *meterid, int flag)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_meterCfg_t meter_cfg = {0};
 	GSW_return_t ret;
 
@@ -996,10 +945,10 @@ int dp_meter_alloc_31(int inst, int *meterid, int flag)
 		PR_ERR("gsw_handle NULL\n");
 		return -1;
 	}
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	if (flag == DP_F_DEREGISTER && *meterid >= 0) {
 		meter_cfg.nMeterId = *meterid;
-		ret = GSW_CORE_API(gsw_handle, gsw_qos_ops.QOS_MeterAlloc,
-				   &meter_cfg);
+		ret = gsw_qos->QOS_MeterAlloc(gsw_handle, &meter_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("Meter dealloc failed: %d\n", ret);
 			return -1;
@@ -1007,8 +956,7 @@ int dp_meter_alloc_31(int inst, int *meterid, int flag)
 		return 0;
 	}
 	memset(&meter_cfg, 0, sizeof(meter_cfg));
-	ret = GSW_CORE_API(gsw_handle, gsw_qos_ops.QOS_MeterAlloc,
-			   &meter_cfg);
+	ret = gsw_qos->QOS_MeterAlloc(gsw_handle, &meter_cfg);
 	if ((ret != GSW_statusOk) || (meter_cfg.nMeterId < 0)) {
 		PR_ERR("Failed to get a meter alloc\n");
 		*meterid = -1;
@@ -1022,6 +970,8 @@ static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
 			   int flag, struct dp_meter_subif *mtr_subif)
 {
 	struct core_ops *gsw_handle;
+	struct ctp_ops *gsw_ctp;
+	struct brdgport_ops *gsw_bp;
 	GSW_BRIDGE_portConfig_t bp_cfg;
 	GSW_CTP_portConfig_t ctp_cfg;
 	GSW_return_t ret;
@@ -1036,6 +986,8 @@ static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
 	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
 	if (!gsw_handle)
 		return -1;
+	gsw_ctp = &gsw_handle->gsw_ctp_ops;
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
 	if (flag & DP_METER_ATTACH_CTP) {/* CTP port Flag */
 		if (mtr_subif->subif.flag_pmapper) {
 			PR_ERR("can't use CTP,pmapper is enable\n");
@@ -1047,8 +999,7 @@ static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
 		ctp_cfg.nSubIfIdGroup  = GET_VAP(mtr_subif->subif.subif,
 						 port_info->vap_offset,
 						 port_info->vap_mask);
-		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigGet,
-				   &ctp_cfg);
+		ret = gsw_ctp->CTP_PortConfigGet(gsw_handle, &ctp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("PortConfigGet API failed :%d\n", ret);
 			return -1;
@@ -1070,8 +1021,7 @@ static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
 		} else {
 			return -1;
 		}
-		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigSet,
-				   &ctp_cfg);
+		ret = gsw_ctp->CTP_PortConfigSet(gsw_handle, &ctp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("PortConfigSet API failed :%d\n", ret);
 			return -1;
@@ -1083,9 +1033,7 @@ static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
 			return -1;
 		}
 		bp_cfg.nBridgePortId = mtr_subif->subif.bport;
-		ret = GSW_CORE_API(gsw_handle,
-				   gsw_brdgport_ops.BridgePort_ConfigGet,
-				   &bp_cfg);
+		ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &bp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("BridgePort_ConfigGet API failed :%d\n", ret);
 			return -1;
@@ -1101,9 +1049,7 @@ static int dp_set_col_mark(struct net_device *dev, struct dp_meter_cfg  *meter,
 			PR_ERR(" invalid color mark dir\n");
 			return -1;
 		}
-		ret = GSW_CORE_API(gsw_handle,
-				   gsw_brdgport_ops.BridgePort_ConfigSet,
-				   &bp_cfg);
+		ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &bp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("BridgePort_ConfigSet API failed :%d\n", ret);
 			return -1;
@@ -1116,6 +1062,11 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		    int flag, struct dp_meter_subif *mtr_subif)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
+	struct tflow_ops *gsw_tflow;
+	struct ctp_ops *gsw_ctp;
+	struct brdgport_ops *gsw_bp;
+	struct brdg_ops *gsw_brdg;
 	GSW_QoS_meterCfg_t meter_cfg;
 	GSW_BRIDGE_portConfig_t *bp_cfg = NULL;
 	GSW_PCE_rule_t *pce_rule = NULL;
@@ -1131,7 +1082,11 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
 	if (!gsw_handle)
 		return -1;
-
+	gsw_qos = &gsw_handle->gsw_qos_ops;
+	gsw_tflow = &gsw_handle->gsw_tflow_ops;
+	gsw_ctp = &gsw_handle->gsw_ctp_ops;
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
+	gsw_brdg = &gsw_handle->gsw_brdg_ops;
 	if (flag & DP_COL_MARKING)
 		return dp_set_col_mark(dev, meter, flag, mtr_subif);
 	memset(&meter_cfg, 0, sizeof(GSW_QoS_meterCfg_t));
@@ -1150,8 +1105,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	}
 	meter_cfg.nMeterId = meter->meter_id;
 	meter_cfg.nColourBlindMode = meter->col_mode;
-	ret = GSW_CORE_API(gsw_handle, gsw_qos_ops.QoS_MeterCfgSet,
-			   &meter_cfg);
+	ret = gsw_qos->QoS_MeterCfgSet(gsw_handle, &meter_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("MeterCfgSet API failed:%d\n", ret);
 		return -1;
@@ -1170,8 +1124,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		/* action setting */
 		pce_rule->action.eMeterAction = GSW_PCE_ACTION_METER_1;
 		pce_rule->action.nMeterId =  meter->meter_id;
-		ret = GSW_CORE_API(gsw_handle, gsw_tflow_ops.TFLOW_PceRuleWrite,
-				   pce_rule);
+		ret = gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, pce_rule);
 		if (ret != GSW_statusOk) {
 			PR_ERR("PceRule Write API failed :%d\n", ret);
 			goto err;
@@ -1202,8 +1155,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		ctp_cfg->nSubIfIdGroup  = GET_VAP(mtr_subif->subif.subif,
 						 port_info->vap_offset,
 						 port_info->vap_mask);
-		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigGet,
-				   ctp_cfg);
+		ret = gsw_ctp->CTP_PortConfigGet(gsw_handle, ctp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("PortConfigGet API failed :%d\n", ret);
 			bret = -1;
@@ -1221,8 +1173,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			PR_ERR(" invalid meter dir\n");
 			return -1;
 		}
-		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigSet,
-				   ctp_cfg);
+		ret = gsw_ctp->CTP_PortConfigSet(gsw_handle, ctp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("PortConfigSet API failed :%d\n", ret);
 			bret = -1;
@@ -1242,9 +1193,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			goto err;
 		}
 		bp_cfg->nBridgePortId = mtr_subif->subif.bport;
-		ret = GSW_CORE_API(gsw_handle,
-				   gsw_brdgport_ops.BridgePort_ConfigGet,
-				   bp_cfg);
+		ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, bp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("BridgePort_ConfigGet API failed :%d\n", ret);
 			bret = -1;
@@ -1278,9 +1227,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			PR_ERR(" invalid meter dir\n");
 			return -1;
 		}
-		ret = GSW_CORE_API(gsw_handle,
-				   gsw_brdgport_ops.BridgePort_ConfigSet,
-				   bp_cfg);
+		ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, bp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("BridgePort_ConfigSet API failed :%d\n", ret);
 			bret = -1;
@@ -1294,9 +1241,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			goto err;
 		}
 		br_cfg->nBridgeId = mtr_subif->fid;
-		ret = GSW_CORE_API(gsw_handle,
-				   gsw_brdg_ops.Bridge_ConfigGet,
-				   br_cfg);
+		ret = gsw_brdg->Bridge_ConfigGet(gsw_handle, br_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("Bridge_ConfigGet API failed :%d\n", ret);
 			bret = -1;
@@ -1320,8 +1265,7 @@ int dp_meter_add_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		ret = GSW_CORE_API(gsw_handle, gsw_brdg_ops.Bridge_ConfigSet,
-				   br_cfg);
+		ret = gsw_brdg->Bridge_ConfigSet(gsw_handle, br_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("Bridge_ConfigSet API failed :%d\n", ret);
 			bret = -1;
@@ -1340,6 +1284,10 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		    int flag, struct dp_meter_subif *mtr_subif)
 {
 	struct core_ops *gsw_handle;
+	struct tflow_ops *gsw_tflow;
+	struct ctp_ops *gsw_ctp;
+	struct brdgport_ops *gsw_bp;
+	struct brdg_ops *gsw_brdg;
 	GSW_BRIDGE_portConfig_t *bp_cfg = NULL;
 	GSW_PCE_rule_t *pce_rule = NULL;
 	GSW_CTP_portConfig_t *ctp_cfg = NULL;
@@ -1354,7 +1302,10 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
 	if (!gsw_handle)
 		return -1;
-
+	gsw_tflow = &gsw_handle->gsw_tflow_ops;
+	gsw_ctp = &gsw_handle->gsw_ctp_ops;
+	gsw_bp = &gsw_handle->gsw_brdgport_ops;
+	gsw_brdg = &gsw_handle->gsw_brdg_ops;
 	if (meter->dir & DP_METER_ATTACH_PCE) {
 		pce_rule = kzalloc(sizeof(GSW_PCE_rule_t), GFP_ATOMIC);
 		if (!pce_rule) {
@@ -1365,8 +1316,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 		/* pattern setting */
 		pce_rule->pattern.nIndex = meter->dp_pce.pce_idx;
 		pce_rule->pattern.bEnable = 0;
-		ret = GSW_CORE_API(gsw_handle, gsw_tflow_ops.TFLOW_PceRuleWrite,
-				   pce_rule);
+		ret = gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, pce_rule);
 		if (ret != GSW_statusOk) {
 			PR_ERR("PceRule Write API failed :%d\n", ret);
 			bret = -1;
@@ -1402,8 +1352,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			ctp_cfg->nEgressTrafficMeterId =  meter->meter_id;
 		else if (meter->dir == DP_DIR_INGRESS)
 			ctp_cfg->nIngressTrafficMeterId =  meter->meter_id;
-		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigGet,
-				   ctp_cfg);
+		ret = gsw_ctp->CTP_PortConfigGet(gsw_handle, ctp_cfg);
 		if (ret != GSW_statusOk) {
 			bret = -1;
 			goto err;
@@ -1415,8 +1364,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			ctp_cfg->eMask = GSW_CTP_PORT_CONFIG_INGRESS_METER;
 			ctp_cfg->bIngressMeteringEnable = 0;
 		}
-		ret = GSW_CORE_API(gsw_handle, gsw_ctp_ops.CTP_PortConfigSet,
-				   ctp_cfg);
+		ret = gsw_ctp->CTP_PortConfigSet(gsw_handle, ctp_cfg);
 		if (ret != GSW_statusOk) {
 			bret = -1;
 			goto err;
@@ -1435,9 +1383,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			goto err;
 		}
 		bp_cfg->nBridgePortId = mtr_subif->subif.bport;
-		ret = GSW_CORE_API(gsw_handle,
-				   gsw_brdgport_ops.BridgePort_ConfigGet,
-				   bp_cfg);
+		ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, bp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("BridgePort_ConfigGet API failed\n");
 			bret = -1;
@@ -1467,9 +1413,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 				GSW_BRIDGE_PORT_CONFIG_MASK_INGRESS_METER;
 			bp_cfg->bIngressMeteringEnable = 0;
 		}
-		ret = GSW_CORE_API(gsw_handle,
-				   gsw_brdgport_ops.BridgePort_ConfigSet,
-				   bp_cfg);
+		ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, bp_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("BridgePort_ConfigSet API failed\n");
 			bret = -1;
@@ -1484,8 +1428,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			goto err;
 		}
 		br_cfg->nBridgeId = mtr_subif->fid;
-		ret = GSW_CORE_API(gsw_handle, gsw_brdg_ops.Bridge_ConfigGet,
-				   br_cfg);
+		ret = gsw_brdg->Bridge_ConfigGet(gsw_handle, br_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("Bridge_ConfigGet API failed :%d\n", ret);
 			bret = -1;
@@ -1509,8 +1452,7 @@ int dp_meter_del_31(struct net_device *dev,  struct dp_meter_cfg  *meter,
 			bret = -1;
 			goto err;
 		}
-		ret = GSW_CORE_API(gsw_handle, gsw_brdg_ops.Bridge_ConfigSet,
-				   br_cfg);
+		ret = gsw_brdg->Bridge_ConfigSet(gsw_handle, br_cfg);
 		if (ret != GSW_statusOk) {
 			PR_ERR("Bridge_ConfigSet API failed :%d\n", ret);
 			bret = -1;

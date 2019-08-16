@@ -504,9 +504,11 @@ int alloc_q_to_port(struct ppv4_q_sch_port *info, u32 flag)
 static int dp_gswip_remark_8P0D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorRemarkingEntry_t color_remark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_remark.eMode = mode;
 	color_remark.nVal[0] = 0;
 	color_remark.nVal[1] = 2;
@@ -524,9 +526,7 @@ static int dp_gswip_remark_8P0D_set(int mode, int inst)
 	color_remark.nVal[13] = 11;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
-		gsw_handle, &color_remark)) {
+	if (gsw_qos->QOS_ColorReMarkingTableSet(gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -536,9 +536,11 @@ static int dp_gswip_remark_8P0D_set(int mode, int inst)
 static int dp_gswip_remark_7P1D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorRemarkingEntry_t color_remark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_remark.eMode = mode;
 	color_remark.nVal[0] = 0;
 	color_remark.nVal[1] = 2;
@@ -556,9 +558,7 @@ static int dp_gswip_remark_7P1D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
-		gsw_handle, &color_remark)) {
+	if (gsw_qos->QOS_ColorReMarkingTableSet(gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -568,9 +568,11 @@ static int dp_gswip_remark_7P1D_set(int mode, int inst)
 static int dp_gswip_remark_6P2D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorRemarkingEntry_t color_remark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_remark.eMode = mode;
 	color_remark.nVal[0] = 0;
 	color_remark.nVal[1] = 2;
@@ -588,9 +590,7 @@ static int dp_gswip_remark_6P2D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
-		gsw_handle, &color_remark)) {
+	if (gsw_qos->QOS_ColorReMarkingTableSet(gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -600,9 +600,11 @@ static int dp_gswip_remark_6P2D_set(int mode, int inst)
 static int dp_gswip_remark_5P3D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorRemarkingEntry_t color_remark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_remark.eMode = mode;
 	color_remark.nVal[0] = 2;
 	color_remark.nVal[1] = 2;
@@ -620,9 +622,7 @@ static int dp_gswip_remark_5P3D_set(int mode, int inst)
 	color_remark.nVal[13] = 9;
 	color_remark.nVal[14] = 13;
 	color_remark.nVal[15] = 15;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
-		gsw_handle, &color_remark)) {
+	if (gsw_qos->QOS_ColorReMarkingTableSet(gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -632,9 +632,11 @@ static int dp_gswip_remark_5P3D_set(int mode, int inst)
 static int dp_gswip_remark_dscp_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorRemarkingEntry_t color_remark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_remark.eMode = mode;
 	color_remark.nVal[0] = 10;
 	color_remark.nVal[1] = 18;
@@ -652,9 +654,7 @@ static int dp_gswip_remark_dscp_set(int mode, int inst)
 	color_remark.nVal[13] = 36;
 	color_remark.nVal[14] = 36;
 	color_remark.nVal[15] = 36;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorReMarkingTableSet,
-		gsw_handle, &color_remark)) {
+	if (gsw_qos->QOS_ColorReMarkingTableSet(gsw_handle, &color_remark)) {
 		PR_ERR("GSW_QOS_COLOR_REMARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -664,9 +664,11 @@ static int dp_gswip_remark_dscp_set(int mode, int inst)
 static int dp_gswip_color_dscp_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorMarkingEntry_t color_mark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_mark.eMode = mode;
 	color_mark.nPriority[0] = PRIO0;
 	color_mark.nPriority[1] = PRIO0;
@@ -796,9 +798,7 @@ static int dp_gswip_color_dscp_set(int mode, int inst)
 	color_mark.nColor[61] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[62] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[63] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
-		gsw_handle, &color_mark)) {
+	if (gsw_qos->QOS_ColorMarkingTableSet(gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -808,9 +808,11 @@ static int dp_gswip_color_dscp_set(int mode, int inst)
 static int dp_gswip_color_5P3D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorMarkingEntry_t color_mark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_mark.eMode = mode;
 	color_mark.nPriority[0] = PRIO0;
 	color_mark.nPriority[1] = PRIO0;
@@ -844,9 +846,7 @@ static int dp_gswip_color_5P3D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
-		gsw_handle, &color_mark)) {
+	if (gsw_qos->QOS_ColorMarkingTableSet(gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -856,9 +856,11 @@ static int dp_gswip_color_5P3D_set(int mode, int inst)
 static int dp_gswip_color_6P2D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorMarkingEntry_t color_mark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_mark.eMode = mode;
 	color_mark.nPriority[0] = PRIO0;
 	color_mark.nPriority[1] = PRIO0;
@@ -892,9 +894,7 @@ static int dp_gswip_color_6P2D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
-		gsw_handle, &color_mark)) {
+	if (gsw_qos->QOS_ColorMarkingTableSet(gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -904,9 +904,11 @@ static int dp_gswip_color_6P2D_set(int mode, int inst)
 static int dp_gswip_color_7P1D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorMarkingEntry_t color_mark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_mark.eMode = mode;
 	color_mark.nPriority[0] = PRIO0;
 	color_mark.nPriority[1] = PRIO0;
@@ -940,9 +942,7 @@ static int dp_gswip_color_7P1D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
-		gsw_handle, &color_mark)) {
+	if (gsw_qos->QOS_ColorMarkingTableSet(gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -952,9 +952,11 @@ static int dp_gswip_color_7P1D_set(int mode, int inst)
 static int dp_gswip_color_8P0D_set(int mode, int inst)
 {
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	GSW_QoS_colorMarkingEntry_t color_mark = {0};
 
 	gsw_handle = dp_port_prop[inst].ops[0];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	color_mark.eMode = mode;
 	color_mark.nPriority[0] = PRIO0;
 	color_mark.nPriority[1] = PRIO0;
@@ -988,9 +990,7 @@ static int dp_gswip_color_8P0D_set(int mode, int inst)
 	color_mark.nColor[13] = GSW_DROP_PRECEDENCE_YELLOW;
 	color_mark.nColor[14] = GSW_DROP_PRECEDENCE_GREEN;
 	color_mark.nColor[15] = GSW_DROP_PRECEDENCE_YELLOW;
-	if (gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_qos_ops.QOS_ColorMarkingTableSet,
-		gsw_handle, &color_mark)) {
+	if (gsw_qos->QOS_ColorMarkingTableSet(gsw_handle, &color_mark)) {
 		PR_ERR("GSW_QOS_COLOR_MARKING_CFG_SET failed\n");
 		return -1;
 	}
@@ -1211,16 +1211,14 @@ static int dp_platform_set(int inst, u32 flag)
 #endif
 		/*disable egress VLAN modification for CPU port*/
 		port_remark.nPortId = 0;
-		if (gsw_core_api(
-			(dp_gsw_cb)gsw_qos->QoS_PortRemarkingCfgGet,
-			gsw_handle, &port_remark)) {
+		if (gsw_qos->QoS_PortRemarkingCfgGet(gsw_handle,
+						     &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;
 		}
 		port_remark.bPCP_EgressRemarkingEnable = 0;
-		if (gsw_core_api(
-			(dp_gsw_cb)gsw_qos->QoS_PortRemarkingCfgGet,
-			gsw_handle, &port_remark)) {
+		if (gsw_qos->QoS_PortRemarkingCfgGet(gsw_handle,
+						     &port_remark)) {
 			PR_ERR("GSW_QOS_PORT_REMARKING_CFG_GET failed\n");
 			return -1;
 		}
@@ -1261,15 +1259,16 @@ static int dp_platform_set(int inst, u32 flag)
 static int pon_config(int inst, int ep, struct dp_port_data *data, u32 flags)
 {
 	struct core_ops *gsw_handle;
+	struct common_ops *gsw_com;
 	GSW_return_t ret;
 	struct mac_ops *mac_ops;
 	GSW_CPU_PortCfg_t cpu_port_cfg;
 
 	mac_ops = dp_port_prop[inst].mac_ops[ep];
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_L];
+	gsw_com = &gsw_handle->gsw_common_ops;
 	memset((void *)&cpu_port_cfg, 0x00, sizeof(cpu_port_cfg));
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgGet,
-			   gsw_handle, &cpu_port_cfg);
+	ret = gsw_com->CPU_PortCfgGet(gsw_handle, &cpu_port_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting CPU port config\r\n");
 		return -1;
@@ -1278,8 +1277,7 @@ static int pon_config(int inst, int ep, struct dp_port_data *data, u32 flags)
 	cpu_port_cfg.nPortId = ep;
 	cpu_port_cfg.bSpecialTagIngress = 1;
 	cpu_port_cfg.bSpecialTagEgress = 1;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.CPU_PortCfgSet,
-			   gsw_handle, &cpu_port_cfg);
+	ret = gsw_com->CPU_PortCfgSet(gsw_handle, &cpu_port_cfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Fail in configuring CPU port\n");
 		return -1;
@@ -1428,8 +1426,7 @@ static int set_ctp_bp(int inst, int ctp, int portid, int bp,
 	tmp.nSubIfIdGroup = ctp;
 	tmp.eMask = GSW_CTP_PORT_CONFIG_MASK_BRIDGE_PORT_ID;
 	tmp.nBridgePortId = bp;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigSet,
-			 gsw_handle, &tmp) != 0) {
+	if (gsw_handle->gsw_ctp_ops.CTP_PortConfigSet(gsw_handle, &tmp)) {
 		PR_ERR("Failed to CTP(%d)'s bridge port=%d for ep=%d\n",
 		       ctp, bp, portid);
 		return -1;
@@ -1452,8 +1449,7 @@ static int reset_ctp_bp(int inst, int ctp, int portid, int bp)
 	tmp.nLogicalPortId = portid;
 	tmp.nSubIfIdGroup = ctp;
 	tmp.nBridgePortId = bp;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigReset,
-			 gsw_handle, &tmp) != 0) {
+	if (gsw_handle->gsw_ctp_ops.CTP_PortConfigReset(gsw_handle, &tmp)) {
 		PR_ERR("Failed to reset CTP(%d)'s bridge port=%d for ep=%d\n",
 		       ctp, bp, portid);
 		return -1;
@@ -1985,6 +1981,7 @@ static int dp_ctp_tc_map_set_31(struct dp_tc_cfg *tc, int flag,
 				struct dp_meter_subif *mtr_subif)
 {
 	struct core_ops *gsw_handle;
+	struct ctp_ops *gsw_ctp;
 	GSW_CTP_portConfig_t ctp_tc_cfg;
 
 	memset(&ctp_tc_cfg, 0, sizeof(ctp_tc_cfg));
@@ -1999,10 +1996,10 @@ static int dp_ctp_tc_map_set_31(struct dp_tc_cfg *tc, int flag,
 		return -1;
 	}
 	gsw_handle = dp_port_prop[mtr_subif->inst].ops[GSWIP_L];
+	gsw_ctp = &gsw_handle->gsw_ctp_ops;
 	ctp_tc_cfg.nLogicalPortId = mtr_subif->subif.port_id;
 	ctp_tc_cfg.nSubIfIdGroup = mtr_subif->subif.subif;
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigGet,
-			 gsw_handle, &ctp_tc_cfg) != 0) {
+	if (gsw_ctp->CTP_PortConfigGet(gsw_handle, &ctp_tc_cfg)) {
 		PR_ERR("Failed to get CTP info for ep=%d subif=%d\n",
 		       mtr_subif->subif.port_id, mtr_subif->subif.subif);
 		return -1;
@@ -2014,8 +2011,7 @@ static int dp_ctp_tc_map_set_31(struct dp_tc_cfg *tc, int flag,
 	else
 		ctp_tc_cfg.bForcedTrafficClass = 0;
 
-	if (gsw_core_api((dp_gsw_cb)gsw_handle->gsw_ctp_ops.CTP_PortConfigSet,
-			 gsw_handle, &ctp_tc_cfg) != 0) {
+	if (gsw_ctp->CTP_PortConfigSet(gsw_handle, &ctp_tc_cfg)) {
 		PR_ERR("CTP tc set fail for ep=%d subif=%d tc=%d force=%d\n",
 		       mtr_subif->subif.port_id, mtr_subif->subif.subif,
 		       tc->tc, tc->force);

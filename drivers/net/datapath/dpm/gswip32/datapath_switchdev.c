@@ -22,8 +22,7 @@ int dp_swdev_alloc_bridge_id_32(int inst)
 
 	gsw_handle = dp_port_prop[inst].ops[0];
 	memset(&br, 0, sizeof(br));
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdg_ops.Bridge_Alloc,
-			   gsw_handle, &br);
+	ret = gsw_handle->gsw_brdg_ops.Bridge_Alloc(gsw_handle, &br);
 	if ((ret != GSW_statusOk) ||
 	    (br.nBridgeId < 0)) {
 		PR_ERR("Failed to get a FID\n");
@@ -50,9 +49,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "Set current BP=%d inst:%d\n",
 		 brportcfg.nBridgePortId, inst);
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
-		gsw_handle, &brportcfg);
+	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("fail in getting bridge port config\r\n");
 		return -1;
@@ -66,46 +63,35 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 	brportcfg.nBridgeId = br_item->fid;
 	brportcfg.nBridgePortId = bport;
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
-		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
-		gsw_handle, &brportcfg);
+			  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
+	ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Fail in allocating/configuring bridge port\n");
 		return -1;
 	}
 	/* To set other member portmap with current bridge port map */
 	list_for_each_entry(bport_list, &br_item->bp_list, list) {
-		if (bport_list->portid != bport) {
-			memset(&brportcfg, 0,
-			       sizeof(GSW_BRIDGE_portConfig_t));
-			brportcfg.nBridgePortId = bport_list->portid;
-			DP_DEBUG(DP_DBG_FLAG_SWDEV,
-				 "Set other BP=%d inst:%d\n",
-				 brportcfg.nBridgePortId, inst);
-			brportcfg.eMask =
-				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
-				gsw_handle, &brportcfg);
-			if (ret != GSW_statusOk) {
-				PR_ERR
-					("fail in getting br port config\r\n");
-				return -1;
-			}
-			SET_BP_MAP(brportcfg.nBridgePortMap, bport);
-			brportcfg.nBridgeId = br_item->fid;
-			brportcfg.nBridgePortId = bport_list->portid;
-			brportcfg.eMask =
-				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
-				GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
-				gsw_handle, &brportcfg);
-			if (ret != GSW_statusOk) {
-				PR_ERR("Fail alloc/cfg bridge port\n");
-				return -1;
-			}
+		if (bport_list->portid == bport)
+			continue;
+		memset(&brportcfg, 0, sizeof(GSW_BRIDGE_portConfig_t));
+		brportcfg.nBridgePortId = bport_list->portid;
+		DP_DEBUG(DP_DBG_FLAG_SWDEV, "Set other BP=%d inst:%d\n",
+			 brportcfg.nBridgePortId, inst);
+		brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
+		ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &brportcfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("fail in getting br port config\r\n");
+			return -1;
+		}
+		SET_BP_MAP(brportcfg.nBridgePortMap, bport);
+		brportcfg.nBridgeId = br_item->fid;
+		brportcfg.nBridgePortId = bport_list->portid;
+		brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
+				  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
+		ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("Fail alloc/cfg bridge port\n");
+			return -1;
 		}
 	}
 	return 0;
@@ -129,9 +115,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 		 brportcfg.nBridgePortId, inst);
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	/*Reset other members from current bport map*/
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
-		gsw_handle, &brportcfg);
+	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		/* Note: here may fail if this device is not removed from
 		 * linux bridge via brctl delif but user try to un-regiser
@@ -167,9 +151,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 	brportcfg.nBridgePortId = bport;
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
 			  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
-		gsw_handle, &brportcfg);
+	ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Fail in configuring GSW_BRIDGE_portConfig_t in %s\r\n",
 		       __func__);
@@ -177,35 +159,28 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 	}
 	/*Reset current bp from all other bridge port's port map*/
 	list_for_each_entry(bport_list, &br_item->bp_list, list) {
-		if (bport_list->portid != bport) {
-			memset(&brportcfg, 0,
-			       sizeof(GSW_BRIDGE_portConfig_t));
-			brportcfg.nBridgePortId = bport_list->portid;
-			DP_DEBUG(DP_DBG_FLAG_SWDEV,
-				 "reset current BP from other BP=%d inst:%d\n",
-				 brportcfg.nBridgePortId, inst);
-			brportcfg.eMask =
-				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP |
-				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_bp->BridgePort_ConfigGet,
-				gsw_handle, &brportcfg);
-			if (ret != GSW_statusOk) {
-				PR_ERR("failed getting br port cfg\r\n");
-				return -1;
-			}
-			UNSET_BP_MAP(brportcfg.nBridgePortMap, bport);
-			brportcfg.nBridgePortId = bport_list->portid;
-			brportcfg.eMask =
-				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
-				 GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
-			ret = gsw_core_api(
-				(dp_gsw_cb)gsw_bp->BridgePort_ConfigSet,
-				gsw_handle, &brportcfg);
-			if (ret != GSW_statusOk) {
-				PR_ERR("Fail alloc/cfg br port\n");
-				return -1;
-			}
+		if (bport_list->portid == bport)
+			continue;
+		memset(&brportcfg, 0, sizeof(GSW_BRIDGE_portConfig_t));
+		brportcfg.nBridgePortId = bport_list->portid;
+		DP_DEBUG(DP_DBG_FLAG_SWDEV,
+			 "reset current BP from other BP=%d inst:%d\n",
+			 brportcfg.nBridgePortId, inst);
+		brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP |
+				  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
+		ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &brportcfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("failed getting br port cfg\r\n");
+			return -1;
+		}
+		UNSET_BP_MAP(brportcfg.nBridgePortMap, bport);
+		brportcfg.nBridgePortId = bport_list->portid;
+		brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID |
+				  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
+		ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
+		if (ret != GSW_statusOk) {
+			PR_ERR("Fail alloc/cfg br port\n");
+			return -1;
 		}
 	}
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "%s success\n", __func__);
@@ -233,14 +208,11 @@ int dp_swdev_bridge_cfg_set_32(int inst, u16 fid)
 	brcfg.eForwardBroadcast = GSW_BRIDGE_FORWARD_FLOOD;
 	brcfg.eForwardUnknownMulticastNonIp = GSW_BRIDGE_FORWARD_FLOOD;
 	brcfg.eForwardUnknownUnicast = GSW_BRIDGE_FORWARD_FLOOD;
-	ret = gsw_core_api(
-		(dp_gsw_cb)gsw_handle->gsw_brdg_ops.Bridge_ConfigSet,
-		gsw_handle, &brcfg);
+	ret = gsw_handle->gsw_brdg_ops.Bridge_ConfigSet(gsw_handle, &brcfg);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to set bridge id(%d)\n", brcfg.nBridgeId);
 		br.nBridgeId = fid;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdg_ops.Bridge_Free,
-			     gsw_handle, &br);
+		gsw_handle->gsw_brdg_ops.Bridge_Free(gsw_handle, &br);
 		return -1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "FID(%d) cfg success for inst %d\n",
@@ -257,8 +229,7 @@ int dp_swdev_free_brcfg_32(int inst, u16 fid)
 	gsw_handle = dp_port_prop[inst].ops[0];
 	memset(&br, 0, sizeof(br));
 	br.nBridgeId = fid;
-	ret = gsw_core_api((dp_gsw_cb)gsw_handle->gsw_brdg_ops.Bridge_Free,
-			   gsw_handle, &br);
+	ret = gsw_handle->gsw_brdg_ops.Bridge_Free(gsw_handle, &br);
 	if (ret != GSW_statusOk) {
 		PR_ERR("Failed to free bridge id(%d)\n", br.nBridgeId);
 		return -1;

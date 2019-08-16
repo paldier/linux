@@ -62,14 +62,6 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags);
 int32_t dp_xmit_30(struct net_device *rx_if, dp_subif_t *rx_subif,
 		   struct sk_buff *skb, int32_t len, uint32_t flags);
 
-static inline GSW_return_t gsw_core_api(dp_gsw_cb func,
-					void *ops, void *param)
-{
-	if (!func)
-		return DP_FAILURE;
-	return func(ops, param);
-}
-
 static inline char *parser_flag_str(u8 f)
 {
 	if (f == DP_PARSER_F_DISABLE)

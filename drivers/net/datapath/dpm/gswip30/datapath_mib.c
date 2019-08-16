@@ -451,9 +451,7 @@ static int get_gsw_port_rmon(u32 ep, char *gsw_drv_name,
 		return -1;
 	memset(mib, 0, sizeof(*mib));
 	mib->nPortId = ep;
-	ret = gsw_core_api(
-		(dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Port_Get,
-		dp_port_prop[0].ops[index], mib);
+	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Port_Get(dp_port_prop[0].ops[index], mib);
 	if (ret) {
 		PR_ERR("GSW_RMON_PORT_GET failed(%d) from %s for port %d\n",
 		       ret, gsw_drv_name, ep);
@@ -474,9 +472,7 @@ static int get_gsw_redirect_rmon(u32 ep, int index,
 	}
 
 	memset(mib, 0, sizeof(*mib));
-	ret = gsw_core_api(
-		(dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Redirect_Get,
-		dp_port_prop[0].ops[index], mib);
+	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Redirect_Get(dp_port_prop[0].ops[index], mib);
 	if (ret) {
 		PR_ERR("GSW_RMON_REDIRECT_GET failed from %s\n",
 		       gsw_drv_name);
@@ -497,9 +493,7 @@ static int get_gsw_itf_rmon(u32 index, int index,
 	}
 	memset(mib, 0, sizeof(*mib));
 	mib->nIfId = index;
-	ret = gsw_core_api(
-		(dp_gsw_cb)dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_If_Get,
-		dp_port_prop[0].ops[index], mib);
+	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_If_Get(dp_port_prop[0].ops[index], mib);
 	if (ret) {
 		PR_ERR
 		    ("GSW_RMON_PORT_GET GSW_RMON_IF_GET from %s: index %d\n",
@@ -535,17 +529,16 @@ int gsw_eth_wan_redirect_status(void)
 	int i;
 	GSW_return_t ret;
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 	#define MAX_CLASS_NUM 16
 
 	gsw_handle = dp_port_prop[inst].ops[1];
-
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	memset(&q_cfg, 0, sizeof(q_cfg));
 	q_cfg.nPortId = WAN_EP;
 	for (i = 0; i <= MAX_CLASS_NUM; i++) {
 		q_cfg.nTrafficClassId = i;
-		ret = gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_QueuePortGet,
-			gsw_handle, &q_cfg);
+		ret = gsw_qos->QoS_QueuePortGet(gsw_handle, &q_cfg);
 		if (ret) {
 			PR_ERR("%s failed(%d) from %s for port %d\n",
 			       "GSW_QOS_QUEUE_PORT_GET",
@@ -1593,8 +1586,7 @@ int clear_gsw_itf_mib(dp_subif_t *subif, u32 flag)
 			       rmon.nRmonId);
 			return -1;
 		}
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Clear,
-			     gsw_handle, &rmon);
+		gsw_handle->gsw_rmon_ops.RMON_Clear(gsw_handle, &rmon);
 	}
 	return 0;
 }
@@ -1696,14 +1688,12 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 		/*reset GSWIP-R rmon counters */
 		rmon.eRmonType = GSW_RMON_PORT_TYPE;
 		rmon.nRmonId = port_id;
-		gsw_core_api((dp_gsw_cb)gsw_r->gsw_rmon_ops.RMON_Clear,
-			     gsw_r, &rmon);
+		gsw_r->gsw_rmon_ops.RMON_Clear(gsw_r, &rmon);
 
 		/*reset GSWIP-R redirect counters */
 		rmon.eRmonType = GSW_RMON_REDIRECT_TYPE;
 		rmon.nRmonId = 0;
-		gsw_core_api((dp_gsw_cb)gsw_r->gsw_rmon_ops.RMON_Clear,
-			     gsw_r, &rmon);
+		gsw_r->gsw_rmon_ops.RMON_Clear(gsw_r, &rmon);
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB)
 		tmu_hal_clear_csum_ol_m_local =
@@ -1716,15 +1706,12 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 		/*reset GSWIP-L/R rmon counters */
 		rmon.eRmonType = GSW_RMON_PORT_TYPE;
 		rmon.nRmonId = port_id;
-		gsw_core_api((dp_gsw_cb)gsw_l->gsw_rmon_ops.RMON_Clear,
-			     gsw_r, &rmon);
-		gsw_core_api((dp_gsw_cb)gsw_r->gsw_rmon_ops.RMON_Clear,
-			     gsw_r, &rmon);
+		gsw_l->gsw_rmon_ops.RMON_Clear(gsw_r, &rmon);
+		gsw_r->gsw_rmon_ops.RMON_Clear(gsw_r, &rmon);
 	} else {		/*port 7 ~ 14 */
 		rmon.eRmonType = GSW_RMON_PORT_TYPE;
 		rmon.nRmonId = port_id;
-		gsw_core_api((dp_gsw_cb)gsw_r->gsw_rmon_ops.RMON_Clear,
-			     gsw_r, &rmon);
+		gsw_r->gsw_rmon_ops.RMON_Clear(gsw_r, &rmon);
 	}
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB)
 	tmu_hal_clear_qos_m_local = tmu_hal_clear_qos_mib_hook_fn;
@@ -2090,8 +2077,7 @@ int set_gsw_itf(u8 ep, u8 ena, int start)
 
 	/*get this ports itf base */
 	port_cfg.nPortId = ep;
-	if (gsw_core_api((dp_gsw_cb)gsw_r->gsw_common_ops.PortCfgGet,
-			 gsw_r, &port_cfg)) {
+	if (gsw_r->gsw_common_ops.PortCfgGet(gsw_r, &port_cfg)) {
 		DP_DEBUG(DP_DBG_FLAG_MIB,
 			 "Why gsw_core_api return failure: GSW_PORT_CFG_GET for port_id=%d\n",
 			 port_cfg.nPortId);
@@ -2099,8 +2085,7 @@ int set_gsw_itf(u8 ep, u8 ena, int start)
 	}
 	port_cfg.nIfCountStartIdx = start;
 	port_cfg.bIfCounters = ena ? 1 : 0;
-	if (gsw_core_api((dp_gsw_cb)gsw_r->gsw_common_ops.PortCfgSet,
-			 gsw_r, &port_cfg)) {
+	if (gsw_r->gsw_common_ops.PortCfgSet(gsw_r, &port_cfg)) {
 		DP_DEBUG(DP_DBG_FLAG_MIB,
 			 "Why gsw_core_api return failure: GSW_PORT_CFG_SET for port_id=%d\n",
 			 port_cfg.nPortId);

@@ -142,13 +142,11 @@ void proc_coc_read_30(struct seq_file *s)
 	/*PCE_OVERHD */
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0x46C;	/*PCE_OVERHD */
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterGet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterGet(gsw_handle, &reg);
 	seq_printf(s, "    PCE_OVERHD=%d\n", reg.nData);
 
 	meter_cfg.nMeterId = meter_id;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_MeterCfgGet,
-		     gsw_handle, &meter_cfg);
+	gsw_handle->gsw_qos_ops.QoS_MeterCfgGet(gsw_handle, &meter_cfg);
 	seq_printf(s, "    meter id=%u (%s)\n", meter_id,
 		   meter_cfg.bEnable ? "Enabled" : "Disabled");
 	seq_printf(s, "    meter nCbs=%u\n", meter_cfg.nCbs);
@@ -162,8 +160,7 @@ void proc_coc_read_30(struct seq_file *s)
 
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0x489 + meter_id * 10;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterGet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterGet(gsw_handle, &reg);
 	seq_printf(s, "    PCE_PISR(0x%x)=%u(0x%x)-interrupt %s\n",
 		   reg.nRegAddr, reg.nData, reg.nData,
 		   (reg.nData & 0x100) ? "on" : "off");
@@ -294,8 +291,7 @@ int clear_meter_interrupt(void)
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0x489 + meter_id * 10;
 	reg.nData = -1;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterSet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterSet(gsw_handle, &reg);
 	return 0;
 }
 
@@ -310,31 +306,25 @@ int enable_meter_interrupt(void)
 	 */
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0x14;	/*ETHSW_IER */
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterGet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterGet(gsw_handle, &reg);
 	reg.nRegAddr |= 1 << 1; /*Enable PCEIE */
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterSet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterSet(gsw_handle, &reg);
 
 	/*#Enable PCE Port Interrupt
 	 *  switch_cli GSW_REGISTER_SET nRegAddr=0x465 nData=0x1 dev=1
 	 */
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0x465;	/*PCE_IER_0 */
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterGet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterGet(gsw_handle, &reg);
 	reg.nRegAddr |= 1 << 0; /*Enable PCE Port 0 */
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterSet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterSet(gsw_handle, &reg);
 
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0x488;	/*PCE_PIER */
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterGet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterGet(gsw_handle, &reg);
 	/*Enable Metering Based Backpressure Status Change Interrupt Enable */
 	reg.nRegAddr |= 1 << 8;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterSet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterSet(gsw_handle, &reg);
 
 	return 0;
 }
@@ -352,8 +342,7 @@ int apply_meter_rate(u32 rate, unsigned int new_state)
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 	memset(&meter_cfg, 0, sizeof(meter_cfg));
 	meter_cfg.nMeterId = meter_id;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_MeterCfgGet,
-		     gsw_handle, &meter_cfg);
+	gsw_handle->gsw_qos_ops.QoS_MeterCfgGet(gsw_handle, &meter_cfg);
 	if (rate == 0) {		/*only need to disable the meter */
 		meter_cfg.bEnable = 0;
 	} else if (rate == -1) {
@@ -371,8 +360,7 @@ int apply_meter_rate(u32 rate, unsigned int new_state)
 		return -1;
 	}
 
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_MeterCfgSet,
-		     gsw_handle, &meter_cfg);
+	gsw_handle->gsw_qos_ops.QoS_MeterCfgSet(gsw_handle, &meter_cfg);
 
 	return 0;
 }
@@ -387,8 +375,10 @@ int meter_set_default(void)
 	GSW_QoS_meterPort_t meter_port;
 	GSW_register_t reg;
 	struct core_ops *gsw_handle;
+	struct qos_ops *gsw_qos;
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
+	gsw_qos = &gsw_handle->gsw_qos_ops;
 	/*#currently directly change global setting, later should use
 	 * GSW_QOS_WRED_PORT_CFG_SET instead
 	 * switch_cli dev=1 GSW_REGISTER_SET nRegAddr=0x4a nData=0x518
@@ -397,16 +387,12 @@ int meter_set_default(void)
 
 	for (i = 0; i < PMAC_MAX_NUM; i++) {/*cp green setting to yellow/red*/
 		wred_p.nPortId = i;
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredPortCfgGet,
-			gsw_handle, &wred_p);
+		gsw_qos->QoS_WredPortCfgGet(gsw_handle, &wred_p);
 		wred_p.nYellow_Min = wred_p.nGreen_Min;
 		wred_p.nYellow_Max = wred_p.nGreen_Max;
 		wred_p.nRed_Min = wred_p.nGreen_Min;
 		wred_p.nRed_Max = wred_p.nGreen_Max;
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredPortCfgSet,
-			gsw_handle, &wred_p);
+		gsw_qos->QoS_WredPortCfgSet(gsw_handle, &wred_p);
 	}
 
 	/*#Enable Meter 0, configure the rate
@@ -421,8 +407,7 @@ int meter_set_default(void)
 	meter_cfg.nRate = meter_nrate[3];
 	meter_cfg.nPiRate = 0xFFFFFF; /* try to set maximum */
 	meter_cfg.eMtrType = GSW_QOS_Meter_trTCM;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_MeterCfgSet,
-		     gsw_handle, &meter_cfg);
+	gsw_qos->QoS_MeterCfgSet(gsw_handle, &meter_cfg);
 
 	/*#Assign Port0 ingress to Meter 0
 	 * switch_cli GSW_QOS_METER_PORT_ASSIGN nMeterId=0 eDir=1
@@ -434,9 +419,7 @@ int meter_set_default(void)
 		meter_port.nMeterId = meter_id;
 		meter_port.eDir = 1;
 		meter_port.nPortIngressId = i;
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_MeterPortAssign,
-			gsw_handle, &meter_port);
+		gsw_qos->QoS_MeterPortAssign(gsw_handle, &meter_port);
 	}
 
 	/*#Enable Port 0 Meter Based Flow control (Bit 2 MFCEN)
@@ -444,11 +427,9 @@ int meter_set_default(void)
 	 */
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0xBC0;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterGet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterGet(gsw_handle, &reg);
 	reg.nData |= 1 << 2;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterSet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterSet(gsw_handle, &reg);
 
 	/*#Configure Red and Yellow watermark for each queue
 	 *  (Yellow and Red shall not be 0 in CoC case in order to avoid
@@ -465,17 +446,13 @@ int meter_set_default(void)
 	memset(&wred_q, 0, sizeof(wred_q));
 	for (i = 0; i < 32; i++) {	/*copy green setting to yellow/red */
 		wred_q.nQueueId = i;
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredQueueCfgGet,
-			gsw_handle, &wred_q);
+		gsw_qos->QoS_WredQueueCfgGet(gsw_handle, &wred_q);
 
 		wred_q.nYellow_Min = wred_q.nGreen_Min;
 		wred_q.nYellow_Max = wred_q.nGreen_Max;
 		wred_q.nRed_Min = wred_q.nGreen_Min;
 		wred_q.nRed_Max = wred_q.nGreen_Max;
-		gsw_core_api(
-			(dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredQueueCfgSet,
-			gsw_handle, &wred_q);
+		gsw_qos->QoS_WredQueueCfgSet(gsw_handle, &wred_q);
 	}
 
 	/*Configure Red and Yellow watermark for each queue (Yellow and Red
@@ -484,21 +461,18 @@ int meter_set_default(void)
 	 * nYellow_Min=255 nYellow_Max=255  nGreen_Min=255 nGreen_Max=255 dev=1
 	 */
 	memset(&wred_cfg, 0, sizeof(wred_cfg));
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredCfgGet,
-		     gsw_handle, &wred_cfg);
+	gsw_qos->QoS_WredCfgGet(gsw_handle, &wred_cfg);
 	wred_cfg.nYellow_Min = wred_cfg.nGreen_Min;
 	wred_cfg.nYellow_Max = wred_cfg.nGreen_Max;
 	wred_cfg.nRed_Min = wred_cfg.nGreen_Min;
 	wred_cfg.nRed_Max = wred_cfg.nGreen_Max;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_qos_ops.QoS_WredCfgSet,
-		     gsw_handle, &wred_cfg);
+	gsw_qos->QoS_WredCfgSet(gsw_handle, &wred_cfg);
 
 	/*#Configure OVERHEAD */
 	memset(&reg, 0, sizeof(reg));
 	reg.nRegAddr = 0x46C;	/*PCE_OVERHD */
 	reg.nData = PCE_OVERHD;
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_common_ops.RegisterSet,
-		     gsw_handle, &reg);
+	gsw_handle->gsw_common_ops.RegisterSet(gsw_handle, &reg);
 
 	return 0;
 }
@@ -515,8 +489,7 @@ static void dp_rmon_polling(unsigned long data)
 	for (i = 0; i < PMAC_MAX_NUM; i++) {
 		memset(&curr, 0, sizeof(curr));
 		curr.nPortId = i;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
-			     gsw_handle, &curr);
+		gsw_handle->gsw_rmon_ops.RMON_Port_Get(gsw_handle, &curr);
 
 		coc_lock();
 		/*wrapround handling */
@@ -589,13 +562,14 @@ void update_rmon_last(void)
 {
 	int i;
 	struct core_ops *gsw_handle;
+	struct rmon_ops *gsw_rmon;
 
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
+	gsw_rmon = &gsw_handle->gsw_rmon_ops;
 	memset(rmon_last, 0, sizeof(rmon_last));
 	for (i = 0; i < PMAC_MAX_NUM; i++) {
 		rmon_last[i].nPortId = i;
-		gsw_core_api((dp_gsw_cb)gsw_handle->gsw_rmon_ops.RMON_Port_Get,
-			     gsw_handle, &rmon_last[i]);
+		gsw_rmon->RMON_Port_Get(gsw_handle, &rmon_last[i]);
 	}
 }
 
@@ -791,10 +765,8 @@ int dp_coc_cpufreq_init(void)
 	irq.portid = 0; // logical port id
 	irq.call_back = dp_meter_interrupt_cb;// Callback API
 	irq.param = NULL; // Callback  API parameter
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_irq_ops.IRQ_Register,
-		     gsw_handle, &irq);
-	gsw_core_api((dp_gsw_cb)gsw_handle->gsw_irq_ops.IRQ_Enable,
-		     gsw_handle, &irq);
+	gsw_handle->gsw_irq_ops.IRQ_Register(gsw_handle, &irq);
+	gsw_handle->gsw_irq_ops.IRQ_Enable(gsw_handle, &irq);
 
 	INIT_WORK(&coc_work_q, (work_func_t)coc_work_task);/*initialize work Q*/
 	init_timer_on_stack(&dp_coc_timer);

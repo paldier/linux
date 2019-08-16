@@ -149,7 +149,6 @@
 
 #define PARSER_FLAG_SIZE   40
 #define PARSER_OFFSET_SIZE 8
-#define DP_PMAC_OPS(gsw, cmd) ((dp_gsw_cb)(gsw)->gsw_pmac_ops.cmd)
 
 #define PKT_PASER_FLAG_OFFSET   0
 #define PKT_PASER_OFFSET_OFFSET (PARSER_FLAG_SIZE)
@@ -881,7 +880,6 @@ int get_dp_port_status_str_size(void);
 
 int dp_request_inst(struct dp_inst_info *info, u32 flag);
 int register_dp_cap(u32 flag);
-typedef GSW_return_t(*dp_gsw_cb)(void *, void *);
 int bp_pmapper_dev_get(int inst, struct net_device *dev);
 extern int dp_init_ok;
 void set_chksum(struct pmac_tx_hdr *pmac, u32 tcp_type,
