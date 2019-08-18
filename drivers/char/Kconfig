@@ -591,15 +591,6 @@ config TILE_SROM
 	  device appear much like a simple EEPROM, and knows
 	  how to partition a single ROM for multiple purposes.
 
-config  LTQ_VOIP_TIMER
-        tristate "VoIP Timer Driver"
-        default m
-        ---help---
-		Jiffies based Timer Driver.It gives timeout in milli sec.
-		Applications can use this to create the list of timers.
-		Once the timer expired the registered callback function will
-		called.
-
 source "drivers/char/xillybus/Kconfig"
 
 config LTQ_MPS2
