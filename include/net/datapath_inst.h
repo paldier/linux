@@ -140,7 +140,7 @@ struct inst_info {
 	int (*swdev_free_brcfg)(int inst, u16 fid);
 	int (*swdev_bridge_cfg_set)(int inst, u16 fid);
 	int (*swdev_bridge_port_cfg_set)(struct br_info *br_item, int inst,
-					 int port);
+					 int port, u32 flags);
 	int (*swdev_bridge_port_cfg_reset)(struct br_info *br_item,
 					   int inst, int bport);
 	int (*dp_mac_set)(int bport, int fid, int inst, u8 *addr);

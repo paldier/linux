@@ -33,7 +33,7 @@ int dp_swdev_alloc_bridge_id_32(int inst)
 }
 
 int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
-				    int inst, int bport)
+				    int inst, int bport, u32 flags)
 {
 	GSW_return_t ret;
 	struct bridge_member_port *bport_list = NULL;
@@ -56,6 +56,22 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 	}
 	list_for_each_entry(bport_list, &br_item->bp_list, list) {
 		if (bport_list->portid != bport) {
+
+			/* ----- Downstream ------
+			 * WAN Brodcast or Mcast Gem port, if the member
+			 * going to add is a GPON or EPON subif
+			 * (It can be pmapper or gemport or llid), then don't
+			 * add the member to the portmap
+			 */
+			if ((flags & IFF_NO_QUEUE) &&
+			    (bport_list->alloc_flag &
+			     (DP_F_GPON | DP_F_EPON))) {
+				DP_DEBUG(DP_DBG_FLAG_SWDEV,
+					 "IFF_NO_QUEUE Don't add if to pmap\n");
+				UNSET_BP_MAP(brportcfg.nBridgePortMap,
+					     bport_list->portid);
+				continue;
+			}
 			SET_BP_MAP(brportcfg.nBridgePortMap,
 				   bport_list->portid);
 		}
@@ -73,6 +89,15 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 	list_for_each_entry(bport_list, &br_item->bp_list, list) {
 		if (bport_list->portid == bport)
 			continue;
+		/* ----- Upstream ------
+		 * If netdevice have Flag IFF_NO_QUEUE,
+		 * dont add the interface to gswip bridge portmap
+		 */
+		if (flags & IFF_NO_QUEUE) {
+			DP_DEBUG(DP_DBG_FLAG_SWDEV,
+				 "IFF_NO_QUEUE Don't add if to pmap\n");
+			continue;
+		}
 		memset(&brportcfg, 0, sizeof(GSW_BRIDGE_portConfig_t));
 		brportcfg.nBridgePortId = bport_list->portid;
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "Set other BP=%d inst:%d\n",

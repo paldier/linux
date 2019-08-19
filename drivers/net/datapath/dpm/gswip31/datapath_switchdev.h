@@ -11,7 +11,7 @@
 
 int dp_swdev_alloc_bridge_id(int inst);
 int dp_swdev_bridge_port_cfg_set(struct br_info *br_item,
-				 int inst, int bport);
+				 int inst, int bport, u32 flags);
 int dp_swdev_bridge_port_cfg_reset(struct br_info *br_item,
 				   int inst, int bport);
 int dp_swdev_bridge_cfg_set(int inst, u16 fid);

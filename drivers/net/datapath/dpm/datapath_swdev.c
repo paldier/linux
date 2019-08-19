@@ -344,7 +344,8 @@ static int dp_swdev_filter_vlan(struct net_device *dev,
 	return 0;
 }
 
-static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
+static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item,
+			      struct net_device *dev)
 {
 	struct br_info *br_info;
 	struct pmac_port_info *p_info;
@@ -376,6 +377,7 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 				 */
 				return 0;
 			}
+
 			br_info->fid = br_item->fid;
 			br_info->inst = br_item->inst;
 			br_info->cpu_port = ENABLE;
@@ -392,9 +394,11 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 			dp_swdev_insert_bridge_id_entry(br_info);
 			dp_swdev_add_bport_to_list(br_info, br_item->portid);
 
+
 			i_info->swdev_bridge_port_cfg_set(br_info,
 							  br_item->inst,
-							  br_item->portid);
+							  br_item->portid,
+							  dev->priv_flags);
 			br_item->flags &= ~ADD_BRENTRY;
 			DP_DEBUG(DP_DBG_FLAG_SWDEV,
 				 "added bport(%d),bridge(%s)\n",
@@ -407,13 +411,15 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item, u8 *addr)
 		if (!br_info)
 			return 0;
 		br_info->flag = 0;
+
 		if (br_item->flags & LOGIC_DEV_REGISTER)
 			br_info->flag = LOGIC_DEV_REGISTER;
 		dp_swdev_add_bport_to_list(br_info, br_item->portid);
 		if (p_info->swdev_en == 1) {
 			i_info->swdev_bridge_port_cfg_set(br_info,
 							  br_item->inst,
-							  br_item->portid);
+							  br_item->portid,
+							  dev->priv_flags);
 		}
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "added bport(%d)\n",
 			 br_item->portid);
@@ -437,7 +443,6 @@ static int dp_swdev_add_if(struct net_device *dev,
 	dp_subif_t subif = {0};
 	u32 flag = 0;
 	int port, inst;
-	u8 *addr = (u8 *)dev->dev_addr;
 	int32_t res;
 
 	/* SWITCHDEV_TRANS_PREPARE phase */
@@ -535,7 +540,7 @@ static int dp_swdev_add_if(struct net_device *dev,
 	swdev_lock();
 	br_item = switchdev_trans_item_dequeue(trans);
 	if (br_item) {
-		dp_swdev_cfg_gswip(br_item, addr);
+		dp_swdev_cfg_gswip(br_item, dev);
 		if (br_item->flags & LOGIC_DEV_REGISTER)
 			/*do only for vlan flag*/
 			dp_swdev_cfg_vlan(br_item, dev);
