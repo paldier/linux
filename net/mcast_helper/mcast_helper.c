@@ -2778,7 +2778,7 @@ static int __init mcast_helper_init_module(void)
 {
 	int ret_val ,ret = 0;
 	int index = 0;
-#if IS_ENABLED(CONFIG_SOC_GRX500)
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
 	GSW_API_HANDLE gswl;
 	GSW_PCE_rule_t pcecfg;
 #endif
