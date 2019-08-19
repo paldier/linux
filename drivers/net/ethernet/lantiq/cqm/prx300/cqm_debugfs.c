@@ -1740,48 +1740,48 @@ int cqm_debugfs_init(struct cqm_ctrl *pctrl)
 	if (!pctrl->debugfs)
 		return -ENOMEM;
 
-	file = debugfs_create_file("cqmeqpc", 0644, pctrl->debugfs,
+	file = debugfs_create_file("cqmeqpc", 0400, pctrl->debugfs,
 				   pctrl, &cqm_eqpc_fops);
 	if (!file)
 		goto err;
 
-	file = debugfs_create_file("cqmdqpc", 0644, pctrl->debugfs,
+	file = debugfs_create_file("cqmdqpc", 0400, pctrl->debugfs,
 				   pctrl, &cqm_dqpc_fops);
 	if (!file)
 		goto err;
-	file = debugfs_create_file("cqmenq", 0644, pctrl->debugfs,
+	file = debugfs_create_file("cqmenq", 0400, pctrl->debugfs,
 				   pctrl, &cqm_enq_fops);
 	if (!file)
 		goto err;
 
-	file = debugfs_create_file("cqmdeq", 0644, pctrl->debugfs,
+	file = debugfs_create_file("cqmdeq", 0400, pctrl->debugfs,
 				   pctrl, &cqm_deq_fops);
 	if (!file)
 		goto err;
-	file = debugfs_create_file("cqmdma_desc", 0644,
+	file = debugfs_create_file("cqmdma_desc", 0400,
 				   pctrl->debugfs, pctrl, &cqm_dma_desc_fops);
 	if (!file)
 		goto err;
 
-	file = debugfs_create_file("cqmctrl", 0644, pctrl->debugfs,
+	file = debugfs_create_file("cqmctrl", 0400, pctrl->debugfs,
 				   pctrl, &cqm_ctrl_fops);
 	if (!file)
 		goto err;
 
-	file = debugfs_create_file("cqmls", 0644, pctrl->debugfs,
+	file = debugfs_create_file("cqmls", 0400, pctrl->debugfs,
 				   pctrl, &cqm_ls_fops);
 	if (!file)
 		goto err;
 
-	file = debugfs_create_file("ofsc", 0644, pctrl->debugfs,
+	file = debugfs_create_file("ofsc", 0400, pctrl->debugfs,
 				   pctrl, &cqm_ofsc_fops);
 	if (!file)
 		goto err;
-	file = debugfs_create_file("check_fsqm", 0644, pctrl->debugfs,
+	file = debugfs_create_file("check_fsqm", 0400, pctrl->debugfs,
 				   pctrl, &cqm_ofsq_fops);
 	if (!file)
 		goto err;
-	file = debugfs_create_file("pkt_count", 0644, pctrl->debugfs,
+	file = debugfs_create_file("pkt_count", 0400, pctrl->debugfs,
 				   pctrl, &cqm_dbg_cntrs_fops);
 	if (!file)
 		goto err;
