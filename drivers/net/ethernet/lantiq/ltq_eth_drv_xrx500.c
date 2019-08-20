@@ -769,8 +769,14 @@ static int ltq_change_mtu(struct net_device *dev, int new_mtu)
 			struct mac_ops *ops;
 
 			ops = gsw_get_mac_ops(0, priv->xgmac_id);
+
+			/* In OMCI daemon, need to use ifconfig to set mtu to
+			 * [L2 Maximum Frame Size - 18] ex: (1518 - 18 = 1500)
+			 * 18 bytes is the ETH header and FCS
+			 */
 			if (ops)
-				ops->set_mtu(ops, new_mtu);
+				ops->set_mtu(ops,
+					    (new_mtu + ETH_HLEN + ETH_FCS_LEN));
 		}
 	} else {
 
