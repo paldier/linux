@@ -12,7 +12,7 @@
 // UC version
 #define UC_VERSION_MAJOR (1)
 #define UC_VERSION_MINOR (6)
-#define UC_VERSION_BUILD (0)
+#define UC_VERSION_BUILD (1)
 
 /**************************************************************************
  *! @enum UC_STATUS
