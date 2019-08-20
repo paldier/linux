@@ -30,6 +30,7 @@ struct bridge_id_entry_item {
 	u32 portid; /*Bridge port*/
 	u32 dp_port; /*DP port*/
 	u32 inst;
+	int alloc_flag; /* Same as alloc flag passed from dp_alloc_port */
 	struct switchdev_trans_item tritem;
 };
 
@@ -40,6 +41,7 @@ struct br_info {
 	u16 fid;
 	u32 flag;
 	u32 inst;
+	int alloc_flag; /* Same as alloc flag passed from dp_alloc_port */
 	struct list_head bp_list;
 };
 
@@ -48,6 +50,7 @@ struct bridge_member_port {
 	u32 portid;
 	u32 dev_reg_flag;
 	u16 bport[8];
+	int alloc_flag; /* Same as alloc flag passed from dp_alloc_port */
 };
 
 struct fdb_tbl {

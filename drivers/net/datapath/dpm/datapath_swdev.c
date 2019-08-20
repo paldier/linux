@@ -231,6 +231,7 @@ static int dp_swdev_add_bport_to_list(struct br_info *br_item,
 		}
 		bport_list->dev_reg_flag = br_item->flag;
 		bport_list->portid = bport;
+		bport_list->alloc_flag = br_item->alloc_flag;
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "bport:%d reg_flag:%d\n",
 			 bport_list->portid, bport_list->dev_reg_flag);
 		list_add(&bport_list->list, &br_item->bp_list);
@@ -381,6 +382,8 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item,
 			br_info->fid = br_item->fid;
 			br_info->inst = br_item->inst;
 			br_info->cpu_port = ENABLE;
+			br_info->alloc_flag = br_item->alloc_flag;
+
 			/* Logic dev flag added to verify if SWDEV registered
 			 * the logical i.e. VLAN device.Helpful during
 			 * br/bport delete
@@ -411,6 +414,8 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item,
 		if (!br_info)
 			return 0;
 		br_info->flag = 0;
+
+		br_info->alloc_flag = br_item->alloc_flag;
 
 		if (br_item->flags & LOGIC_DEV_REGISTER)
 			br_info->flag = LOGIC_DEV_REGISTER;
@@ -497,6 +502,12 @@ static int dp_swdev_add_if(struct net_device *dev,
 		/* current bridge member port*/
 		br_item->portid = subif.bport;
 		br_item->dp_port = subif.port_id;
+
+		/* Alloc Flag is needed by HAL layer to see the interface is
+		 * LAN or GPON or EPON
+		 */
+		br_item->alloc_flag = subif.alloc_flag;
+
 		swdev_lock();
 		br_info = dp_swdev_bridge_entry_lookup(br_dev->name);
 		p_info = get_dp_port_info(br_item->inst, br_item->dp_port);
