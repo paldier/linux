@@ -2999,7 +2999,7 @@ void update_children_position(
 	create_parent_change_cmd(qdev,
 			get_phy_from_node(qdev->nodes, parent));
 
-	if (node_parent(child))
+	if (node_parent(node))
 		tree_update_predecessors(qdev, new_phy);
 }
 
