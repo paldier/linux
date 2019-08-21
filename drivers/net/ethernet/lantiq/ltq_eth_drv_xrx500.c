@@ -809,6 +809,13 @@ static int ltq_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	int ret;
 	int len;
 
+	/* pad packet to avoid stuck in traffic queues
+	   as ethernet expects min of ETH_ZLEN bytes */
+	if (skb_put_padto(skb,ETH_ZLEN)) {
+		priv->stats.tx_dropped++;
+		return 0;
+	}
+
 	/* Call the Datapath Library's TX function */
 	((struct dma_tx_desc_1 *)&skb->DW1)->field.ep = priv->dp_subif.port_id;
 	((struct dma_tx_desc_0 *)&skb->DW0)->field.dest_sub_if_id =
