@@ -153,9 +153,9 @@ int proc_port_dump(struct seq_file *s, int pos)
 						  * CPU port no ctp/bridge port
 						  */
 				print_ctp_bp(s, tmp_inst, port, 0, 0);
-			seq_printf(s, "           qid/node:     %d/%d\n",
+			seq_printf(s, "           qid/node:       %d/%d\n",
 				   sif->qid, sif->q_node[0]);
-			seq_printf(s, "           port/node:    %d/%d\n",
+			seq_printf(s, "           port/node:      %d/%d\n",
 				   sif->cqm_deq_port[0], sif->qos_deq_port[0]);
 		} else
 			seq_printf(s, "%02d: rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
@@ -283,7 +283,6 @@ int proc_port_dump(struct seq_file *s, int pos)
 		}
 		seq_printf(s, "           mac_learn_dis:  %d\n",
 			   sif->mac_learn_dis);
-
 		seq_printf(s, "           gpid:           %d\n", sif->gpid);
 		seq_puts(s, "           ctp_dev:        ");
 		if (sif->ctp_dev && sif->ctp_dev->name)

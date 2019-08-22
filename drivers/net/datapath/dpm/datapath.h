@@ -429,6 +429,9 @@ struct dp_subif_info {
 	u32 subif_flag; /* To store original flag from caller during
 			 * dp_register_subif
 			 */
+	u32 data_flag_ops; /* To store original flag from caller during
+			    * dp_register_subif under data->flag_ops
+			    */
 	u16 mac_learn_dis; /* To store mac learning capability of subif from
 			    * caller during dp_register_subif
 			    */

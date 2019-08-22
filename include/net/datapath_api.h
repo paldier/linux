@@ -249,7 +249,8 @@ enum DP_F_FLAG {
 	DP_F_ENUM_OR_STRING(DP_F_DONTCARE,      "DontCare"),\
 	DP_F_ENUM_OR_STRING(DP_F_LRO,           "LRO"), \
 	DP_F_ENUM_OR_STRING(DP_F_FAST_DSL_DOWNSTREAM, "DSL_Down"),\
-	DP_F_ENUM_OR_STRING(DP_F_DSL_BONDING,         "DSL_Bonding") \
+	DP_F_ENUM_OR_STRING(DP_F_DSL_BONDING,         "DSL_Bonding"),\
+	DP_F_ENUM_OR_STRING(DP_F_VUNI,         "VUNI") \
 }
 
 #define DP_F_PORT_TUNNEL_DECAP  DP_F_LOOPBACK /*!< @brief Just for
@@ -411,6 +412,12 @@ typedef struct dp_subif {
 	u16 dfl_eg_sess[DP_DFL_SESS_NUM]; /*!< [out] default egress session id
 					   *   This is for CPU TX to DC only
 					   */
+	u32 data_flag; /*!< [out] return the caller provided data->flag_ops
+			* during dp_register_subif
+			*/
+	struct net_device *associate_netif; /*!< [out] return vUNI dev pointer,
+					     * valid for VANI device only
+					     */
 } dp_subif_t;
 
 typedef dp_subif_t PPA_SUBIF; /*!< @brief structure type dp_subif PPA_SUBIF*/

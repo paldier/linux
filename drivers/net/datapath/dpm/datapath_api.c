@@ -630,9 +630,9 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			sif->subif =
 			    subif_id->subif;
 		strncpy(sif->device_name,
-			subif_name,
-		       sizeof(sif->device_name) - 1);
+			subif_name, sizeof(sif->device_name) - 1);
 		sif->subif_flag = flags;
+		sif->data_flag_ops = data->flag_ops;
 		STATS_SET(sif->rx_flag, 1);
 		port_info->status = PORT_SUBIF_REGISTERED;
 		subif_id->port_id = port_id;
@@ -1235,6 +1235,8 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 			     dp_subif_t *subif, uint32_t flags)
 {
 	struct dp_subif_cache *dp_subif;
+	struct dp_subif_info *sif;
+	struct pmac_port_info *port_info;
 	u32 idx;
 	dp_get_netif_subifid_fn_t subifid_fn_t;
 	int res = DP_FAILURE;
@@ -1251,6 +1253,14 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	}
 	memcpy(subif, &dp_subif->subif, sizeof(*subif));
 	subifid_fn_t = dp_subif->subif_fn;
+	/* To return associate VUNI device if subif is VANI
+	 */
+	if (subif->data_flag & DP_SUBIF_VANI) {
+		port_info = get_dp_port_info(subif->inst, subif->port_id);
+		sif = get_dp_port_subif(port_info, !subif->subif);
+		if ((sif->netif) && (sif->flags))
+			subif->associate_netif = sif->netif;
+	}
 	rcu_read_unlock_bh();
 	if (subifid_fn_t) {
 		/*subif->subif will be set by callback api itself */
@@ -1355,6 +1365,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 				}
 				subifs[num] = sif->subif;
 				subif_flag[num] = sif->subif_flag;
+				subif->data_flag = sif->data_flag_ops;
 				bport = sif->bp;
 				subif->flag_bp = 0;
 				gpid = sif->gpid;
@@ -1390,6 +1401,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					memcpy(subif->def_qlist, sif->qid_list,
 					       sizeof(sif->qid_list));
 					subif_flag[num] = sif->subif_flag;
+					subif->data_flag = sif->data_flag_ops;
 					if (sif->ctp_dev)
 						subif->flag_pmapper = 1;
 					bport = sif->bp;
@@ -1412,6 +1424,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif->bport = tmp->bp;
 					subif->gpid = sif->gpid;
 					subif->num_q = sif->num_qid;
+					subif->data_flag = sif->data_flag_ops;
 					memcpy(subif->def_qlist, sif->qid_list,
 					       sizeof(sif->qid_list));
 					res = 0;
