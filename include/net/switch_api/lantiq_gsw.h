@@ -143,6 +143,8 @@ typedef struct {
 
 	/** Associated Mac address -(GSWIP-3.2)*/
 	u8 nAssociatedMAC[GSW_MAC_ADDR_LEN];
+	/* MAC Table Hit Status Update (Supported in GSWip-3.1/3.2) */
+	ltq_bool_t hitstatus;
 } GSW_MAC_tableRead_t;
 
 /** \brief Search for a MAC address entry in the address table.
@@ -213,6 +215,9 @@ typedef struct {
 	ltq_bool_t bEntryChanged;
 	/** Associated Mac address -(GSWIP-3.2)*/
 	u8 nAssociatedMAC[GSW_MAC_ADDR_LEN];
+
+	/* MAC Table Hit Status Update (Supported in GSWip-3.1/3.2) */
+	ltq_bool_t hitstatus;
 } GSW_MAC_tableQuery_t;
 
 /** \brief MAC Table Entry to be added.
@@ -1698,6 +1703,8 @@ typedef struct {
 	    and 'GSW_IGMP_MEMBER_INCLUDE' are only supported
 	    if IGMPv3 is used. */
 	GSW_IGMP_MemberMode_t	eModeMember;
+	/* MULTICAST Table Hit Status Update (Supported in GSWip-3.1/3.2) */
+	ltq_bool_t hitstatus;
 } GSW_multicastTableRead_t;
 
 /*@}*/ /* GSW_IOCTL_MULTICAST */

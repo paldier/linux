@@ -238,9 +238,18 @@ int gsw_get_swmcast_entry(void *cdev, GSW_multicastTableRead_t *parm, u32 loc)
 		/* Action */
 		parm->nSubIfId = ((pcetable.val[1] >> 3) & 0x1FFF);
 
-		for (i = 0; i < 16; i++) {
+		for (i = 0; i <= gswdev->hitstatus_idx; i++)
 			parm->nPortMap[i] = pcetable.val[2 + i];
-		}
+
+		if ((parm->nPortMap[gswdev->hitstatus_idx]
+		     & gswdev->hitstatus_mask)) {
+			parm->hitstatus = LTQ_TRUE;
+
+			pcetable.val[gswdev->hitstatus_idx + 2] &=
+				gswdev->hitstatus_mask;
+			gsw_pce_table_key_write(cdev, &pcetable);
+		} else
+			parm->hitstatus = LTQ_FALSE;
 
 		parm->eIPVersion = phtable[loc].ip_type;
 

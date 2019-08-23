@@ -1689,6 +1689,18 @@
 #define PCE_GCTRL_0_MTFL_OFFSET	0x456
 #define PCE_GCTRL_0_MTFL_SHIFT	0
 #define PCE_GCTRL_0_MTFL_SIZE		1
+/* Note: This Bit Apllicable for GSWIP 3.1 and GSWIP 3.2*/
+/* Bit: 'MCSTHITEN' */
+/* Description: 'Multicast Table Hit Status' */
+#define PCE_GCTRL_0_MCSTHITEN_OFFSET	0x456
+#define PCE_GCTRL_0_MCSTHITEN_SHIFT		13
+#define PCE_GCTRL_0_MCSTHITEN_SIZE		1
+/* Note: This Bit Apllicable for GSWIP 3.1 and GSWIP 3.2*/
+/* Bit: 'MACHITEN' */
+/* Description: 'MAC Table Hit Status' */
+#define PCE_GCTRL_0_MACHITEN_OFFSET	0x456
+#define PCE_GCTRL_0_MACHITEN_SHIFT	14
+#define PCE_GCTRL_0_MACHITEN_SIZE	1
 /* --------------------------------------------------- */
 /* Register: 'PCE Global Control Register1' */
 /* Bit: 'PARSER_DBG' */

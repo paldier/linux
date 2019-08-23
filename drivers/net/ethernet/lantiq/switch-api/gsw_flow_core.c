@@ -2382,6 +2382,7 @@ static void get_gsw_hw_cap(void *cdev)
 {
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	u32 reg_val;
+	u16 hitstatus, u;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
@@ -2599,6 +2600,13 @@ static void get_gsw_hw_cap(void *cdev)
 		gswdev->pce_tbl_info = gsw_pce_tbl_info_22;
 	}
 
+	if (IS_VRSN_31_OR_32(gswdev->gipver) && gswdev->num_of_bridge_port) {
+		hitstatus = gswdev->num_of_bridge_port - 1;
+		u = hitstatus / (sizeof(gswdev->hitstatus_mask) * 8);
+		gswdev->hitstatus_idx = u;
+		u = hitstatus % (sizeof(gswdev->hitstatus_mask) * 8);
+		gswdev->hitstatus_mask = BIT(u);
+	}
 	if (1) {
 		if (gswdev->gipver == LTQ_GSWIP_3_0)
 			pr_debug("\nGSWIP 3.0 HardWare Capability\n");
@@ -3096,6 +3104,13 @@ static GSW_return_t switch_core_init(void *cdev)
 				FDMA_PCTRL_EN_SHIFT,
 				FDMA_PCTRL_EN_SIZE, 1);
 		}
+
+		/* Enable Mlticast Table Hit Status Update */
+		gsw_w32(cdev, PCE_GCTRL_0_MCSTHITEN_OFFSET, PCE_GCTRL_0_MCSTHITEN_SHIFT,
+			PCE_GCTRL_0_MCSTHITEN_SIZE, 1);
+		/* Enable MAC Table Hit Status Update */
+		gsw_w32(cdev, PCE_GCTRL_0_MACHITEN_OFFSET, PCE_GCTRL_0_MACHITEN_SHIFT,
+			PCE_GCTRL_0_MACHITEN_SIZE, 1);
 
 		/*PMAC default queue assignment and configuration*/
 		gsw_set_def_bypass_qmap(cdev, GSW_QOS_QMAP_SINGLE_MODE);
@@ -3637,6 +3652,16 @@ GSW_return_t GSW_MAC_TableEntryRead(void *cdev,
 					parm->nPortId = 0x80000000;
 				else
 					parm->nPortId = (u32)id;
+
+				if ((parm->nPortMap[gswdev->hitstatus_idx]
+				     & gswdev->hitstatus_mask)) {
+					parm->hitstatus = LTQ_TRUE;
+
+					tbl_prog.val[gswdev->hitstatus_idx + 2] &=
+						~gswdev->hitstatus_mask;
+					gsw_pce_table_key_write(cdev, &tbl_prog);
+				} else
+					parm->hitstatus = LTQ_FALSE;
 			} else {
 
 				int id = conv_id(tbl_prog.val[0]);
@@ -3800,6 +3825,16 @@ GSW_return_t GSW_MAC_TableEntryQuery(void *cdev,
 					parm->nPortId = 0x80000000;
 				else
 					parm->nPortId = (u32)id;
+
+				if ((parm->nPortMap[gswdev->hitstatus_idx]
+				     & gswdev->hitstatus_mask)) {
+					parm->hitstatus = LTQ_TRUE;
+
+					tbl_prog.val[gswdev->hitstatus_idx + 2] &=
+						~gswdev->hitstatus_mask;
+					gsw_pce_table_key_write(cdev, &tbl_prog);
+				} else
+					parm->hitstatus = LTQ_FALSE;
 			} else {
 				int id = conv_id(tbl_prog.val[0]);
 

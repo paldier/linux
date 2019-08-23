@@ -1003,6 +1003,8 @@ typedef struct {
 	u32 gsw_mode;				/* GSWIP Mode 0 "short_cut", 1 "full_qos" */
 	u32 dpu;			        /* DPU = 1, pmac G.INT config, DPU = 0, Non-G.INT config */
 	u32 num_of_global_rules;    /* Number of Global(Common) TFLOW Rules */
+	u16 hitstatus_idx;
+	u16 hitstatus_mask;
 
 #ifdef __KERNEL__
 	spinlock_t lock_pce;
