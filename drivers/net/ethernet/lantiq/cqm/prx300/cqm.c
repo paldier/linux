@@ -3655,15 +3655,17 @@ static s32 cqm_dq_dma_chan_init(s32 cqm_port_id, u32 flags)
 	dma_addr_t desc_base;
 	struct cqm_dqm_port_info *p_info;
 
-	p_info = &dqm_port_info[cqm_port_id];
-	/*config the dma channel*/
 	if (cqm_port_id < DQM_PON_START_ID) {
 		desc_base = (dma_addr_t)cqm_ctrl->dmadesc_phys +
 			CQM_DEQ_DMA_DESC(cqm_port_id, 0);
 	} else {
+		/* We have only one DMA for 64 PON ports */
+		cqm_port_id = DQM_PON_START_ID;
 		desc_base = (dma_addr_t)cqm_ctrl->dmadesc_phys +
 			CQM_DEQ_PON_DMA_DESC(cqm_port_id, 0);
 	}
+	/*config the dma channel*/
+	p_info = &dqm_port_info[cqm_port_id];
 	snprintf(p_info->dma_chan_str, DMA_CH_STR_LEN, "port%d", cqm_port_id);
 	ret = setup_DMA_channel(p_info->dma_ch, cqm_port_id, desc_base, flags,
 				p_info->deq_info.num_desc,
