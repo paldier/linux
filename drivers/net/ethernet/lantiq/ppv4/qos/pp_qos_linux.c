@@ -423,7 +423,7 @@ static int pp_qos_config_from_of_node(
 		pdata->bwl_ddr_phys,
 		pdata->bwl_ddr_virt);
 
-	pdata->sbwl_sz = PAGE_ALIGN(NUM_OF_NODES * sizeof(u8));
+	pdata->sbwl_sz = PAGE_ALIGN(NUM_OF_NODES * sizeof(u32));
 	pdata->sbwl_ddr_virt = dmam_alloc_coherent(
 			dev,
 			pdata->sbwl_sz,

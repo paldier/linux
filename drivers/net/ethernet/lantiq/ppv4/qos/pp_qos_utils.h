@@ -227,7 +227,7 @@ struct hw_conf {
 	dma_addr_t	max_allowed_ddr_phys;
 	unsigned int	*bwl_ddr_virt;
 	dma_addr_t	bwl_ddr_phys;
-	unsigned char	*sbwl_ddr_virt;
+	unsigned int	*sbwl_ddr_virt;
 	dma_addr_t	sbwl_ddr_phys;
 };
 

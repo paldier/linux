@@ -2481,7 +2481,7 @@ struct pp_qos_dev *create_qos_dev_desc(struct qos_dev_init_info *initinfo)
 			initinfo->pl_data.bwl_ddr_phys;
 
 		qdev->hwconf.sbwl_ddr_virt =
-			(unsigned char *)initinfo->pl_data.sbwl_ddr_virt;
+			(unsigned int *)initinfo->pl_data.sbwl_ddr_virt;
 		qdev->hwconf.sbwl_ddr_phys =
 			initinfo->pl_data.sbwl_ddr_phys;
 
