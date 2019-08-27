@@ -1140,7 +1140,7 @@ int dp_platform_queue_set_32(int inst, u32 flag)
 			tx_push = &cpu.dq_tx_push_info[i][j];
 			if (tx_push->deq_port == (s32)-1)
 				continue;
-			c_info = &dp_deq_port_tbl[inst][q_port.cqe_deq];
+			c_info = &dp_deq_port_tbl[inst][tx_push->deq_port];
 			vap_num++;
 			DP_DEBUG(DP_DBG_FLAG_QOS, "cpu(%d)(%d) deq_port=%d",
 				 i, j, tx_push->deq_port);

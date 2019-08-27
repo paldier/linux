@@ -1637,6 +1637,7 @@ int32_t dp_check_if_netif_fastpath_fn(struct net_device *netif,
 				      dp_subif_t *subif, char *ifname,
 				      uint32_t flags)
 {
+	int res = 0;
 	dp_subif_t tmp_subif = { 0 };
 	struct pmac_port_info *p_info;
 	int max_dp_ports;
@@ -1657,14 +1658,16 @@ int32_t dp_check_if_netif_fastpath_fn(struct net_device *netif,
 	}
 	max_dp_ports = dp_port_prop[tmp_subif.inst].info.cap.max_num_dp_ports;
 	if (tmp_subif.port_id <= 0 || tmp_subif.port_id >= max_dp_ports)
-		return 0;
+		goto EXIT;
 	p_info = get_dp_port_info(tmp_subif.inst, tmp_subif.port_id);
 	dp_flags = DP_F_FAST_DSL || DP_F_FAST_ETH_LAN ||
 		   DP_F_FAST_ETH_WAN || DP_F_FAST_WLAN;
 	if (!(p_info->alloc_flags & dp_flags))
-		return 0;
+		goto EXIT;
+	res = 1;
+EXIT:
 	DP_LIB_UNLOCK(&dp_lock);
-	return 1;
+	return res;
 }
 EXPORT_SYMBOL(dp_check_if_netif_fastpath_fn);
 
