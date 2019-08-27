@@ -439,11 +439,11 @@ typedef struct dp_drv_mib {
 	u64 tx_bytes; /*!< tx bytes */
 } dp_drv_mib_t;
 
-/*! @brief struct for dp_buffer */
-struct dp_buffer {
-	void *phy_addr; /*!< physical buffer address to free */
-	int policy; /*!< buffer's policy associated */
-	int pool; /*!< buffer's pood associated */
+/*! @brief struct for dp_buffer_info */
+struct dp_buffer_info {
+	phys_addr_t addr; /*!< [in] physical address of buffer to free */
+	u32 policy_base;  /*!< [in] associated policy base*/
+	int policy_num;   /*!< [in] associated policy number*/
 };
 
 /*! @brief struct for dp_buffer */
@@ -1698,18 +1698,6 @@ int dp_set_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag);
 int dp_get_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag);
 
 /*!
- *@brief Datapath Manager buffer free API
- *@param[in] inst: DP instance ID
- *@param[in] buffer: buffer information which needed for buffer free
- *@param[in] flag: reserve for future
- *@return Returns DP_SUCCESS on succeed and DP_FAILURE on failure
- *@Note: This API is mainly used for ACA 4 Ring case to free RXIN buffers
- *       Maybe DP can do it internally and no need to export it.
- *       Later it will be finalized for LGM case
- */
-int dp_free_buffer(int inst, struct dp_buffer *buffer, u32 flag);
-
-/*!
  *@brief Datapath Manager DMA RX IRQ enable/disable API
  *@param[in] inst: DP instance ID
  *@param[in] ch: DMA RX Channel information
@@ -1818,6 +1806,14 @@ int dp_register_ops(int inst, enum DP_OPS_TYPE type, void *ops);
  */
 void *dp_get_ops(int inst, enum DP_OPS_TYPE type);
 int dp_get_mtu_size(struct net_device *dev, u32 *mtu_size);
+
+/*!
+ *@brief free Rx/Tx buffer
+ *@param[in] info: buffer info
+ *@param[in] flag: reserved
+ *@return DP_SUCCESS on success and DP_FAILURE on failure
+ */
+int dp_free_buffer_by_policy(struct dp_buffer_info *info, u32 flag);
 
 /*!
  *@brief get UMT ops registration

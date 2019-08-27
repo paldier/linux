@@ -2346,6 +2346,28 @@ void test(void)
 }
 #endif				/* DP_TEST_EXAMPLE */
 
+int dp_free_buffer_by_policy(struct dp_buffer_info *info, u32 flag)
+{
+	struct cqm_bm_free data = {0};
+	int ret;
+
+	if (!info)
+		return DP_FAILURE;
+
+	data.flag = flag;
+	data.buf = (void *)info->addr;
+	data.policy_base = info->policy_base;
+	data.policy_num = info->policy_num;
+
+	ret = cqm_buffer_free_by_policy(&data);
+	if (ret != CBM_OK) {
+		DP_ERR("cqm_buffer_free_by_policy failed with %d\n", ret);
+		return DP_FAILURE;
+	}
+	return DP_SUCCESS;
+}
+EXPORT_SYMBOL(dp_free_buffer_by_policy);
+
 int dp_basic_proc(void)
 {
 	struct dentry *p_node;

@@ -1193,6 +1193,16 @@ cbm_cpu_port_config_set(
 void *cbm_buffer_alloc(u32 pid, u32 flag, u32 size);
 void *cqm_buffer_alloc_by_policy(u32 pid, u32 flag, u32 policy);
 
+struct cqm_bm_free {
+	int cbm_inst;
+	u32 flag;
+	void *buf;   /* Physical address */
+	u32 policy_base; /* base policy */
+	int policy_num;  /* number of policy */
+};
+
+int cqm_buffer_free_by_policy(struct cqm_bm_free *free_info);
+
 /*! \brief	Free a CBM Buffer to one of the CBM Free Buffer Pools
 	\param[in] vpe_id  CPU/VPE# (0-3) which requests the buffer ; if -1, current VPE Id is used
 	\param[in] buf  Pointer to CBM Buffer

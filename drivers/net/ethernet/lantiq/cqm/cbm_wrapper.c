@@ -150,6 +150,12 @@ void *cqm_buffer_alloc_by_policy(u32 pid, u32 flag, u32 policy)
 }
 EXPORT_SYMBOL(cqm_buffer_alloc_by_policy);
 
+int cqm_buffer_free_by_policy(struct cqm_bm_free *free_info)
+{
+	return CBM_FAILURE;
+}
+EXPORT_SYMBOL(cqm_buffer_free_by_policy);
+
 struct sk_buff *cbm_copy_skb(const struct sk_buff *skb, gfp_t gfp_mask)
 {
 	if (g_cbm_ops->cbm_copy_skb)
