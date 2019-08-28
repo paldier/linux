@@ -944,9 +944,8 @@ typedef struct {
 	ltq_bool_t hwinit;
 	u16 vlan_rd_index; 			/* read VLAN table index */
 	u16 mac_rd_index; 			/* read mac table index */
-	u8 mhw_rinx;
-	u8 msw_rinx;
-	u16 msw_rinx_31;
+	u16 mhw_rinx;
+	u16 msw_rinx;
 	u8 cport;
 	u8 gsw_dev;
 

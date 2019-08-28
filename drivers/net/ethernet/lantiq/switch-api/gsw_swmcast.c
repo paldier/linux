@@ -246,8 +246,8 @@ int gsw_get_swmcast_entry(void *cdev, GSW_multicastTableRead_t *parm, u32 loc)
 			parm->hitstatus = LTQ_TRUE;
 
 			pcetable.val[gswdev->hitstatus_idx + 2] &=
-				gswdev->hitstatus_mask;
-			gsw_pce_table_key_write(cdev, &pcetable);
+				~gswdev->hitstatus_mask;
+			gsw_pce_table_write(cdev, &pcetable);
 		} else
 			parm->hitstatus = LTQ_FALSE;
 
