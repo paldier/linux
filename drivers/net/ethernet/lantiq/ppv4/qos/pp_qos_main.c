@@ -32,6 +32,8 @@
 #define PP_QOS_ENTER_FUNC()
 #define PP_QOS_EXIT_FUNC()
 
+static bool qos_fw_log;
+
 void update_cmd_id(struct driver_cmds *drvcmds)
 {
 	drvcmds->cmd_id++;
@@ -2351,6 +2353,16 @@ struct pp_qos_dev *pp_qos_dev_open(unsigned int id)
 	return NULL;
 }
 
+static int __init qos_fw_log_en(char *str)
+{
+	QOS_LOG_INFO("PPv4 QoS FW Logger is enabled\n");
+	qos_fw_log = true;
+
+	return 0;
+}
+
+early_param("qosFwLog", qos_fw_log_en);
+
 int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 {
 	int rc;
@@ -2430,7 +2442,11 @@ int pp_qos_dev_init(struct pp_qos_dev *qdev, struct pp_qos_init_param *conf)
 		goto out;
 	}
 
-	create_init_logger_cmd(qdev, UC_LOGGER_LEVEL_INFO);
+	if (qos_fw_log)
+		create_init_logger_cmd(qdev, UC_LOGGER_LEVEL_INFO);
+	else
+		create_init_logger_cmd(qdev, UC_LOGGER_LEVEL_DEFAULT);
+
 	create_init_qos_cmd(qdev);
 	update_cmd_id(&qdev->drvcmds);
 	transmit_cmds(qdev);

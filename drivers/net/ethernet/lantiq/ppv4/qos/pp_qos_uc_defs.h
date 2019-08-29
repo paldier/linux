@@ -69,6 +69,11 @@ enum uc_logger_level {
 /* Below levels will be normally used from host. */
 /* Each level includes all higher priorities levels messages */
 
+//!< FATAL/ERROR level messages
+#define UC_LOGGER_LEVEL_DEFAULT         \
+	(UC_LOGGER_LEVEL_FATAL_ONLY |   \
+	 UC_LOGGER_LEVEL_ERROR_ONLY)
+
 //!< FATAL level messages
 #define UC_LOGGER_LEVEL_FATAL           \
 	(UC_LOGGER_LEVEL_FATAL_ONLY |   \

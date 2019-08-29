@@ -2723,7 +2723,7 @@ static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
 }
 
 #define MAX_FW_CMD_SIZE sizeof(struct uc_qos_cmd_s)
-#define NUM_OF_POLLS	100000U
+#define NUM_OF_POLLS	1000000U
 
 /*
  * Go over all commands on pending queue until cmd id
@@ -2736,8 +2736,7 @@ static void post_process(struct pp_qos_dev *qdev, union driver_cmd *dcmd)
  * For each command wait until firmware signals
  * completion before continue to next command.
  * Completion status for each command is polled NUM_OF_POLLS
- * times. And the function sleeps between pools.
- * If command have not completed after all that polls -
+ * times. If command have not completed after all that polls
  * function asserts.
  *
  */
@@ -2771,11 +2770,7 @@ void check_completion(struct pp_qos_dev *qdev)
 		val = qos_u32_from_uc(*pos);
 		while ((val &
 			(UC_CMD_FLAG_UC_DONE | UC_CMD_FLAG_UC_ERROR)) == 0) {
-#ifdef __KERNEL__
-			usleep_range(100, 200);
-#else
-			usleep(200);
-#endif
+			cpu_relax();
 			val = qos_u32_from_uc(*pos);
 			++i;
 			if (i == NUM_OF_POLLS) {
