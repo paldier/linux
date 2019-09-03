@@ -153,6 +153,7 @@ int xwayflow_pmac_table_write(void *cdev, pmtbl_prog_t *ptdata)
 
 int route_table_read(void *cdev, pctbl_prog_t *rdata)
 {
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	u32 value;
 
 	do {
@@ -160,6 +161,10 @@ int route_table_read(void *cdev, pctbl_prog_t *rdata)
 			PCE_RTBL_CTRL_BAS_SHIFT,
 			PCE_RTBL_CTRL_BAS_SIZE, &value);
 	} while (value != 0);
+
+#ifdef __KERNEL__
+	spin_lock(&gswdev->lock_pce_tbl);
+#endif
 
 	gsw_w32(cdev, PCE_TBL_ADDR_ADDR_OFFSET,
 		PCE_TBL_ADDR_ADDR_SHIFT,
@@ -318,11 +323,17 @@ int route_table_read(void *cdev, pctbl_prog_t *rdata)
 		PCE_RTBL_CTRL_VLD_SIZE, &value);
 	rdata->valid = value;
 	gsw_w32(cdev, PCE_TBL_CTRL_ADDR_OFFSET, 0, 16, 0);
+
+#ifdef __KERNEL__
+	spin_unlock(&gswdev->lock_pce_tbl);
+#endif
+
 	return GSW_statusOk;
 }
 
 int route_table_write(void *cdev, pctbl_prog_t *rdata)
 {
+	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 	u32 value;
 	u16 udata;
 
@@ -331,6 +342,10 @@ int route_table_write(void *cdev, pctbl_prog_t *rdata)
 			PCE_RTBL_CTRL_BAS_SHIFT,
 			PCE_RTBL_CTRL_BAS_SIZE, &value);
 	} while (value);
+
+#ifdef __KERNEL__
+	spin_lock(&gswdev->lock_pce_tbl);
+#endif
 
 	gsw_w32(cdev, PCE_TBL_ADDR_ADDR_OFFSET,
 		PCE_TBL_ADDR_ADDR_SHIFT, PCE_TBL_ADDR_ADDR_SIZE,
@@ -460,6 +475,11 @@ int route_table_write(void *cdev, pctbl_prog_t *rdata)
 	} while (value != 0);
 
 	gsw_w32(cdev, PCE_TBL_CTRL_ADDR_OFFSET, 0, 16, 0);
+
+#ifdef __KERNEL__
+	spin_unlock(&gswdev->lock_pce_tbl);
+#endif
+
 	return GSW_statusOk;
 }
 
@@ -467,7 +487,6 @@ int gsw_pce_table_write(void *cdev, pctbl_prog_t *ptdata)
 {
 	u32 ctrlval;
 	u16 i, j;
-	//pr_err("Enter table write\n");
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -480,8 +499,13 @@ int gsw_pce_table_write(void *cdev, pctbl_prog_t *ptdata)
 	} while (gsw_field_r32(ctrlval, PCE_TBL_CTRL_BAS_SHIFT,
 			       PCE_TBL_CTRL_BAS_SIZE));
 
+#ifdef __KERNEL__
+	spin_lock(&gswdev->lock_pce_tbl);
+#endif
+
 	gsw_w32_raw(cdev, PCE_TBL_ADDR_ADDR_OFFSET, ptdata->pcindex);
 	/*TABLE ADDRESS*/
+	ctrlval = 0;
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_ADDR_SHIFT,
 				PCE_TBL_CTRL_ADDR_SIZE, ptdata->table);
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_OPMOD_SHIFT,
@@ -529,7 +553,10 @@ int gsw_pce_table_write(void *cdev, pctbl_prog_t *ptdata)
 			       PCE_TBL_CTRL_BAS_SIZE));
 
 	gsw_w32_raw(cdev, PCE_TBL_CTRL_ADDR_OFFSET, 0);
-	//pr_err("Exit table write\n");
+
+#ifdef __KERNEL__
+	spin_unlock(&gswdev->lock_pce_tbl);
+#endif
 
 	return GSW_statusOk;
 }
@@ -538,7 +565,6 @@ int gsw_pce_table_read(void *cdev, pctbl_prog_t *ptdata)
 {
 	u32 ctrlval, value;
 	u16 i, j;
-	//pr_err("Enter table read\n");
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -551,8 +577,13 @@ int gsw_pce_table_read(void *cdev, pctbl_prog_t *ptdata)
 	} while (gsw_field_r32(ctrlval, PCE_TBL_CTRL_BAS_SHIFT,
 			       PCE_TBL_CTRL_BAS_SIZE));
 
+#ifdef __KERNEL__
+	spin_lock(&gswdev->lock_pce_tbl);
+#endif
+
 	gsw_w32_raw(cdev, PCE_TBL_ADDR_ADDR_OFFSET, ptdata->pcindex);
 	/*TABLE ADDRESS*/
+	ctrlval = 0;
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_ADDR_SHIFT,
 				PCE_TBL_CTRL_ADDR_SIZE, ptdata->table);
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_OPMOD_SHIFT,
@@ -602,7 +633,10 @@ int gsw_pce_table_read(void *cdev, pctbl_prog_t *ptdata)
 	ptdata->group = gsw_field_r32(ctrlval, PCE_TBL_CTRL_GMAP_SHIFT,
 				      PCE_TBL_CTRL_GMAP_SIZE);
 	gsw_w32_raw(cdev, PCE_TBL_CTRL_ADDR_OFFSET, 0);
-	//pr_err("Exit table read\n");
+
+#ifdef __KERNEL__
+	spin_unlock(&gswdev->lock_pce_tbl);
+#endif
 
 	return GSW_statusOk;
 }
@@ -611,7 +645,6 @@ int gsw_pce_table_key_read(void *cdev, pctbl_prog_t *ptdata)
 {
 	u32 ctrlval, value;
 	u16 i, j;
-	//pr_err("Enter table key read\n");
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -624,8 +657,9 @@ int gsw_pce_table_key_read(void *cdev, pctbl_prog_t *ptdata)
 	} while (gsw_field_r32(ctrlval, PCE_TBL_CTRL_BAS_SHIFT,
 			       PCE_TBL_CTRL_BAS_SIZE));
 
-	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_ADDR_SHIFT,
-				PCE_TBL_CTRL_ADDR_SIZE, ptdata->table);
+#ifdef __KERNEL__
+	spin_lock(&gswdev->lock_pce_tbl);
+#endif
 
 	/*KEY REG*/
 	j = gswdev->pce_tbl_info[ptdata->table].num_key;
@@ -634,6 +668,9 @@ int gsw_pce_table_key_read(void *cdev, pctbl_prog_t *ptdata)
 		gsw_w32_raw(cdev, gswdev->pce_tbl_reg.key[i], ptdata->key[i]);
 	}
 
+	ctrlval = 0;
+	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_ADDR_SHIFT,
+				PCE_TBL_CTRL_ADDR_SIZE, ptdata->table);
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_OPMOD_SHIFT,
 				PCE_TBL_CTRL_OPMOD_SIZE, PCE_OP_MODE_KSRD);
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_KEYFORM_SHIFT,
@@ -664,7 +701,10 @@ int gsw_pce_table_key_read(void *cdev, pctbl_prog_t *ptdata)
 	gsw_r32_raw(cdev, PCE_TBL_ADDR_ADDR_OFFSET, &value);
 	ptdata->pcindex = value;
 	gsw_w32_raw(cdev, PCE_TBL_CTRL_ADDR_OFFSET, 0);
-	//pr_err("Exit table key read\n");
+
+#ifdef __KERNEL__
+	spin_unlock(&gswdev->lock_pce_tbl);
+#endif
 
 	return GSW_statusOk;
 }
@@ -673,7 +713,6 @@ int gsw_pce_table_key_write(void *cdev, pctbl_prog_t *ptdata)
 {
 	u32 ctrlval;
 	u16 i, j;
-	//pr_err("Enter table key write\n");
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
 
 	if (gswdev == NULL) {
@@ -681,10 +720,17 @@ int gsw_pce_table_key_write(void *cdev, pctbl_prog_t *ptdata)
 		return GSW_statusErr;
 	}
 
+	
 	do {
 		gsw_r32_raw(cdev, PCE_TBL_CTRL_BAS_OFFSET, &ctrlval);
 	} while (gsw_field_r32(ctrlval, PCE_TBL_CTRL_BAS_SHIFT,
 			       PCE_TBL_CTRL_BAS_SIZE));
+
+#ifdef __KERNEL__
+	spin_lock(&gswdev->lock_pce_tbl);
+#endif
+
+	ctrlval = 0;
 
 	/*TABLE ADDRESS*/
 	ctrlval = gsw_field_w32(ctrlval, PCE_TBL_CTRL_ADDR_SHIFT,
@@ -731,7 +777,10 @@ int gsw_pce_table_key_write(void *cdev, pctbl_prog_t *ptdata)
 			       PCE_TBL_CTRL_BAS_SIZE));
 
 	gsw_w32_raw(cdev, PCE_TBL_CTRL_ADDR_OFFSET, 0);
-	//pr_err("Exit table key write\n");
+
+#ifdef __KERNEL__
+	spin_unlock(&gswdev->lock_pce_tbl);
+#endif
 
 	return GSW_statusOk;
 }
@@ -768,12 +817,12 @@ GSW_return_t GSW_DumpTable(void *cdev, GSW_table_t *parm)
 		parm->ptdata.table = parm->tbl_addr;
 
 #ifdef __KERNEL__
-		spin_lock_bh(&gswdev->lock_pce);
+		spin_lock_bh(&gswdev->lock_pae);
 #endif
 		route_table_read(gsw_ops, &parm->ptdata);
 
 #ifdef __KERNEL__
-		spin_unlock_bh(&gswdev->lock_pce);
+		spin_unlock_bh(&gswdev->lock_pae);
 #endif
 
 	}

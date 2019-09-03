@@ -937,13 +937,13 @@ typedef struct {
 	/*platform device struct*/
 	void *pdev;
 	u16 pnum;
-	u16 tpnum;					/* Total number of ports including vitual ports*/
-	u16 mpnum; 					/* ManagementPortNumber */
+	u16 tpnum;			/* Total number of ports including vitual ports*/
+	u16 mpnum; 			/* ManagementPortNumber */
 	u32 matimer;
 	ltq_bool_t rst;
 	ltq_bool_t hwinit;
-	u16 vlan_rd_index; 			/* read VLAN table index */
-	u16 mac_rd_index; 			/* read mac table index */
+	u16 vlan_rd_index; 		/* read VLAN table index */
+	u16 mac_rd_index; 		/* read mac table index */
 	u16 mhw_rinx;
 	u16 msw_rinx;
 	u8 cport;
@@ -953,55 +953,55 @@ typedef struct {
 	u32 ext_devid;
 	u32 ext_phyid;
 
-	u16 mrtpcnt;			 	/* multicast router port count */
+	u16 mrtpcnt;			/* multicast router port count */
 	u16 meter_cnt;
-	u16 num_of_queues; 			/* Number of priority queues . */
+	u16 num_of_queues; 		/* Number of priority queues . */
 	u16 num_of_meters;  		/* Number of traffic meters */
 	u16 num_of_shapers; 		/* Number of traffic shapers */
-	u16 num_of_pppoe;			/* PPPoE table size  */
-	u16 avlantsz; 				/* Active VLAN table size */
+	u16 num_of_pppoe;		/* PPPoE table size  */
+	u16 avlantsz; 			/* Active VLAN table size */
 	u16 ip_pkt_lnt_size;	 	/* IP packet length table size */
 	u16 prot_table_size;	 	/* Protocol table size */
 	u16 mac_dasa_table_size; 	/* MAC DA/SA table size */
-	u16 app_table_size;			/* Application table size */
-	u16 idsmtblsize;			/* IP DA/SA MSB table size */
-	u16 idsltblsize;			/* IP DA/SA LSB table size*/
-	u16 mctblsize;				/* Multicast table size */
-	u16 tftblsize;				/* Flow Aggregation table size */
-	u16 mactblsize;				/* MAC bridging table size */
-	u16 num_of_pmac;			/* Number of PMAC */
-	u16 pdtblsize;				/* Payload Table Size  */
-	u16 num_of_ifrmon;			/* Interface RMON Counter Table Size */
-	u16 num_of_egvlan;			/* Egress VLAN Treatment Table Size */
-	u16 num_of_rt_smac;			/* Routing MAC Table Size for Source MAC */
-	u16 num_of_rt_dmac;			/* Routing MAC Table Size for Destination MAC */
-	u16 num_of_rt_ppoe;			/* Routing PPPoE Table Size  */
-	u16 num_of_rt_nat;			/* Routing Session Table Size */
-	u16 num_of_rt_mtu;			/* Routing MTU Table Size */
+	u16 app_table_size;		/* Application table size */
+	u16 idsmtblsize;		/* IP DA/SA MSB table size */
+	u16 idsltblsize;		/* IP DA/SA LSB table size*/
+	u16 mctblsize;			/* Multicast table size */
+	u16 tftblsize;			/* Flow Aggregation table size */
+	u16 mactblsize;			/* MAC bridging table size */
+	u16 num_of_pmac;		/* Number of PMAC */
+	u16 pdtblsize;			/* Payload Table Size  */
+	u16 num_of_ifrmon;		/* Interface RMON Counter Table Size */
+	u16 num_of_egvlan;		/* Egress VLAN Treatment Table Size */
+	u16 num_of_rt_smac;		/* Routing MAC Table Size for Source MAC */
+	u16 num_of_rt_dmac;		/* Routing MAC Table Size for Destination MAC */
+	u16 num_of_rt_ppoe;		/* Routing PPPoE Table Size  */
+	u16 num_of_rt_nat;		/* Routing Session Table Size */
+	u16 num_of_rt_mtu;		/* Routing MTU Table Size */
 	u16 num_of_rt_tunnel;		/* Routing Tunnel Table Size  */
-	u16 num_of_rt_rtp;			/* Routing RTP Table Size */
+	u16 num_of_rt_rtp;		/* Routing RTP Table Size */
 
-	u16 num_of_bridge;			/*Number of Bridge - Applicable for 3.1*/
+	u16 num_of_bridge;		/*Number of Bridge - Applicable for 3.1*/
 	u16 num_of_bridge_port;		/*Number of Bridge Port - Applicable for 3.1*/
-	u16 num_of_ctp;				/*Number of CTP port - Applicable for 3.1 */
+	u16 num_of_ctp;			/*Number of CTP port - Applicable for 3.1 */
 	u16 num_of_extendvlan;		/*Number of extended VLAN tagging operation index in table  - Applicable for 3.1 */
 	u16 num_of_vlanfilter;		/*Number of VLAN Filter index in table  - Applicable for 3.1 */
-	u16 num_of_pmapper;			/*Number of pmapper index in table  - Applicable for 3.1
-								  p-mapper total entry 2336/73=32 number of index (i.e) each pmapper idx
-								  has 73 entries*/
-	u16 mcsthw_snoop;			/*Multicast HW snooping feature */
+	u16 num_of_pmapper;		/*Number of pmapper index in table  - Applicable for 3.1
+					  p-mapper total entry 2336/73=32 number of index (i.e) each pmapper idx
+					  has 73 entries*/
+	u16 mcsthw_snoop;		/*Multicast HW snooping feature */
 
 
 	u16 gipver;
-	void *gswl_base;			/*Base address GSWIP-L */
-	void *gswr_base; 		 	/*Base address GSWIP-R */
-	u32 gswex_base; 		 	/*Base address GSWIP External switch */
-	u32	gswex_sgmiibase; 		/*Base address GSWIP External switch-SGMII */
+	void *gswl_base;		/*Base address GSWIP-L */
+	void *gswr_base;		/*Base address GSWIP-R */
+	u32 gswex_base;			/*Base address GSWIP External switch */
+	u32 gswex_sgmiibase;		/*Base address GSWIP External switch-SGMII */
 
-	void *gsw_base;  			/*Base address GSWITCH */
-	u32 gsw_mode;				/* GSWIP Mode 0 "short_cut", 1 "full_qos" */
-	u32 dpu;			        /* DPU = 1, pmac G.INT config, DPU = 0, Non-G.INT config */
-	u32 num_of_global_rules;    /* Number of Global(Common) TFLOW Rules */
+	void *gsw_base;			/*Base address GSWITCH */
+	u32 gsw_mode;			/* GSWIP Mode 0 "short_cut", 1 "full_qos" */
+	u32 dpu;			/* DPU = 1, pmac G.INT config, DPU = 0, Non-G.INT config */
+	u32 num_of_global_rules;	/* Number of Global(Common) TFLOW Rules */
 	u16 hitstatus_idx;
 	u16 hitstatus_mask;
 
@@ -1011,11 +1011,11 @@ typedef struct {
 	spinlock_t lock_pmac;
 	spinlock_t lock_misc;
 	spinlock_t lock_pae;
-	spinlock_t lock_alloc;
-	spinlock_t lock_free;
+	spinlock_t lock_ctp_map;
 	spinlock_t lock_irq;
 	spinlock_t lock_mdio;
 	spinlock_t lock_mmd;
+	spinlock_t lock_pce_tbl;	/* lock of PCE Table register */
 	struct tasklet_struct gswip_tasklet;
 #endif
 

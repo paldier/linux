@@ -3225,11 +3225,11 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 	spin_lock_init(&PrvData->lock_misc);
 	spin_lock_init(&PrvData->lock_pmac);
 	spin_lock_init(&PrvData->lock_pae);
+	spin_lock_init(&PrvData->lock_ctp_map);
 	spin_lock_init(&PrvData->lock_irq);
-	spin_lock_init(&PrvData->lock_alloc);
-	spin_lock_init(&PrvData->lock_free);
 	spin_lock_init(&PrvData->lock_mdio);
 	spin_lock_init(&PrvData->lock_mmd);
+	spin_lock_init(&PrvData->lock_pce_tbl);
 
 	/* KERNEL_MODE*/
 #else
@@ -4608,7 +4608,7 @@ GSW_return_t GSW_STP_BPDU_RuleGet(void *cdev,
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_misc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	scfg = &gswdev->stpconfig;
@@ -4617,7 +4617,7 @@ GSW_return_t GSW_STP_BPDU_RuleGet(void *cdev,
 	ret = GSW_statusOk;
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_misc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 }
@@ -4693,7 +4693,7 @@ GSW_return_t GSW_STP_PortCfgGet(void *cdev, GSW_STP_portCfg_t *parm)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_misc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	if (IS_VRSN_NOT_31(gswdev->gipver)) {
@@ -4726,7 +4726,7 @@ GSW_return_t GSW_STP_PortCfgGet(void *cdev, GSW_STP_portCfg_t *parm)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_misc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 }
@@ -10398,7 +10398,7 @@ GSW_return_t GSW_MulticastRouterPortRead(void *cdev,
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_misc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	if ((IS_VRSN_31(gswdev->gipver)) && (gswdev->mcsthw_snoop == MCAST_HWSNOOP_DIS)) {
@@ -10448,7 +10448,7 @@ GSW_return_t GSW_MulticastRouterPortRead(void *cdev,
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_misc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 
@@ -10626,7 +10626,7 @@ GSW_return_t GSW_MulticastSnoopCfgGet(void *cdev,
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_misc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	if ((IS_VRSN_31(gswdev->gipver)) && (gswdev->mcsthw_snoop == MCAST_HWSNOOP_DIS)) {
@@ -10700,7 +10700,7 @@ GSW_return_t GSW_MulticastSnoopCfgGet(void *cdev,
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_misc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 
@@ -17007,14 +17007,14 @@ GSW_return_t GSW_8021X_EAPOL_RuleGet(void *cdev, GSW_8021X_EAPOL_Rule_t *parm)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_misc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 	parm->eForwardPort = scfg->sfport;
 	parm->nForwardPortId = scfg->fpid8021x;
 	ret = GSW_statusOk;
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_misc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 }
@@ -17091,7 +17091,7 @@ GSW_return_t GSW_8021X_PortCfgGet(void *cdev, GSW_8021X_portCfg_t *parm)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_misc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	if (IS_VRSN_NOT_31(gswdev->gipver)) {
@@ -17126,7 +17126,7 @@ GSW_return_t GSW_8021X_PortCfgGet(void *cdev, GSW_8021X_portCfg_t *parm)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_misc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 
@@ -18288,7 +18288,7 @@ GSW_return_t GSW_CTP_PortAssignmentAlloc(void *cdev, GSW_CTP_portAssignment_t *p
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_alloc);
+	spin_lock_bh(&gswdev->lock_ctp_map);
 #endif
 
 	if (!(gswdev->brdgeportconfig_idx[parm->nBridgePortId].IndexInUse)) {
@@ -18372,7 +18372,7 @@ GSW_return_t GSW_CTP_PortAssignmentAlloc(void *cdev, GSW_CTP_portAssignment_t *p
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_alloc);
+	spin_unlock_bh(&gswdev->lock_ctp_map);
 #endif
 	return ret;
 }
@@ -18388,7 +18388,7 @@ GSW_return_t GSW_CTP_PortAssignmentFree(void *cdev, GSW_CTP_portAssignment_t *pa
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_free);
+	spin_lock_bh(&gswdev->lock_ctp_map);
 #endif
 
 	ret = GSW_CTP_PortAssignmentGet(cdev, parm);
@@ -18403,15 +18403,24 @@ GSW_return_t GSW_CTP_PortAssignmentFree(void *cdev, GSW_CTP_portAssignment_t *pa
 	for (i = parm->nFirstCtpPortId; i < (parm->nFirstCtpPortId + parm->nNumberOfCtpPort); i++)
 		gswdev->ctpportconfig_idx[i].IndexInUse = 0;
 
+#ifdef __KERNEL__
+	spin_lock_bh(&gswdev->lock_misc);
+#endif
+
 	/*Disable the SDMA for this logical port*/
 	gsw_w32(cdev, (SDMA_PCTRL_PEN_OFFSET + (parm->nLogicalPortId * 0x6)),
 		SDMA_PCTRL_PEN_SHIFT, SDMA_PCTRL_PEN_SIZE, 0);
+
+#ifdef __KERNEL__
+	spin_unlock_bh(&gswdev->lock_misc);
+#endif
+
 	ret = GSW_statusOk;
 
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_free);
+	spin_unlock_bh(&gswdev->lock_ctp_map);
 #endif
 	return ret;
 }
@@ -19294,7 +19303,7 @@ GSW_return_t GSW_ExtendedVlanAlloc(void *cdev, GSW_EXTENDEDVLAN_alloc_t *parm)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_alloc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	/*
@@ -19340,7 +19349,7 @@ GSW_return_t GSW_ExtendedVlanAlloc(void *cdev, GSW_EXTENDEDVLAN_alloc_t *parm)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_alloc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 }
@@ -20783,7 +20792,7 @@ GSW_return_t GSW_VlanFilterAlloc(void *cdev, GSW_VLANFILTER_alloc_t *param)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_alloc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	if (param->nNumberOfEntries > (gswdev->num_of_vlanfilter - gswdev->vlanfilter_idx.nUsedEntry)) {
@@ -20831,7 +20840,7 @@ GSW_return_t GSW_VlanFilterAlloc(void *cdev, GSW_VLANFILTER_alloc_t *param)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_alloc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 
@@ -21102,7 +21111,7 @@ GSW_return_t GSW_BridgeAlloc(void *cdev, GSW_BRIDGE_alloc_t *param)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_alloc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	/*find a free Bridge configuration table index and allocate
@@ -21127,7 +21136,7 @@ GSW_return_t GSW_BridgeAlloc(void *cdev, GSW_BRIDGE_alloc_t *param)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_alloc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 }
@@ -21920,7 +21929,7 @@ GSW_return_t GSW_BridgePortAlloc(void *cdev, GSW_BRIDGE_portAlloc_t *param)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_alloc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	/*Find a free Bridge port configuration table index
@@ -21986,7 +21995,7 @@ GSW_return_t GSW_BridgePortAlloc(void *cdev, GSW_BRIDGE_portAlloc_t *param)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_alloc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 }
@@ -25793,7 +25802,7 @@ GSW_return_t GSW_QOS_MeterAlloc(void *cdev, GSW_QoS_meterCfg_t *param)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_alloc);
+	spin_lock_bh(&gswdev->lock_misc);
 #endif
 
 	/*Find free meter indexand allocate*/
@@ -25827,7 +25836,7 @@ GSW_return_t GSW_QOS_MeterAlloc(void *cdev, GSW_QoS_meterCfg_t *param)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_alloc);
+	spin_unlock_bh(&gswdev->lock_misc);
 #endif
 	return ret;
 }
@@ -25843,7 +25852,7 @@ GSW_return_t GSW_QOS_MeterFree(void *cdev, GSW_QoS_meterCfg_t *param)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_free);
+	spin_lock_bh(&gswdev->lock_misc);
 #endif
 
 	if (param->nMeterId >= gswdev->num_of_meters) {
@@ -25877,7 +25886,7 @@ GSW_return_t GSW_QOS_MeterFree(void *cdev, GSW_QoS_meterCfg_t *param)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_free);
+	spin_unlock_bh(&gswdev->lock_misc);
 #endif
 	return ret;
 }
@@ -26693,7 +26702,7 @@ GSW_return_t gsw_tflow_alloc(void *cdev, gsw_tflow_alloc_t *parm)
 	}
 
 #ifdef __KERNEL__
-	spin_lock_bh(&gswdev->lock_alloc);
+	spin_lock_bh(&gswdev->lock_pce);
 #endif
 
 	parm->num_of_pcerules = (parm->num_of_pcerules + 3) & ~0x03;
@@ -26748,7 +26757,7 @@ GSW_return_t gsw_tflow_alloc(void *cdev, gsw_tflow_alloc_t *parm)
 UNLOCK_AND_RETURN:
 
 #ifdef __KERNEL__
-	spin_unlock_bh(&gswdev->lock_alloc);
+	spin_unlock_bh(&gswdev->lock_pce);
 #endif
 	return ret;
 }
