@@ -105,6 +105,8 @@ struct ltq_eth_priv {
 	#define FLAG_ADV_1000HALF       0x00010000
 	#define FLAG_ADV_1000FULL       0x00020000
 	#define FLAG_INTERNAL_PHY       0x00100000
+	u32 ethtool_flags;
+	#define ETHTOOL_FLAG_BP_CPU_ENABLE	BIT(0)
 };
 
 /**
