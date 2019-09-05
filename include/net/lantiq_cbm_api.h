@@ -499,6 +499,7 @@ typedef struct cbm_dq_info {
 	u32 *pkt_base; /*!<packet list base DMA virtual address */
 	void *pkt_base_paddr;	/* packet list base DMA physical address */
 	size_t dma_size;	/* size of allocated DMA memory */
+	int prefill_pkt_num; /* number of pre-fill packet buffer requested */
 } cbm_dq_info_t;
 
 /*!

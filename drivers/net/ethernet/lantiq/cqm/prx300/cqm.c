@@ -2049,7 +2049,7 @@ static s32 cqm_dp_port_dealloc(struct module *owner, u32 dev_port,
 
 	/* Free ACA port */
 	if ((flags & FLAG_ACA) && (p_info->deq_info.pkt_base)) {
-		for (idx = 0; idx < p_info->deq_info.num_desc; idx++) {
+		for (idx = 0; idx < p_info->deq_info.prefill_pkt_num; idx++) {
 			if (p_info->deq_info.pkt_base[idx]) {
 				buf = (void *)p_info->deq_info.pkt_base[idx];
 				cqm_buffer_free(cpu, buf, 1);
@@ -2338,6 +2338,8 @@ static int fill_rx_ring_data(struct cbm_dp_alloc_complete_data *dp_data)
 
 		dp_data->rx_ring[ring_idx].num_pkt =
 				dp_data->rx_ring[ring_idx].prefill_pkt_num;
+		p_info->deq_info.prefill_pkt_num =
+				dp_data->rx_ring[ring_idx].prefill_pkt_num;
 
 		/* Need to be disccused and modified later base on policy */
 		dp_data->rx_ring[ring_idx].rx_policy_base = 0;
@@ -2408,6 +2410,31 @@ static s32 handle_dma_chnl_init(int port, u32 flags)
 	return CBM_SUCCESS;
 }
 
+static void cqm_free_aca_port(s32 port)
+{
+	struct cqm_dqm_port_info *p_info = &dqm_port_info[port];
+	int id = 0, cnt = p_info->deq_info.num_desc * 3;
+	void *deq = cqm_ctrl->deq;
+	u32 reg, val;
+
+	while (cnt--) {
+		id = id % p_info->deq_info.num_desc;
+		reg = cbm_r32(deq + DQ_SCPU_PORT(port, desc[id].desc0) + 0xC);
+		rmb(); /* read before write */
+
+		if (reg & OWN_BIT) {
+			val = cbm_r32(deq +
+				      DQ_SCPU_PORT(port, desc[id].desc0) + 8);
+			cbm_w32((deq +
+				 DQ_SCPU_PORT(port, scpu_ptr_rtn[id].ptr_rtn0)),
+				 val);
+			wmb(); /* write before read */
+		}
+
+		id++;
+	}
+}
+
 static s32 dp_enable(struct module *owner, u32 port_id,
 		     struct cbm_dp_en_data *data, u32 flags, u32 alloc_flags)
 {
@@ -2434,6 +2461,8 @@ static s32 dp_enable(struct module *owner, u32 port_id,
 	case DQM_CPU_TYPE:
 	case DQM_ACA_TYPE:
 		init_cqm_deq_cpu_port(port, data->tx_ring_size);
+		if ((type == DQM_ACA_TYPE) && (flags & CBM_PORT_F_DISABLE))
+			cqm_free_aca_port(port);
 		break;
 	case DQM_PON_TYPE:
 		if (flags & CBM_PORT_F_DISABLE) {
@@ -3675,12 +3704,12 @@ static int conf_deq_aca_port(const struct dqm_aca_port *aca_ptr)
 	port = aca_ptr->port;
 	p_info = &dqm_port_info[port];
 	memset(&local_entry, 0, sizeof(local_entry));
-	p_info->deq_info.cbm_dq_port_base = deq + DQ_CPU_PORT(port, desc0);
+	p_info->deq_info.cbm_dq_port_base = deq + DQ_SCPU_PORT(port, desc);
 	p_info->deq_info.num_desc = aca_ptr->num_desc;
 	p_info->deq_info.num_free_burst = aca_ptr->num_free_burst;
 	p_info->deq_info.port_no = port;
 	p_info->deq_info.dma_tx_chan = 255;
-	p_info->cbm_buf_free_base = deq + DQ_CPU_PORT(port, ptr_rtn_dw2);
+	p_info->cbm_buf_free_base = deq + DQ_SCPU_PORT(port, scpu_ptr_rtn);
 	p_info->num_free_entries = (port > 3) ? 32 : 1;
 	p_info->dq_txpush_num = aca_ptr->txpush_desc;
 	p_info->dma_dt_ch = aca_ptr->dma_chan;

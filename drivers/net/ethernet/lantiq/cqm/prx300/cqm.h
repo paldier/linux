@@ -195,6 +195,9 @@ enum CQM_QOS_LINK_MODE {
 #define DQ_CPU_PORT(idx, reg)\
 (CFG_CPU_EGP_0 + ((idx) * 0x1000) + offsetof(struct cqm_dqm_cpu_egp_reg, reg))
 
+#define DQ_SCPU_PORT(idx, reg)\
+(CFG_CPU_EGP_0 + ((idx) * 0x1000) + offsetof(struct cqm_dqm_aca_egp_reg, reg))
+
 #define DQ_DMA_PORT(idx, reg)\
 (CFG_CPU_EGP_0 + ((idx) * 0x1000) + offsetof(struct cqm_dqm_dma_egp_reg, reg))
 
@@ -270,8 +273,9 @@ struct flowid_desc {
 	uint8_t row:5;
 };
 #endif
-struct cbm_scpu_ptr_rtn {
-	u32 ptr_rtn;
+struct cqm_scpu_ptr_rtn {
+	u32 ptr_rtn0;
+	u32 ptr_rtn1;
 };
 
 #ifdef CONFIG_CPU_LITTLE_ENDIAN
@@ -448,6 +452,21 @@ struct cqm_dqm_cpu_egp_reg {
 	u32 resv3[62];
 	struct cbm_desc desc0;
 	struct cbm_desc desc1;
+};
+
+struct cqm_dqm_aca_egp_reg {
+	u32 cfg;
+	u32 dqpc;
+	u32 resv0[6];
+	u32 irncr;
+	u32 irnicr;
+	u32 irnen;
+	u32 resv1;
+	u32 dptr;
+	u32 bprc;
+	u32 resv2[50];
+	struct cqm_scpu_ptr_rtn scpu_ptr_rtn[32];
+	struct cbm_desc desc[32];
 };
 
 struct cqm_dqm_dma_egp_reg {
