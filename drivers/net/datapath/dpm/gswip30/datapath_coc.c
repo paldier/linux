@@ -755,7 +755,6 @@ int dp_coc_cpufreq_init(void)
 	PR_INFO("enter dp_coc_cpufreq_init\n");
 	spin_lock_init(&dp_coc_lock);
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
-	cpufreq_update_policy(0);
 
 	if (!polling_period)
 		polling_period = 2;
@@ -774,6 +773,7 @@ int dp_coc_cpufreq_init(void)
 	dp_coc_timer.function = dp_rmon_polling;
 	dp_coc_init_stat = 1;
 	dp_coc_ena = 1;
+	schedule_work(&coc_work_q);
 	PR_INFO("Register DP to CPUFREQ successfully.\n");
 	return 0;
 }
