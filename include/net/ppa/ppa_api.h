@@ -191,6 +191,7 @@ typedef enum {
 	MPE_DS_QOS,
 #endif
 	QOS_METER,
+	WMM_QOS_DSCP_MAP,
 	MAX_CAPS
 } PPA_API_CAPS;
 

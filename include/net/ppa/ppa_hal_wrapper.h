@@ -70,6 +70,8 @@ extern uint32_t ppa_hsel_del_outer_vlan_entry(PPA_OUT_VLAN_INFO *entry, uint32_t
 extern uint32_t ppa_hsel_get_outer_vlan_entry(PPA_OUT_VLAN_INFO *entry, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_init_qos_cfg(uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_uninit_qos_cfg(uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_dscp_class_set(uint32_t flag, uint32_t hal_id);
+extern uint32_t ppa_hsel_dscp_class_reset(uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_add_qos_queue_entry(QOS_Q_ADD_CFG *entry, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_modify_qos_queue_entry(QOS_Q_MOD_CFG *entry, uint32_t flag, uint32_t hal_id);
 extern uint32_t ppa_hsel_delete_qos_queue_entry(QOS_Q_DEL_CFG *entry, uint32_t flag, uint32_t hal_id);

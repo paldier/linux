@@ -294,6 +294,28 @@ uint32_t ppa_hsel_uninit_qos_cfg(uint32_t flag, uint32_t hal_id)
 
 	return ppa_drv_hal_hook[hal_id](PPA_GENERIC_HAL_QOS_UNINIT_CFG, (void *)NULL, flag);
 }
+uint32_t ppa_hsel_dscp_class_set(uint32_t flag, uint32_t hal_id)
+{
+	if (hal_id >= MAX_HAL)
+		return PPA_FAILURE;
+
+	if (!ppa_drv_hal_hook[hal_id])
+		return PPA_FAILURE;
+
+	return ppa_drv_hal_hook[hal_id](PPA_GENERIC_HAL_QOS_DSCP_CLASS_MAP_SET, (void *)NULL, flag);
+}
+EXPORT_SYMBOL(ppa_hsel_dscp_class_set);
+uint32_t ppa_hsel_dscp_class_reset(uint32_t flag, uint32_t hal_id)
+{
+	if (hal_id >= MAX_HAL)
+		return PPA_FAILURE;
+
+	if (!ppa_drv_hal_hook[hal_id])
+		return PPA_FAILURE;
+
+	return ppa_drv_hal_hook[hal_id](PPA_GENERIC_HAL_QOS_DSCP_CLASS_MAP_RESET, (void *)NULL, flag);
+}
+EXPORT_SYMBOL(ppa_hsel_dscp_class_reset);
 uint32_t ppa_hsel_add_qos_queue_entry(QOS_Q_ADD_CFG *entry, uint32_t flag, uint32_t hal_id)
 {
 	if (!ppa_drv_hal_hook[hal_id])
