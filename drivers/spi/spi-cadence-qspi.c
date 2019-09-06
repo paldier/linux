@@ -284,14 +284,29 @@ static int cadence_qspi_of_get_pdata(struct platform_device *pdev)
 			 f_pdata->flash_type);
 
 		if (of_property_read_u32(nc, "spi-rx-bus-width", &prop)) {
-			dev_err(&pdev->dev, "couldn't determine quad\n");
+			dev_err(&pdev->dev, "couldn't determine read quad\n");
 			return -ENXIO;
 		}
-		pr_debug("[%s]cs=%d quad=%d\n", __func__, cs, prop);
+		pr_debug("[%s]cs=%d read quad=%d\n", __func__, cs, prop);
 		if (prop == 4)
-			f_pdata->quad = QUAD_QIO;
+			f_pdata->rd_quad = QUAD_QIO;
+		else if (prop == 2)
+			f_pdata->rd_quad = QUAD_DIO;
 		else
-			f_pdata->quad = QUAD_SIO;
+			f_pdata->rd_quad = QUAD_SIO;
+
+		if (of_property_read_u32(nc, "spi-tx-bus-width", &prop)) {
+			dev_err(&pdev->dev, "couldn't determine write quad\n");
+			return -ENXIO;
+		}
+		pr_debug("[%s]cs=%d write quad=%d\n", __func__, cs, prop);
+		if (prop == 4)
+			f_pdata->wr_quad = QUAD_QIO;
+		else if (prop == 2)
+			f_pdata->wr_quad = QUAD_DIO;
+		else
+			f_pdata->wr_quad = QUAD_SIO;
+
 		if (of_property_read_u32(nc, "page-size", &prop)) {
 			dev_err(&pdev->dev, "couldn't determine page-size\n");
 			return -ENXIO;

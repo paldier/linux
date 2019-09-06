@@ -43,13 +43,15 @@ struct cqspi_flash_pdata {
 	unsigned int page_size;
 	unsigned int block_size;
 	unsigned int flash_type;
-	unsigned int quad;
+	unsigned int rd_quad;
+	unsigned int wr_quad;
 	unsigned int read_delay;
 	unsigned int tshsl_ns;
 	unsigned int tsd2d_ns;
 	unsigned int tchsh_ns;
 	unsigned int tslch_ns;
 };
+
 struct cqspi_platform_data {
 	unsigned int bus_num;
 	unsigned int num_chipselect;
@@ -64,8 +66,8 @@ struct cqspi_platform_data {
 	unsigned int rx_dma_peri_id;
 	struct cqspi_flash_pdata f_pdata[CQSPI_MAX_CHIP_SELECT];
 };
-struct struct_cqspi
-{
+
+struct struct_cqspi {
 	struct work_struct work;
 	struct workqueue_struct *workqueue;
 	wait_queue_head_t waitqueue;
@@ -98,6 +100,7 @@ struct struct_cqspi
 	dma_addr_t dma_addr;
 	int dma_done;
 };
+
 /* Kernel function hook */
 #define CQSPI_WRITEL		__raw_writel
 #define CQSPI_READL		__raw_readl

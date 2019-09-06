@@ -904,7 +904,9 @@ int cadence_qspi_apb_process_queue(struct struct_cqspi *cadence_qspi,
 
 	f_pdata = &(pdata->f_pdata[cadence_qspi->current_cs]);
 	debug_print("[%s] flash_type=%d cadence_qspi->current_cs=%d\n", __func__, f_pdata->flash_type, cadence_qspi->current_cs);
-	debug_print("[%s] page_size=%d block_size=%d quad=%d\n", __func__, f_pdata->page_size, f_pdata->block_size, f_pdata->quad);
+	debug_print("[%s] page_size=%d block_size=%d rd quad=%d, wr quad=%d\n",
+		    __func__, f_pdata->page_size, f_pdata->block_size,
+		    f_pdata->rd_quad, f_pdata->wr_quad);
 	debug_print("[%s] n_trans=%d\n", __func__, n_trans);
 	debug_print("[%s] cmd_xfer->len=%d\n", __func__, cmd_xfer->len);
 	debug_print("[%s] cmd_xfer->tx_buf=0x%p\n", __func__, cmd_xfer->tx_buf);
@@ -936,9 +938,8 @@ int cadence_qspi_apb_process_queue(struct struct_cqspi *cadence_qspi,
 	}
 	if (f_pdata->flash_type == QSPI_FLASH_TYPE_NOR) {
 		if (n_trans == 2) {
-			if ((data_xfer->len > 6) && (data_xfer->rx_buf)) {
+			if ((data_xfer->len > 6) && (data_xfer->rx_buf))
 				mode = IDC_READ_MODE;
-			}
 			else if ((data_xfer->len > 6) && (data_xfer->tx_buf))
 				mode = IDC_WRITE_MODE;
 			else if (data_xfer->tx_buf)
@@ -1009,14 +1010,14 @@ int cadence_qspi_apb_process_queue(struct struct_cqspi *cadence_qspi,
 				pdata->qspi_ahb_phy & pdata->qspi_ahb_mask,
 				cmd_xfer->len, cmd_xfer->tx_buf,
 				cmd_xfer->len - 1, cmd_xfer->tx_buf + 1, 3, f_pdata->flash_type,
-				f_pdata->quad);
+				f_pdata->rd_quad);
 		else
 			/* read data from cache len should be 2 */
 			ret = cadence_qspi_apb_indirect_read_setup(iobase,
 				pdata->qspi_ahb_phy & pdata->qspi_ahb_mask,
 				cmd_xfer->len, cmd_xfer->tx_buf,
 				data_xfer->len, data_xfer->tx_buf, 2, f_pdata->flash_type,
-				f_pdata->quad);
+				f_pdata->rd_quad);
 
 		if (n_trans == 3) {
 			ret = cadence_qspi_apb_indirect_read_execute(
@@ -1032,9 +1033,9 @@ int cadence_qspi_apb_process_queue(struct struct_cqspi *cadence_qspi,
 			ret = cadence_qspi_apb_indirect_write_setup(
 				iobase,
 				pdata->qspi_ahb_phy & pdata->qspi_ahb_mask,
-				data_xfer->len, cmd_xfer->tx_buf, 
+				data_xfer->len, cmd_xfer->tx_buf,
 				cmd_xfer->len - 1, cmd_xfer->tx_buf + 1, f_pdata->flash_type,
-				f_pdata->quad);
+				f_pdata->wr_quad);
 
 			ret = cadence_qspi_apb_indirect_write_execute(
 				cadence_qspi, spi_xfer[1]->len,
@@ -1045,7 +1046,7 @@ int cadence_qspi_apb_process_queue(struct struct_cqspi *cadence_qspi,
 				pdata->qspi_ahb_phy & pdata->qspi_ahb_mask,
 				cmd_xfer->len, cmd_xfer->tx_buf,
 				data_xfer->len, data_xfer->tx_buf,
-				f_pdata->flash_type, f_pdata->quad);
+				f_pdata->flash_type, f_pdata->wr_quad);
 			ret = cadence_qspi_apb_indirect_write_execute(
 				cadence_qspi, spi_xfer[2]->len,
 				spi_xfer[2]->tx_buf, f_pdata->flash_type);
