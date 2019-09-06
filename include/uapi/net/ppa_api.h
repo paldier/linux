@@ -410,6 +410,9 @@
   \brief PPA_QOS_Q_F_WFQ_UPDATE */
 #define PPA_QOS_Q_F_WFQ_UPDATE                  0x00008000
 /*!
+  \brief PPA_QOS_CL_CPU */
+#define PPA_QOS_CL_CPU				0x00010000
+/*!
 	\brief PPA_F_PPPOATM */
 #define PPA_F_PPPOATM				0x80000000
 
