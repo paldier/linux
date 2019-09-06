@@ -126,8 +126,8 @@ static int update_ctp(struct core_ops *ops,
 	ctpcfg1.nSubIfIdGroup = subifidg;
 	ctpcfg2.nSubIfIdGroup = subifidg;
 	if (ingress) {
-		if (multicast) {
-			ctpcfg1.eMask =
+		if (~multicast & BIT(2)) {
+			ctpcfg1.eMask |=
 				GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN_IGMP;
 			if (!pextvlan) {
 				ctpcfg2.bIngressExtendedVlanIgmpEnable =
@@ -139,8 +139,9 @@ static int update_ctp(struct core_ops *ops,
 					pextvlan->nExtendedVlanBlockId;
 				ctpcfg2.nIngressExtendedVlanBlockSizeIgmp = 0;
 			}
-		} else {
-			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN;
+		}
+		if (~multicast & BIT(1)) {
+			ctpcfg1.eMask |= GSW_CTP_PORT_CONFIG_MASK_INGRESS_VLAN;
 			if (!pextvlan) {
 				ctpcfg2.bIngressExtendedVlanEnable = LTQ_FALSE;
 			} else {
@@ -151,8 +152,8 @@ static int update_ctp(struct core_ops *ops,
 			}
 		}
 	} else {
-		if (multicast) {
-			ctpcfg1.eMask =
+		if (~multicast & BIT(2)) {
+			ctpcfg1.eMask |=
 				GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN_IGMP;
 			if (!pextvlan) {
 				ctpcfg2.bEgressExtendedVlanIgmpEnable =
@@ -164,8 +165,9 @@ static int update_ctp(struct core_ops *ops,
 					pextvlan->nExtendedVlanBlockId;
 				ctpcfg2.nEgressExtendedVlanBlockSizeIgmp = 0;
 			}
-		} else {
-			ctpcfg1.eMask = GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN;
+		}
+		if (~multicast & BIT(1)) {
+			ctpcfg1.eMask |= GSW_CTP_PORT_CONFIG_MASK_EGRESS_VLAN;
 			if (!pextvlan) {
 				ctpcfg2.bEgressExtendedVlanEnable = LTQ_FALSE;
 			} else {
@@ -187,46 +189,44 @@ static int update_ctp(struct core_ops *ops,
 		return -EIO;
 
 	if (ingress) {
-		if (multicast) {
-			if (ctpcfg1.bIngressExtendedVlanIgmpEnable !=
-								LTQ_FALSE) {
-				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+		u32 block = ~0;
 
-				alloc.nExtendedVlanBlockId =
-					ctpcfg1.nIngressExtendedVlanBlockIdIgmp;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
-									&alloc);
-			}
-		} else {
-			if (ctpcfg1.bIngressExtendedVlanEnable != LTQ_FALSE) {
-				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+		if ((~multicast & BIT(2))
+		    && ctpcfg1.bIngressExtendedVlanIgmpEnable != LTQ_FALSE) {
+			GSW_EXTENDEDVLAN_alloc_t alloc = {0};
 
-				alloc.nExtendedVlanBlockId =
-					ctpcfg1.nIngressExtendedVlanBlockId;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
-									&alloc);
-			}
+			block = ctpcfg1.nIngressExtendedVlanBlockIdIgmp;
+			alloc.nExtendedVlanBlockId = block;
+			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+		}
+		if ((~multicast & BIT(1))
+		    && ctpcfg1.bIngressExtendedVlanEnable != LTQ_FALSE
+		    && block != ctpcfg1.nIngressExtendedVlanBlockId) {
+			GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+
+			alloc.nExtendedVlanBlockId =
+				ctpcfg1.nIngressExtendedVlanBlockId;
+			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 		}
 	} else {
-		if (multicast) {
-			if (ctpcfg1.bEgressExtendedVlanIgmpEnable !=
-								LTQ_FALSE) {
-				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+		u32 block = ~0;
 
-				alloc.nExtendedVlanBlockId =
-					ctpcfg1.nEgressExtendedVlanBlockIdIgmp;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
-									&alloc);
-			}
-		} else {
-			if (ctpcfg1.bEgressExtendedVlanEnable != LTQ_FALSE) {
-				GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+		if ((~multicast & BIT(2))
+		    && ctpcfg1.bEgressExtendedVlanIgmpEnable != LTQ_FALSE) {
+			GSW_EXTENDEDVLAN_alloc_t alloc = {0};
 
-				alloc.nExtendedVlanBlockId =
-					ctpcfg1.nEgressExtendedVlanBlockId;
-				ops->gsw_extvlan_ops.ExtendedVlan_Free(ops,
-									&alloc);
-			}
+			block = ctpcfg1.nEgressExtendedVlanBlockIdIgmp;
+			alloc.nExtendedVlanBlockId = block;
+			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
+		}
+		if ((~multicast & BIT(1))
+		    && ctpcfg1.bEgressExtendedVlanEnable != LTQ_FALSE
+		    && block != ctpcfg1.nEgressExtendedVlanBlockId) {
+			GSW_EXTENDEDVLAN_alloc_t alloc = {0};
+
+			alloc.nExtendedVlanBlockId =
+				ctpcfg1.nEgressExtendedVlanBlockId;
+			ops->gsw_extvlan_ops.ExtendedVlan_Free(ops, &alloc);
 		}
 	}
 
@@ -862,7 +862,7 @@ static int tc_ext_vlan(struct core_ops *ops,
 				 (u32)info->dp_port,
 				 (u32)info->subix,
 				 vlan->dir == DP_DIR_INGRESS,
-				 (info->dev_type & 0x02) != 0,
+				 info->dev_type & GENMASK(2, 1),
 				 total > 0 ? &alloc : NULL);
 	} else {
 		/* Configure bridge port */

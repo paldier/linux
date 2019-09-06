@@ -2212,8 +2212,14 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 	} else {
 		info.dev_type |= subif.flag_bp;
 	}
-	if (vlan->mcast_flag == DP_MULTICAST_SESSION)
-		info.dev_type |= 0x02;
+	switch (vlan->mcast_flag) {
+	case DP_MULTICAST_SESSION:
+		info.dev_type |= BIT(1);
+		break;
+	case DP_NON_MULTICAST_SESSION:
+		info.dev_type |= BIT(2);
+		break;
+	}
 	DP_DEBUG(DP_DBG_FLAG_PAE, "dev_type:0x%x\n", info.dev_type);
 	if (DP_CB(subif.inst, dp_tc_vlan_set))
 		return DP_CB(subif.inst, dp_tc_vlan_set)

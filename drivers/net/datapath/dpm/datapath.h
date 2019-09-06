@@ -707,9 +707,10 @@ struct ext_vlan_info {
 struct dp_tc_vlan_info {
 	int dev_type; /* bit 0 - 1: apply VLAN to bp
 		       *         0: apply VLAN to subix (subif group)
-		       * bit 1 - 1: multicast session
-		       *         0: normal
-		       *
+		       * bit 1 - 0: apply VLAN to non-multicast session on CTP
+		       *         1: don't apply VLAN to non-multicast session
+		       * bit 2 - 0: apply VLAN to multicast session on CTP
+		       *         1: don't apply VLAN to multicast session
 		       */
 	int subix;  /*similar like GSWIP subif group*/
 	int bp;  /*bridge port id */
