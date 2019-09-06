@@ -1969,9 +1969,11 @@ static s32 do_port_setting(u32 *pmac, u32 flags, u32 *cbm_port,
 	struct cqm_pmac_port_map *test_ptr = NULL;
 	struct pib_ctrl ctrl = {0};
 	int populate = 0;
+	void *deq = cqm_ctrl->deq;
+	u32 config;
 
 	temp_flags = (flags & DP_F_FAST_WLAN) ? DP_F_FAST_WLAN : flags;
-	temp_flags = (flags & DP_F_DSL_BONDING) ? DP_F_DSL_BONDING : temp_flags;
+	temp_flags = (flags & DP_F_FAST_DSL) ? DP_F_FAST_DSL : flags;
 	if (cbm_port[i] != CBM_PORT_NOT_APPL) {
 		dev_dbg(cqm_ctrl->dev, "0x%x 0x%x\n", cbm_port[i], flags);
 		populate = 1;
@@ -2018,6 +2020,7 @@ static s32 do_port_setting(u32 *pmac, u32 flags, u32 *cbm_port,
 			set_ifmux(PRX300_WAN_PON_MODE);
 		break;
 	case DP_F_FAST_WLAN:
+	case DP_F_FAST_DSL:
 		populate = 0;
 		if (cbm_port[i] != CBM_PORT_NOT_APPL) {
 			test_ptr = is_cbm_allocated(cbm_port[i], flags);
@@ -2027,6 +2030,10 @@ static s32 do_port_setting(u32 *pmac, u32 flags, u32 *cbm_port,
 				*loop = CBM_FAILURE;
 			}
 		}
+		config = cbm_r32(deq + DQ_CPU_PORT(cbm_port[i], cfg));
+		config |= ((cbm_port[i] << CFG_CPU_EGP_0_EPMAP_POS) &
+			   CFG_CPU_EGP_0_EPMAP_MASK);
+		cbm_w32((deq + DQ_CPU_PORT(cbm_port[i], cfg)), config);
 		break;
 	default:
 		break;
