@@ -176,11 +176,10 @@ static int intel_wan_xpcs_phy_debugfs_init(struct intel_wan_xpcs_phy *priv)
 
 	strlcpy(wan_xpcs_dir, priv->dev->of_node->name, sizeof(wan_xpcs_dir));
 	priv->debugfs = debugfs_create_dir(wan_xpcs_dir, NULL);
-
-	if (!priv->debugfs)
+	if (IS_ERR_OR_NULL(priv->debugfs))
 		return -ENOMEM;
 
-	if (!debugfs_create_file("wan_xpcs_serdes", 0644, priv->debugfs,
+	if (!debugfs_create_file("wan_xpcs_serdes", 0600, priv->debugfs,
 				 priv, &intel_wan_xpcs_fops))
 		goto __debugfs_err;
 
