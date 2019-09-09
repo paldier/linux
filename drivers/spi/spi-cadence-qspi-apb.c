@@ -616,7 +616,7 @@ static int cadence_qspi_apb_indirect_write_execute(
 	struct struct_cqspi *cadence_qspi, unsigned txlen,
 	const unsigned char *txbuf, unsigned int flash_type)
 {
-	int ret;
+	int ret = 0;
 	unsigned int timeout;
 	unsigned int reg = 0;
 	unsigned int *irq_status = &(cadence_qspi->irq_status);
