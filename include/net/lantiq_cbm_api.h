@@ -582,6 +582,7 @@ struct cbm_tx_push {
 	u32 txpush_addr;  /*port ring address. should follow HW defintion*/
 	u32 tx_ring_size; /*ring size */
 	u32 tx_ring_offset;  /*next tx_ring_addr = current tx_ring_addr + tx_ring_offset */
+	u32 type; /* output */
 };
 
 struct cbm_cpu_port_data {

@@ -877,6 +877,8 @@ struct dp_queue_res {
 				   */
 	int cqm_deq_port; /*!< cqm dequeue port: absolute port id */
 	int qos_deq_port; /*!< qos dequeue port: Normally user no need to know*/
+	u32 cqm_deq_port_type; /*!< output: Valid only in case of CPU DQ port
+				* with MPE*/
 };
 
 #define DEQ_PORT_OFFSET_ALL -1 /*!< @brief Port offset all */

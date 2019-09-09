@@ -398,6 +398,7 @@ int dp_set_gsw_parser_31(u8 flag, u8 cpu, u8 mpe1,
 			 u8 mpe2, u8 mpe3)
 {
 	GSW_CPU_PortCfg_t param = {0};
+	GSW_register_t reg;
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[0];/*gswip o */
 
 	if (gsw_handle->gsw_common_ops.CPU_PortCfgGet(gsw_handle, &param)) {
@@ -426,6 +427,12 @@ int dp_set_gsw_parser_31(u8 flag, u8 cpu, u8 mpe1,
 		PR_ERR("Failed GSW_CPU_PORT_CFG_SET\n");
 		return -1;
 	}
+	memset(&reg, 0, sizeof(reg));
+	reg.nRegAddr = 0x001; /**/
+	gsw_handle->gsw_common_ops.RegisterGet(gsw_handle, &reg);
+	reg.nData |= 1 << 0; /**/
+	gsw_handle->gsw_common_ops.RegisterSet(gsw_handle, &reg);
+
 	dp_parser_info_refresh(param.eNoMPEParserCfg,
 			       param.eMPE1ParserCfg,
 			       param.eMPE2ParserCfg,

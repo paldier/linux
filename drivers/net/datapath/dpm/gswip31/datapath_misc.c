@@ -1100,6 +1100,11 @@ int dp_platform_queue_set(int inst, u32 flag)
 		dp_deq_port_tbl[inst][q_port.cqe_deq].tx_ring_size =
 			cpu_data.dq_tx_push_info[i].tx_ring_size;
 		dp_deq_port_tbl[inst][q_port.cqe_deq].dp_port = 0;/* CPU */
+		/* Store CPU type when MPEFW is selected */
+		if (cpu_data.dq_tx_push_info[i].type == DP_F_DEQ_MPE) {
+			dp_deq_port_tbl[inst][q_port.cqe_deq].cpu_type =
+					DP_DATA_PORT_MPE;
+		}
 		DP_DEBUG(DP_DBG_FLAG_QOS, "Store CPU ring info\n");
 		DP_DEBUG(DP_DBG_FLAG_QOS, "  ring_address[%d]=0x%p\n",
 			 q_port.cqe_deq,

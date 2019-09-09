@@ -2728,6 +2728,8 @@ int dp_deq_port_res_get_31(struct dp_dequeue_res *res, int flag)
 				    DP_NODE_PORT) {/* port */
 					res->q_res[idx].qos_deq_port = p_id;
 					res->q_res[idx].cqm_deq_port = k;
+					res->q_res[idx].cqm_deq_port_type =
+					dp_deq_port_tbl[res->inst][k].cpu_type;
 					break;
 				} else if (priv->qos_sch_stat[p_id].type !=
 					   DP_NODE_SCH) {
@@ -2751,7 +2753,6 @@ int dp_deq_port_res_get_31(struct dp_dequeue_res *res, int flag)
 			} while (1);
 			idx++;
 		}
-		return DP_SUCCESS;
 	}
 	return DP_SUCCESS;
 }
@@ -4132,7 +4133,6 @@ int dp_queue_map_set_31(struct dp_queue_map_set *cfg, int flag)
 		       priv->qos_queue_stat[cfg->q_id].flag);
 		return DP_FAILURE;
 	}
-
 	qmap_cfg.mpe1 = cfg->map.mpe1;
 	qmap_cfg.mpe2 = cfg->map.mpe2;
 	qmap_cfg.ep = cfg->map.dp_port;

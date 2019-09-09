@@ -623,6 +623,7 @@ struct cqm_port_info {
 	int dp_port; /* dp_port info */
 	u32 dma_chan;
 	u32 dma_ch_offset; /*! Offset of dp_dma_chan_tbl */
+	u32 cpu_type;
 };
 
 struct parser_info {

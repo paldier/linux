@@ -2686,7 +2686,6 @@ int dp_deq_port_res_get_32(struct dp_dequeue_res *res, int flag)
 			} while (1);
 			idx++;
 		}
-		return DP_SUCCESS;
 	}
 	return DP_SUCCESS;
 }

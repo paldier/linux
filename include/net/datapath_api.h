@@ -1825,6 +1825,12 @@ static inline struct umt_ops *dp_get_umt_ops(int inst)
 	return (struct umt_ops *)dp_get_ops(inst, DP_OPS_UMT);
 }
 
+enum DP_DATA_PORT_TYPE {
+        DP_DATA_PORT_LINUX = 0, /*!< data port owned by Linux */
+        DP_DATA_PORT_DPDK, /*!< data port owned by DKDP */
+        DP_DATA_PORT_MPE, /*!< data port owned by MPE */
+};
+
 /*!
  *@brief parse dma ID
  *@param[in] inst     : DMA ID

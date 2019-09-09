@@ -1866,6 +1866,7 @@ s32 cqm_cpu_port_get(struct cbm_cpu_port_data *data, u32 flags)
 		}
 		ptr = &data->dq_tx_push_info[i];
 		ptr->deq_port = i;
+		ptr->type = type;
 		ptr->tx_ring_size = 1;
 		ptr->tx_b_credit = 0;
 		ptr->txpush_addr_qos = (u32)(cqm_ctrl->txpush +
