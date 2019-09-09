@@ -26,8 +26,6 @@
 #include <linux/spi/spi_bitbang.h>
 #include <linux/of_irq.h>
 
-#define NO_TIMEOUT
-
 #define LTQ_SPI_CLC		0x00	/* Clock control */
 #define LTQ_SPI_PISEL		0x04	/* Port input select */
 #define LTQ_SPI_ID		0x08	/* Identification */
@@ -274,9 +272,7 @@ static void ltq_spi_reset_fifos(struct ltq_spi *hw)
 static inline int ltq_spi_wait_ready(struct ltq_spi *hw)
 {
 	u32 stat;
-	#ifndef NO_TIMEOUT
-	unsigned long timeout = jiffies + msecs_to_jiffies(200);
-	#endif /* NO_TIMEOUT */
+	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
 
 	do {
 		stat = ltq_spi_reg_read(hw, LTQ_SPI_STAT);
@@ -284,11 +280,7 @@ static inline int ltq_spi_wait_ready(struct ltq_spi *hw)
 			return 0;
 
 		cond_resched();
-	#ifdef NO_TIMEOUT
-	} while (1);
-	#else /* NO_TIMEOUT */
 	} while (!time_after_eq(jiffies, timeout));
-	#endif /* NO_TIMEOUT */
 
 	dev_err(hw->dev, "SPI wait ready timed out stat: %x\n", stat);
 
