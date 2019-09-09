@@ -306,7 +306,7 @@ error:
 	return err;
 }
 #if IS_ENABLED(CONFIG_PPA_MPE_IP97)
-int (*ltq_ipsec_enc_hook)(u32 spi, u16 ip_prot, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_complete *done),
+int (*ltq_ipsec_enc_hook)(u32 spi, u16 ip_prot, u8 *in, u8 *out, uint16_t outBufLen, void (*callback)(struct ltq_ipsec_complete *done),
 			unsigned int buflen, void *ip_data) = NULL;
 EXPORT_SYMBOL(ltq_ipsec_enc_hook);
 
@@ -331,6 +331,7 @@ static int esp_output_eip97(struct xfrm_state *x, struct sk_buff *skb)
 	uint32_t iv_len = 0, icv_len = 0, blk_size = 0;
 	struct sk_buff *trailer;
 	uint16_t nexthdr = 0;
+	uint16_t outBufLen = 0;
 
 	/* If ltq_crypto kmod is absent packet will go via complete CPU Path */
 	if (!ltq_get_len_param_hook || !ltq_ipsec_enc_hook)
@@ -342,16 +343,19 @@ static int esp_output_eip97(struct xfrm_state *x, struct sk_buff *skb)
 	if (err < 0)
 		return esp_output(x, skb);
 
+	if (skb_linearize(skb) < 0) {
+		err = -ENOMEM;
+		goto error;
+	}
 	trailer_len = icv_len + blk_size ;
 	err = skb_cow_data(skb, trailer_len, &trailer);
 	if (err < 0)
 		goto error;
 
-	skb_linearize(skb);
 	nexthdr = ip_hdr(skb)->protocol;
 	ip_hdr(skb)->protocol = IPPROTO_ESP;
-
-	err = ltq_ipsec_enc_hook(x->id.spi, nexthdr, skb->data, skb_transport_header(skb), esp_output_done_fastpath, skb->len, skb);
+	outBufLen = skb_tail_pointer(skb) - skb_transport_header(skb) + skb_tailroom(skb);
+	err = ltq_ipsec_enc_hook(x->id.spi, nexthdr, skb->data, skb_transport_header(skb), outBufLen, esp_output_done_fastpath, skb->len, skb);
 	if (err == -EINPROGRESS)
 		goto error;
 

@@ -167,7 +167,7 @@ struct ltq_ipsec_complete {
 int ltq_ipsec_setkey(struct ltq_crypto_ipsec_params *ipsec_params); 
 int ltq_get_ipsec_token(struct ltq_crypto_ipsec_params *ipsec_params); 
 void ltq_destroy_ipsec_sa(struct ltq_crypto_ipsec_params *ipsec_params);
-int ltq_ipsec_enc(u32 spi, u16 ip_prot, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_complete *done),
+int ltq_ipsec_enc(u32 spi, u16 ip_prot, u8 *in, u8 *out, uint16_t outBufLen, void (*callback)(struct ltq_ipsec_complete *done),
 			unsigned int buflen, void *ip_data);
 int ltq_ipsec_dec(u32 spi, u8 *in, u8 *out, void (*callback)(struct ltq_ipsec_complete *done),
             unsigned int buflen, void *ip_data);
