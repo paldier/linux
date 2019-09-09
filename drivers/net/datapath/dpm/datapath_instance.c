@@ -356,7 +356,10 @@ int dp_inst_del_dev(struct net_device *dev, char *subif_name, int inst, int ep,
 		return -1;
 	}
 	list_for_each_entry(tmp, &dp_dev->ctp_list, list) {
-		if (tmp->subif == ctp) {
+		/* Check added to remove pmapper device from dp_dev list
+		 * if pmapper device is unregistered with last gem
+		 */
+		if (dp_dev->dev == dev) {
 			list_del(&tmp->list);
 			dp_dev->count--;
 
