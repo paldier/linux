@@ -34,11 +34,6 @@
  ******************************************************************************/
 #define NONANDSUBPAGEREAD
 
-/*******************************************************************************
- * No timeout while waiting for SPI NAND chip status to be ready
- ******************************************************************************/
-#define NOTIMEOUT
-
 /*============================================================================*/
 /* Global Vars */
 /*============================================================================*/
@@ -518,23 +513,7 @@ static int wait_till_ready(struct spi_device *spi)
 {
 	int retval;
 	u8 stat = 0;
-#ifndef NOTIMEOUT
 	unsigned long deadline;
-#endif
-
-#ifdef NOTIMEOUT
-
-	do {
-		retval = spinand_read_status(spi, &stat);
-		if (retval < 0)
-			return -1;
-		else if (!(stat & 0x1))
-			break;
-
-		cond_resched();
-	} while (1);
-
-#else /* NOTIMEOUT */
 
 	deadline = jiffies + msecs_to_jiffies(MAX_WAIT_MS);
 	do {
@@ -546,8 +525,6 @@ static int wait_till_ready(struct spi_device *spi)
 
 		cond_resched();
 	} while (!time_after_eq(jiffies, deadline));
-
-#endif /* NOTIMEOUT */
 
 	if ((stat & 0x1) == 0)
 		return 0;
@@ -1153,6 +1130,9 @@ static int spinand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
 
 	while (1) {
 		retval = spinand_read_status(info->spi, &status);
+		if (retval < 0)
+			return retval;
+
 		if ((status & STATUS_OIP_MASK) == STATUS_READY) {
 			spinand_ecc_status(info->spi, status, &ecc_error);
 			break;
@@ -1220,12 +1200,14 @@ static int spinand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 
 	while (time_before(jiffies, timeo)) {
 		retval = spinand_read_status(info->spi, &status);
+		if (retval < 0)
+			break;
 		if ((status & STATUS_OIP_MASK) == STATUS_READY)
 			return 0;
 
 		cond_resched();
 	}
-	return 0;
+	return NAND_STATUS_FAIL;
 }
 
 /**
