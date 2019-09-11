@@ -647,6 +647,7 @@ static void cmd_init(
 	cmd->len = len;
 	cmd->id = qdev->drvcmds.cmd_id;
 	cmd->fw_id = qdev->drvcmds.cmd_fw_id;
+	cmd->pos = NULL;
 }
 
 /* TODO - make less hard code */
@@ -3191,7 +3192,9 @@ signal_uc:
 
 		/* Read start & end of command buffer to avoid race with FW */
 		qos_u32_from_uc(*(volatile uint32_t *)start);
-		qos_u32_from_uc(*(volatile uint32_t *)cur);
+
+		if (cur)
+			qos_u32_from_uc(*(volatile uint32_t *)cur);
 
 		signal_uc(qdev);
 	}

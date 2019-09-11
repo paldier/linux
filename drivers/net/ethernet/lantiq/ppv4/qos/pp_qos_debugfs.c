@@ -399,7 +399,6 @@ static ssize_t qos_dbg_props(struct file *fp,
 			     u16 num_props,
 			     void *user_data)
 {
-	int rc = 0;
 	unsigned int first_prop = 1;
 	uint8_t *cmd;
 	uint8_t *field;
@@ -418,7 +417,7 @@ static ssize_t qos_dbg_props(struct file *fp,
 	pdata = platform_get_drvdata(pdev);
 	qdev = pdata->qdev;
 
-	if (cnt > PP_QOS_DBG_MAX_INPUT) {
+	if (cnt >= PP_QOS_DBG_MAX_INPUT) {
 		dev_err(&pdev->dev, "Illegal length %zu\n", cnt);
 		return -EINVAL;
 	}
@@ -436,14 +435,11 @@ static ssize_t qos_dbg_props(struct file *fp,
 		return -ENOMEM;
 	}
 
-	rc =  simple_write_to_buffer(cmd, PP_QOS_DBG_MAX_INPUT, pos,
-				     user_buffer, cnt);
-	if (rc < 0) {
-		dev_err(&pdev->dev, "Write failed with %d\n", rc);
+	if (copy_from_user(cmd, user_buffer, cnt))
 		goto out;
-	}
 
-	cmd[rc] = '\0';
+	cmd[cnt] = '\0';
+
 	dev_info(&pdev->dev, "cmd->%s\n", cmd);
 	ptr = (char *)cmd;
 
@@ -522,7 +518,7 @@ out:
 	kfree(cmd);
 	kfree(field);
 
-	return rc;
+	return cnt;
 }
 
 static ssize_t qos_dbg_props_help(struct file *file,
@@ -570,8 +566,8 @@ static void dbg_add_prop(struct dbg_prop *props, u16 *pos, u16 size,
 		return;
 	}
 
-	strncpy(props[*pos].field, name, sizeof(props[*pos].field));
-	strncpy(props[*pos].desc, desc, sizeof(props[*pos].desc));
+	strncpy(props[*pos].field, name, sizeof(props[*pos].field) - 1);
+	strncpy(props[*pos].desc, desc, sizeof(props[*pos].desc) - 1);
 	props[*pos].data_type = 0;
 	props[*pos].dest = dest;
 
@@ -587,8 +583,8 @@ static void dbg_add_prop_ptr(struct dbg_prop *props, u16 *pos, u16 size,
 		return;
 	}
 
-	strncpy(props[*pos].field, name, sizeof(props[*pos].field));
-	strncpy(props[*pos].desc, desc, sizeof(props[*pos].desc));
+	strncpy(props[*pos].field, name, sizeof(props[*pos].field) - 1);
+	strncpy(props[*pos].desc, desc, sizeof(props[*pos].desc) - 1);
 	props[*pos].data_type = 1;
 	props[*pos].pdest = dest;
 
@@ -1578,7 +1574,6 @@ static int dbg_cmd_open(struct inode *inode, struct file *filep)
 static ssize_t dbg_cmd_write(struct file *fp, const char __user *user_buffer,
 			     size_t cnt, loff_t *pos)
 {
-	int rc;
 	int i;
 	int j;
 	uint8_t cmd[MAX_CMD_LEN];
@@ -1593,22 +1588,21 @@ static ssize_t dbg_cmd_write(struct file *fp, const char __user *user_buffer,
 	pdata = platform_get_drvdata(pdev);
 	qdev = pdata->qdev;
 
-	if (cnt > MAX_CMD_LEN) {
+	if (cnt >= MAX_CMD_LEN) {
 		dev_err(&pdev->dev, "Illegal length %zu\n", cnt);
 		return -EINVAL;
 	}
 
-	rc =  simple_write_to_buffer(cmd, MAX_CMD_LEN, pos, user_buffer, cnt);
-	if (rc < 0) {
-		dev_err(&pdev->dev, "Write failed with %d\n", rc);
-		return rc;
-	}
+	if (copy_from_user(cmd, user_buffer, cnt))
+		return -EINVAL;
+
+	cmd[cnt] = '\0';
 
 	dst = (uint32_t *)(qdev->fwcom.cmdbuf);
 	src = (uint32_t *)cmd;
-	dev_info(&pdev->dev, "Writing %d bytes into\n", rc);
+	dev_info(&pdev->dev, "Writing %d bytes into\n", cnt);
 	j = 0;
-	for (i = 0; i < rc; ++i) {
+	for (i = 0; i < cnt; ++i) {
 		if (cmd[i] == '\n') {
 			cmd[i] = 0;
 			kstrtoul(cmd + j, 0, &res);
@@ -1619,7 +1613,7 @@ static ssize_t dbg_cmd_write(struct file *fp, const char __user *user_buffer,
 	}
 	signal_uc(qdev);
 
-	return rc;
+	return cnt;
 }
 
 static const struct file_operations debug_cmd_fops = {
