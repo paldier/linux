@@ -633,7 +633,10 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 			subif_name, sizeof(sif->device_name) - 1);
 		sif->subif_flag = flags;
 		sif->data_flag_ops = data->flag_ops;
-		STATS_SET(sif->rx_flag, 1);
+		if (data->flag_ops & DP_SUBIF_RX_FLAG)
+			STATS_SET(sif->rx_flag, !!data->rx_en_flag);
+		else
+			STATS_SET(sif->rx_flag, 1);
 		port_info->status = PORT_SUBIF_REGISTERED;
 		subif_id->port_id = port_id;
 		subif_id->subif = sif->subif;

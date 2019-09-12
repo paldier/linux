@@ -236,13 +236,15 @@ int32_t dp_rx_31(struct sk_buff *skb, u32 flags)
 		//desc_1->all &= dma_rx_desc_mask1.all;
 		desc_3->all &= dma_rx_desc_mask3.all;
 		skb->priority = desc_1->field.classid;
-		skb->dev = sif->netif; /* note: for DSL ATM case, its driver
-					* will correct it in later stage
+		skb->dev = sif->netif; /* note: for DSL ATM case, skb->dev can
+					* be NULL since DSL subif is not real
+					* subif as defined by GSWIP
+					* and we cannot get the proper vap.
+					* At the same time, for pppoa case,
+					* DSL DP driver register with NULL dev
+					* So its driver must correct it
 					*/
-		if (((dp_port->alloc_flags & DP_F_FAST_DSL) == 0) && /*non-dsl*/
-			sif->flags) { /*not de-registered */
-			dev = sif->netif;
-		}
+		dev = sif->netif;
 		if (decryp) { /*workaround mark for bypass xfrm policy*/
 			desc_1->field.dec = 1;
 			desc_1->field.enc = 1;

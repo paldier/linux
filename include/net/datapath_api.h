@@ -768,6 +768,10 @@ enum DP_SUBIF_DATA_FLAG {
 	DP_SUBIF_LCT = BIT(2), /*!< Register as LCT port */
 	DP_SUBIF_VANI = BIT(3), /*!< Register as vANI Subif */
 	DP_SUBIF_DEQPORT_NUM = BIT(4), /*!< Specify num of deq port per subif */
+	DP_SUBIF_RX_FLAG = BIT(5), /*!< To Specify if Rx enable/disable during
+				    * DP register subif using rx_en_flag
+				    * specified under struct dp_subif_data
+				    */
 };
 
 /*! @brief dp_subif_id struct for get_netif_subif */
@@ -874,6 +878,9 @@ struct dp_subif_data {
 				* mac learning for subif
 				*/
 	u16 num_deq_port; /*!< [in] To specify number of DEQ_PORT one subif */
+	u32 rx_en_flag; /*!< [in] rx_en_flag = 1 - To enable dp_rx
+			 * rx_en_flag = 0 - disable dp_rx
+			 */
 };
 
 /*! @brief enum DP_F_DATA_RESV_CQM_PORT */
@@ -1660,11 +1667,11 @@ int dp_set_min_frame_len(s32 dp_port,
 /*!
  *@brief  Enable/Disable forwarding RX packet to specified netif or ifname
  *@param[in] netif netowrk device pointer. if NULL, then check ifname
- *@param[in] ifname if netif == NULL, then check ifname
- *@param[in] rx_enable: 1 enable rx for this device, otherwise
+ *@param[in] ifname if netif == NULL
+ *@param[in] rx_enable: 1 enable rx for this device
  *@param[in] flag:
  *            DP_RX_ENABLE: enable rx, ie, allow forwarding rx pkt to this dev
- *            DP_RX_ENABLE: stop rx, ie, DP should drop rx pkt for this dev
+ *            DP_RX_DISABLE: stop rx, ie, DP should drop rx pkt for this dev
  *@return return 0 if OK / -1 if error
  */
 #define DP_RX_ENABLE  1
