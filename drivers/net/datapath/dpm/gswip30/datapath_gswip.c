@@ -27,7 +27,7 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 	GSW_PMAC_Glbl_Cfg_t pmac_glb;
 
 	if (!pmac_cfg || !port) {
-		PR_ERR("dp_pmac_set:wrong parameter(pmac_cfg/port NULL)\n");
+		pr_err("dp_pmac_set:wrong parameter(pmac_cfg/port NULL)\n");
 		return -1;
 	}
 
@@ -42,7 +42,7 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 	else
 		gswr_r = dp_port_prop[inst].ops[1];
 	if (!gswr_r) {
-		PR_ERR("why gswr_r NULL\n");
+		pr_err("why gswr_r NULL\n");
 		return -1;
 	}
 
@@ -52,7 +52,7 @@ int dp_pmac_set_30(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 		ret = cbm_dequeue_port_resources_get(port, &dqport, flag);
 
 		if (ret == -1) {
-			PR_ERR("cbm_dequeue_port_resources_get failed\n");
+			pr_err("cbm_dequeue_port_resources_get failed\n");
 			return -1;
 		}
 
@@ -304,7 +304,7 @@ int dp_set_gsw_parser_30(u8 flag, u8 cpu, u8 mpe1,
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[1]; /*pae*/
 
 	if (gsw_handle->gsw_common_ops.CPU_PortCfgGet(gsw_handle, &param)) {
-		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
+		pr_err("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_DBG, "old flag=0x%x cpu=%d mpe1/2/3=%d/%d/%d\n",
@@ -326,7 +326,7 @@ int dp_set_gsw_parser_30(u8 flag, u8 cpu, u8 mpe1,
 		param.eMPE1MPE2ParserCfg = mpe3;
 
 	if (gsw_handle->gsw_common_ops.CPU_PortCfgSet(gsw_handle, &param)) {
-		PR_ERR("Failed GSW_CPU_PORT_CFG_SET\n");
+		pr_err("Failed GSW_CPU_PORT_CFG_SET\n");
 		return -1;
 	}
 	dp_parser_info_refresh(param.eNoMPEParserCfg,
@@ -343,7 +343,7 @@ int dp_get_gsw_parser_30(u8 *cpu, u8 *mpe1, u8 *mpe2,
 	struct core_ops *gsw_handle = dp_port_prop[0].ops[1]; /*pae*/
 
 	if (gsw_handle->gsw_common_ops.CPU_PortCfgGet(gsw_handle, &param)) {
-		PR_ERR("Failed GSW_CPU_PORT_CFG_GET\n");
+		pr_err("Failed GSW_CPU_PORT_CFG_GET\n");
 		return -1;
 	}
 	dp_parser_info_refresh(param.eNoMPEParserCfg,
@@ -388,7 +388,7 @@ int gsw_mib_reset_30(int dev, u32 flag)
 	ret = gsw_handle->gsw_rmon_ops.RMON_Clear(gsw_handle, &rmon_clear);
 
 	if (ret != GSW_statusOk) {
-		PR_ERR("R:GSW_RMON_CLEAR failed for GSW_RMON_ALL_TYPE\n");
+		pr_err("R:GSW_RMON_CLEAR failed for GSW_RMON_ALL_TYPE\n");
 		return -1;
 	}
 	return ret;

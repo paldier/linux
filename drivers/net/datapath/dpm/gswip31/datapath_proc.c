@@ -161,9 +161,9 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 				"refresh",
 				strlen("refresh")) == 0) {
 		dp_get_gsw_parser_31(NULL, NULL, NULL, NULL);
-		PR_INFO("value:cpu=%d mpe1=%d mpe2=%d mpe3=%d\n", pinfo[0].v,
+		pr_info("value:cpu=%d mpe1=%d mpe2=%d mpe3=%d\n", pinfo[0].v,
 			pinfo[1].v, pinfo[2].v, pinfo[3].v);
-		PR_INFO("size :cpu=%d mpe1=%d mpe2=%d mpe3=%d\n",
+		pr_info("size :cpu=%d mpe1=%d mpe2=%d mpe3=%d\n",
 			pinfo[0].size, pinfo[1].size, pinfo[2].size,
 			pinfo[3].size);
 		return count;
@@ -176,7 +176,7 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 			flag = 0;
 		else if (flag > 3)
 			flag = 3;
-		PR_INFO("eProcessPath_Action set to %d\n", flag);
+		pr_info("eProcessPath_Action set to %d\n", flag);
 		/*: All packets set to same mpe flag as specified */
 		memset(&pce, 0, sizeof(pce));
 		pce.pattern.nIndex = pce_rule_id;
@@ -207,7 +207,7 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce.action.nRMON_Id = 0;	/*RMON_UDP_CNTR; */
 
 		if (gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, &pce)) {
-			PR_ERR("PCE rule add fail: GSW_PCE_RULE_WRITE\n");
+			pr_err("PCE rule add fail: GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
 
@@ -218,17 +218,17 @@ ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce.pattern.nIndex = pce_rule_id;
 		pce.pattern.bEnable = 0;
 		if (gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, &pce)) {
-			PR_ERR("PCE rule add fail:GSW_PCE_RULE_WRITE\n");
+			pr_err("PCE rule add fail:GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
 	} else {
-		PR_INFO("Usage: echo %s [cpu] [mpe1] [mpe2] [mpe3] > parser\n",
+		pr_info("Usage: echo %s [cpu] [mpe1] [mpe2] [mpe3] > parser\n",
 			"<enable/disable>");
-		PR_INFO("Usage: echo <refresh> parser\n");
+		pr_info("Usage: echo <refresh> parser\n");
 
-		PR_INFO("Usage: echo %s > parser\n",
+		pr_info("Usage: echo %s > parser\n",
 			"mark eProcessPath_Action_value(0~3) pce_rule_id");
-		PR_INFO("Usage: echo unmark pce_rule_id > parser\n");
+		pr_info("Usage: echo unmark pce_rule_id > parser\n");
 		return count;
 	}
 
@@ -252,7 +252,7 @@ char *get_bp_member_string(int inst, u16 bp, char *buf)
 		GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
 	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &bp_cfg);
 	if (ret != GSW_statusOk) {
-		PR_ERR("Failed to get bridge port's member for bridgeport=%d\n",
+		pr_err("Failed to get bridge port's member for bridgeport=%d\n",
 		       bp_cfg.nBridgePortId);
 		return buf;
 	}
@@ -303,7 +303,7 @@ int dp_sub_proc_install_31(void)
 	int i;
 
 	if (!dp_proc_node) {
-		PR_ERR("dp_sub_proc_install failed\n");
+		pr_err("dp_sub_proc_install failed\n");
 		return 0;
 	}
 

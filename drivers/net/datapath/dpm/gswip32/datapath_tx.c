@@ -30,7 +30,7 @@ static int cqm_preprocess(struct sk_buff *skb, struct dp_tx_common *cmn,
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 	if (unlikely(!cmn->gpid)) {
-		PR_INFO("Why after get_dma_pmac_templ ep is zero\n");
+		pr_info("Why after get_dma_pmac_templ ep is zero\n");
 		return DP_XMIT_ERR_EP_ZERO;
 	}
 #endif

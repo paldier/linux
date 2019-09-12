@@ -25,7 +25,7 @@ int dp_swdev_alloc_bridge_id_32(int inst)
 	ret = gsw_handle->gsw_brdg_ops.Bridge_Alloc(gsw_handle, &br);
 	if ((ret != GSW_statusOk) ||
 	    (br.nBridgeId < 0)) {
-		PR_ERR("Failed to get a FID\n");
+		pr_err("Failed to get a FID\n");
 		return -1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "FID=%d\n", br.nBridgeId);
@@ -51,7 +51,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 	brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
-		PR_ERR("fail in getting bridge port config\r\n");
+		pr_err("fail in getting bridge port config\r\n");
 		return -1;
 	}
 	list_for_each_entry(bport_list, &br_item->bp_list, list) {
@@ -82,7 +82,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 			  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
-		PR_ERR("Fail in allocating/configuring bridge port\n");
+		pr_err("Fail in allocating/configuring bridge port\n");
 		return -1;
 	}
 	/* To set other member portmap with current bridge port map */
@@ -105,7 +105,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 		brportcfg.eMask = GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 		ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &brportcfg);
 		if (ret != GSW_statusOk) {
-			PR_ERR("fail in getting br port config\r\n");
+			pr_err("fail in getting br port config\r\n");
 			return -1;
 		}
 		SET_BP_MAP(brportcfg.nBridgePortMap, bport);
@@ -115,7 +115,7 @@ int dp_swdev_bridge_port_cfg_set_32(struct br_info *br_item,
 				  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 		ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
 		if (ret != GSW_statusOk) {
-			PR_ERR("Fail alloc/cfg bridge port\n");
+			pr_err("Fail alloc/cfg bridge port\n");
 			return -1;
 		}
 	}
@@ -178,7 +178,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 			  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 	ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
 	if (ret != GSW_statusOk) {
-		PR_ERR("Fail in configuring GSW_BRIDGE_portConfig_t in %s\r\n",
+		pr_err("Fail in configuring GSW_BRIDGE_portConfig_t in %s\r\n",
 		       __func__);
 		return -1;
 	}
@@ -195,7 +195,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 				  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_ID;
 		ret = gsw_bp->BridgePort_ConfigGet(gsw_handle, &brportcfg);
 		if (ret != GSW_statusOk) {
-			PR_ERR("failed getting br port cfg\r\n");
+			pr_err("failed getting br port cfg\r\n");
 			return -1;
 		}
 		UNSET_BP_MAP(brportcfg.nBridgePortMap, bport);
@@ -204,7 +204,7 @@ int dp_swdev_bridge_port_cfg_reset_32(struct br_info *br_item,
 				  GSW_BRIDGE_PORT_CONFIG_MASK_BRIDGE_PORT_MAP;
 		ret = gsw_bp->BridgePort_ConfigSet(gsw_handle, &brportcfg);
 		if (ret != GSW_statusOk) {
-			PR_ERR("Fail alloc/cfg br port\n");
+			pr_err("Fail alloc/cfg br port\n");
 			return -1;
 		}
 	}
@@ -235,7 +235,7 @@ int dp_swdev_bridge_cfg_set_32(int inst, u16 fid)
 	brcfg.eForwardUnknownUnicast = GSW_BRIDGE_FORWARD_FLOOD;
 	ret = gsw_handle->gsw_brdg_ops.Bridge_ConfigSet(gsw_handle, &brcfg);
 	if (ret != GSW_statusOk) {
-		PR_ERR("Failed to set bridge id(%d)\n", brcfg.nBridgeId);
+		pr_err("Failed to set bridge id(%d)\n", brcfg.nBridgeId);
 		br.nBridgeId = fid;
 		gsw_handle->gsw_brdg_ops.Bridge_Free(gsw_handle, &br);
 		return -1;
@@ -256,7 +256,7 @@ int dp_swdev_free_brcfg_32(int inst, u16 fid)
 	br.nBridgeId = fid;
 	ret = gsw_handle->gsw_brdg_ops.Bridge_Free(gsw_handle, &br);
 	if (ret != GSW_statusOk) {
-		PR_ERR("Failed to free bridge id(%d)\n", br.nBridgeId);
+		pr_err("Failed to free bridge id(%d)\n", br.nBridgeId);
 		return -1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_SWDEV, "FID(%d) freed for inst:%d\n", fid, inst);
@@ -278,19 +278,19 @@ int dp_gswip_ext_vlan_32(int inst, int vap, int ep)
 	port = get_dp_port_info(inst, ep);
 	vlan = kzalloc(sizeof(*vlan), GFP_KERNEL);
 	if (!vlan) {
-		PR_ERR("failed to alloc ext_vlan of %zd bytes\n",
+		pr_err("failed to alloc ext_vlan of %zd bytes\n",
 		       sizeof(*vlan));
 		return 0;
 	}
 	vlan->vlan2_list = kzalloc(sizeof(*vlan->vlan2_list), GFP_KERNEL);
 	if (!vlan->vlan2_list) {
-		PR_ERR("failed to alloc ext_vlan of %zd bytes\n",
+		pr_err("failed to alloc ext_vlan of %zd bytes\n",
 		       sizeof(*vlan->vlan2_list));
 		goto EXIT;
 	}
 	vlan->vlan1_list = kzalloc(sizeof(*vlan->vlan1_list), GFP_KERNEL);
 	if (!vlan->vlan1_list) {
-		PR_ERR("failed to alloc ext_vlan of %zd bytes\n",
+		pr_err("failed to alloc ext_vlan of %zd bytes\n",
 		       sizeof(*vlan->vlan1_list));
 		goto EXIT;
 	}
@@ -299,7 +299,7 @@ int dp_gswip_ext_vlan_32(int inst, int vap, int ep)
 		DP_DEBUG(DP_DBG_FLAG_SWDEV, "tmp dev name:%s\n",
 			 tmp->dev ? tmp->dev->name : "NULL");
 		if (!tmp->dev) {
-			PR_ERR("tmp->dev is NULL\n");
+			pr_err("tmp->dev is NULL\n");
 			goto EXIT;
 		}
 		ret = dp_swdev_chk_bport_in_br(tmp->dev, tmp->bp, inst);
@@ -355,7 +355,7 @@ int dp_gswip_ext_vlan_32(int inst, int vap, int ep)
 	if (ret == 0)
 		sif->swdev_priv = vlan->priv;
 	else
-		PR_ERR("set gswip ext vlan return error\n");
+		pr_err("set gswip ext vlan return error\n");
 
 EXIT:
 	kfree(vlan->vlan2_list);

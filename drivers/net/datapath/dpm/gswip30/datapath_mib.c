@@ -219,9 +219,9 @@ static u64 wraparound(u64 curr, u64 last, u32 size)
 	if ((size > 4) || /*for 8 bytes(64bit mib),no need to do wraparound*/
 	    (curr >= last))
 		return curr - last;
-	PR_INFO("Wraparound happen:\n");
-	PR_INFO("  current mib: 0x%x\n", curr);
-	PR_INFO("  last    mib: 0x%x\n", last);
+	pr_info("Wraparound happen:\n");
+	pr_info("  current mib: 0x%x\n", curr);
+	pr_info("  last    mib: 0x%x\n", last);
 	return ((u64)WRAPAROUND_MAX_32) + (u64)curr - last;
 }
 
@@ -444,7 +444,7 @@ static int get_gsw_port_rmon(u32 ep, char *gsw_drv_name,
 	GSW_return_t ret;
 
 	if (!mib) {
-		PR_ERR("why mib pointer is %p\n", mib);
+		pr_err("why mib pointer is %p\n", mib);
 		return -1;
 	}
 	if (ep >= PMAC_MAX_NUM)
@@ -453,7 +453,7 @@ static int get_gsw_port_rmon(u32 ep, char *gsw_drv_name,
 	mib->nPortId = ep;
 	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Port_Get(dp_port_prop[0].ops[index], mib);
 	if (ret) {
-		PR_ERR("GSW_RMON_PORT_GET failed(%d) from %s for port %d\n",
+		pr_err("GSW_RMON_PORT_GET failed(%d) from %s for port %d\n",
 		       ret, gsw_drv_name, ep);
 		return -1;
 	}
@@ -467,14 +467,14 @@ static int get_gsw_redirect_rmon(u32 ep, int index,
 	GSW_return_t ret;
 
 	if (!mib) {
-		PR_ERR("why mib pointer is %p\n", mib);
+		pr_err("why mib pointer is %p\n", mib);
 		return -1;
 	}
 
 	memset(mib, 0, sizeof(*mib));
 	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Redirect_Get(dp_port_prop[0].ops[index], mib);
 	if (ret) {
-		PR_ERR("GSW_RMON_REDIRECT_GET failed from %s\n",
+		pr_err("GSW_RMON_REDIRECT_GET failed from %s\n",
 		       gsw_drv_name);
 		return -1;
 	}
@@ -488,16 +488,15 @@ static int get_gsw_itf_rmon(u32 index, int index,
 	GSW_return_t ret;
 
 	if (!mib) {
-		PR_ERR("why mib pointer is %p\n", mib);
+		pr_err("why mib pointer is %p\n", mib);
 		return -1;
 	}
 	memset(mib, 0, sizeof(*mib));
 	mib->nIfId = index;
 	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_If_Get(dp_port_prop[0].ops[index], mib);
 	if (ret) {
-		PR_ERR
-		    ("GSW_RMON_PORT_GET GSW_RMON_IF_GET from %s: index %d\n",
-		     gsw_drv_name, index);
+		pr_err("GSW_RMON_PORT_GET GSW_RMON_IF_GET from %s: index %d\n",
+		       gsw_drv_name, index);
 		return -1;
 	}
 	return 0;
@@ -508,7 +507,7 @@ int get_gsw_interface_base(int port_id)
 	struct pmac_port_info *port_info;
 
 	if ((port_id <= 0) || (port_id >= PMAC_MAX_NUM)) {
-		PR_ERR("Wrong subif\n");
+		pr_err("Wrong subif\n");
 		return -1;
 	}
 
@@ -540,7 +539,7 @@ int gsw_eth_wan_redirect_status(void)
 		q_cfg.nTrafficClassId = i;
 		ret = gsw_qos->QoS_QueuePortGet(gsw_handle, &q_cfg);
 		if (ret) {
-			PR_ERR("%s failed(%d) from %s for port %d\n",
+			pr_err("%s failed(%d) from %s for port %d\n",
 			       "GSW_QOS_QUEUE_PORT_GET",
 			       ret, GSWIP_R, WAN_EP);
 			return -1;
@@ -748,14 +747,14 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 	itf_index = itf_base + vap;
 	if (itf_index >= MAX_RMON_ITF) {
 		ret = -1;
-		PR_ERR("wrong itf_index(%d) for port %d\n", itf_index,
+		pr_err("wrong itf_index(%d) for port %d\n", itf_index,
 		       port_id);
 		goto EXIT;
 	}
 	ret = get_gsw_itf_rmon(itf_index, GSWIP_R, &curr->gsw_if);
 	if (ret) {
 		curr->gsw_if = last_vap[port_id][vap].gsw_if;
-		PR_ERR("get_gsw_itf_rmon failed for port/vap(%d/%d)", port_id,
+		pr_err("get_gsw_itf_rmon failed for port/vap(%d/%d)", port_id,
 		       vap);
 	}
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB)
@@ -768,7 +767,7 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 					      &curr->tmu_qos, 0);
 		if (ret) {
 			curr->tmu_qos = last_vap[port_id][vap].tmu_qos;
-			PR_ERR("%s failed for port.vap(%d.%d):%d\n",
+			pr_err("%s failed for port.vap(%d.%d):%d\n",
 			       "tmu_hal_get_qos_mib_hook_fn",
 			       port_id, vap, ret);
 		}
@@ -784,7 +783,7 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 						0);
 		if (ret) {
 			curr->mpe = last_vap[port_id][vap].mpe;
-			PR_ERR("%s failed for port.vap(%d.%d):%d\n",
+			pr_err("%s failed for port.vap(%d.%d):%d\n",
 			       "mpe_hal_get_netif_mib_hook_fn",
 			       port_id, vap, ret);
 		}
@@ -834,7 +833,7 @@ ssize_t proc_mib_timer_write(struct file *file, const char *buf, size_t count,
 #ifndef THREAD_MODE
 	mod_timer(&exp_timer, jiffies + poll_interval);
 #endif
-	PR_INFO("new poll_interval=%u sec\n",
+	pr_info("new poll_interval=%u sec\n",
 		(unsigned int)poll_interval / HZ);
 	return count;
 }
@@ -1020,13 +1019,13 @@ ssize_t proc_mib_inside_write(struct file *file, const char *buf,
 	set_start_end_id(num[0], num[1], PMAC_MAX_NUM - 1, PMAC_MAX_NUM - 1,
 			 0, PMAC_MAX_NUM - 1, &proc_mib_port_start_id,
 			 &proc_mib_port_end_id);
-	PR_INFO("proc_mib_port_start_id=%u, proc_mib_port_end_id=%u\n",
+	pr_info("proc_mib_port_start_id=%u, proc_mib_port_end_id=%u\n",
 		proc_mib_port_start_id, proc_mib_port_end_id);
 	return count;
 
  help:
-	PR_INFO("ussage echo start_id end_id > /proc/dp/mib_inside\n");
-	PR_INFO("       then display the selected port info via cat %s\n",
+	pr_info("ussage echo start_id end_id > /proc/dp/mib_inside\n");
+	pr_info("       then display the selected port info via cat %s\n",
 		"/proc/dp/mib_inside");
 	return count;
 }
@@ -1060,7 +1059,7 @@ int dp_get_port_vap_mib_30(dp_subif_t *subif, void *priv,
 			 "dp_get_port_vap_mib_30",
 			 subif->port_id, vap, flag);
 		if (update_vap_mib_lower_lvl(subif, flag))
-			PR_ERR("%s failed for port %d VAP=%d\n",
+			pr_err("%s failed for port %d VAP=%d\n",
 			       "update_vap_mib_lower_lvl",
 			       port_id, subif->subif);
 		net_mib->rx_dropped =
@@ -1088,9 +1087,8 @@ int dp_get_port_vap_mib_30(dp_subif_t *subif, void *priv,
 	tmp_subif.subif = 0;/*for dp_get_drv_mib to get all mib of all VAPs */
 
 	if (update_port_mib_lower_lvl(&tmp_subif, 0))
-		PR_ERR
-		    ("update_port_mib_lower_lvl failed for port %d VAP=%d\n",
-		     tmp_subif.port_id, tmp_subif.subif);
+		pr_err("update_port_mib_lower_lvl failed for port %d VAP=%d\n",
+		       tmp_subif.port_id, tmp_subif.subif);
 	if (port_id == 0) { /*not required by concept, for debugging only */
 		struct mibs_port *aggregate_cpu;
 
@@ -1581,7 +1579,7 @@ int clear_gsw_itf_mib(dp_subif_t *subif, u32 flag)
 	for (i = start; i < end; i++) {
 		rmon.nRmonId = i;
 		if (rmon.nRmonId >= MAX_RMON_ITF) {
-			PR_ERR("Why Port[%d]'s interface ID %d so big\n",
+			pr_err("Why Port[%d]'s interface ID %d so big\n",
 			       subif ? subif->port_id : -1,
 			       rmon.nRmonId);
 			return -1;
@@ -1838,7 +1836,7 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 		tmu_hal_get_qos_m_local =
 			tmu_hal_get_qos_mib_hook_fn;
 		if (!tmu_hal_get_qos_m_local) {
-			PR_INFO("tmu_hal_get_qos_mib_hook_fn NULL\n");
+			pr_info("tmu_hal_get_qos_mib_hook_fn NULL\n");
 			return count;
 		}
 		for (k = 0; k < ARRAY_SIZE(port_list); k++) {
@@ -1857,31 +1855,31 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 							      &qos_stats,
 							      0);
 				if (res) {
-					PR_INFO("%s failed for p[%d]\n",
+					pr_info("%s failed for p[%d]\n",
 						"tmu_hal_get_qos_mib_hook_fn",
 						tmp.port_id);
 					continue;
 				}
-				PR_INFO("%s[%d/%d]:drop_pkts=%llu bytes=%llu\n",
+				pr_info("%s[%d/%d]:drop_pkts=%llu bytes=%llu\n",
 					"qos_mib", tmp.port_id,
 					GET_VAP(tmp.subif, port->vap_offset,
 						port->vap_mask),
 					qos_stats.dropPkts,
 					qos_stats.dropBytes);
-				PR_INFO("%s[%d/%d]:enqPkts=%llu Bytes=%llu\n",
+				pr_info("%s[%d/%d]:enqPkts=%llu Bytes=%llu\n",
 					"qos_mib", tmp.port_id,
 					GET_VAP(tmp.subif, port->vap_offset,
 						port->vap_mask),
 				       qos_stats.enqPkts,
 				       qos_stats.enqBytes);
-				PR_INFO("%s[%d/%d]:deqPkts=%llu Bytes=%llu\n",
+				pr_info("%s[%d/%d]:deqPkts=%llu Bytes=%llu\n",
 					"qos_mib", tmp.port_id,
 					GET_VAP(tmp.subif, port->vap_offset,
 						port->vap_mask),
 					qos_stats.deqPkts,
 					qos_stats.deqBytes);
 			}
-			PR_INFO("\n");
+			pr_info("\n");
 		}
 	} else if (dp_strncmpi(param_list[0],
 			"csum_mib",
@@ -1889,14 +1887,14 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 		tmu_hal_get_csum_ol_m_local =
 			tmu_hal_get_csum_ol_mib_hook_fn;
 		if (!tmu_hal_get_csum_ol_m_local) {
-			PR_INFO("tmu_hal_get_csum_ol_mib_hook_fn NULL\n");
+			pr_info("tmu_hal_get_csum_ol_mib_hook_fn NULL\n");
 			return count;
 		}
 		res = tmu_hal_get_csum_ol_m_local(&qos_stats, 0);
 		if (res)
-			PR_INFO("tmu_hal_get_csum_ol_mib_hook_fn failed\n");
+			pr_info("tmu_hal_get_csum_ol_mib_hook_fn failed\n");
 		else
-			PR_INFO("csum_mib: deqPkts=%llu  deqBytes=%llu\n",
+			pr_info("csum_mib: deqPkts=%llu  deqBytes=%llu\n",
 				qos_stats.deqPkts,
 				qos_stats.deqBytes);
 
@@ -1906,14 +1904,14 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 		tmu_hal_clear_qos_m_local =
 			tmu_hal_clear_qos_mib_hook_fn;
 		if (!tmu_hal_clear_qos_m_local) {
-			PR_INFO("tmu_hal_clear_qos_m_local NULL ?\n");
+			pr_info("tmu_hal_clear_qos_m_local NULL ?\n");
 			return count;
 		}
 		res = tmu_hal_clear_qos_m_local(NULL, NULL, -1, 0);
 		if (res)
-			PR_INFO("tmu_hal_clear_qos_m_local failed\n");
+			pr_info("tmu_hal_clear_qos_m_local failed\n");
 		else
-			PR_INFO("%s done\n",
+			pr_info("%s done\n",
 				"tmu_hal_clear_qos_m_local(NULL, NULL, -1, 0)");
 
 	} else if (dp_strncmpi(param_list[0],
@@ -1922,14 +1920,14 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 		tmu_hal_clear_csum_ol_m_local =
 			tmu_hal_clear_csum_ol_mib_hook_fn;
 		if (!tmu_hal_clear_csum_ol_m_local) {
-			PR_INFO("tmu_hal_clear_csum_ol_mib_hook_fn NULL\n");
+			pr_info("tmu_hal_clear_csum_ol_mib_hook_fn NULL\n");
 			return count;
 		}
 		res = tmu_hal_clear_csum_ol_m_local(0);
 		if (res)
-			PR_INFO("tmu_hal_clear_csum_ol_mib_hook_fn failed\n");
+			pr_info("tmu_hal_clear_csum_ol_mib_hook_fn failed\n");
 		else
-			PR_INFO("tmu_hal_clear_csum_ol_mib_hook_fn(0) done\n");
+			pr_info("tmu_hal_clear_csum_ol_mib_hook_fn(0) done\n");
 
 	} else {
 		goto help;
@@ -1940,14 +1938,14 @@ ssize_t proc_mib_port_write(struct file *file, const char *buf, size_t count,
 	return count;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB)
 help:
-	PR_INFO("usage:\n");
-	PR_INFO("  test qos_mib  api:      echo qos_mib        > %s\n",
+	pr_info("usage:\n");
+	pr_info("  test qos_mib  api:      echo qos_mib        > %s\n",
 		"/proc/dp/mib_port");
-	PR_INFO("  test csum_mib api       echo csum_mib       > %s\n",
+	pr_info("  test csum_mib api       echo csum_mib       > %s\n",
 		"/proc/dp/mib_port\n");
-	PR_INFO("  test cear_qos_mib  api  echo qos_mib_clear  > %s\n",
+	pr_info("  test cear_qos_mib  api  echo qos_mib_clear  > %s\n",
 		"/proc/dp/mib_port");
-	PR_INFO("  test csum_mib_clear api echo csum_mib_clear > %s\n",
+	pr_info("  test csum_mib_clear api echo csum_mib_clear > %s\n",
 		"/proc/dp/mib_port");
 
 	return count;
@@ -2044,12 +2042,12 @@ ssize_t proc_mib_vap_write(struct file *file, const char *buf, size_t count,
 	set_start_end_id(num[0], num[1], MAX_SUBIF_PER_PORT - 1,
 			 MAX_SUBIF_PER_PORT - 1, 0, -1,
 			 &proc_mib_vap_start_id, &proc_mib_vap_end_id);
-	PR_INFO("proc_mib_vap_start_id=%d, proc_mib_vap_end_id=%d\n",
+	pr_info("proc_mib_vap_start_id=%d, proc_mib_vap_end_id=%d\n",
 		proc_mib_vap_start_id, proc_mib_vap_end_id);
 	return count;
 
  help:
-	PR_INFO("usage: echo start_id end_id > /proc/dp/mib_vap\n");
+	pr_info("usage: echo start_id end_id > /proc/dp/mib_vap\n");
 	return count;
 }
 
@@ -2165,7 +2163,7 @@ int dp_mib_init(u32 flag)
 	exp_timer.data = 0;
 	exp_timer.function = mib_wraparound_timer_poll;
 	add_timer(&exp_timer);
-	PR_INFO("dp_mib_init done\n");
+	pr_info("dp_mib_init done\n");
 #endif
 	return 0;
 }

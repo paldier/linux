@@ -85,7 +85,7 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 	dp_port = get_dp_port_info(inst, 0);
 
 	if (!skb || !skb->data) {
-		PR_ERR("skb NULL or skb->data is NULL\n");
+		pr_err("skb NULL or skb->data is NULL\n");
 		return DP_FAILURE;
 	}
 
@@ -107,7 +107,7 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 	pp_rx_pkt_hook(skb);
 	pp_desc = pp_pkt_desc_get(skb);
 	if (!pp_desc) {
-		DP_ERR("pp_pkt_desc_get fail\n");
+		pr_err("pp_pkt_desc_get fail\n");
 		goto RX_DROP2;
 	}
 
@@ -123,11 +123,11 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 			  gpid, dpid);
 
 	if (unlikely(!dpid)) { /*Normally shouldnot go to here */
-		DP_ERR("%s %s D0: %08x D1: %08x D2: %08x D3: %08x\n",
+		pr_err("%s %s D0: %08x D1: %08x D2: %08x D3: %08x\n",
 		       "Impossible: DPID Invalid (0),", "Desc rx'd:",
 		       *(u32 *)desc_0, *(u32 *)desc_1,
 		       *(u32 *)desc_2, *(u32 *)desc_3);
-		DP_ERR("%s %px %s D0: %08x D1: %08x D2: %08x D3: %08x\n",
+		pr_err("%s %px %s D0: %08x D1: %08x D2: %08x D3: %08x\n",
 		       "QoS Descriptor at buf_base", skb->buf_base,
 		       "Desc rx'd:", *skb->buf_base,
 		       *(skb->buf_base + sizeof(u32)),
@@ -169,7 +169,7 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 			sess.sig = pp_desc->ud.hash_sig;
 			if (dp_add_default_egress_sess(&sess, 0)) {
 				atomic_dec(&p_subif->f_dfl_sess[classid]);
-				PR_ERR("Fail to create default egress\n");
+				pr_err("Fail to create default egress\n");
 				goto RX_DROP;
 			}
 		} else {
@@ -273,7 +273,7 @@ int32_t dp_rx_32(struct sk_buff *skb, u32 flags)
 
 	if (unlikely(dpid >=
 		     dp_port_prop[inst].info.cap.max_num_dp_ports - 1)) {
-		PR_ERR("Drop for wrong ep or src port id=%u ??\n",
+		pr_err("Drop for wrong ep or src port id=%u ??\n",
 		       dpid);
 		goto RX_DROP;
 	} else if (unlikely(dp_port->status == PORT_FREE)) {

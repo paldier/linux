@@ -138,48 +138,48 @@ int dp_tx_err(struct sk_buff *skb, struct dp_tx_common *cmn, int ret)
 {
 	switch (ret) {
 	case DP_XMIT_ERR_NOT_INIT:
-		PR_RATELIMITED("dp_xmit failed for dp no init yet\n");
+		printk_ratelimited("dp_xmit failed for dp no init yet\n");
 		break;
 
 	case DP_XMIT_ERR_IN_IRQ:
-		PR_RATELIMITED("dp_xmit not allowed in interrupt context\n");
+		printk_ratelimited("dp_xmit not allowed in interrupt context\n");
 		break;
 
 	case DP_XMIT_ERR_NULL_SUBIF:
-		PR_RATELIMITED("dp_xmit failed for rx_subif null\n");
+		printk_ratelimited("dp_xmit failed for rx_subif null\n");
 		UP_STATS(get_dp_port_info(0, 0)->tx_err_drop);
 		break;
 
 	case DP_XMIT_ERR_PORT_TOO_BIG:
 		UP_STATS(get_dp_port_info(0, 0)->tx_err_drop);
-		PR_RATELIMITED("rx_subif->port_id >= max_ports");
+		printk_ratelimited("rx_subif->port_id >= max_ports");
 		break;
 
 	case DP_XMIT_ERR_NULL_SKB:
-		PR_RATELIMITED("skb NULL");
+		printk_ratelimited("skb NULL");
 		UP_STATS(get_dp_port_info(0, cmn->dpid)->tx_err_drop);
 		break;
 
 	case DP_XMIT_ERR_NULL_IF:
 		UP_STATS(cmn->mib->tx_pkt_dropped);
-		PR_RATELIMITED("rx_if NULL");
+		printk_ratelimited("rx_if NULL");
 		break;
 
 	case DP_XMIT_ERR_REALLOC_SKB:
-		PR_INFO_ONCE("dp_create_new_skb failed\n");
+		pr_info_once("dp_create_new_skb failed\n");
 		break;
 
 	case DP_XMIT_ERR_EP_ZERO:
-		PR_ERR("Why ep zero in dp_xmit for %s\n",
+		pr_err("Why ep zero in dp_xmit for %s\n",
 		       skb->dev ? skb->dev->name : "NULL");
 		break;
 
 	case DP_XMIT_ERR_GSO_NOHEADROOM:
-		PR_ERR("No enough skb headerroom(GSO). Need tune SKB buffer\n");
+		pr_err("No enough skb headerroom(GSO). Need tune SKB buffer\n");
 		break;
 
 	case DP_XMIT_ERR_CSM_NO_SUPPORT:
-		PR_RATELIMITED("dp_xmit not support checksum\n");
+		printk_ratelimited("dp_xmit not support checksum\n");
 		break;
 
 	case DP_XMIT_PTP_ERR:
@@ -187,7 +187,7 @@ int dp_tx_err(struct sk_buff *skb, struct dp_tx_common *cmn, int ret)
 
 	default:
 		UP_STATS(cmn->mib->tx_pkt_dropped);
-		PR_INFO_ONCE("Why come to here:%x\n",
+		pr_info_once("Why come to here:%x\n",
 			     get_dp_port_info(0, cmn->dpid)->status);
 	}
 

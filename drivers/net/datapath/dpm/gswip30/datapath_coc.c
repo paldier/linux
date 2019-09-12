@@ -86,7 +86,7 @@ EXPORT_SYMBOL(dp_set_rmon_threshold);
 static inline void coc_lock(void)
 {
 	if (unlikely(in_irq())) {
-		PR_ERR("Not allowed to call COC API in_irq mode\n");
+		pr_err("Not allowed to call COC API in_irq mode\n");
 		return;
 	}
 	spin_lock_bh(&dp_coc_lock);
@@ -243,7 +243,7 @@ ssize_t proc_coc_write_30(struct file *file, const char *buf, size_t count,
 		u32 rate = dp_atoi(param_list[1]);
 
 		if (!rate) {
-			PR_INFO("rate should not be zero\n");
+			pr_info("rate should not be zero\n");
 			return count;
 		}
 		if (dp_strncmpi(param_list[0], "rate1",
@@ -257,28 +257,23 @@ ssize_t proc_coc_write_30(struct file *file, const char *buf, size_t count,
 				strlen("rate3") + 1) == 0) {
 			dp_set_meter_rate(LTQ_CPUFREQ_PS_D3, rate);
 		} else {
-			PR_INFO
-			    ("Wrong COC state, it should be D1/D2/D3 only\n");
+			pr_info("Wrong COC state, it should be D1/D2/D3 only\n");
 		}
 	} else {
 		goto help;
 	}
 	return count;
  help:
-	PR_INFO("Datapath COC Proc Usage:\n");
-	PR_INFO
-	("echo timer polling_interval_in_seconds > /sys/kernel/debug/dp/coc\n");
-	PR_INFO
-	("echo <thresholdx> its_threshold_value > /sys/kernel/debug/dp/coc\n");
-	PR_INFO("       Note:Valid x of ranage: 1 2 3\n");
-	PR_INFO
-	    ("            For downscale to D<x> if rmon<threshold<x>'s cfg\n");
-	PR_INFO("            threshold1's >= threshold'2 > threshold'3\n");
-	PR_INFO("echo <ratex> <meter_rate_in_knps> /sys/kernel/debug/dp/coc\n");
-	PR_INFO("       Note:Valid x of range: 1 2 3\n");
-	PR_INFO
-	  ("            For upscale to D0 from D<x> if rmon>=rate<x>'s cfg\n");
-	PR_INFO("            Rate1's >= Rate2's > D3's threshold\n");
+	pr_info("Datapath COC Proc Usage:\n");
+	pr_info("echo timer polling_interval_in_seconds > /sys/kernel/debug/dp/coc\n");
+	pr_info("echo <thresholdx> its_threshold_value > /sys/kernel/debug/dp/coc\n");
+	pr_info("       Note:Valid x of ranage: 1 2 3\n");
+	pr_info("            For downscale to D<x> if rmon<threshold<x>'s cfg\n");
+	pr_info("            threshold1's >= threshold'2 > threshold'3\n");
+	pr_info("echo <ratex> <meter_rate_in_knps> /sys/kernel/debug/dp/coc\n");
+	pr_info("       Note:Valid x of range: 1 2 3\n");
+	pr_info("            For upscale to D0 from D<x> if rmon>=rate<x>'s cfg\n");
+	pr_info("            Rate1's >= Rate2's > D3's threshold\n");
 	return count;
 }
 
@@ -717,7 +712,7 @@ int dp_handle_cpufreq_event_30(int event_id, void *cfg)
 		res = dp_coc_policy_notify((struct cpufreq_policy *)cfg);
 		break;
 	default:
-		PR_ERR("no support for %d\n", event_id);
+		pr_err("no support for %d\n", event_id);
 		break;
 	}
 	return res;
@@ -752,7 +747,7 @@ int dp_coc_cpufreq_init(void)
 	dp_coc_init_stat = 0;
 	dp_coc_ena = 0;
 
-	PR_INFO("enter dp_coc_cpufreq_init\n");
+	pr_info("enter dp_coc_cpufreq_init\n");
 	spin_lock_init(&dp_coc_lock);
 	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
 
@@ -774,7 +769,7 @@ int dp_coc_cpufreq_init(void)
 	dp_coc_init_stat = 1;
 	dp_coc_ena = 1;
 	schedule_work(&coc_work_q);
-	PR_INFO("Register DP to CPUFREQ successfully.\n");
+	pr_info("Register DP to CPUFREQ successfully.\n");
 	return 0;
 }
 
@@ -786,7 +781,7 @@ int dp_coc_cpufreq_exit(void)
 		coc_lock();
 		ret = del_timer(&dp_coc_timer);
 		if (ret)
-			PR_ERR("The timer is still in use...\n");
+			pr_err("The timer is still in use...\n");
 		dp_coc_init_stat = 0;
 		dp_coc_ena = 0;
 		dp_coc_ps_curr = -1; /* reset current state*/

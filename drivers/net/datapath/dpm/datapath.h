@@ -61,38 +61,6 @@
 #define DP_MAX_SCHED_NUM 2048  /*In fact it should use max number of node*/
 #define DP_MAX_CQM_DEQ 128 /*CQM dequeue port*/
 
-#ifdef LOGF_KLOG_ERROR
-#define PR_ERR  LOGF_KLOG_ERROR
-#define DP_ERR  LOGF_KLOG_ERROR
-
-#else
-#define PR_ERR printk
-#define DP_ERR printk
-#endif
-
-#ifdef LOGF_KLOG_INFO
-#undef PR_INFO
-#define PR_INFO LOGF_KLOG_ERROR
-#define DP_INFO LOGF_KLOG_ERROR
-
-#else
-#undef PR_INFO
-#define DP_INFO printk
-#define PR_INFO printk
-#endif
-
-#ifdef LOGF_KLOG_INFO_ONCE
-#define PR_INFO_ONCE    LOGF_KLOG_INFO_ONCE
-#else
-#define PR_INFO_ONCE printk_once
-#endif
-
-#ifdef LOGF_KLOG_RATELIMITED
-#define PR_RATELIMITED LOGF_KLOG_RATELIMITED
-#else
-#define PR_RATELIMITED printk_ratelimited
-#endif
-
 #define DP_PLATFORM_INIT    1
 #define DP_PLATFORM_DE_INIT 2
 
@@ -110,7 +78,7 @@
 #define dp_get_val(val, mask, offset) (((val) & (mask)) >> (offset))
 
 #define DP_DEBUG_ASSERT(expr, fmt, arg...)  do { if (expr) \
-	PR_ERR(fmt, ##arg); \
+	pr_err(fmt, ##arg); \
 } while (0)
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_DBG)
@@ -118,7 +86,7 @@
 	if (unlikely((dp_dbg_flag & (flags)) && \
 		     (((dp_print_num_en) && \
 		      (dp_max_print_num)) || (!dp_print_num_en)))) {\
-	PR_INFO(fmt, ##arg); \
+	pr_info(fmt, ##arg); \
 	if ((dp_print_num_en) && \
 	    (dp_max_print_num)) \
 		dp_max_print_num--; \

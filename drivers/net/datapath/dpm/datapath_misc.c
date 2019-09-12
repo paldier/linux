@@ -137,12 +137,12 @@ void dump_parser_flag(char *buf)
 	int len;
 
 	if (!buf) {
-		PR_ERR("dump_parser_flag buf NULL\n");
+		pr_err("dump_parser_flag buf NULL\n");
 		return;
 	}
 	p = kmalloc(2000, GFP_KERNEL);
 	if (!p) {
-		PR_ERR("kmalloc NULL\n");
+		pr_err("kmalloc NULL\n");
 		return;
 	}
 
@@ -154,17 +154,17 @@ void dump_parser_flag(char *buf)
 	 * flags: FLAG_L2TPFLAG_NO
 	 * 00 00 00 00 80 18 80 00
 	 */
-	PR_INFO("paser flag at 0x%px: ", buf);
+	pr_info("paser flag at 0x%px: ", buf);
 	len = 0;
 	for (i = 0; i < 8; i++)
 		len += sprintf(p + len, "%02x ", *(pflags - 7 + i));
-	PR_INFO("%s\n", p);
+	pr_info("%s\n", p);
 #if 1
-	PR_INFO("paser flag: ");
+	pr_info("paser flag: ");
 	len = 0;
 	for (i = 0; i < 8; i++)
 		len += sprintf(p + len, "%02x ", *(pflags - i));
-	PR_INFO("%s(reverse)\n", p);
+	pr_info("%s(reverse)\n", p);
 #endif
 
 	for (i = 0; i < PASAR_FLAGS_NUM; i++) {	/*8 flags per byte */
@@ -174,12 +174,12 @@ void dump_parser_flag(char *buf)
 
 			if ((*(pflags - i)) & (1 << j)) {	/*flag is set */
 				if ((i * 8 + j) < PASAR_OFFSETS_NUM)
-					PR_INFO("  Flag %02d offset=%02d: %s\n",
+					pr_info("  Flag %02d offset=%02d: %s\n",
 						i * 8 + j,
 						*(poffset + i * 8 + j),
 						parser_flags_str[i * 8 + j]);
 				else
-					PR_INFO("  Flag %02d %s (No offset)\n",
+					pr_info("  Flag %02d %s (No offset)\n",
 						i * 8 + j,
 						parser_flags_str[i * 8 + j]);
 			}
@@ -198,24 +198,24 @@ void dp_dump_raw_data(char *buf, int len, char *prefix_str)
 	char *s;
 
 	if (!p) {
-		PR_ERR("dp_dump_raw_data: p NULL ?\n");
+		pr_err("dp_dump_raw_data: p NULL ?\n");
 		return;
 	}
 	s = kmalloc(bytes, GFP_KERNEL);
 	if (!s) {
-		PR_ERR("kmalloc failed: %d\n", bytes);
+		pr_err("kmalloc failed: %d\n", bytes);
 		return;
 	}
 	sprintf(s, "%s in hex at 0x%px\n",
 		prefix_str ? (char *)prefix_str : "Data", p);
-	PR_INFO("%s", s);
+	pr_info("%s", s);
 
 	for (i = 0; i < len; i += line_num) {
 		l = sprintf(s, " %06d: ", i);
 		for (j = 0; (j < line_num) && (i + j < len); j++)
 			l += sprintf(s + l, "%02x ", p[i + j]);
 		sprintf(s + l, "\n");
-		PR_INFO("%s", s);
+		pr_info("%s", s);
 	}
 	kfree(s);
 }
@@ -325,21 +325,21 @@ int get_ip_hdr_info(u8 *pdata, int len, struct ip_hdr_info *info)
 		if (dp_dbg_flag & DP_DBG_FLAG_DUMP_TX) {
 			int i;
 
-			PR_INFO("IPV6 packet with next hdr:0x%x\n", next_hdr);
-			PR_INFO(" src IP: ");
+			pr_info("IPV6 packet with next hdr:0x%x\n", next_hdr);
+			pr_info(" src IP: ");
 			for (i = 0; i < 16; i++)
-				PR_INFO("%02x%s", pdata[8 + i],
+				pr_info("%02x%s", pdata[8 + i],
 					(i != 15) ? ":" : " ");
 
-			PR_INFO("\n");
+			pr_info("\n");
 
-			PR_INFO(" Dst IP: ");
+			pr_info(" Dst IP: ");
 
 			for (i = 0; i < 16; i++)
-				PR_INFO("%02x%s", pdata[24 + i],
+				pr_info("%02x%s", pdata[24 + i],
 					(i != 15) ? ":" : " ");
 
-			PR_INFO("\n");
+			pr_info("\n");
 		}
 #endif
 		while (1) {
@@ -737,14 +737,14 @@ struct sk_buff *dp_create_new_skb(struct sk_buff *skb)
 	int i;
 
 	if (unlikely(skb->data_len >= skb->len)) {
-		PR_ERR("why skb->data_len(%d) >= skb->len(%d)\n",
+		pr_err("why skb->data_len(%d) >= skb->len(%d)\n",
 		       skb->data_len, skb->len);
 		dev_kfree_skb_any(skb);
 		return NULL;
 	}
 
 	if (skb_shinfo(skb)->frag_list) {
-		PR_ERR("DP Not support skb_shinfo(skb)->frag_list yet !!\n");
+		pr_err("DP Not support skb_shinfo(skb)->frag_list yet !!\n");
 		dev_kfree_skb_any(skb);
 		return NULL;
 	}
@@ -1088,7 +1088,7 @@ int get_vlan_info(struct net_device *dev, struct vlan_info *vinfo)
 		vinfo->out_proto = vlan->vlan_proto;
 		vinfo->out_vid = vlan->vlan_id;
 	} else {
-		PR_ERR("Not a VLAN device\n");
+		pr_err("Not a VLAN device\n");
 		return -1;
 	}
 #endif
@@ -1142,11 +1142,11 @@ int dp_meter_add(struct net_device *dev, struct dp_meter_cfg *meter,
 	} else if (flag & DP_METER_ATTACH_BRIDGE) {
 		mtr_subif.fid = dp_get_fid_by_brname(dev, &mtr_subif.inst);
 		if (mtr_subif.fid < 0) {
-			PR_ERR("fid less then 0\n");
+			pr_err("fid less then 0\n");
 			return DP_FAILURE;
 		}
 	} else {
-		PR_ERR("Meter Flag not set\n");
+		pr_err("Meter Flag not set\n");
 		return DP_FAILURE;
 	}
 
@@ -1176,11 +1176,11 @@ int dp_meter_del(struct net_device *dev, struct dp_meter_cfg *meter,
 	} else if (flag & DP_METER_ATTACH_BRIDGE) {
 		mtr_subif.fid = dp_get_fid_by_brname(dev, &mtr_subif.inst);
 		if (mtr_subif.fid < 0) {
-			PR_ERR("fid less then 0\n");
+			pr_err("fid less then 0\n");
 			return DP_FAILURE;
 		}
 	} else {
-		PR_ERR("Meter Flag not set\n");
+		pr_err("Meter Flag not set\n");
 		return DP_FAILURE;
 	}
 
@@ -1194,7 +1194,7 @@ EXPORT_SYMBOL(dp_meter_del);
 #if (!IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV))
 int dp_get_fid_by_brname(struct net_device *dev, int *inst)
 {
-	PR_ERR("API not support when SWDEV disabled\n");
+	pr_err("API not support when SWDEV disabled\n");
 	return -1;
 }
 #endif
@@ -1253,7 +1253,7 @@ int32_t dp_del_subif(struct net_device *netif, void *data, dp_subif_t *subif,
 	idx = dp_subif_hash(netif);
 	dp_subif = dp_subif_lookup_safe(&dp_subif_list[idx], netif, data);
 	if (!dp_subif) {
-		PR_ERR("Failed dp_subif_lookup: %s\n",
+		pr_err("Failed dp_subif_lookup: %s\n",
 		       netif ? netif->name : "NULL");
 		return -1;
 	}
@@ -1330,7 +1330,7 @@ int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 	} else {
 		if (dp_get_netif_subifid_priv(dev, NULL, subif_data,
 					      NULL, &subif_id[0], 0)) {
-			PR_ERR("DP subif synchronization fail\n");
+			pr_err("DP subif synchronization fail\n");
 			return DP_FAILURE;
 		}
 		if (data->ctp_dev) {
@@ -1436,13 +1436,13 @@ int dp_cpufreq_notify_init(int inst)
 	if (cpufreq_register_notifier
 	    (&dp_coc_cpufreq_transition_notifier_block,
 	    CPUFREQ_TRANSITION_NOTIFIER)) {
-		PR_ERR("cpufreq transiiton register_notifier failed?\n");
+		pr_err("cpufreq transiiton register_notifier failed?\n");
 		return -1;
 	}
 	if (cpufreq_register_notifier
 	    (&dp_coc_cpufreq_policy_notifier_block,
 	    CPUFREQ_POLICY_NOTIFIER)) {
-		PR_ERR("cpufreq policy register_notifier failed?\n");
+		pr_err("cpufreq policy register_notifier failed?\n");
 		return -1;
 	}
 	return 0;
@@ -1453,13 +1453,13 @@ int dp_cpufreq_notify_exit(void)
 	if (cpufreq_unregister_notifier
 	    (&dp_coc_cpufreq_transition_notifier_block,
 	    CPUFREQ_TRANSITION_NOTIFIER)) {
-		PR_ERR("cpufreq transition unregister_notifier failed?\n");
+		pr_err("cpufreq transition unregister_notifier failed?\n");
 		return -1;
 	}
 	if (cpufreq_unregister_notifier
 	    (&dp_coc_cpufreq_policy_notifier_block,
 	    CPUFREQ_POLICY_NOTIFIER)) {
-		PR_ERR("cpufreq policy unregister_notifier failed?\n");
+		pr_err("cpufreq policy unregister_notifier failed?\n");
 		return -1;
 	}
 	return 0;
@@ -1479,7 +1479,7 @@ u32 get_dma_chan_idx(int inst, int num_dma_chan)
 	if (!num_dma_chan)
 		return DP_FAILURE;
 	if (!dp_dma_chan_tbl[inst]) {
-		PR_ERR("dp_dma_chan_tbl[%d] NULL !!\n", inst);
+		pr_err("dp_dma_chan_tbl[%d] NULL !!\n", inst);
 		return DP_FAILURE;
 	}
 
@@ -1493,7 +1493,7 @@ u32 get_dma_chan_idx(int inst, int num_dma_chan)
 		if (match == num_dma_chan)
 			return base;
 	}
-	DP_ERR("No free chan available from chan table!!\n");
+	pr_err("No free chan available from chan table!!\n");
 	return DP_FAILURE;
 }
 
@@ -1508,7 +1508,7 @@ u32 alloc_dma_chan_tbl(int inst)
 					DP_MAX_DMA_CHAN), GFP_ATOMIC);
 
 	if (!dp_dma_chan_tbl[inst]) {
-		PR_ERR("Failed for kmalloc: %zu bytes\n",
+		pr_err("Failed for kmalloc: %zu bytes\n",
 		       (sizeof(struct dma_chan_info) * DP_MAX_DMA_CHAN));
 		return DP_FAILURE;
 	}
@@ -1538,7 +1538,7 @@ u32 alloc_dp_port_subif_info(int inst)
 	dp_port_info[inst] = kzalloc((sizeof(struct pmac_port_info) *
 				     max_dp_ports), GFP_KERNEL);
 	if (!dp_port_info[inst]) {
-		PR_ERR("Failed for kmalloc: %zu bytes\n",
+		pr_err("Failed for kmalloc: %zu bytes\n",
 		       (sizeof(struct pmac_port_info) * max_dp_ports));
 		return DP_FAILURE;
 	}
@@ -1547,7 +1547,7 @@ u32 alloc_dp_port_subif_info(int inst)
 			kzalloc(sizeof(struct dp_subif_info) * max_subif,
 				GFP_KERNEL);
 		if (!get_dp_port_info(inst, port_id)->subif_info) {
-			PR_ERR("Failed for kmalloc: %zu bytes\n",
+			pr_err("Failed for kmalloc: %zu bytes\n",
 			       max_subif * sizeof(struct dp_subif_info));
 			while (--port_id >= 0)
 				kfree(get_dp_port_info(inst,

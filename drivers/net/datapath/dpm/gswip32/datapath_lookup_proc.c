@@ -41,7 +41,7 @@
 #define proc_printf(s, fmt, arg...) \
 	do { \
 		if (!s) \
-			PR_INFO(fmt, ##arg); \
+			pr_info(fmt, ##arg); \
 		else \
 			seq_printf(s, fmt, ##arg); \
 	} while (0)
@@ -263,7 +263,7 @@ END:
 			for (i = 0; i < LOOKUP_FIELD_BITS; i++)
 				index |= (t[i] << i);
 			if (lookup_tbl_flags[index] == ENTRY_USED)
-				PR_ERR("why already used\n");
+				pr_err("why already used\n");
 			else
 				lookup_tbl_flags[index] = ENTRY_USED;
 		}
@@ -467,13 +467,13 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 
 	if (len <= 0) {
 		err = -EFAULT;
-		PR_ERR("Wrong len value (%d)\n", len);
+		pr_err("Wrong len value (%d)\n", len);
 		return count;
 	}
 
 	if (copy_from_user(data, buf, len)) {
 		err = -EFAULT;
-		PR_ERR("copy_from_user fail");
+		pr_err("copy_from_user fail");
 		return count;
 	}
 
@@ -490,7 +490,7 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 	if ((dp_strncmpi(param_list[0], "set", strlen("set")) == 0) ||
 	    (dp_strncmpi(param_list[0], "write", strlen("write")) == 0)) {
 		if (!param_list[2]) {
-			PR_ERR("wrong command\n");
+			pr_err("wrong command\n");
 			return count;
 		}
 		qid = dp_atoi(param_list[2]);
@@ -500,7 +500,7 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 					       qid);
 			return count;
 		}
-		PR_INFO("Set to queue[%u] done\n", qid);
+		pr_info("Set to queue[%u] done\n", qid);
 		lookup.index = lookup_index;
 		lookup.qid = qid;
 		dp_set_lookup_qid_via_index(&lookup);
@@ -514,7 +514,7 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 		}
 		lookup.index = lookup_index;
 		qid = dp_get_lookup_qid_via_index(&lookup);
-		PR_INFO("Get lookup[%05u 0x%04x] ->     queue[%u]\n",
+		pr_info("Get lookup[%05u 0x%04x] ->     queue[%u]\n",
 			lookup_index, lookup_index, qid);
 		return count;
 	} else if (dp_strncmpi(param_list[0], "find",
@@ -537,7 +537,7 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 		int new_q = dp_atoi(param_list[2]);
 
 		lookup_table_remap(old_q, new_q);
-		PR_INFO("remap queue[%d] to queue[%d] done\n",
+		pr_info("remap queue[%d] to queue[%d] done\n",
 			old_q, new_q);
 		return count;
 	}  else if (dp_strncmpi(param_list[0], "test",
@@ -559,33 +559,33 @@ ssize_t proc_get_qid_via_index32(struct file *file, const char *buf,
 		lookup.ep = 3;
 		cbm_queue_map_set(dp_port_prop[inst].cbm_inst, qid,
 				  &lookup, flag);
-		DP_INFO("cbm_queue_map_set ep=%d egflag=%d qid=%d flag=0x%x\n",
+		pr_info("cbm_queue_map_set ep=%d egflag=%d qid=%d flag=0x%x\n",
 			lookup.ep, lookup.egflag, qid, flag);
 		lookup.egflag = 1;
 		cbm_queue_map_set(dp_port_prop[inst].cbm_inst, qid,
 				  &lookup, flag);
-		DP_INFO("cbm_queue_map_set ep=%d egflag=%d qid=%d flag=0x%x\n",
+		pr_info("cbm_queue_map_set ep=%d egflag=%d qid=%d flag=0x%x\n",
 			lookup.ep, lookup.egflag, qid, flag);
 		return count;
 	}
 	goto help;
 help:
-	PR_INFO("Usage: echo set lookup_flags queue_id > /proc/dp/lookup\n");
-	PR_INFO("     : echo get lookup_flags > /proc/dp/lookup\n");
-	PR_INFO("     : echo find  <x> > /proc/dp/lookup\n");
-	PR_INFO("     : echo find2 <x> > /proc/dp/lookup\n");
-	PR_INFO("     : echo remap <old_q> <new_q> > /proc/dp/lookup\n");
-	PR_INFO("     : echo test <qid> > /proc/dp/lookup\n");
-	PR_INFO("  Hex example: echo set 0x10 10 > /proc/dp/lookup\n");
-	PR_INFO("  Dec:example: echo set 16 10 > /proc/dp/lookup\n");
-	PR_INFO("  Bin:example: echo set b10000 10 > /proc/dp/lookup\n");
+	pr_info("Usage: echo set lookup_flags queue_id > /proc/dp/lookup\n");
+	pr_info("     : echo get lookup_flags > /proc/dp/lookup\n");
+	pr_info("     : echo find  <x> > /proc/dp/lookup\n");
+	pr_info("     : echo find2 <x> > /proc/dp/lookup\n");
+	pr_info("     : echo remap <old_q> <new_q> > /proc/dp/lookup\n");
+	pr_info("     : echo test <qid> > /proc/dp/lookup\n");
+	pr_info("  Hex example: echo set 0x10 10 > /proc/dp/lookup\n");
+	pr_info("  Dec:example: echo set 16 10 > /proc/dp/lookup\n");
+	pr_info("  Bin:example: echo set b10000 10 > /proc/dp/lookup\n");
 
-	PR_INFO("%s: echo set b1xxxx 10 > /proc/dp/lookup\n",
+	pr_info("%s: echo set b1xxxx 10 > /proc/dp/lookup\n",
 		"Special for BIN(Don't care bit)");
-	PR_INFO("Lookup format:\n");
-	PR_INFO("  Bits Index: | %s\n",
+	pr_info("Lookup format:\n");
+	pr_info("  Bits Index: | %s\n",
 		"13   12 |  11  |  10  |  9   |  8   |7   4 | 3   0 |");
-	PR_INFO("  Fields:     | %s\n",
+	pr_info("  Fields:     | %s\n",
 		"Flow ID | DEC  | ENC  | MPE2 | MPE1 |  EP  | CLASS |");
 	return count;
 }
@@ -606,14 +606,14 @@ void lookup_table_via_qid(int qid)
 				if (tmp != qid)
 					continue;
 				f = 1;
-				PR_INFO("Get lookup[%05u 0x%04x]%s[%d]\n",
+				pr_info("Get lookup[%05u 0x%04x]%s[%d]\n",
 					index, index,
 					" ->     queue", qid);
 			}
 		}
 	}
 	if (!f)
-		PR_ERR("No mapping to queue id %d yet ?\n", qid);
+		pr_err("No mapping to queue id %d yet ?\n", qid);
 }
 
 void lookup_table_remap(int old_q, int new_q)
@@ -644,7 +644,7 @@ void lookup_table_remap(int old_q, int new_q)
 		}
 	}
 	if (!f)
-		PR_INFO("No mapping to queue id %d yet\n", new_q);
+		pr_info("No mapping to queue id %d yet\n", new_q);
 }
 
 static u8 lookup_flags2[LOOKUP_FIELD_BITS];
@@ -720,7 +720,7 @@ void lookup_table_recursive(int k, int tmp_index, int set_flag, int qid)
 		} else {
 			lookup.index = tmp_index;
 			qid = dp_get_lookup_qid_via_index(&lookup);
-			PR_INFO("Get lookup[%05u/0x%04x] ->     queue[%d]\n",
+			pr_info("Get lookup[%05u/0x%04x] ->     queue[%d]\n",
 				tmp_index, tmp_index, qid);
 		}
 		return;

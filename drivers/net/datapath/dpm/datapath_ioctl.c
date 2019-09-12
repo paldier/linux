@@ -15,7 +15,7 @@ static int get_tsinfo(struct net_device *dev,
 	struct pmac_port_info *port_info;
 
 	if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
-		PR_ERR("%s dp_get_netif_subifid failed for %s\n",
+		pr_err("%s dp_get_netif_subifid failed for %s\n",
 		       __func__, dev->name);
 		return -EFAULT;
 	}
@@ -56,11 +56,11 @@ int dp_ops_set(void **dev_ops, int ops_cb_offset,
 	int i;
 
 	if (!dev_ops) {
-		PR_ERR("dev_ops NULL\n");
+		pr_err("dev_ops NULL\n");
 		return DP_FAILURE;
 	}
 	if (!dp_new_ops) {
-		PR_ERR("dp_new_ops NULL\n");
+		pr_err("dp_new_ops NULL\n");
 		return DP_FAILURE;
 	}
 	if (*dev_ops != dp_new_ops) {
@@ -95,7 +95,7 @@ static int dp_ndo_ptp_ioctl(struct net_device *dev,
 	idx = dp_dev_hash(dev, NULL);
 	dp_dev = dp_dev_lookup(&dp_dev_list[idx], dev, NULL, 0);
 	if (!dp_dev) {
-		PR_ERR("\n dp_dev NULL\n");
+		pr_err("\n dp_dev NULL\n");
 		return -EFAULT;
 	}
 

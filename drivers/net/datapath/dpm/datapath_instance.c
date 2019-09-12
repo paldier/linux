@@ -53,7 +53,7 @@ int register_dp_hw_cap(struct dp_hw_cap *info, u32 flag)
 	int i;
 
 	if (!info) {
-		PR_ERR("register_dp_hw_cap: NULL info\n");
+		pr_err("register_dp_hw_cap: NULL info\n");
 		return -1;
 	}
 	for (i = 0; i < DP_MAX_HW_CAP; i++) {
@@ -63,7 +63,7 @@ int register_dp_hw_cap(struct dp_hw_cap *info, u32 flag)
 		hw_cap_list[i].info = info->info;
 		dp_cap_num++;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
-		PR_ERR("Succeed to %s HAL[%d]: type=%d ver=%d dp_cap_num=%d\n",
+		pr_err("Succeed to %s HAL[%d]: type=%d ver=%d dp_cap_num=%d\n",
 		       "Register",
 		       i,
 		       info->info.type,
@@ -72,7 +72,7 @@ int register_dp_hw_cap(struct dp_hw_cap *info, u32 flag)
 #endif
 		return 0;
 	}
-	PR_ERR("Failed to %s HAL: type=%d ver=%d\n",
+	pr_err("Failed to %s HAL: type=%d ver=%d\n",
 	       "Register",
 	       info->info.type,
 	       info->info.ver);
@@ -107,7 +107,7 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 		}
 	}
 	if (k == DP_MAX_HW_CAP) {
-		PR_ERR("dp_request_inst fail to math cap type=%d/ver=%d\n",
+		pr_err("dp_request_inst fail to math cap type=%d/ver=%d\n",
 		       info->type, info->ver);
 		return -1;
 	}
@@ -118,11 +118,11 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 			break;
 	}
 	if (i == DP_MAX_INST) {
-		PR_ERR("dp_request_inst fail for dp inst full arealdy\n");
+		pr_err("dp_request_inst fail for dp inst full arealdy\n");
 		return -1;
 	}
 	if (alloc_dma_chan_tbl(i)) {
-		PR_ERR("FAIL to alloc dma chan tbl\n");
+		pr_err("FAIL to alloc dma chan tbl\n");
 		return -1;
 	}
 	dp_port_prop[i].ops[0] = info->ops[0];
@@ -142,12 +142,12 @@ int dp_request_inst(struct dp_inst_info *info, u32 flag)
 	DP_DEBUG(DP_DBG_FLAG_COC, "DP registered CPUFREQ notifier\n");
 #endif
 	if (alloc_dp_port_subif_info(i)) {
-		PR_ERR("alloc_dp_port_subif_info fail..\n");
+		pr_err("alloc_dp_port_subif_info fail..\n");
 		return DP_FAILURE;
 	}
 	if (dp_port_prop[i].info.dp_platform_set(i, DP_PLATFORM_INIT) < 0) {
 		dp_port_prop[i].valid = 0;
-		PR_ERR("dp_platform_init failed for inst=%d\n", i);
+		pr_err("dp_platform_init failed for inst=%d\n", i);
 		return -1;
 	}
 	info->inst = i;
@@ -219,7 +219,7 @@ static int dp_ndo_setup_tc(struct net_device *dev, u32 handle,
 #endif
 	if (dev->netdev_ops->ndo_setup_tc)
 		return dev->netdev_ops->ndo_setup_tc(dev, handle, protocol, tc);
-	PR_ERR("Cannot support ndo_setup_tc\n");
+	pr_err("Cannot support ndo_setup_tc\n");
 	return -1;
 }
 #else
@@ -249,13 +249,13 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 	int err = DP_SUCCESS;
 #endif
 	if (!dev && !subif_name) {
-		PR_ERR("Why dev/subif_name both NULL?\n");
+		pr_err("Why dev/subif_name both NULL?\n");
 		return -1;
 	}
 	idx = dp_dev_hash(dev, subif_name);
 	subif = kmalloc(sizeof(*subif), GFP_KERNEL);
 	if (!subif) {
-		PR_ERR("failed to alloc %zd bytes\n", sizeof(*subif));
+		pr_err("failed to alloc %zd bytes\n", sizeof(*subif));
 		return -1;
 	}
 
@@ -282,7 +282,7 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 		}
 	}
 	if (!dp_dev) {
-		PR_ERR("Failed to kmalloc %zd bytes\n", sizeof(*dp_dev));
+		pr_err("Failed to kmalloc %zd bytes\n", sizeof(*dp_dev));
 		kfree(subif);
 		return -1;
 	}
@@ -336,22 +336,22 @@ int dp_inst_del_dev(struct net_device *dev, char *subif_name, int inst, int ep,
 	idx = dp_dev_hash(dev, subif_name);
 	dp_dev = dp_dev_lookup(&dp_dev_list[idx], dev, subif_name, flag);
 	if (!dp_dev) {
-		PR_ERR("Failed to dp_dev_lookup: %s_%s\n",
+		pr_err("Failed to dp_dev_lookup: %s_%s\n",
 		       dev ? dev->name : "NULL", subif_name);
 		return -1;
 	}
 	if (dp_dev->count <= 0) {
-		PR_ERR("Count(%d) should > 0(%s_%s)\n", dp_dev->count,
+		pr_err("Count(%d) should > 0(%s_%s)\n", dp_dev->count,
 		       dev ? dev->name : "NULL", subif_name);
 		return -1;
 	}
 	if (dp_dev->inst != inst) {
-		PR_ERR("Why inst not same:%d_%d(%s_%s)\n", dp_dev->inst, inst,
+		pr_err("Why inst not same:%d_%d(%s_%s)\n", dp_dev->inst, inst,
 		       dev ? dev->name : "NULL", subif_name);
 		return -1;
 	}
 	if (dp_dev->ep != ep) {
-		PR_ERR("Why ep not same:%d_%d(%s_%s)\n", dp_dev->ep, ep,
+		pr_err("Why ep not same:%d_%d(%s_%s)\n", dp_dev->ep, ep,
 		       dev ? dev->name : "NULL", subif_name);
 		return -1;
 	}
@@ -413,7 +413,7 @@ int dp_inst_insert_mod(struct module *owner, u16 ep, u32 inst, u32 flag)
 	u32 idx;
 
 	if (!owner) {
-		PR_ERR("owner NULL?\n");
+		pr_err("owner NULL?\n");
 		return -1;
 	}
 	idx = dp_mod_hash(owner, ep);
@@ -429,7 +429,7 @@ int dp_inst_insert_mod(struct module *owner, u16 ep, u32 inst, u32 flag)
 		}
 	}
 	if (!dp_mod) {
-		PR_ERR("Failed to kmalloc %zd bytes\n", sizeof(*dp_mod));
+		pr_err("Failed to kmalloc %zd bytes\n", sizeof(*dp_mod));
 		return -1;
 	}
 	if (new_f)
@@ -444,13 +444,13 @@ int dp_inst_del_mod(struct module *owner, u16 ep, u32 flag)
 	u32 idx;
 
 	if (!owner) {
-		PR_ERR("owner NULL?\n");
+		pr_err("owner NULL?\n");
 		return -1;
 	}
 	idx = dp_mod_hash(owner, ep);
 	dp_mod = dp_mod_lookup(&dp_mod_list[idx], owner, ep, flag);
 	if (!dp_mod) {
-		PR_ERR("Failed to dp_mod_lookup: %s\n",
+		pr_err("Failed to dp_mod_lookup: %s\n",
 		       owner->name);
 		return -1;
 	}
@@ -467,13 +467,13 @@ int dp_get_inst_via_module(struct module *owner,  u16 ep, u32 flag)
 	u32 idx;
 
 	if (!owner) {
-		PR_ERR("owner NULL?\n");
+		pr_err("owner NULL?\n");
 		return -1;
 	}
 	idx = dp_mod_hash(owner, ep);
 	dp_mod = dp_mod_lookup(&dp_mod_list[idx], owner, ep, flag);
 	if (!dp_mod) {
-		PR_ERR("Failed to dp_mod_lookup: %s\n",
+		pr_err("Failed to dp_mod_lookup: %s\n",
 		       owner->name);
 		return -1;
 	}

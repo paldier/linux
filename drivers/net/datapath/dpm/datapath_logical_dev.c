@@ -46,17 +46,17 @@ int get_vlan_via_dev(struct net_device *dev, struct vlan_prop *vlan_prop)
 	base1 = get_base_dev(dev, 1);
 	vlan = dp_vlan_dev_priv(dev);
 	if (!base1) { /*single vlan */
-		PR_ERR("Not 1st VLAN interface no base\n");
+		pr_err("Not 1st VLAN interface no base\n");
 		return -1;
 	}
 	if (is_vlan_dev(base1)) { /*double or more vlan*/
 		base2 = get_base_dev(base1, 1);
 		if (!base2) {
-			PR_ERR("Not 2nd VLAN interface no base\n");
+			pr_err("Not 2nd VLAN interface no base\n");
 			return -1;
 		}
 		if (is_vlan_dev(base2)) {
-			PR_ERR("Too many VLAN tag, not supoprt\n");
+			pr_err("Too many VLAN tag, not supoprt\n");
 			return -1;
 		}
 		/*double vlan */
@@ -130,7 +130,7 @@ int add_logic_dev(int inst, int port_id, struct net_device *dev,
 	struct dp_subif_info *sif;
 
 	if (!dev) {
-		PR_ERR("dev NULL\n");
+		pr_err("dev NULL\n");
 		return -1;
 	}
 	base_dev = get_base_dev(dev, -1);

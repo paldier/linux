@@ -135,7 +135,7 @@ int dp_event(struct notifier_block *this, unsigned long event, void *ptr)
 				if (fid > 0) {
 					dp_dev->fid = fid;
 				} else {
-					PR_ERR("FID alloc failed in %s\r\n",
+					pr_err("FID alloc failed in %s\r\n",
 					       __func__);
 					return 0;
 				}

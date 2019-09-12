@@ -134,7 +134,7 @@ int proc_port_dump(struct seq_file *s, int pos)
 	if (!capable(CAP_SYS_PACCT))
 		return -1;
 	if (!port) {
-		PR_ERR("Why port is NULL\n");
+		pr_err("Why port is NULL\n");
 		return -1;
 	}
 	info = &dp_port_prop[tmp_inst].info;
@@ -316,19 +316,19 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 	u16 start = 0;
 
 	if (!port) {
-		PR_ERR("Why port is NULL\n");
+		pr_err("Why port is NULL\n");
 		return -1;
 	}
 
 	if (port->status == PORT_FREE) {
 		if (pos == 0) {
-			PR_INFO("%s:rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
+			pr_info("%s:rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
 				"Reserved Port",
 				STATS_GET(port->rx_err_drop),
 				STATS_GET(port->tx_err_drop));
 
 		} else
-			PR_INFO("%02d:rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
+			pr_info("%02d:rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
 				pos,
 				STATS_GET(port->rx_err_drop),
 				STATS_GET(port->tx_err_drop));
@@ -338,7 +338,7 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 
 	DP_CB(tmp_inst, get_itf_start_end)(port->itf_info, &start, NULL);
 
-	PR_INFO("%02d: %s=0x0x%0lx(name:%8s) %s=%02d %s=%02d itf_base=%d(%s)\n",
+	pr_info("%02d: %s=0x0x%0lx(name:%8s) %s=%02d %s=%02d itf_base=%d(%s)\n",
 		pos,
 		"module",
 		(uintptr_t)port->owner, port->owner->name,
@@ -348,27 +348,27 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 		port->port_id,
 		start,
 		port->itf_info ? "Enabled" : "Not Enabled");
-	PR_INFO("    status:            %s\n",
+	pr_info("    status:            %s\n",
 		dp_port_status_str[port->status]);
-	PR_INFO("    allocate_flags:    ");
+	pr_info("    allocate_flags:    ");
 
 	for (i = 0; i < get_dp_port_type_str_size(); i++) {
 		if (port->alloc_flags & dp_port_flag[i])
-			PR_INFO("%s ", dp_port_type_str[i]);
+			pr_info("%s ", dp_port_type_str[i]);
 	}
 
-	PR_INFO("\n");
+	pr_info("\n");
 
 	if (!flag) {
-		PR_INFO("    cb->rx_fn:         0x%0lx\n",
+		pr_info("    cb->rx_fn:         0x%0lx\n",
 			(uintptr_t)port->cb.rx_fn);
-		PR_INFO("    cb->restart_fn:    0x%0lx\n",
+		pr_info("    cb->restart_fn:    0x%0lx\n",
 			(uintptr_t)port->cb.restart_fn);
-		PR_INFO("    cb->stop_fn:       0x%0lx\n",
+		pr_info("    cb->stop_fn:       0x%0lx\n",
 			(uintptr_t)port->cb.stop_fn);
-		PR_INFO("    cb->get_subifid_fn:0x%0lx\n",
+		pr_info("    cb->get_subifid_fn:0x%0lx\n",
 			(uintptr_t)port->cb.get_subifid_fn);
-		PR_INFO("    num_subif:         %02d\n", port->num_subif);
+		pr_info("    num_subif:         %02d\n", port->num_subif);
 	}
 
 	for (i = start_vap; i < end_vap; i++) {
@@ -376,37 +376,32 @@ int display_port_info(int inst, u8 pos, int start_vap, int end_vap, u32 flag)
 		struct dev_mib *mib = get_dp_port_subif_mib(sif);
 
 		if (sif->flags) {
-			PR_INFO
-			    ("      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
-			     i,
-			     "subif",
-			     sif->subif,
-			     "netif",
-			     (uintptr_t)sif->netif,
-			     "device_name",
-			     sif->netif ? sif->netif->name : "NULL/DSL",
-			     "name",
-			     sif->device_name);
-			PR_INFO("          : rx_fn_rxif_pkt =0x%08x\n",
+			pr_info("      [%02d]:%s=0x%04x %s=0x%0lx(%s=%s),%s=%s\n",
+				i, "subif", sif->subif,
+				"netif", (uintptr_t)sif->netif,
+				"device_name",
+				sif->netif ? sif->netif->name : "NULL/DSL",
+				"name", sif->device_name);
+			pr_info("          : rx_fn_rxif_pkt =0x%08x\n",
 				STATS_GET(mib->rx_fn_rxif_pkt));
-			PR_INFO("          : rx_fn_txif_pkt =0x%08x\n",
+			pr_info("          : rx_fn_txif_pkt =0x%08x\n",
 				STATS_GET(mib->rx_fn_txif_pkt));
-			PR_INFO("          : rx_fn_dropped  =0x%08x\n",
+			pr_info("          : rx_fn_dropped  =0x%08x\n",
 				STATS_GET(mib->rx_fn_dropped));
-			PR_INFO("          : tx_cbm_pkt     =0x%08x\n",
+			pr_info("          : tx_cbm_pkt     =0x%08x\n",
 				STATS_GET(mib->tx_cbm_pkt));
-			PR_INFO("          : tx_tso_pkt     =0x%08x\n",
+			pr_info("          : tx_tso_pkt     =0x%08x\n",
 				STATS_GET(mib->tx_tso_pkt));
-			PR_INFO("          : tx_pkt_dropped =0x%08x\n",
+			pr_info("          : tx_pkt_dropped =0x%08x\n",
 				STATS_GET(mib->tx_pkt_dropped));
-			PR_INFO("          : tx_clone_pkt   =0x%08x\n",
+			pr_info("          : tx_clone_pkt   =0x%08x\n",
 				STATS_GET(mib->tx_clone_pkt));
-			PR_INFO("          : tx_hdr_room_pkt=0x%08x\n",
+			pr_info("          : tx_hdr_room_pkt=0x%08x\n",
 				STATS_GET(mib->tx_hdr_room_pkt));
 		}
 	}
 
-	ret = PR_INFO("    rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
+	ret = pr_info("    rx_err_drop=0x%08x  tx_err_drop=0x%08x\n",
 		      STATS_GET(port->rx_err_drop),
 		      STATS_GET(port->tx_err_drop));
 EXIT:
@@ -448,12 +443,12 @@ ssize_t proc_port_write(struct file *file, const char *buf, size_t count,
 	}
 
 	if (index_start >= MAX_DP_PORTS) {
-		PR_ERR("wrong index: 0 ~ 15\n");
+		pr_err("wrong index: 0 ~ 15\n");
 		return count;
 	}
 
 	if (vap_start >= info->cap.max_num_subif_per_port) {
-		PR_ERR("wrong VAP: 0 ~ 15\n");
+		pr_err("wrong VAP: 0 ~ 15\n");
 		return count;
 	}
 
@@ -473,9 +468,9 @@ ssize_t proc_port_write(struct file *file, const char *buf, size_t count,
 
 	return count;
  help:
-	PR_INFO("usage:\n");
-	PR_INFO("  echo mib  [ep][vap] > /prooc/dp/port\n");
-	PR_INFO("  echo port [ep][vap] > /prooc/dp/port\n");
+	pr_info("usage:\n");
+	pr_info("  echo mib  [ep][vap] > /prooc/dp/port\n");
+	pr_info("  echo port [ep][vap] > /prooc/dp/port\n");
 	return count;
 }
 
@@ -569,7 +564,7 @@ help:
 			" > /proc/dp/dbg\n");
 	num += snprintf(tmp_buf + num, BUF_SIZE_TMP - num - 1,
 			" display command: cat /proc/dp/cmd\n");
-	PR_INFO("%s", tmp_buf);
+	pr_info("%s", tmp_buf);
 	kfree(tmp_buf);
 	return count;
 }
@@ -605,7 +600,7 @@ struct dentry *dp_proc_install(void)
 			dp_proc_entry_create(dp_proc_node,
 					     &dp_proc_entries[i]);
 	} else {
-		PR_ERR("datapath cannot create proc entry");
+		pr_err("datapath cannot create proc entry");
 		return NULL;
 	}
 

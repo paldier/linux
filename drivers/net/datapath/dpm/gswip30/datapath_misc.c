@@ -250,29 +250,29 @@ static void dump_rx_dma_desc(struct dma_rx_desc_0 *desc_0,
 			     struct dma_rx_desc_3 *desc_3)
 {
 	if (!desc_0 || !desc_1 || !desc_2 || !desc_3) {
-		PR_ERR("rx desc_0/1/2/3 NULL\n");
+		pr_err("rx desc_0/1/2/3 NULL\n");
 		return;
 	}
-	PR_INFO(" DMA Descripotr:D0=0x%08x D1=0x%08x D2=0x%08x D3=0x%08x\n",
+	pr_info(" DMA Descripotr:D0=0x%08x D1=0x%08x D2=0x%08x D3=0x%08x\n",
 		*(u32 *)desc_0, *(u32 *)desc_1,
 		*(u32 *)desc_2, *(u32 *)desc_3);
-	PR_INFO("  DW0:%s=%d tunl_id=%d flow_id=%d eth_type=%d subif=0x%04x\n",
+	pr_info("  DW0:%s=%d tunl_id=%d flow_id=%d eth_type=%d subif=0x%04x\n",
 		"resv0", desc_0->field.resv0,
 		desc_0->field.tunnel_id,
 		desc_0->field.flow_id, desc_0->field.eth_type,
 		desc_0->field.dest_sub_if_id);
-	PR_INFO("  DW1:sess=%d tcp_err=%d nat=%d dec=%d enc=%d mpe2/1=%d/%d\n",
+	pr_info("  DW1:sess=%d tcp_err=%d nat=%d dec=%d enc=%d mpe2/1=%d/%d\n",
 		desc_1->field.session_id, desc_1->field.tcp_err,
 		desc_1->field.nat, desc_1->field.dec, desc_1->field.enc,
 		desc_1->field.mpe2, desc_1->field.mpe1);
-	PR_INFO("      color=%02d ep=%02d resv1=%d classid=%02d\n",
+	pr_info("      color=%02d ep=%02d resv1=%d classid=%02d\n",
 		desc_1->field.color, desc_1->field.ep, desc_1->field.resv1,
 		desc_1->field.classid);
-	PR_INFO("  DW2:data_ptr=0x%08x\n", desc_2->field.data_ptr);
-	PR_INFO("  DW3:own=%d c=%d sop=%d eop=%d dic=%d pdu_type=%d\n",
+	pr_info("  DW2:data_ptr=0x%08x\n", desc_2->field.data_ptr);
+	pr_info("  DW3:own=%d c=%d sop=%d eop=%d dic=%d pdu_type=%d\n",
 		desc_3->field.own, desc_3->field.c, desc_3->field.sop,
 		desc_3->field.eop, desc_3->field.dic, desc_3->field.pdu_type);
-	PR_INFO("      offset=%d atm_q=%d mpoa_pt=%d mpoa_mode=%d len=%d\n",
+	pr_info("      offset=%d atm_q=%d mpoa_pt=%d mpoa_mode=%d len=%d\n",
 		desc_3->field.byte_offset, desc_3->field.qid,
 		desc_3->field.mpoa_pt, desc_3->field.mpoa_mode,
 		desc_3->field.data_len);
@@ -286,29 +286,29 @@ static void dump_tx_dma_desc(struct dma_tx_desc_0 *desc_0,
 	int lookup;
 
 	if (!desc_0 || !desc_1 || !desc_2 || !desc_3) {
-		PR_ERR("tx desc_0/1/2/3 NULL\n");
+		pr_err("tx desc_0/1/2/3 NULL\n");
 		return;
 	}
-	PR_INFO(" DMA Descripotr:D0=0x%08x D1=0x%08x D2=0x%08x D3=0x%08x\n",
+	pr_info(" DMA Descripotr:D0=0x%08x D1=0x%08x D2=0x%08x D3=0x%08x\n",
 		*(u32 *)desc_0, *(u32 *)desc_1,
 		*(u32 *)desc_2, *(u32 *)desc_3);
-	PR_INFO("  DW0:%s=%d tunl_id=%d flow_id=%d eth_type=%d subif=0x%04x\n",
+	pr_info("  DW0:%s=%d tunl_id=%d flow_id=%d eth_type=%d subif=0x%04x\n",
 		"resv0", desc_0->field.resv0,
 		desc_0->field.tunnel_id,
 		desc_0->field.flow_id, desc_0->field.eth_type,
 		desc_0->field.dest_sub_if_id);
-	PR_INFO("  DW1:sess=%d tcp_err=%d nat=%d dec=%d enc=%d mpe2/1=%d/%d\n",
+	pr_info("  DW1:sess=%d tcp_err=%d nat=%d dec=%d enc=%d mpe2/1=%d/%d\n",
 		desc_1->field.session_id, desc_1->field.tcp_err,
 		desc_1->field.nat, desc_1->field.dec, desc_1->field.enc,
 		desc_1->field.mpe2, desc_1->field.mpe1);
-	PR_INFO("  color=%02d ep=%02d resv1=%d classid=%02d\n",
+	pr_info("  color=%02d ep=%02d resv1=%d classid=%02d\n",
 		desc_1->field.color, desc_1->field.ep, desc_1->field.resv1,
 		desc_1->field.classid);
-	PR_INFO("  DW2:data_ptr=0x%08x\n", desc_2->field.data_ptr);
-	PR_INFO("  DW3:own=%d c=%d sop=%d eop=%d dic=%d pdu_type=%d\n",
+	pr_info("  DW2:data_ptr=0x%08x\n", desc_2->field.data_ptr);
+	pr_info("  DW3:own=%d c=%d sop=%d eop=%d dic=%d pdu_type=%d\n",
 		desc_3->field.own, desc_3->field.c, desc_3->field.sop,
 		desc_3->field.eop, desc_3->field.dic, desc_3->field.pdu_type);
-	PR_INFO("  offset=%d atm_qid=%d mpoa_pt=%d mpoa_mode=%d len=%d\n",
+	pr_info("  offset=%d atm_qid=%d mpoa_pt=%d mpoa_mode=%d len=%d\n",
 		desc_3->field.byte_offset, desc_3->field.qid,
 		desc_3->field.mpoa_pt, desc_3->field.mpoa_mode,
 		desc_3->field.data_len);
@@ -319,7 +319,7 @@ static void dump_tx_dma_desc(struct dma_tx_desc_0 *desc_0,
 		((desc_1->field.mpe1) << 8) |
 		((desc_1->field.ep) << 4) |
 		((desc_1->field.classid) << 0);
-	PR_INFO("  lookup index=0x%x qid=%d\n", lookup,
+	pr_info("  lookup index=0x%x qid=%d\n", lookup,
 		get_lookup_qid_via_index(lookup));
 }
 
@@ -330,7 +330,7 @@ static void dump_rx_pmac(struct pmac_rx_hdr *pmac)
 	unsigned char buf[100];
 
 	if (!pmac) {
-		PR_ERR(" pmac NULL ??\n");
+		pr_err(" pmac NULL ??\n");
 		return;
 	}
 
@@ -338,27 +338,27 @@ static void dump_rx_pmac(struct pmac_rx_hdr *pmac)
 	for (i = 0; i < 8; i++)
 		l += sprintf(buf + l, "0x%02x ", p[i]);
 	l += sprintf(buf + l, "\n");
-	PR_INFO("%s", buf);
+	pr_info("%s", buf);
 
 	/*byte 0 */
-	PR_INFO("  byte 0:res=%d ver_done=%d ip_offset=%d\n", pmac->res1,
+	pr_info("  byte 0:res=%d ver_done=%d ip_offset=%d\n", pmac->res1,
 		pmac->ver_done, pmac->ip_offset);
 	/*byte 1 */
-	PR_INFO("  byte 1:tcp_h_offset=%d tcp_type=%d\n", pmac->tcp_h_offset,
+	pr_info("  byte 1:tcp_h_offset=%d tcp_type=%d\n", pmac->tcp_h_offset,
 		pmac->tcp_type);
 	/*byte 2 */
-	PR_INFO("  byte 2:ppid=%d class=%d\n", pmac->sppid, pmac->class);
+	pr_info("  byte 2:ppid=%d class=%d\n", pmac->sppid, pmac->class);
 	/*byte 3 */
-	PR_INFO("  byte 3:res=%d pkt_type=%d\n", pmac->res2, pmac->pkt_type);
+	pr_info("  byte 3:res=%d pkt_type=%d\n", pmac->res2, pmac->pkt_type);
 	/*byte 4 */
-	PR_INFO("  byte 4:res=%d redirect=%d res2=%d src_sub_inf_id=%d\n",
+	pr_info("  byte 4:res=%d redirect=%d res2=%d src_sub_inf_id=%d\n",
 		pmac->res3, pmac->redirect, pmac->res4, pmac->src_sub_inf_id);
 	/*byte 5 */
-	PR_INFO("  byte 5:src_sub_inf_id2=%d\n", pmac->src_sub_inf_id2);
+	pr_info("  byte 5:src_sub_inf_id2=%d\n", pmac->src_sub_inf_id2);
 	/*byte 6 */
-	PR_INFO("  byte 6:port_map=%d\n", pmac->port_map);
+	pr_info("  byte 6:port_map=%d\n", pmac->port_map);
 	/*byte 7 */
-	PR_INFO("  byte 7:port_map2=%d\n", pmac->port_map2);
+	pr_info("  byte 7:port_map2=%d\n", pmac->port_map2);
 }
 
 static void dump_tx_pmac(struct pmac_tx_hdr *pmac)
@@ -368,7 +368,7 @@ static void dump_tx_pmac(struct pmac_tx_hdr *pmac)
 	unsigned char buf[100];
 
 	if (!pmac) {
-		PR_ERR("dump_tx_pmac pmac NULL ??\n");
+		pr_err("dump_tx_pmac pmac NULL ??\n");
 		return;
 	}
 
@@ -376,31 +376,31 @@ static void dump_tx_pmac(struct pmac_tx_hdr *pmac)
 	for (i = 0; i < 8; i++)
 		l += sprintf(buf + l, "0x%02x ", p[i]);
 	sprintf(buf + l, "\n");
-	PR_INFO("%s", buf);
+	pr_info("%s", buf);
 	/*byte 0 */
-	PR_INFO("  byte 0:tcp_chksum=%d res=%d ip_offset=%d\n",
+	pr_info("  byte 0:tcp_chksum=%d res=%d ip_offset=%d\n",
 		pmac->tcp_chksum, pmac->res1, pmac->ip_offset);
 	/*byte 1 */
-	PR_INFO("  byte 1:tcp_h_offset=%d tcp_type=%d\n", pmac->tcp_h_offset,
+	pr_info("  byte 1:tcp_h_offset=%d tcp_type=%d\n", pmac->tcp_h_offset,
 		pmac->tcp_type);
 	/*byte 2 */
-	PR_INFO("  byte 2:ppid=%d res=%d\n", pmac->sppid, pmac->res);
+	pr_info("  byte 2:ppid=%d res=%d\n", pmac->sppid, pmac->res);
 	/*byte 3 */
-	PR_INFO("  byte 3:%s=%d %s=%d/%d time_dis=%d class_en=%d pkt_type=%d\n",
+	pr_info("  byte 3:%s=%d %s=%d/%d time_dis=%d class_en=%d pkt_type=%d\n",
 		"map_en", pmac->port_map_en,
 		"res", pmac->res2, pmac->res3,
 		pmac->time_dis, pmac->class_en,
 		pmac->pkt_type);
 	/*byte 4 */
-	PR_INFO("  byte 4:fcs_ins_dis=%d redirect=%d time_stmp=%d subif=%d\n",
+	pr_info("  byte 4:fcs_ins_dis=%d redirect=%d time_stmp=%d subif=%d\n",
 		pmac->fcs_ins_dis, pmac->redirect, pmac->time_stmp,
 		pmac->src_sub_inf_id);
 	/*byte 5 */
-	PR_INFO("  byte 5:src_sub_inf_id2=%d\n", pmac->src_sub_inf_id2);
+	pr_info("  byte 5:src_sub_inf_id2=%d\n", pmac->src_sub_inf_id2);
 	/*byte 6 */
-	PR_INFO("  byte 6:port_map=%d\n", pmac->port_map);
+	pr_info("  byte 6:port_map=%d\n", pmac->port_map);
 	/*byte 7 */
-	PR_INFO("  byte 7:port_map2=%d\n", pmac->port_map2);
+	pr_info("  byte 7:port_map2=%d\n", pmac->port_map2);
 }
 
 static void mib_init(u32 flag)
@@ -435,7 +435,7 @@ static int dp_platform_set(int inst, u32 flag)
 
 	if (!dp_port_prop[inst].ops[0] ||
 	    !dp_port_prop[inst].ops[1]) {
-		PR_ERR("Why gswip handle zero?\n");
+		pr_err("Why gswip handle zero?\n");
 		return -1;
 	}
 		if (!inst)
@@ -516,18 +516,18 @@ static int subif_hw_set(int inst, int portid, int subif_ix,
 	struct pmac_port_info *port_info;
 
 	if (!data || !data->subif_data) {
-		PR_ERR("data NULL or subif_data NULL\n");
+		pr_err("data NULL or subif_data NULL\n");
 		return -1;
 	}
 	if (!dp_dma_chan_tbl[inst]) {
-		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+		pr_err("dp_dma_chan_tbl[%d] NULL\n", inst);
 		return DP_FAILURE;
 	}
 	port_info = get_dp_port_info(inst, portid);
 	if (data->subif_data)
 		deq_port_idx = data->subif_data->deq_port_idx;
 	if (port_info->deq_port_num < deq_port_idx + 1) {
-		PR_ERR("Wrong deq_port_idx(%d), should < %d\n",
+		pr_err("Wrong deq_port_idx(%d), should < %d\n",
 		       deq_port_idx, port_info->deq_port_num);
 		return -1;
 	}
@@ -552,25 +552,25 @@ static int subif_hw_reset(int inst, int portid, int subif_ix,
 	struct pmac_port_info *port_info;
 
 	if (!data || !data->subif_data) {
-		PR_ERR("data NULL or subif_data NULL\n");
+		pr_err("data NULL or subif_data NULL\n");
 		return -1;
 	}
 	if (!dp_dma_chan_tbl[inst]) {
-		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+		pr_err("dp_dma_chan_tbl[%d] NULL\n", inst);
 		return DP_FAILURE;
 	}
 	port_info = get_dp_port_info(inst, portid);
 	if (data->subif_data)
 		deq_port_idx = data->subif_data->deq_port_idx;
 	if (port_info->deq_port_num < deq_port_idx + 1) {
-		PR_ERR("Wrong deq_port_idx(%d), should < %d\n",
+		pr_err("Wrong deq_port_idx(%d), should < %d\n",
 		       deq_port_idx, port_info->deq_port_num);
 		return -1;
 	}
 	cqe_deq = port_info->deq_port_base + deq_port_idx;
 	dma_ch_offset = dp_deq_port_tbl[inst][cqe_deq].dma_ch_offset;
 	if (!dp_deq_port_tbl[inst][cqe_deq].ref_cnt) {
-		PR_ERR("Wrong cbm[%d].ref_cnt=%d\n",
+		pr_err("Wrong cbm[%d].ref_cnt=%d\n",
 		       cqe_deq,
 		       dp_deq_port_tbl[inst][cqe_deq].ref_cnt);
 		return -1;
@@ -717,7 +717,7 @@ int register_dp_cap_gswip30(int flag)
 	cap.info.cap.max_num_bridge_port = 0;
 
 	if (register_dp_hw_cap(&cap, flag)) {
-		PR_ERR("Why register_dp_hw_cap fail\n");
+		pr_err("Why register_dp_hw_cap fail\n");
 		return -1;
 	}
 

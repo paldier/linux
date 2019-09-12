@@ -51,7 +51,7 @@ int request_dp(u32 flag)
 	info.cbm_inst = 0;
 	info.qos_inst = 0;
 	if (dp_request_inst(&info, flag)) {
-		PR_ERR("dp_request_inst failed\n");
+		pr_err("dp_request_inst failed\n");
 		return -1;
 	}
 	return 0;

@@ -184,7 +184,7 @@ int get_dp_port_status_str_size(void)
 int parser_size_via_index(u8 index)
 {
 	if (index >= ARRAY_SIZE(pinfo)) {
-		PR_ERR("Wrong index=%d, it should less than %zu\n", index,
+		pr_err("Wrong index=%d, it should less than %zu\n", index,
 		       ARRAY_SIZE(pinfo));
 		return 0;
 	}
@@ -196,7 +196,7 @@ int parser_enabled(int ep, struct dma_rx_desc_1 *desc_1)
 {
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
 	if (!desc_1) {
-		PR_ERR("NULL desc_1 is not allowed\n");
+		pr_err("NULL desc_1 is not allowed\n");
 		return 0;
 	}
 #endif
@@ -260,7 +260,7 @@ int8_t parser_size(int8_t v)
 	if (v == DP_PARSER_F_HDR_OFFSETS_ENABLE)
 		return PASAR_OFFSETS_NUM + PASAR_FLAGS_NUM;
 
-	PR_ERR("Wrong parser setting: %d\n", v);
+	pr_err("Wrong parser setting: %d\n", v);
 	/*error */
 	return -1;
 }
@@ -304,7 +304,7 @@ char *parser_str(int index)
 	if (index == 3)
 		return "mpe3";
 
-	PR_ERR("Wrong index:%d\n", index);
+	pr_err("Wrong index:%d\n", index);
 	return "Wrong index";
 }
 
@@ -323,7 +323,7 @@ void dp_parser_info_refresh(u32 cpu, u32 mpe1, u32 mpe2,
 
 	for (i = 0; i < ARRAY_SIZE(pinfo); i++) {
 		if (verify && (pinfo[i].size != parser_size(pinfo[i].v)))
-			PR_ERR("%s[%d](%d) != %s(%d)??\n",
+			pr_err("%s[%d](%d) != %s(%d)??\n",
 			       "Lcal parser pinfo", i, pinfo[i].size,
 			       "register cfg", parser_size(pinfo[i].v));
 
@@ -331,7 +331,7 @@ void dp_parser_info_refresh(u32 cpu, u32 mpe1, u32 mpe2,
 		pinfo[i].size = parser_size(pinfo[i].v);
 
 		if ((pinfo[i].size < 0) || (pinfo[i].size > PKT_PMAC_OFFSET)) {
-			PR_ERR("Wrong parser setting for %s: %d\n",
+			pr_err("Wrong parser setting for %s: %d\n",
 			       parser_str(i), pinfo[i].v);
 		}
 	}
@@ -363,7 +363,7 @@ static int32_t dp_alloc_port_private(int inst,
 	struct pmac_port_info *port;
 
 	if (!owner) {
-		PR_ERR("Allocate port failed for owner NULL\n");
+		pr_err("Allocate port failed for owner NULL\n");
 		return DP_FAILURE;
 	}
 
@@ -391,7 +391,7 @@ static int32_t dp_alloc_port_private(int inst,
 
 	if (flags & DP_F_DEREGISTER) {	/*De-register */
 		if (port->status != PORT_ALLOCATED) {
-			PR_ERR("No Deallocate for module %s w/o deregistered\n",
+			pr_err("No Deallocate for module %s w/o deregistered\n",
 			       owner->name);
 			return DP_FAILURE;
 		}
@@ -407,7 +407,7 @@ static int32_t dp_alloc_port_private(int inst,
 	}
 	if (port_id) { /*with specified port_id */
 		if (port->status != PORT_FREE) {
-			PR_ERR("%s %s(%s %d) fail: port %d used by %s %d\n",
+			pr_err("%s %s(%s %d) fail: port %d used by %s %d\n",
 			       "module", owner->name,
 			       "dev_port", dev_port, port_id,
 			       port->owner->name,
@@ -417,12 +417,12 @@ static int32_t dp_alloc_port_private(int inst,
 	}
 	if (cbm_dp_port_alloc(owner, dev, dev_port, port_id,
 			      &cbm_data, flags)) {
-		PR_ERR("cbm_dp_port_alloc fail for %s/dev_port %d: %d\n",
+		pr_err("cbm_dp_port_alloc fail for %s/dev_port %d: %d\n",
 		       owner->name, dev_port, port_id);
 		return DP_FAILURE;
 	} else if (!(cbm_data.flags & CBM_PORT_DP_SET) &&
 		   !(cbm_data.flags & CBM_PORT_DQ_SET)) {
-		PR_ERR("%s NO DP_SET/DQ_SET(%x):%s/dev_port %d\n",
+		pr_err("%s NO DP_SET/DQ_SET(%x):%s/dev_port %d\n",
 		       "cbm_dp_port_alloc",
 		       cbm_data.flags,
 		       owner->name, dev_port);
@@ -462,7 +462,7 @@ static int32_t dp_alloc_port_private(int inst,
 
 		dma_ch_base = get_dma_chan_idx(inst, cbm_data.num_dma_chan);
 		if (dma_ch_base == DP_FAILURE) {
-			DP_ERR("Failed get_dma_chan_idx!!\n");
+			pr_err("Failed get_dma_chan_idx!!\n");
 			cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data,
 					    flags | DP_F_DEREGISTER);
 			/* Only clear those fields we need to clear */
@@ -493,14 +493,14 @@ static int32_t dp_alloc_port_private(int inst,
 				cbm_data.tx_ring_offset;
 	if ((cbm_data.num_dma_chan > 1) && (cbm_data.deq_port_num !=
 	    cbm_data.num_dma_chan)) {
-		PR_ERR("ERROR:deq_port_num=%d not equal to num_dma_chan=%d\n",
+		pr_err("ERROR:deq_port_num=%d not equal to num_dma_chan=%d\n",
 		       cbm_data.deq_port_num, cbm_data.num_dma_chan);
 		return DP_FAILURE;
 	}
 
 	if (dp_port_prop[inst].info.port_platform_set(inst, port_id,
 						      data, flags)) {
-		PR_ERR("Failed port_platform_set for port_id=%d(%s)\n",
+		pr_err("Failed port_platform_set for port_id=%d(%s)\n",
 		       port_id, owner ? owner->name : "");
 		cbm_dp_port_dealloc(owner, dev_port, port_id, &cbm_data,
 				    flags | DP_F_DEREGISTER);
@@ -584,7 +584,7 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		end = start + 1;
 	}
 
-	/*PR_INFO("search range: start=%d end=%d\n",start, end);*/
+	/*pr_info("search range: start=%d end=%d\n",start, end);*/
     /*allocate a free subif */
 	for (i = start; i < end; i++) {
 		sif = get_dp_port_subif(port_info, i);
@@ -603,14 +603,14 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 		if (port_info->status) {
 			if (dp_port_prop[inst].info.subif_platform_set(
 				inst, port_id, i, &platfrm_data, flags)) {
-				PR_ERR("subif_platform_set fail\n");
+				pr_err("subif_platform_set fail\n");
 				goto EXIT;
 			} else {
 				DP_DEBUG(DP_DBG_FLAG_REG,
 					 "subif_platform_set succeed\n");
 			}
 		} else {
-			PR_ERR("port info status fail for 0\n");
+			pr_err("port info status fail for 0\n");
 			return res;
 		}
 		sif->flags = 1;
@@ -653,12 +653,12 @@ int32_t dp_register_subif_private(int inst, struct module *owner,
 				(data ? data->deq_port_idx : 0);
 			if ((cbm_data.deq_port == 0) ||
 			    (cbm_data.deq_port >= DP_MAX_CQM_DEQ)) {
-				PR_ERR("Wrong deq_port: %d\n",
+				pr_err("Wrong deq_port: %d\n",
 				       cbm_data.deq_port);
 				return res;
 			}
 			if (!dp_dma_chan_tbl[inst]) {
-				PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+				pr_err("dp_dma_chan_tbl[%d] NULL\n", inst);
 				return res;
 			}
 			for (j = 0; j < data->num_deq_port; j++) {
@@ -751,7 +751,7 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 		return res;
 	}
 	if (!dp_dma_chan_tbl[inst]) {
-		PR_ERR("dp_dma_chan_tbl[%d] NULL\n", inst);
+		pr_err("dp_dma_chan_tbl[%d] NULL\n", inst);
 		return res;
 	}
 
@@ -791,7 +791,7 @@ int32_t dp_deregister_subif_private(int inst, struct module *owner,
 	port_info->num_subif--;
 	if (dp_port_prop[inst].info.subif_platform_set(inst, port_id, i,
 						       &platfrm_data, flags)) {
-		PR_ERR("subif_platform_set fail\n");
+		pr_err("subif_platform_set fail\n");
 		/*return res;*/
 	}
 	if (!port_info->num_subif)
@@ -887,12 +887,12 @@ int32_t dp_alloc_port_ext(int inst, struct module *owner,
 		}
 		DP_LIB_UNLOCK(&dp_lock);
 		if (!dp_init_ok) {
-			PR_ERR("dp_alloc_port fail: datapath can't init\n");
+			pr_err("dp_alloc_port fail: datapath can't init\n");
 			return DP_FAILURE;
 		}
 	}
 	if (!dp_port_prop[0].valid) {
-		PR_ERR("No Valid datapath instance yet?\n");
+		pr_err("No Valid datapath instance yet?\n");
 		return DP_FAILURE;
 	}
 	if (!data)
@@ -918,12 +918,12 @@ int32_t dp_alloc_port_ext(int inst, struct module *owner,
 		aca_portid = dp_alloc_port(&aca_owner, &aca_dev,
 					   0, 0, NULL, DP_F_CHECKSUM);
 		if (aca_portid <= 0) {
-			PR_ERR("dp_alloc_port failed for %s\n", ACA_CSUM_NAME);
+			pr_err("dp_alloc_port failed for %s\n", ACA_CSUM_NAME);
 			return res;
 		}
 		if (dp_register_dev(&aca_owner, aca_portid,
 				    NULL, DP_F_CHECKSUM)) {
-			PR_ERR("dp_register_dev fail for %s\n", ACA_CSUM_NAME);
+			pr_err("dp_register_dev fail for %s\n", ACA_CSUM_NAME);
 			return res;
 		}
 		subif_id.port_id = aca_portid;
@@ -931,7 +931,7 @@ int32_t dp_alloc_port_ext(int inst, struct module *owner,
 		if (dp_register_subif(&aca_owner, &aca_dev,
 				      ACA_CSUM_NAME, &subif_id,
 				      DP_F_CHECKSUM)) {
-			PR_ERR("dp_register_subif fail for %s\n",
+			pr_err("dp_register_subif fail for %s\n",
 			       ACA_CSUM_NAME);
 			return res;
 		}
@@ -947,7 +947,7 @@ int32_t dp_register_dev(struct module *owner, uint32_t port_id,
 	int inst = dp_get_inst_via_module(owner, port_id, 0);
 
 	if (inst < 0) {
-		PR_ERR("dp_register_dev not valid module %s\n", owner->name);
+		pr_err("dp_register_dev not valid module %s\n", owner->name);
 		return -1;
 	}
 
@@ -975,7 +975,7 @@ int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 	struct cbm_dp_alloc_complete_data *cbm_data = NULL;
 
 	if (unlikely(!dp_init_ok)) {
-		PR_ERR("dp_register_dev failed for datapath not init yet\n");
+		pr_err("dp_register_dev failed for datapath not init yet\n");
 		return DP_FAILURE;
 	}
 	if (!data)
@@ -1183,7 +1183,7 @@ int32_t dp_register_subif_ext(int inst, struct module *owner,
 
 	subif_id_sync = kmalloc(sizeof(*subif_id_sync) * 2, GFP_ATOMIC);
 	if (!subif_id_sync) {
-		PR_ERR("Failed to alloc %zu bytes\n",
+		pr_err("Failed to alloc %zu bytes\n",
 		       sizeof(*subif_id_sync) * 2);
 		return DP_FAILURE;
 	}
@@ -1224,7 +1224,7 @@ int32_t dp_register_subif(struct module *owner, struct net_device *dev,
 	}
 	inst = dp_get_inst_via_module(owner, subif_id->port_id, 0);
 	if (inst < 0) {
-		PR_ERR("wrong inst for owner=%s with ep=%d\n", owner->name,
+		pr_err("wrong inst for owner=%s with ep=%d\n", owner->name,
 		       subif_id->port_id);
 		return DP_FAILURE;
 	}
@@ -1249,7 +1249,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 	rcu_read_lock_bh();
 	dp_subif = dp_subif_lookup_safe(&dp_subif_list[idx], netif, subif_data);
 	if (!dp_subif) {
-		PR_ERR("Failed dp_subif_lookup: %s\n",
+		pr_err("Failed dp_subif_lookup: %s\n",
 		       netif ? netif->name : "NULL");
 		rcu_read_unlock_bh();
 		return res;
@@ -1270,7 +1270,7 @@ int32_t dp_get_netif_subifid(struct net_device *netif, struct sk_buff *skb,
 		res = subifid_fn_t(netif, skb, subif_data, dst_mac, subif,
 				   flags);
 		if (res != 0)
-			PR_ERR("get_netif_subifid callback function failed\n");
+			pr_err("get_netif_subifid callback function failed\n");
 	} else {
 		res = DP_SUCCESS;
 	}
@@ -1304,14 +1304,14 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 	subifs = kmalloc(sizeof(*subifs) * DP_MAX_CTP_PER_DEV,
 			 GFP_ATOMIC);
 	if (!subifs) {
-		PR_ERR("Failed to alloc %zu bytes\n",
+		pr_err("Failed to alloc %zu bytes\n",
 		       sizeof(*subifs) * DP_MAX_CTP_PER_DEV);
 		return res;
 	}
 	subif_flag = kmalloc(sizeof(*subif_flag) * DP_MAX_CTP_PER_DEV,
 			     GFP_ATOMIC);
 	if (!subif_flag) {
-		PR_ERR("Failed to alloc %zu bytes\n",
+		pr_err("Failed to alloc %zu bytes\n",
 		       sizeof(*subif_flag) * DP_MAX_CTP_PER_DEV);
 		kfree(subifs);
 		return res;
@@ -1363,7 +1363,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 				match = 1;
 				port_id = k;
 				if (num > 0) {
-					PR_ERR("Multiple same ctp_dev exist\n");
+					pr_err("Multiple same ctp_dev exist\n");
 					goto EXIT;
 				}
 				subifs[num] = sif->subif;
@@ -1390,7 +1390,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 					subif->flag_bp = 1;
 					port_id = k;
 					if (num >= DP_MAX_CTP_PER_DEV) {
-						PR_ERR("%s: Why CTP over %d\n",
+						pr_err("%s: Why CTP over %d\n",
 						       netif ? netif->name : "",
 						       DP_MAX_CTP_PER_DEV);
 						goto EXIT;
@@ -1409,7 +1409,7 @@ int32_t dp_get_netif_subifid_priv(struct net_device *netif, struct sk_buff *skb,
 						subif->flag_pmapper = 1;
 					bport = sif->bp;
 					if (num && (bport != sif->bp)) {
-						PR_ERR("%s:Why many bp:%d %d\n",
+						pr_err("%s:Why many bp:%d %d\n",
 						       netif ? netif->name : "",
 						       sif->bp, bport);
 						goto EXIT;
@@ -1478,7 +1478,7 @@ static int dp_build_cqm_data(int inst, uint32_t port_id,
 
 	if ((data->num_rx_ring > DP_RX_RING_NUM) ||
 	    (data->num_tx_ring > DP_TX_RING_NUM)) {
-		PR_ERR("Error RxRing = %d TxRing = %d\n",
+		pr_err("Error RxRing = %d TxRing = %d\n",
 		       data->num_rx_ring, data->num_tx_ring);
 		return DP_FAILURE;
 	}
@@ -1553,7 +1553,7 @@ static int dp_register_dc(int inst, uint32_t port_id,
 	res->cqm_dq_pid = port->deq_port_base;
 
 	if (!ops) {
-		DP_ERR("No UMT driver registered\n");
+		pr_err("No UMT driver registered\n");
 		return -ENODEV;
 	}
 
@@ -1661,7 +1661,7 @@ int32_t dp_check_if_netif_fastpath_fn(struct net_device *netif,
 
 	DP_LIB_LOCK(&dp_lock);
 	if (unlikely(!dp_init_ok)) {
-		PR_ERR("dp_check_if_netif_fastpath_fn fail: dp not ready\n");
+		pr_err("dp_check_if_netif_fastpath_fn fail: dp not ready\n");
 		return DP_FAILURE;
 	}
 	if (subif) {
@@ -1692,7 +1692,7 @@ struct module *dp_get_module_owner(int ep)
 	int inst = 0; /*here hardcode for PPA only */
 
 	if (unlikely(!dp_init_ok)) {
-		PR_ERR("dp_get_module_owner failed for dp not init yet\n");
+		pr_err("dp_get_module_owner failed for dp not init yet\n");
 		return NULL;
 	}
 
@@ -1880,7 +1880,7 @@ int dp_pmac_set(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg)
 	int (*dp_pmac_set_fn)(int inst, u32 port, dp_pmac_cfg_t *pmac_cfg);
 
 	if (inst >= DP_MAX_INST) {
-		PR_ERR("Wrong inst(%d) id: should less than %d\n",
+		pr_err("Wrong inst(%d) id: should less than %d\n",
 		       inst, DP_MAX_INST);
 		return DP_FAILURE;
 	}
@@ -1909,40 +1909,40 @@ int dp_set_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 	int res = DP_FAILURE;
 
 	if (!dev || !mapper) {
-		PR_ERR("dev or mapper is NULL\n");
+		pr_err("dev or mapper is NULL\n");
 		return DP_FAILURE;
 	}
 
 	if (unlikely(!dp_init_ok)) {
-		PR_ERR("Failed for datapath not init yet\n");
+		pr_err("Failed for datapath not init yet\n");
 		return DP_FAILURE;
 	}
 	if (mapper->mode >= DP_PMAP_MAX) {
-		PR_ERR("mapper->mode(%d) out of range %d\n",
+		pr_err("mapper->mode(%d) out of range %d\n",
 		       mapper->mode, DP_PMAP_MAX);
 		return DP_FAILURE;
 	}
 	/* get the subif from the dev */
 	ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
 	if (ret == DP_FAILURE) {
-		PR_ERR("Fail to get subif:dev=%s ret=%d flag_pmap=%d bp=%d\n",
+		pr_err("Fail to get subif:dev=%s ret=%d flag_pmap=%d bp=%d\n",
 		       dev->name, ret, subif.flag_pmapper, subif.bport);
 		return DP_FAILURE;
 	}
 	inst = subif.inst;
 	if (!dp_port_prop[inst].info.dp_set_gsw_pmapper) {
-		PR_ERR("Set pmapper is not supported\n");
+		pr_err("Set pmapper is not supported\n");
 		return DP_FAILURE;
 	}
 
 	bport = subif.bport;
 	if (bport >= DP_MAX_BP_NUM) {
-		PR_ERR("BP port(%d) out of range %d\n", bport, DP_MAX_BP_NUM);
+		pr_err("BP port(%d) out of range %d\n", bport, DP_MAX_BP_NUM);
 		return DP_FAILURE;
 	}
 	map = kmalloc(sizeof(*map), GFP_ATOMIC);
 	if (!map) {
-		PR_ERR("Failed for kmalloc: %zu bytes\n", sizeof(*map));
+		pr_err("Failed for kmalloc: %zu bytes\n", sizeof(*map));
 		return DP_FAILURE;
 	}
 	memcpy(map, mapper, sizeof(*map));
@@ -1952,7 +1952,7 @@ int dp_set_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 	} else if (mapper->mode == DP_PMAP_DSCP_ONLY) {
 		map->mode = GSW_PMAPPER_MAPPING_DSCP;
 	} else {
-		PR_ERR("Unknown mapper mode: %d\n", map->mode);
+		pr_err("Unknown mapper mode: %d\n", map->mode);
 		goto EXIT;
 	}
 
@@ -1965,7 +1965,7 @@ int dp_set_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 							 subif.port_id, map,
 							 flag);
 	if (ret == DP_FAILURE) {
-		PR_ERR("Failed to set mapper\n");
+		pr_err("Failed to set mapper\n");
 		goto EXIT;
 	}
 
@@ -1999,30 +1999,30 @@ int dp_get_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 	dp_subif_t subif = {0};
 
 	if (!dev || !mapper) {
-		PR_ERR("The parameter dev or mapper can not be NULL\n");
+		pr_err("The parameter dev or mapper can not be NULL\n");
 		return DP_FAILURE;
 	}
 
 	if (unlikely(!dp_init_ok)) {
-		PR_ERR("Failed for datapath not init yet\n");
+		pr_err("Failed for datapath not init yet\n");
 		return DP_FAILURE;
 	}
 
 	/*get the subif from the dev*/
 	ret = dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0);
 	if (ret == DP_FAILURE) {
-		PR_ERR("Can not get the subif from the dev\n");
+		pr_err("Can not get the subif from the dev\n");
 		return DP_FAILURE;
 	}
 	inst = subif.inst;
 	if (!dp_port_prop[inst].info.dp_get_gsw_pmapper) {
-		PR_ERR("Get pmapper is not supported\n");
+		pr_err("Get pmapper is not supported\n");
 		return DP_FAILURE;
 	}
 
 	bport = subif.bport;
 	if (bport > DP_MAX_BP_NUM) {
-		PR_ERR("BP port(%d) out of range %d\n", bport, DP_MAX_BP_NUM);
+		pr_err("BP port(%d) out of range %d\n", bport, DP_MAX_BP_NUM);
 		return DP_FAILURE;
 	}
 	/* init the subif into the dp_port_info*/
@@ -2031,7 +2031,7 @@ int dp_get_pmapper(struct net_device *dev, struct dp_pmapper *mapper, u32 flag)
 							 subif.port_id, mapper,
 							 flag);
 	if (ret == DP_FAILURE) {
-		PR_ERR("Failed to get mapper\n");
+		pr_err("Failed to get mapper\n");
 		return DP_FAILURE;
 	}
 	return ret;
@@ -2162,7 +2162,7 @@ int dp_set_min_frame_len(s32 dp_port,
 			 s32 min_frame_len,
 			 uint32_t flags)
 {
-	PR_INFO("Dummy dp_set_min_frame_len, need to implement later\n");
+	pr_info("Dummy dp_set_min_frame_len, need to implement later\n");
 	return DP_SUCCESS;
 }
 EXPORT_SYMBOL(dp_set_min_frame_len);
@@ -2205,7 +2205,7 @@ int dp_vlan_set(struct dp_tc_vlan *vlan, int flags)
 
 	if ((vlan->def_apply == DP_VLAN_APPLY_CTP) &&
 	    (subif.flag_pmapper == 1)) {
-		PR_ERR("cannot apply VLAN rule for pmapper device\n");
+		pr_err("cannot apply VLAN rule for pmapper device\n");
 		return DP_FAILURE;
 	} else if (vlan->def_apply == DP_VLAN_APPLY_CTP) {
 		info.dev_type = 0;
@@ -2370,7 +2370,7 @@ int dp_free_buffer_by_policy(struct dp_buffer_info *info, u32 flag)
 
 	ret = cqm_buffer_free_by_policy(&data);
 	if (ret != CBM_OK) {
-		DP_ERR("cqm_buffer_free_by_policy failed with %d\n", ret);
+		pr_err("cqm_buffer_free_by_policy failed with %d\n", ret);
 		return DP_FAILURE;
 	}
 	return DP_SUCCESS;
@@ -2407,17 +2407,17 @@ int dp_basic_proc(void)
 	register_notifier(0);
 	register_dp_cap(0);
 	if (request_dp(0)) /*register 1st dp instance */ {
-		PR_ERR("register_dp instance fail\n");
+		pr_err("register_dp instance fail\n");
 		return -1;
 	}
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_EXTRA_DEBUG)
-	PR_INFO("preempt_count=%x\n", preempt_count());
+	pr_info("preempt_count=%x\n", preempt_count());
 	if (preempt_count() & HARDIRQ_MASK)
-		PR_INFO("HARDIRQ_MASK\n");
+		pr_info("HARDIRQ_MASK\n");
 	if (preempt_count() & SOFTIRQ_MASK)
-		PR_INFO("SOFTIRQ_MASK\n");
+		pr_info("SOFTIRQ_MASK\n");
 	if (preempt_count() & NMI_MASK)
-		PR_INFO("NMI_MASK\n");
+		pr_info("NMI_MASK\n");
 #endif
 	dp_init_ok = 1;
 
@@ -2466,7 +2466,7 @@ MODULE_LICENSE("GPL");
 
 static int __init dp_dbg_lvl_set(char *str)
 {
-	PR_INFO("\n\ndp_dbg=%s\n\n", str);
+	pr_info("\n\ndp_dbg=%s\n\n", str);
 	dp_dbg_flag = dp_atoi(str);
 
 	return 0;

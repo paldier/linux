@@ -197,7 +197,7 @@ int dp_add_pp_gpid(int inst, int dpid, int vap, int gpid, int spl_gpid)
 	port_info = get_dp_port_info(inst, dpid);
 	ctp_info = get_ctp_assign(port_info->alloc_flags);
 	if (!ctp_info) {
-		PR_ERR("get_ctp_assign fail:0x%x for dpid=%d\n",
+		pr_err("get_ctp_assign fail:0x%x for dpid=%d\n",
 		       port_info->alloc_flags, dpid);
 		return DP_SUCCESS;
 	}
@@ -291,27 +291,27 @@ int dp_add_pp_gpid(int inst, int dpid, int vap, int gpid, int spl_gpid)
 		cfg.tx.prel2_en = true;
 	}
 #endif  /* end of LGM_DP_HARDCODE_TEST */
-	PR_INFO("add gpid=%d\n", gpid);
-	PR_INFO("cfg.rx.cls.n_flds=%d\n", cfg.rx.cls.n_flds);
-	PR_INFO("cfg.rx.mem_port_en=%d\n", cfg.rx.mem_port_en);
-	PR_INFO("cfg.rx.flow_ctrl_en=%d\n", cfg.rx.flow_ctrl_en);
-	PR_INFO("cfg.rx.policies_map=0x%X\n", cfg.rx.policies_map);
-	PR_INFO("cfg.rx.parse_type=%d\n", cfg.rx.parse_type);
+	pr_info("add gpid=%d\n", gpid);
+	pr_info("cfg.rx.cls.n_flds=%d\n", cfg.rx.cls.n_flds);
+	pr_info("cfg.rx.mem_port_en=%d\n", cfg.rx.mem_port_en);
+	pr_info("cfg.rx.flow_ctrl_en=%d\n", cfg.rx.flow_ctrl_en);
+	pr_info("cfg.rx.policies_map=0x%X\n", cfg.rx.policies_map);
+	pr_info("cfg.rx.parse_type=%d\n", cfg.rx.parse_type);
 
-	PR_INFO("cfg.tx.max_pkt_size=%d\n", cfg.tx.max_pkt_size);
-	PR_INFO("cfg.tx.headroom_size=%d\n", cfg.tx.headroom_size);
-	PR_INFO("cfg.tx.tailroom_size=%d\n", cfg.tx.tailroom_size);
-	PR_INFO("cfg.tx.min_pkt_len=%d\n", cfg.tx.min_pkt_len);
-	PR_INFO("cfg.tx.base_policy=%d\n", cfg.tx.base_policy);
-	PR_INFO("cfg.tx.policy_map=0x%X\n", cfg.tx.policies_map);
-	PR_INFO("cfg.tx.pkt_only_en=%d\n", cfg.tx.pkt_only_en);
-	PR_INFO("cfg.tx.seg_en=%d\n", cfg.tx.seg_en);
+	pr_info("cfg.tx.max_pkt_size=%d\n", cfg.tx.max_pkt_size);
+	pr_info("cfg.tx.headroom_size=%d\n", cfg.tx.headroom_size);
+	pr_info("cfg.tx.tailroom_size=%d\n", cfg.tx.tailroom_size);
+	pr_info("cfg.tx.min_pkt_len=%d\n", cfg.tx.min_pkt_len);
+	pr_info("cfg.tx.base_policy=%d\n", cfg.tx.base_policy);
+	pr_info("cfg.tx.policy_map=0x%X\n", cfg.tx.policies_map);
+	pr_info("cfg.tx.pkt_only_en=%d\n", cfg.tx.pkt_only_en);
+	pr_info("cfg.tx.seg_en=%d\n", cfg.tx.seg_en);
 
 	if (pp_port_add(gpid, &cfg)) {
-		PR_ERR("failed to create gpid: %d\n", gpid);
+		pr_err("failed to create gpid: %d\n", gpid);
 		return DP_FAILURE;
 	}
-	PR_INFO("GPID[%d] added ok\n", gpid);
+	pr_info("GPID[%d] added ok\n", gpid);
 	return DP_SUCCESS;
 }
 
@@ -361,13 +361,13 @@ int dp_add_default_egress_sess(struct dp_session *sess, int flag)
 	ret = pp_session_create(&args, &sess_id, NULL);
 	if (ret) {
 		/* IF failure, call PPA API to add this session... */
-		DP_ERR("session create failed. Call PPA to continue");
+		pr_err("session create failed. Call PPA to continue");
 		return DP_FAILURE;
 	}
 	port_info = get_dp_port_info(sess->inst, sess->in_port);
 	get_dp_port_subif(port_info, sess->vap)->dfl_sess[sess->class] =
 		sess_id;
-	DP_INFO("session id = %u\n", sess_id);
+	pr_info("session id = %u\n", sess_id);
 	return DP_SUCCESS;
 }
 
@@ -414,17 +414,17 @@ int dp_add_hostif(int inst, int dpid, int vap)
 			hif.dp.eg[i].pid = PP_PORT_INVALID;
 		}
 	}
-	DP_INFO("dpid=%d vap=%u\n", dpid, vap);
-	DP_INFO("hif.cls.port=%u\n", hif.cls.port);
-	DP_INFO("hif.cls.tc_bitmap=0x%x\n", hif.cls.tc_bitmap);
-	DP_INFO("hif.dp.color=%d\n", hif.dp.color);
+	pr_info("dpid=%d vap=%u\n", dpid, vap);
+	pr_info("hif.cls.port=%u\n", hif.cls.port);
+	pr_info("hif.cls.tc_bitmap=0x%x\n", hif.cls.tc_bitmap);
+	pr_info("hif.dp.color=%d\n", hif.dp.color);
 	for (i = 0; i < ARRAY_SIZE(hif.dp.eg); i++) {
-		DP_INFO("hif.dp.eg[%d].pid=%u\n", i, hif.dp.eg[i].pid);
-		DP_INFO("hif.dp.eg[%d].qos_q=%u\n", i, hif.dp.eg[i].qos_q);
+		pr_info("hif.dp.eg[%d].pid=%u\n", i, hif.dp.eg[i].pid);
+		pr_info("hif.dp.eg[%d].qos_q=%u\n", i, hif.dp.eg[i].qos_q);
 	}
 	ret = pp_hostif_add(&hif);
 	if (ret)
-		DP_ERR("hostif_add fail:dpid/gpid=%u/%u vap/tc=%d/%u\n",
+		pr_err("hostif_add fail:dpid/gpid=%u/%u vap/tc=%d/%u\n",
 		       dpid, hif.cls.port, vap, hif.cls.tc_bitmap);
 
 	/* high priority */
@@ -443,17 +443,17 @@ int dp_add_hostif(int inst, int dpid, int vap)
 			hif.dp.eg[i].pid  = PP_PORT_INVALID;
 		}
 	}
-	DP_INFO("dpid=%d vap=%u\n", dpid, vap);
-	DP_INFO("hif.cls.port=%u\n", hif.cls.port);
-	DP_INFO("hif.cls.tc_bitmap=0x%x\n", hif.cls.tc_bitmap);
-	DP_INFO("hif.dp.color=%u\n", hif.dp.color);
+	pr_info("dpid=%d vap=%u\n", dpid, vap);
+	pr_info("hif.cls.port=%u\n", hif.cls.port);
+	pr_info("hif.cls.tc_bitmap=0x%x\n", hif.cls.tc_bitmap);
+	pr_info("hif.dp.color=%u\n", hif.dp.color);
 	for (i = 0; i < ARRAY_SIZE(hif.dp.eg); i++) {
-		DP_INFO("hif.dp.eg[%d].pid=%u\n", i, hif.dp.eg[i].pid);
-		DP_INFO("hif.dp.eg[%d].qos_q=%u\n", i, hif.dp.eg[i].qos_q);
+		pr_info("hif.dp.eg[%d].pid=%u\n", i, hif.dp.eg[i].pid);
+		pr_info("hif.dp.eg[%d].qos_q=%u\n", i, hif.dp.eg[i].qos_q);
 	}
 	ret = pp_hostif_add(&hif);
 	if (ret)
-		DP_ERR("hostif_add fail:dpid/gpid=%d/%d vap/tc=%d/%d\n",
+		pr_err("hostif_add fail:dpid/gpid=%d/%d vap/tc=%d/%d\n",
 		       dpid, hif.cls.port, vap, hif.cls.tc_bitmap);
 
 	return DP_SUCCESS;
@@ -468,7 +468,7 @@ int dp_add_dflt_hostif(struct dp_dflt_hostif *hostif, int flag)
 	int i;
 
 	if (!hostif) {
-		DP_ERR("hostif NULL\n");
+		pr_err("hostif NULL\n");
 		return DP_FAILURE;
 	}
 	/* only allowed one queue for pp_hostif_dflt_set */
@@ -503,9 +503,9 @@ int dp_subif_pp_set(int inst, int portid, int vap,
 			num = port_info->gpid_num;
 		gpid = port_info->gpid_base + num;
 	}
-	PR_INFO("dp_subif_pp_set=%d\n", gpid);
+	pr_info("dp_subif_pp_set=%d\n", gpid);
 	if (dp_add_pp_gpid(inst, portid, vap, gpid, 0) == DP_FAILURE) {
-		DP_ERR("dp_add_pp_gpid for dport/vap=%d/%d\n", portid, vap);
+		pr_err("dp_add_pp_gpid for dport/vap=%d/%d\n", portid, vap);
 		return -1;
 	}
 	get_dp_port_subif(port_info, vap)->gpid = gpid;

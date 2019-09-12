@@ -226,7 +226,7 @@ static int dp_swdev_add_bport_to_list(struct br_info *br_item,
 			kmalloc(sizeof(struct bridge_member_port),
 				GFP_KERNEL);
 		if (!bport_list) {
-			PR_ERR("\n Node creation failed\n");
+			pr_err("\n Node creation failed\n");
 			return -1;
 		}
 		bport_list->dev_reg_flag = br_item->flag;
@@ -284,7 +284,7 @@ static int dp_swdev_cfg_vlan(struct bridge_id_entry_item *br_item,
 		idx = dp_dev_hash(dev, NULL);
 		dp_dev = dp_dev_lookup(&dp_dev_list[idx], dev, NULL, 0);
 		if (!dp_dev) {
-			PR_ERR("\n dp_dev NULL\n");
+			pr_err("\n dp_dev NULL\n");
 			/* Cannot return -1 from here as this fn is
 			 * called by swdev commit phase
 			 */
@@ -314,7 +314,7 @@ static int dp_swdev_filter_vlan(struct net_device *dev,
 	if (switchdev_trans_ph_prepare(trans)) {
 		/*Get current BPORT ID,instance from DP*/
 		if (dp_get_netif_subifid(dev, NULL, NULL, NULL, &subif, 0)) {
-			PR_ERR("%s dp_get_netif_subifid failed for %s\n",
+			pr_err("%s dp_get_netif_subifid failed for %s\n",
 			       __func__, dev->name);
 			return -EOPNOTSUPP;
 		}
@@ -370,9 +370,8 @@ static int dp_swdev_cfg_gswip(struct bridge_id_entry_item *br_item,
 		if (ret == 0) {
 			br_info = kmalloc(sizeof(*br_info), GFP_KERNEL);
 			if (!br_info) {
-				PR_ERR
-				("Switch cfg Fail as kmalloc %zd bytes fail\n",
-				 sizeof(*br_info));
+				pr_err("Switch cfg Fail as kmalloc %zd bytes fail\n",
+				       sizeof(*br_info));
 				/*TODO need to check return value
 				 *for switchdev commit
 				 */
@@ -474,7 +473,7 @@ static int dp_swdev_add_if(struct net_device *dev,
 			res = dp_get_netif_subifid(base, NULL, NULL, NULL,
 						   &subif, 0);
 			if (res) {
-				PR_ERR("dp_get_netif_subifid fail:%s\n",
+				pr_err("dp_get_netif_subifid fail:%s\n",
 				       base->name);
 				return -EOPNOTSUPP;
 			}
@@ -485,7 +484,7 @@ static int dp_swdev_add_if(struct net_device *dev,
 				get_dp_port_info(inst, port)->owner,
 				dev, dev->name, &subif,
 				DP_F_SUBIF_LOGICAL)) {
-				PR_ERR("dp_register_subif fail: %s\n",
+				pr_err("dp_register_subif fail: %s\n",
 				       dev->name);
 				return -EOPNOTSUPP;
 			}
@@ -532,7 +531,7 @@ static int dp_swdev_add_if(struct net_device *dev,
 					       br_dev->name);
 					br_item->fid = br_id;
 				} else {
-					PR_ERR("Switch config failed\r\n");
+					pr_err("Switch config failed\r\n");
 					kfree(br_item);
 					swdev_unlock();
 					return -EOPNOTSUPP;
@@ -643,7 +642,7 @@ static int dp_swdev_del_if(struct net_device *dev,
 			swdev_unlock();
 			if (dp_get_netif_subifid(base, NULL, NULL,
 						 NULL, &subif, 0)) {
-				PR_ERR("dp_get_netif_subifid fail:%s\n",
+				pr_err("dp_get_netif_subifid fail:%s\n",
 				       base->name);
 				/*Cannot Return -EOPNOTSUPP
 				 * in swdev commit stage
@@ -656,7 +655,7 @@ static int dp_swdev_del_if(struct net_device *dev,
 					get_dp_port_info(inst, port)->owner,
 					dev, dev->name, &subif,
 					DP_F_DEREGISTER)) {
-				PR_ERR("dp_register_subif fail: %s\n",
+				pr_err("dp_register_subif fail: %s\n",
 				       dev->name);
 				/*Cannot Return -EOPNOTSUPP
 				 * in swdev commit stage
@@ -1023,9 +1022,8 @@ int dp_notif_br_alloc(struct net_device *br_dev)
 			== 0)) {
 			br_info = kmalloc(sizeof(*br_info), GFP_KERNEL);
 			if (!br_info) {
-				PR_ERR
-				("Switch cfg Fail as kmalloc %zd bytes fail\n",
-				 sizeof(*br_info));
+				pr_err("Switch cfg Fail as kmalloc %zd bytes fail\n",
+				       sizeof(*br_info));
 				return -1;
 			}
 			br_info->fid = br_id;
@@ -1036,11 +1034,11 @@ int dp_notif_br_alloc(struct net_device *br_dev)
 			INIT_LIST_HEAD(&br_info->bp_list);
 			dp_swdev_insert_bridge_id_entry(br_info);
 		} else {
-			PR_ERR("Switch configuration failed\r\n");
+			pr_err("Switch configuration failed\r\n");
 			return -1;
 		}
 	} else {
-		PR_ERR("Switch bridge alloc failed\r\n");
+		pr_err("Switch bridge alloc failed\r\n");
 		return -1;
 	}
 	return br_id;
@@ -1120,12 +1118,12 @@ int dp_port_register_switchdev(struct dp_dev  *dp_dev,
 	int err = DP_SUCCESS;
 
 	if (!dp_port) {
-		PR_ERR("cannot support switchdev if dev is NULL\n");
+		pr_err("cannot support switchdev if dev is NULL\n");
 		return -1;
 	}
 	if (dp_port_prop[dp_dev->inst].info.swdev_flag == 1) {
 		if (!dp_port->netdev_ops) {
-			PR_ERR("netdev_ops not defined\n");
+			pr_err("netdev_ops not defined\n");
 			return -1;
 		}
 	/* switchdev ops register */

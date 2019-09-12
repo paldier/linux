@@ -269,9 +269,9 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 	} else if (dp_strncmpi(param_list[0], "refresh",
 			       strlen("refresh")) == 0) {
 		dp_get_gsw_parser_30(NULL, NULL, NULL, NULL);
-		PR_INFO("value:cpu=%d mpe1=%d mpe2=%d mpe3=%d\n", pinfo[0].v,
+		pr_info("value:cpu=%d mpe1=%d mpe2=%d mpe3=%d\n", pinfo[0].v,
 			pinfo[1].v, pinfo[2].v, pinfo[3].v);
-		PR_INFO("size :cpu=%d mpe1=%d mpe2=%d mpe3=%d\n",
+		pr_info("size :cpu=%d mpe1=%d mpe2=%d mpe3=%d\n",
 			pinfo[0].size, pinfo[1].size, pinfo[2].size,
 			pinfo[3].size);
 		return count;
@@ -282,7 +282,7 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 			flag = 0;
 		else if (flag > 3)
 			flag = 3;
-		PR_INFO("eProcessPath_Action set to %d\n", flag);
+		pr_info("eProcessPath_Action set to %d\n", flag);
 		/*: All packets set to same mpe flag as specified */
 		memset(&pce, 0, sizeof(pce));
 		pce.pattern.nIndex = pce_rule_id;
@@ -309,7 +309,7 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce.action.nRMON_Id = 0;	/*RMON_UDP_CNTR; */
 
 		if (gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, &pce)) {
-			PR_ERR("PCE rule add fail for GSW_PCE_RULE_WRITE\n");
+			pr_err("PCE rule add fail for GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
 
@@ -322,17 +322,17 @@ static ssize_t proc_parser_write(struct file *file, const char *buf,
 		pce.pattern.nIndex = pce_rule_id;
 		pce.pattern.bEnable = 0;
 		if (gsw_tflow->TFLOW_PceRuleWrite(gsw_handle, &pce)) {
-			PR_ERR("PCE rule add fail for GSW_PCE_RULE_WRITE\n");
+			pr_err("PCE rule add fail for GSW_PCE_RULE_WRITE\n");
 			return count;
 		}
 	} else {
-		PR_INFO("Usage: echo %s > parser\n",
+		pr_info("Usage: echo %s > parser\n",
 			"<enable/disable> [cpu] [mpe1] [mpe2] [mpe3]");
-		PR_INFO("Usage: echo <refresh> parser\n");
+		pr_info("Usage: echo <refresh> parser\n");
 
-		PR_INFO("Usage: echo %s > parser\n",
+		pr_info("Usage: echo %s > parser\n",
 			" mark eProcessPath_Action_value(0~3)");
-		PR_INFO("Usage: echo unmark > parser\n");
+		pr_info("Usage: echo unmark > parser\n");
 		return count;
 	}
 
@@ -694,7 +694,7 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 			ret = rmon->RMON_Port_Get(gsw_handle,
 						  &gsw_r_rmon_mib[i]);
 			if (ret != GSW_statusOk) {
-				PR_ERR("RMON_PORT_GET fail for Port %d\n", i);
+				pr_err("RMON_PORT_GET fail for Port %d\n", i);
 				return -1;
 			}
 		}
@@ -704,7 +704,7 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 		ret = rmon->RMON_Redirect_Get(gsw_handle, &gswr_rmon_redirect);
 
 		if (ret != GSW_statusOk) {
-			PR_ERR("GSW_RMON_REDIRECT_GET fail for Port %d\n", i);
+			pr_err("GSW_RMON_REDIRECT_GET fail for Port %d\n", i);
 			return -1;
 		}
 
@@ -716,7 +716,7 @@ static int proc_gsw_port_rmon_dump(struct seq_file *s, int pos)
 			ret = rmon->RMON_Port_Get(gsw_handle,
 						  &gsw_l_rmon_mib[i]);
 			if (ret != GSW_statusOk) {
-				PR_ERR("RMON_PORT_GET fail for Port %d\n", i);
+				pr_err("RMON_PORT_GET fail for Port %d\n", i);
 				return -1;
 			}
 		}
@@ -994,11 +994,11 @@ EXIT_OK:
 	return count;
 
 help:
-	PR_INFO("usage: echo clear > /proc/dp/rmon\n");
-	PR_INFO("usage: echo TMU on > /proc/dp/rmon\n");
-	PR_INFO("usage: echo TMU off > /proc/dp/rmon\n");
-	PR_INFO("usage: echo RMON Full > /proc/dp/rmon\n");
-	PR_INFO("usage: echo RMON Basic > /proc/dp/rmon\n");
+	pr_info("usage: echo clear > /proc/dp/rmon\n");
+	pr_info("usage: echo TMU on > /proc/dp/rmon\n");
+	pr_info("usage: echo TMU off > /proc/dp/rmon\n");
+	pr_info("usage: echo RMON Full > /proc/dp/rmon\n");
+	pr_info("usage: echo RMON Basic > /proc/dp/rmon\n");
 	return count;
 }
 
@@ -1085,7 +1085,7 @@ static void pmac_eg_cfg(char *param_list[], int num, dp_pmac_cfg_t *pmac_cfg)
 					value = dp_atoi(param_list[i + 1]);
 					egress_entries[j].egress_callback(
 							pmac_cfg, value);
-					PR_INFO("egress pmac ep %s config ok\n",
+					pr_info("egress pmac ep %s config ok\n",
 						egress_entries[j].name);
 					break;
 				}
@@ -1095,7 +1095,7 @@ static void pmac_eg_cfg(char *param_list[], int num, dp_pmac_cfg_t *pmac_cfg)
 				value = dp_atoi(param_list[i + 1]);
 				egress_entries[j].egress_callback(pmac_cfg,
 								value);
-				PR_INFO("egress pmac ep %s configu ok\n",
+				pr_info("egress pmac ep %s configu ok\n",
 					egress_entries[j].name);
 				break;
 			}
@@ -1135,7 +1135,7 @@ ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 					value = dp_atoi(param_list[i + 1]);
 					ingress_entries[j].ingress_callback(
 							&pmac_cfg, value);
-					PR_INFO("ingress pmac ep %s configed\n",
+					pr_info("ingress pmac ep %s configed\n",
 						ingress_entries[j].name);
 					break;
 				}
@@ -1145,7 +1145,7 @@ ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 		ret = dp_pmac_set_30(inst, port, &pmac_cfg);
 
 		if (ret != 0) {
-			PR_ERR("pmac set configuration failed\n");
+			pr_err("pmac set configuration failed\n");
 			return -1;
 		}
 	} else if (dp_strncmpi(param_list[0], "egress", 6) == 0) {
@@ -1155,28 +1155,28 @@ ssize_t ep_port_write(struct file *file, const char *buf, size_t count,
 		ret = dp_pmac_set_30(inst, port, &pmac_cfg);
 
 		if (ret != 0) {
-			PR_ERR("pmac set configuration failed\n");
+			pr_err("pmac set configuration failed\n");
 			return -1;
 		}
 	} else {
-		PR_INFO("wrong command\n");
+		pr_info("wrong command\n");
 		goto help;
 	}
 
 	return count;
 help:
-	PR_INFO("echo ingress/egress [ep_port] %s > /proc/dp/ep\n",
+	pr_info("echo ingress/egress [ep_port] %s > /proc/dp/ep\n",
 		"['ingress/egress fields'] [value]");
-	PR_INFO("(eg) echo ingress 1 pmac 1 > /proc/dp/ep\n");
-	PR_INFO("(eg) echo egress 1 rm_l2hdr 2 > /proc/dp/ep\n");
-	PR_INFO("echo %s ['errdisc/pmac/pmac_pmap/pmac_en_pmap/pmac_tc",
+	pr_info("(eg) echo ingress 1 pmac 1 > /proc/dp/ep\n");
+	pr_info("(eg) echo egress 1 rm_l2hdr 2 > /proc/dp/ep\n");
+	pr_info("echo %s ['errdisc/pmac/pmac_pmap/pmac_en_pmap/pmac_tc",
 		"ingress [ep_port] ");
-	PR_INFO("                         %s > /proc/dp/ep\n",
+	pr_info("                         %s > /proc/dp/ep\n",
 		"/pmac_en_tc/pmac_subifid/pmac_srcport'] [value]");
-	PR_INFO("echo  %s %s> /proc/dp/ep\n",
+	pr_info("echo  %s %s> /proc/dp/ep\n",
 		"egress [ep_port]",
 		"['rx_dmachan/fcs/pmac/res_dw1/res1_dw0/res2_dw0] [value]");
-	PR_INFO("echo egress [ep_port] ['rm_l2hdr'] [value] > /proc/dp/ep\n");
+	pr_info("echo egress [ep_port] ['rm_l2hdr'] [value] > /proc/dp/ep\n");
 	return count;
 }
 
@@ -1201,13 +1201,13 @@ int dp_sub_proc_install_30(void)
 	int i;
 
 	if (!dp_proc_node) {
-		PR_INFO("dp_sub_proc_install failed\n");
+		pr_info("dp_sub_proc_install failed\n");
 		return 0;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(dp_proc_entries); i++)
 		dp_proc_entry_create(dp_proc_node, &dp_proc_entries[i]);
-	PR_INFO("dp_sub_proc_install ok\n");
+	pr_info("dp_sub_proc_install ok\n");
 	return 0;
 }
 

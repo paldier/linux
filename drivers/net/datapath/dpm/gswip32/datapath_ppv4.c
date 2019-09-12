@@ -85,7 +85,7 @@ int dp_pp_alloc_port_32(struct ppv4_port *info)
 	if (qos_port_allocate_32(qos_dev,
 				 info->cqm_deq_port,
 				 &qos_p_id)) {
-		PR_ERR("Failed to alloc QoS for deq_port=%d\n",
+		pr_err("Failed to alloc QoS for deq_port=%d\n",
 		       info->cqm_deq_port);
 		return -1;
 	}
@@ -118,7 +118,7 @@ int dp_pp_alloc_port_32(struct ppv4_port *info)
 	}
 #endif
 	if (qos_port_set_32(qos_dev, qos_p_id, &conf)) {
-		PR_ERR("qos_port_set_32 fail for port(cqm/qos) %d/%d\n",
+		pr_err("qos_port_set_32 fail for port(cqm/qos) %d/%d\n",
 		       info->cqm_deq_port, qos_p_id);
 		qos_port_remove_32(qos_dev, qos_p_id);
 		return -1;
@@ -142,7 +142,7 @@ int dp_pp_alloc_queue_32(struct ppv4_queue *info)
 	struct pp_qos_dev *qos_dev = priv->qdev;
 
 	if (qos_queue_allocate_32(qos_dev, &q_node_id)) {
-		PR_ERR("qos_queue_allocate_32 fail\n");
+		pr_err("qos_queue_allocate_32 fail\n");
 		return -1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS, "qos_queue_allocate_32 ok q_node=%d\n",
@@ -153,14 +153,14 @@ int dp_pp_alloc_queue_32(struct ppv4_queue *info)
 	conf.wred_max_allowed = 0x400; /*max qocc in pkt */
 	conf.queue_child_prop.parent = info->parent;
 	if (qos_queue_set_32(qos_dev, q_node_id, &conf)) {
-		PR_ERR("qos_queue_set_32 fail for node_id=%d to parent=%d\n",
+		pr_err("qos_queue_set_32 fail for node_id=%d to parent=%d\n",
 		       q_node_id, info->parent);
 		return -1;
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS, "To attach q_node=%d to parent_node=%d\n",
 		 q_node_id, conf.queue_child_prop.parent);
 	if (qos_queue_info_get_32(qos_dev, q_node_id, &q_info)) {
-		PR_ERR("qos_queue_info_get_32 fail for queue node_id=%d\n",
+		pr_err("qos_queue_info_get_32 fail for queue node_id=%d\n",
 		       q_node_id);
 		return -1;
 	}
@@ -188,7 +188,7 @@ int init_ppv4_qos_32(int inst, int flag)
 	struct cbm_cpu_port_data cpu_data = {0};
 #endif
 	if (!priv) {
-		PR_ERR("priv is NULL\n");
+		pr_err("priv is NULL\n");
 		return DP_FAILURE;
 	}
 	if (!(flag & DP_PLATFORM_INIT)) {
@@ -198,25 +198,25 @@ int init_ppv4_qos_32(int inst, int flag)
 	}
 	priv->qdev = qos_dev_open_32(dp_port_prop[inst].qos_inst);
 	if (!priv->qdev) {
-		PR_ERR("Could not open qos instance %d\n",
+		pr_err("Could not open qos instance %d\n",
 		       dp_port_prop[inst].qos_inst);
 		return DP_FAILURE;
 	}
-	PR_INFO("qos_dev_open_32 qdev=%px\n", priv->qdev);
+	pr_info("qos_dev_open_32 qdev=%px\n", priv->qdev);
 	t = kzalloc(sizeof(*t), GFP_ATOMIC);
 	if (!t) {
-		PR_ERR("kzalloc fail: %zd bytes\n", sizeof(*t));
+		pr_err("kzalloc fail: %zd bytes\n", sizeof(*t));
 		return DP_FAILURE;
 	}
 	if (cbm_cpu_port_get(&cpu_data, 0)) {
-		PR_ERR("cbm_cpu_port_get for CPU port?\n");
+		pr_err("cbm_cpu_port_get for CPU port?\n");
 		goto EXIT;
 	}
 	/* Sotre drop/flush port's info */
 	flush_port = &cpu_data.dq_tx_flush_info;
 	idx = flush_port->deq_port;
 	if ((idx == 0) || (idx >= ARRAY_SIZE(dp_deq_port_tbl[inst]))) {
-		PR_ERR("Wrog DP Flush port[%d]\n", idx);
+		pr_err("Wrog DP Flush port[%d]\n", idx);
 		goto EXIT;
 	}
 	priv->cqm_drop_p = idx;
@@ -240,7 +240,7 @@ int init_ppv4_qos_32(int inst, int flag)
 	if (qos_port_allocate_32(priv->qdev,
 				 priv->cqm_drop_p,
 				 &priv->ppv4_drop_p)) {
-		PR_ERR("Failed to alloc  qos drop port=%d\n",
+		pr_err("Failed to alloc  qos drop port=%d\n",
 		       priv->cqm_drop_p);
 		goto EXIT;
 	}
@@ -273,14 +273,14 @@ int init_ppv4_qos_32(int inst, int flag)
 	}
 #endif
 	if (qos_port_set_32(priv->qdev, priv->ppv4_drop_p, &t->p_conf)) {
-		PR_ERR("qos_port_set_32 fail for port(cqm/qos) %d/%d\n",
+		pr_err("qos_port_set_32 fail for port(cqm/qos) %d/%d\n",
 		       priv->cqm_drop_p, priv->ppv4_drop_p);
 		qos_port_remove_32(priv->qdev, priv->ppv4_drop_p);
 		goto EXIT;
 	}
 
 	if (qos_queue_allocate_32(priv->qdev, &q)) {
-		PR_ERR("qos_queue_allocate_32 fail\n");
+		pr_err("qos_queue_allocate_32 fail\n");
 		qos_port_remove_32(priv->qdev, q);
 		goto EXIT;
 	}
@@ -292,14 +292,14 @@ int init_ppv4_qos_32(int inst, int flag)
 	t->q_conf.wred_max_allowed = 0; /*max qocc in pkt */
 	t->q_conf.queue_child_prop.parent = priv->ppv4_drop_p;
 	if (qos_queue_set_32(priv->qdev, q, &t->q_conf)) {
-		PR_ERR("qos_queue_set_32 fail for node_id=%d to parent=%d\n",
+		pr_err("qos_queue_set_32 fail for node_id=%d to parent=%d\n",
 		       q, t->q_conf.queue_child_prop.parent);
 		goto EXIT;
 	}
 	DP_DEBUG(DP_DBG_FLAG_QOS, "To attach q_node=%d to parent_node=%d\n",
 		 q, priv->ppv4_drop_p);
 	if (qos_queue_info_get_32(priv->qdev, q, &t->q_info)) {
-		PR_ERR("qos_queue_info_get_32 fail for queue node_id=%d\n",
+		pr_err("qos_queue_info_get_32 fail for queue node_id=%d\n",
 		       q);
 		goto EXIT;
 	}

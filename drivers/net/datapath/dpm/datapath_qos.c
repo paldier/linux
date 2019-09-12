@@ -158,7 +158,7 @@ int dp_deq_port_res_get(struct dp_dequeue_res *res, int flag)
 			return DP_FAILURE;
 		dp_get_netif_subifid(res->dev, NULL, NULL, NULL, subif, 0);
 		if (!subif->subif_num) {
-			PR_ERR("Not found dev %s\n", res->dev->name);
+			pr_err("Not found dev %s\n", res->dev->name);
 			return DP_FAILURE;
 		}
 		res->dp_port = subif->port_id;

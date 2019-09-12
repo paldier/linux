@@ -62,7 +62,7 @@ static void rx_dbg_zero_port(struct sk_buff *skb, struct dma_rx_desc_0 *desc0,
 	last = jiffies;
 	DP_DEBUG(-1, "%s=%d vap=%d\n",
 		 (ep) ? "ep" : "port_id", port_id, vap);
-	PR_ERR("\nDrop for ep and source port id both zero ??\n");
+	pr_err("\nDrop for ep and source port id both zero ??\n");
 	dp_port_prop[inst].info.dump_rx_dma_desc(desc0, desc1, desc2, desc3);
 
 	if (paser_exist)
@@ -101,7 +101,7 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		}
 		lct_skb = skb_clone(skb, GFP_ATOMIC);
 		if (!lct_skb) {
-			PR_ERR("LCT mcast/bcast skb clone fail\n");
+			pr_err("LCT mcast/bcast skb clone fail\n");
 			return -1;
 		}
 		lct_skb->dev = sif->netif;
@@ -154,11 +154,11 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 
 	dp_port = get_dp_port_info(inst, 0);
 	if (!skb) {
-		PR_ERR("skb NULL\n");
+		pr_err("skb NULL\n");
 		return DP_FAILURE;
 	}
 	if (!skb->data) {
-		PR_ERR("skb->data NULL\n");
+		pr_err("skb->data NULL\n");
 		return DP_FAILURE;
 	}
 
@@ -306,7 +306,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 
 	if (unlikely(port_id >=
 	    dp_port_prop[inst].info.cap.max_num_dp_ports - 1)) {
-		PR_ERR("Drop for wrong ep or src port id=%u ??\n",
+		pr_err("Drop for wrong ep or src port id=%u ??\n",
 		       port_id);
 		goto RX_DROP;
 	} else if (unlikely(dp_port->status == PORT_FREE)) {

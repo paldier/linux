@@ -123,7 +123,7 @@ void set_child_per_box(struct q_print_info *q_info)
 			idx = p_box->n_q + p_box->n_sch;
 
 			if (idx >= PROC_DP_MAX_CHILD_PER_SCH_PORT) {
-				PR_ERR("too many child: should <%d\n",
+				pr_err("too many child: should <%d\n",
 				       PROC_DP_MAX_CHILD_PER_SCH_PORT);
 				return;
 			}
@@ -139,12 +139,12 @@ void set_child_per_box(struct q_print_info *q_info)
 		idx = p_box->n_q + p_box->n_sch;
 
 		if (idx >= PROC_DP_MAX_CHILD_PER_SCH_PORT) {
-			PR_ERR("too many child: should <%d\n",
+			pr_err("too many child: should <%d\n",
 			       PROC_DP_MAX_CHILD_PER_SCH_PORT);
 			return;
 		}
 		if (idx < 0) {
-			PR_ERR("wrong: idx(%d) should >= 0\n", idx);
+			pr_err("wrong: idx(%d) should >= 0\n", idx);
 			return;
 		}
 		p_box->child[idx].filled = 1;
@@ -162,14 +162,14 @@ void set_child_per_box(struct q_print_info *q_info)
 			c_box = q_info->sch_box[i][j];
 			idx = p_box->n_q + p_box->n_sch;
 			if (idx < 0) {
-				PR_ERR("wrong: idx(%d) should >= 0\n", idx);
+				pr_err("wrong: idx(%d) should >= 0\n", idx);
 				return;
 			}
 			c_box->p_box = p_box;
 			if (find_child_box(p_box->child, c_box))
 				continue;
 			if (idx >= PROC_DP_MAX_CHILD_PER_SCH_PORT - 1) {
-				PR_ERR("too many child: should <%d\n",
+				pr_err("too many child: should <%d\n",
 				       PROC_DP_MAX_CHILD_PER_SCH_PORT);
 				return;
 			}
@@ -232,7 +232,7 @@ int check_location(struct q_print_info *q_info)
 
 	for (i = 0; i < q_info->box_num; i++) {
 		if ((q_info->box[i].l.x2 - q_info->box[i].l.x1) != BOX_WIDTH) {
-			PR_ERR("sched[%d] x1/x2: %d - %d should equal%d\n",
+			pr_err("sched[%d] x1/x2: %d - %d should equal%d\n",
 			       q_info->box[i].node,
 			       q_info->box[i].l.x2,
 			       q_info->box[i].l.x1,
@@ -243,7 +243,7 @@ int check_location(struct q_print_info *q_info)
 			continue;
 		if ((q_info->box[i].p_box->l.x1 - q_info->box[i].l.x2) !=
 			PADDING_BETWEEN_BOX_X) {
-			PR_ERR("sched[%d]<->sched[%d]: %d - %d %s%d\n",
+			pr_err("sched[%d]<->sched[%d]: %d - %d %s%d\n",
 			       q_info->box[i].node,
 			       q_info->box[i].p_box->node,
 			       q_info->box[i].p_box->l.x2,
@@ -504,7 +504,7 @@ void print_all(struct seq_file *s, struct q_print_info *q_info)
 
 	buf = kmalloc(cols * rows + 1, GFP_KERNEL);
 	if (!buf) {
-		PR_ERR("fail to alloc %d bytes\n", cols * rows + 1);
+		pr_err("fail to alloc %d bytes\n", cols * rows + 1);
 		return;
 	}
 	memset(buf, ' ', cols * rows);
@@ -557,7 +557,7 @@ struct q_print_info *collect_info(struct seq_file *s,
 	size = sizeof(*q_info) + 1;
 	q_info = kmalloc(size, GFP_KERNEL);
 	if (!q_info) {
-		PR_ERR("fail to alloc %d bytes\n", size);
+		pr_err("fail to alloc %d bytes\n", size);
 		return NULL;
 	}
 	memset(q_info, 0, size);
@@ -574,7 +574,7 @@ struct q_print_info *collect_info(struct seq_file *s,
 		if (res->q_res[i].sch_lvl <= 0)
 			continue;
 		if (res->q_res[i].sch_lvl > PROC_MAX_BOX_LVL - 1) {
-			PR_ERR("Too many sched lvl(%d): expect<=%d\n",
+			pr_err("Too many sched lvl(%d): expect<=%d\n",
 			       res->q_res[i].sch_lvl,
 			       PROC_MAX_BOX_LVL - 1);
 				goto ERR_EXIT;
@@ -601,7 +601,7 @@ struct q_print_info *collect_info(struct seq_file *s,
 			q_info->sch_box[i][j] = &q_info->box[q_info->box_num];
 			q_info->box_num++;
 			if (q_info->box_num == ARRAY_SIZE(q_info->box)) {
-				PR_ERR("sched+port (%d) in one node: %s<%zd\n",
+				pr_err("sched+port (%d) in one node: %s<%zd\n",
 				       q_info->box_num,
 				       "expect",
 				       ARRAY_SIZE(q_info->box));
@@ -621,17 +621,17 @@ struct q_print_info *collect_info(struct seq_file *s,
 			continue;
 		for (j = 0; j < q_info->sch_lvl[i]; j++) {
 			if (!q_info->sch_box[i][j]->filled) {
-				PR_ERR("sch_box[%d][%d].fill should 1:%d\n",
+				pr_err("sch_box[%d][%d].fill should 1:%d\n",
 				       i, j, q_info->sch_box[i][j]->filled);
 				goto ERR_EXIT;
 			}
 			if (q_info->sch_box[i][j]->n_q < 0) {
-				PR_ERR("sch_box[%d][%d].n_q should >=0:%d\n",
+				pr_err("sch_box[%d][%d].n_q should >=0:%d\n",
 				       i, j, q_info->sch_box[i][j]->n_q);
 				goto ERR_EXIT;
 			}
 			if (q_info->sch_box[i][j]->n_sch < 0) {
-				PR_ERR("sch_box[%d][%d].n_sch should >=0:%d\n",
+				pr_err("sch_box[%d][%d].n_sch should >=0:%d\n",
 				       i, j, q_info->sch_box[i][j]->n_sch);
 				goto ERR_EXIT;
 			}
@@ -831,7 +831,7 @@ int get_res(int inst, int dp_port, int tconf_idx)
 		 "get_res: dp_port=%d tconf_idx=%d\n",
 		 tmp_res.dp_port, tmp_res.cqm_deq_idx);
 	if (dp_deq_port_res_get(&tmp_res, 0)) {
-		PR_ERR("dp_deq_port_res_get fail: inst=%d dp_port=%d, %s=%d\n",
+		pr_err("dp_deq_port_res_get fail: inst=%d dp_port=%d, %s=%d\n",
 		       qos_layout_inst, tmp_res.dp_port,
 		       "tconf_idx", curr_tconf_idx);
 		return -1;
@@ -926,33 +926,33 @@ int qos_dump_start(void)
 
 void qos_create_qos_help(void)
 {
-	PR_INFO("QOS Command Help:\n\n");
-	PR_INFO("     Add Queue: echo add_q <qid> <schid>:<leaf> %s%s\n\n",
+	pr_info("QOS Command Help:\n\n");
+	pr_info("     Add Queue: echo add_q <qid> <schid>:<leaf> %s%s\n\n",
 		"<schid>:<leaf> <schid>:<leaf> <schid>:<leaf> <portid> ",
 		"> /sys/kernel/debug/dp/qos");
-	PR_INFO("            id: qid/schid_node/cbm_port\n");
-	PR_INFO("  Delete Queue: echo del_q qid > /sys/kernel/debug/dp/qos\n");
-	PR_INFO("  Delete Sched: echo del_sch schid > %s\n",
+	pr_info("            id: qid/schid_node/cbm_port\n");
+	pr_info("  Delete Queue: echo del_q qid > /sys/kernel/debug/dp/qos\n");
+	pr_info("  Delete Sched: echo del_sch schid > %s\n",
 		"/sys/kernel/debug/dp/qos");
-	PR_INFO("  SET PRIO: echo prio <id> <type> <arbi> <prio_wfq> %s\n",
+	pr_info("  SET PRIO: echo prio <id> <type> <arbi> <prio_wfq> %s\n",
 		"> /sys/kernel/debug/dp/qos");
-	PR_INFO("            id: phy_queue/sched_node\n");
-	PR_INFO("          type: queue/sched\n");
-	PR_INFO("          arbi: null/sp/wsp/wrr/wrr_wsp/wfq\n");
-	PR_INFO("    CFG SHAPER: echo shaper <cmd> <id> <type> %s\n",
+	pr_info("            id: phy_queue/sched_node\n");
+	pr_info("          type: queue/sched\n");
+	pr_info("          arbi: null/sp/wsp/wrr/wrr_wsp/wfq\n");
+	pr_info("    CFG SHAPER: echo shaper <cmd> <id> <type> %s\n",
 		"<cir> <pir> <cbs> <pbs> > /sys/kernel/debug/dp/qos");
-	PR_INFO("           cmd: add/remove/disable\n");
-	PR_INFO("            id: qid/sched_node/cbm_port\n");
-	PR_INFO("          type: queue/sched/port\n");
-	PR_INFO("           cir: no_limit/max/value\n");
-	PR_INFO("      SET NODE: echo set_node <id> <type> <cmd>... %s\n",
+	pr_info("           cmd: add/remove/disable\n");
+	pr_info("            id: qid/sched_node/cbm_port\n");
+	pr_info("          type: queue/sched/port\n");
+	pr_info("           cir: no_limit/max/value\n");
+	pr_info("      SET NODE: echo set_node <id> <type> <cmd>... %s\n",
 		"> /sys/kernel/debug/dp/qos");
-	PR_INFO("            id: phy_queue/sched_node/cbm_port\n");
-	PR_INFO("          type: queue/sched/port\n");
-	PR_INFO("           cmd: enable(unblock)/disable(block)/%s\n",
+	pr_info("            id: phy_queue/sched_node/cbm_port\n");
+	pr_info("          type: queue/sched/port\n");
+	pr_info("           cmd: enable(unblock)/disable(block)/%s\n",
 		"resume/suspend");
-	PR_INFO("                enable/disable: only for queue/port\n");
-	PR_INFO("                resume/suspend: for all nodes\n");
+	pr_info("                enable/disable: only for queue/port\n");
+	pr_info("                resume/suspend: for all nodes\n");
 }
 
 ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
@@ -984,7 +984,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		struct dp_qos_link cfg = {0};
 
 		if (num < 3) {
-			PR_INFO("Wrong Parameter(try help):echo help > %s\n",
+			pr_info("Wrong Parameter(try help):echo help > %s\n",
 				"/sys/kernel/debug/dp/qos");
 			return count;
 		}
@@ -999,7 +999,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		cfg.n_sch_lvl = level;
 
 		if (!level)
-			PR_INFO("QID %d->", cfg.q_id);
+			pr_info("QID %d->", cfg.q_id);
 
 		for (i = 0; (i < (num - 3) && i < DP_MAX_SCH_LVL); i++) {
 			dp_replace_ch(param_list[i + idx],
@@ -1011,13 +1011,13 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			cfg.sch[i].arbi = 1;
 			cfg.sch[i].prio_wfq = 0;
 
-			PR_INFO("SCH %d:LEAF %d->", cfg.sch[i].id,
+			pr_info("SCH %d:LEAF %d->", cfg.sch[i].id,
 				cfg.sch[i].leaf);
 		}
 
-		PR_INFO("PORT %d\n", cfg.cqm_deq_port);
+		pr_info("PORT %d\n", cfg.cqm_deq_port);
 		if (dp_link_add(&cfg, 0)) {
-			PR_ERR("dp_link_add failed\n");
+			pr_err("dp_link_add failed\n");
 			return count;
 		}
 	} else if (dp_strncmpi(param_list[0], "del_q", strlen("del_q")) == 0) {
@@ -1027,7 +1027,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		node.type = DP_NODE_QUEUE;
 
 		if (dp_node_free(&node, DP_NODE_SMART_FREE)) {
-			PR_ERR("dp_node_free failed\n");
+			pr_err("dp_node_free failed\n");
 			return count;
 		}
 	} else if (dp_strncmpi(param_list[0], "del_p", strlen("del_p")) == 0) {
@@ -1041,7 +1041,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			node.type = DP_NODE_PORT;
 			node.id.cqm_deq_port = dp_atoi(param_list[1]);
 		} else {
-			PR_ERR("unknown type %s\n", param_list[2]);
+			pr_err("unknown type %s\n", param_list[2]);
 		}
 	} else if (dp_strncmpi(param_list[0], "del_sch",
 			       strlen("del_sch")) == 0) {
@@ -1054,10 +1054,10 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		node.type = DP_NODE_SCH;
 
 		if (dp_node_link_get(&node_link, 0))
-			PR_ERR("dp_node_link_get failed\n");
+			pr_err("dp_node_link_get failed\n");
 
 		if (dp_node_free(&node, 0)) {
-			PR_ERR("dp_node_free failed\n");
+			pr_err("dp_node_free failed\n");
 			return count;
 		}
 
@@ -1070,20 +1070,20 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			res = dp_node_link_get(&node_link, 0);
 
 			if (dp_node_free(&node, 0))
-				PR_ERR("dp_node_free failed\n");
+				pr_err("dp_node_free failed\n");
 
 			if (res) {
-				PR_ERR("dp_node_link_get failed\n");
+				pr_err("dp_node_link_get failed\n");
 				break;
 			}
 		}
 
-		PR_INFO("\nSched %d deleted\n\n", node_link.node_id.sch_id);
+		pr_info("\nSched %d deleted\n\n", node_link.node_id.sch_id);
 	} else if (dp_strncmpi(param_list[0], "prio", strlen("prio")) == 0) {
 		struct dp_node_prio node_prio = {0};
 
 		if (num < 3) {
-			PR_ERR("id, type are required!%s%s\n",
+			pr_err("id, type are required!%s%s\n",
 			       "\n(try help):echo help > ",
 			       "/sys/kernel/debug/dp/qos");
 			return count;
@@ -1101,11 +1101,11 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			node_prio.type = DP_NODE_PORT;
 			node_prio.id.cqm_deq_port = dp_atoi(param_list[1]);
 		} else {
-			PR_ERR("unknown type %s\n", param_list[2]);
+			pr_err("unknown type %s\n", param_list[2]);
 		}
 
 		if (dp_qos_link_prio_get(&node_prio, 0))
-			PR_ERR("dp_qos_link_prio_get failed\n");
+			pr_err("dp_qos_link_prio_get failed\n");
 
 		if (dp_strncmpi(param_list[3], "null", strlen("null")) == 0) {
 			node_prio.arbi = ARBITRATION_NULL;
@@ -1125,7 +1125,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			   strlen("wfq")) == 0) {
 			node_prio.arbi = ARBITRATION_WFQ;
 		} else {
-			PR_ERR("unknown type %s\n", param_list[3]);
+			pr_err("unknown type %s\n", param_list[3]);
 			return count;
 		}
 
@@ -1133,7 +1133,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			node_prio.prio_wfq = dp_atoi(param_list[4]);
 
 		if (dp_qos_link_prio_set(&node_prio, 0)) {
-			PR_ERR("dp_qos_link_prio_set failed\n");
+			pr_err("dp_qos_link_prio_set failed\n");
 			return count;
 		}
 	} else if (dp_strncmpi(param_list[0], "shaper",
@@ -1141,7 +1141,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		struct dp_shaper_conf shaper_cfg = {0};
 
 		if (num < 4) {
-			PR_ERR("cmd, id, type are required!%s%s\n",
+			pr_err("cmd, id, type are required!%s%s\n",
 			       "\n(try help):echo help > ",
 			       "/sys/kernel/debug/dp/qos");
 			return count;
@@ -1156,7 +1156,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 				     strlen("disable")) == 0)
 			shaper_cfg.cmd = DP_SHAPER_CMD_DISABLE;
 		else
-			PR_ERR("unknown cmd try: echo help %s",
+			pr_err("unknown cmd try: echo help %s",
 			       "> /sys/kernel/debug/dp/qos");
 
 		if (dp_strncmpi(param_list[3], "queue", strlen("queue")) == 0) {
@@ -1171,12 +1171,12 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			shaper_cfg.type = DP_NODE_PORT;
 			shaper_cfg.id.sch_id = dp_atoi(param_list[2]);
 		} else {
-			PR_ERR("unknown type %s\n", param_list[3]);
+			pr_err("unknown type %s\n", param_list[3]);
 			return count;
 		}
 
 		if (dp_shaper_conf_get(&shaper_cfg, 0))
-			PR_ERR("dp_shaper_conf_get failed\n");
+			pr_err("dp_shaper_conf_get failed\n");
 
 		if (dp_strncmpi(param_list[4], "no_limit",
 				strlen("no_limit")) == 0)
@@ -1194,7 +1194,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			shaper_cfg.pbs = dp_atoi(param_list[7]);
 
 		if (dp_shaper_conf_set(&shaper_cfg, 0)) {
-			PR_ERR("dp_shaper_conf_set failed\n");
+			pr_err("dp_shaper_conf_set failed\n");
 			return count;
 		}
 	} else if (dp_strncmpi(param_list[0], "set_node",
@@ -1202,7 +1202,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		struct dp_node_link_enable en_node = {0};
 
 		if (num < 4 || num > 5) {
-			PR_ERR("id, type, cmd are required!%s%s\n",
+			pr_err("id, type, cmd are required!%s%s\n",
 			       "\n(try help):echo help > ",
 			       "/sys/kernel/debug/dp/qos");
 			return count;
@@ -1220,7 +1220,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			en_node.type = DP_NODE_PORT;
 			en_node.id.cqm_deq_port = dp_atoi(param_list[1]);
 		} else {
-			PR_ERR("Incorrect parameter!%s%s%s\n", param_list[2],
+			pr_err("Incorrect parameter!%s%s%s\n", param_list[2],
 			       "\n(try help):echo help > ",
 			       "/sys/kernel/debug/dp/qos");
 			return count;
@@ -1239,7 +1239,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 				       strlen("resume")) == 0) {
 			en_node.en |= DP_NODE_RESUME;
 		} else {
-			PR_ERR("Incorrect parameter!%s%s%s\n", param_list[3],
+			pr_err("Incorrect parameter!%s%s%s\n", param_list[3],
 			       "\n(try help):echo help > ",
 			       "/sys/kernel/debug/dp/qos");
 			return count;
@@ -1259,7 +1259,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 					       strlen("resume")) == 0) {
 				en_node.en |= DP_NODE_RESUME;
 			} else {
-				PR_ERR("Incorrect parameter!%s%s%s\n",
+				pr_err("Incorrect parameter!%s%s%s\n",
 				       param_list[4],
 				       "\n(try help):echo help > ",
 				       "/sys/kernel/debug/dp/qos");
@@ -1268,7 +1268,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		}
 
 		if (dp_node_link_en_set(&en_node, 0)) {
-			PR_ERR("dp_node_link_en_set failed\n");
+			pr_err("dp_node_link_en_set failed\n");
 			return count;
 		}
 	} else if (dp_strncmpi(param_list[0], "qmap_set",
@@ -1278,7 +1278,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		qmap_set.q_id = dp_atoi(param_list[1]);
 
 		if (num < 10) {
-			PR_INFO("Wrong Parameter(try help):%s\n",
+			pr_info("Wrong Parameter(try help):%s\n",
 				"echo help > /sys/kernel/debug/dp/qos");
 			return count;
 		}
@@ -1291,7 +1291,7 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		qmap_set.map.class = dp_atoi(param_list[8]);
 		qmap_set.map.subif = dp_atoi(param_list[9]);
 		if (dp_queue_map_set(&qmap_set, 0)) {
-			PR_ERR("dp_queue_map_set failed\n");
+			pr_err("dp_queue_map_set failed\n");
 			return count;
 		}
 	} else if (dp_strncmpi(param_list[0], "get_child",
@@ -1307,26 +1307,26 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 			node.type = DP_NODE_PORT;
 			node.id.cqm_deq_port = dp_atoi(param_list[1]);
 		} else {
-			PR_ERR("unknown type %s\n", param_list[2]);
+			pr_err("unknown type %s\n", param_list[2]);
 		}
 
 		if (dp_children_get(&node, 0)) {
-			PR_ERR("dp_children_get failed\n");
+			pr_err("dp_children_get failed\n");
 			return count;
 		}
 		if (node.num)
-			PR_INFO("Node[%d] has {%d} Children!!\n",
+			pr_info("Node[%d] has {%d} Children!!\n",
 				node.id.q_id, node.num);
 		for (idx = 0; idx < PROC_DP_MAX_LEAF; idx++) {
 			if (node.child[idx].id.q_id) {
 				if (node.child[idx].type == DP_NODE_SCH)
-					PR_INFO("Child:[%d] is Sched:[%d]\n",
+					pr_info("Child:[%d] is Sched:[%d]\n",
 						idx, node.child[idx].id.q_id);
 				else if (node.child[idx].type == DP_NODE_QUEUE)
-					PR_INFO("Child:[%d] is Q:[%d]\n",
+					pr_info("Child:[%d] is Q:[%d]\n",
 						idx, node.child[idx].id.q_id);
 				else
-					PR_INFO("Child:[%d] is FREE\n", idx);
+					pr_info("Child:[%d] is FREE\n", idx);
 			}
 		}
 	} else if (dp_strncmpi(param_list[0], "q_link",
@@ -1337,24 +1337,24 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		q_link.q_id = dp_atoi(param_list[1]);
 
 		if (dp_link_get(&q_link, 0)) {
-			PR_ERR("dp_link_get failed\n");
+			pr_err("dp_link_get failed\n");
 			return count;
 		}
 		if (!q_link.n_sch_lvl) {
-			PR_INFO("Q[%d](arbi:%d|prio:%d)->PORT[%d]\n",
+			pr_info("Q[%d](arbi:%d|prio:%d)->PORT[%d]\n",
 				q_link.q_id, q_link.q_arbi, q_link.q_prio_wfq,
 				q_link.cqm_deq_port);
 		} else {
-			PR_INFO("Q[%d](arbi:%d|prio:%d)\n",
+			pr_info("Q[%d](arbi:%d|prio:%d)\n",
 				q_link.q_id, q_link.q_arbi,
 				q_link.q_prio_wfq);
 			for (i = 0; i < q_link.n_sch_lvl; i++) {
-				PR_INFO("%s(%d):SCH[%d](arbi:%d|prio:%d)\n",
+				pr_info("%s(%d):SCH[%d](arbi:%d|prio:%d)\n",
 					"Parent level", i, q_link.sch[i].id,
 					q_link.sch[i].arbi,
 					q_link.sch[i].prio_wfq);
 			}
-			PR_INFO("Parent level(%d):PORT[%d] <Final Parent>\n",
+			pr_info("Parent level(%d):PORT[%d] <Final Parent>\n",
 				i, q_link.cqm_deq_port);
 		}
 	} else if (dp_strncmpi(param_list[0], "get_level",
@@ -1364,14 +1364,14 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		dp.inst = 0;
 
 		if (dp_qos_level_get(&dp, 0)) {
-			PR_ERR("dp_qos_level_get failed\n");
+			pr_err("dp_qos_level_get failed\n");
 			return count;
 		}
 		if (dp.max_sch_lvl)
-			PR_INFO("Q->SCH(%d)->PORT, level:[%d]\n",
+			pr_info("Q->SCH(%d)->PORT, level:[%d]\n",
 				dp.max_sch_lvl, dp.max_sch_lvl);
 		else
-			PR_INFO("Q->PORT, level:[%d]\n", dp.max_sch_lvl);
+			pr_info("Q->PORT, level:[%d]\n", dp.max_sch_lvl);
 	} else if (dp_strncmpi(param_list[0], "q_conf",
 			       strlen("q_conf")) == 0) {
 		struct dp_queue_conf q_conf = {0};
@@ -1380,48 +1380,48 @@ ssize_t proc_qos_write(struct file *file, const char *buf, size_t count,
 		q_conf.q_id = dp_atoi(param_list[1]);
 
 		if (dp_queue_conf_get(&q_conf, 0)) {
-			PR_ERR("dp_queue_conf_get failed\n");
+			pr_err("dp_queue_conf_get failed\n");
 			return count;
 		}
 		if (q_conf.act & DP_NODE_EN)
-			PR_INFO("Q(%d) action is ENABLED:[%d]\n",
+			pr_info("Q(%d) action is ENABLED:[%d]\n",
 				q_conf.q_id, q_conf.act);
 		else
-			PR_INFO("Q(%d) action is BLOCKED:[%d]\n",
+			pr_info("Q(%d) action is BLOCKED:[%d]\n",
 				q_conf.q_id, q_conf.act);
 		if (q_conf.drop == DP_QUEUE_DROP_WRED) {
-			PR_INFO("Q(%d) is in WRED MODE:[%d]\n",
+			pr_info("Q(%d) is in WRED MODE:[%d]\n",
 				q_conf.q_id, q_conf.drop);
-			PR_INFO("Q(%d) is min_size_1:[%d]\n",
+			pr_info("Q(%d) is min_size_1:[%d]\n",
 				q_conf.q_id, q_conf.min_size[0]);
-			PR_INFO("Q(%d) is max_size_1:[%d]\n",
+			pr_info("Q(%d) is max_size_1:[%d]\n",
 				q_conf.q_id, q_conf.max_size[0]);
-			PR_INFO("Q(%d) is min_size_2:[%d]\n",
+			pr_info("Q(%d) is min_size_2:[%d]\n",
 				q_conf.q_id, q_conf.min_size[1]);
-			PR_INFO("Q(%d) is max_size_2:[%d]\n",
+			pr_info("Q(%d) is max_size_2:[%d]\n",
 				q_conf.q_id, q_conf.max_size[1]);
-			PR_INFO("Q(%d) is max_allowed:[%d]\n",
+			pr_info("Q(%d) is max_allowed:[%d]\n",
 				q_conf.q_id, q_conf.wred_max_allowed);
-			PR_INFO("Q(%d) is min_gauranteed:[%d]\n",
+			pr_info("Q(%d) is min_gauranteed:[%d]\n",
 				q_conf.q_id, q_conf.wred_min_guaranteed);
-			PR_INFO("Q(%d) is wred_slope_1:[%d]\n",
+			pr_info("Q(%d) is wred_slope_1:[%d]\n",
 				q_conf.q_id, q_conf.wred_slope[0]);
-			PR_INFO("Q(%d) is wred_slope_2:[%d]\n",
+			pr_info("Q(%d) is wred_slope_2:[%d]\n",
 				q_conf.q_id, q_conf.wred_slope[1]);
 		} else {
-			PR_INFO("Q(%d) is in DROP TAIL MODE:[%d]\n",
+			pr_info("Q(%d) is in DROP TAIL MODE:[%d]\n",
 				q_conf.q_id, q_conf.drop);
-			PR_INFO("Q(%d) is min_size_1:[%d]\n",
+			pr_info("Q(%d) is min_size_1:[%d]\n",
 				q_conf.q_id, q_conf.min_size[0]);
-			PR_INFO("Q(%d) is max_size_1:[%d]\n",
+			pr_info("Q(%d) is max_size_1:[%d]\n",
 				q_conf.q_id, q_conf.max_size[0]);
-			PR_INFO("Q(%d) is min_size_2:[%d]\n",
+			pr_info("Q(%d) is min_size_2:[%d]\n",
 				q_conf.q_id, q_conf.min_size[1]);
-			PR_INFO("Q(%d) is max_size_2:[%d]\n",
+			pr_info("Q(%d) is max_size_2:[%d]\n",
 				q_conf.q_id, q_conf.max_size[1]);
 		}
 	} else {
-		PR_INFO("Wrong Parameter:\n");
+		pr_info("Wrong Parameter:\n");
 		qos_create_qos_help();
 	}
 	return count;
