@@ -1796,15 +1796,14 @@ static long mcast_helper_ioctl(struct file *f, unsigned int cmd, unsigned long a
 			}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
 			netdev = dev_get_by_name(mcast_mem.memIntrfName);
-			rxnetdev = dev_get_by_name(mcast_mem.rxIntrfName);
 #else
 			netdev = mcast_helper_dev_get_by_name(&init_net, mcast_mem.memIntrfName);
-			rxnetdev = mcast_helper_dev_get_by_name(&init_net, mcast_mem.rxIntrfName);
-
 #endif
+			if (netdev == NULL)
+				return -ENXIO;
 
 			mch_br_capture_pkt = 0;
-			mcast_helper_update_entry(netdev, rxnetdev, &mcast_mem);
+			mcast_helper_update_entry(netdev, NULL, &mcast_mem);
 			break;
 		case  MCH_MEMBER_ENTRY_REMOVE:
 			if (copy_from_user(&mcast_mem, (MCAST_REC_t *)arg, sizeof(MCAST_REC_t))) {
@@ -1812,14 +1811,14 @@ static long mcast_helper_ioctl(struct file *f, unsigned int cmd, unsigned long a
 			}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
 			netdev = dev_get_by_name(mcast_mem.memIntrfName);
-			rxnetdev = dev_get_by_name(mcast_mem.rxIntrfName);
 #else
 			netdev = mcast_helper_dev_get_by_name(&init_net, mcast_mem.memIntrfName);
-			rxnetdev = mcast_helper_dev_get_by_name(&init_net, mcast_mem.rxIntrfName);
 #endif
+			if (netdev == NULL)
+				return -ENXIO;
 
 			mch_br_capture_pkt = 0;
-			mcast_helper_delete_entry(netdev, rxnetdev, &mcast_mem);
+			mcast_helper_delete_entry(netdev, NULL, &mcast_mem);
 			break;
 		case MCH_SEVER_ENTRY_GET:
 			if (copy_from_user(&mcast_mem, (MCAST_REC_t *)arg, sizeof(MCAST_REC_t))) {
