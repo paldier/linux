@@ -385,8 +385,8 @@ long icc_ioctl (struct file *file_p,uint32_t nCmd, unsigned long arg){
 					to avoid further open of the device*/
 		 			iccdev[num].Installed=1;
 #if defined(CONFIG_SOC_GRX500_BOOTCORE) || defined(CONFIG_SOC_PRX300_BOOTCORE)
-					/*Intimate to IAP that bootcore is ready if IA gets registered*/
-					if(num == IA)
+					/*Intimate to IAP that bootcore is ready if sec services gets registered*/
+					if(num == SEC_STORE_SERVICE)
 					{
 						mps_message Mpsmsg;
 
