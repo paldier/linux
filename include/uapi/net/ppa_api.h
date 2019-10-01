@@ -2137,6 +2137,7 @@ typedef enum {
 	PPA_CMD_SET_QOS_METER_NR, /*!< NR for PPA_CMD_SET_QOS_METER */
 	PPA_CMD_QOS_DSCP_CLASS_SET_NR, /*!< NR for PPA_CMD_QOS_DSCP_CLASS_SET */
 	PPA_CMD_QOS_DSCP_CLASS_RESET_NR, /*!< NR for PPA_CMD_QOS_DSCP_CLASS_RESET */
+	PPA_MEM_SET_PORT_TRUNKING_NR, /*!< NR for PPA_MEM_SET_PORT_TRUNKING */
 	/* PPA_IOC_MAXNR should be the last one in the enumberation */
 	PPA_IOC_MAXNR /*!< NR for PPA_IOC_MAXNR */
 } PPA_IOC_NR;
@@ -2563,6 +2564,8 @@ typedef enum {
 #define PPA_CMD_SET_QOS_METER _IOW(PPA_IOC_MAGIC, PPA_CMD_SET_QOS_METER_NR, PPA_QOS_METER_INFO)
 /* PPA Set DSCP to TC Map */
 #define PPA_CMD_QOS_DSCP_CLASS_SET _IO(PPA_IOC_MAGIC, PPA_CMD_QOS_DSCP_CLASS_SET_NR)
+/* PPA Memory write to switch_api-2*/
+#define PPA_MEM_SET_PORT_TRUNKING _IO(PPA_IOC_MAGIC, PPA_MEM_SET_PORT_TRUNKING_NR)
 /* PPA Reset DSCP to TC Map */
 #define PPA_CMD_QOS_DSCP_CLASS_RESET _IO(PPA_IOC_MAGIC, PPA_CMD_QOS_DSCP_CLASS_RESET_NR)
 /** PPA get all exported hook count. Value is manipulated by _IOR() macro for final value
