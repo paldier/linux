@@ -293,11 +293,11 @@ static int gsw_add_switchdev(struct gsw_cell *gsw_dev_cell, u32 devid)
 	of_irq_to_resource_table(gsw_dev_cell->of_node, &irqres, 1);
 	switch_pdata->irq_num = irqres.start;
 
+	of_property_read_u32(gsw_dev_cell->of_node,
+			     EXTERNAL_SWITCH_DEVID,
+			     &switch_pdata->ext_devid);
 
-	if (devid == LTQ_FLOW_DEV_INT_R) {
-		of_property_read_u32(gsw_dev_cell->of_node,
-				     EXTERNAL_SWITCH_DEVID,
-				     &switch_pdata->ext_devid);
+	if (switch_pdata->ext_devid) {
 		of_property_read_u32(gsw_dev_cell->of_node,
 				     EXTERNAL_SWITCH_PHYID,
 				     &switch_pdata->ext_phyid);

@@ -925,7 +925,8 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 	struct clk *clk;
 	struct gswss *gswdev = dev_get_drvdata(pdev->dev.parent);
 	u32 device_id = pdev->dev.parent->id;
-
+	struct core_ops *ops = platform_get_drvdata(pdev);
+	ethsw_api_dev_t *prvdata = container_of(ops, ethsw_api_dev_t, ops);
 	/** Clear core_init */
 	memset(&core_init, 0, sizeof(ethsw_core_init_t));
 
@@ -935,11 +936,13 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 
 	memset(&core_init, 0, sizeof(ethsw_core_init_t));
 
-	if (device_id < 0 || device_id >= 2)
+	if (device_id < LTQ_FLOW_DEV_INT || device_id >= LTQ_FLOW_DEV_MAX)
 		return -EINVAL;
 
-	/* Find and map our resources */
-	memres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (!prvdata->ext_devid) {
+
+		/* Find and map our resources */
+		memres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
 	if (memres == NULL) {
 		pr_err("%s:%s:%d (Failed)\n", __FILE__, __func__, __LINE__);
@@ -965,10 +968,10 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 	if (device_id == 1) {
 		addr_gswr = devm_ioremap_resource(&pdev->dev, memres);
 
-		if (IS_ERR(addr_gswr))
-			return PTR_ERR(addr_gswr);
+			if (IS_ERR(addr_gswr))
+				return PTR_ERR(addr_gswr);
+		}
 	}
-
 
 	/* Register Char Device */
 	if (device_id == 0) {
@@ -987,7 +990,7 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 		return result;
 	}
 
-	if (device_id == 0) {
+	if (device_id == LTQ_FLOW_DEV_INT) {
 		/* Init FLOW Switch Core Layer */
 		core_init.sdev = LTQ_FLOW_DEV_INT;
 		core_init.gsw_base_addr = addr_gswl;
@@ -1007,10 +1010,7 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 		pEDev0->gsw_base = addr_gswl;
 	}
 
-	if (device_id == 1) {
-		ethsw_api_dev_t *PrvData, *ExtPrvData;
-		struct core_ops *ops;
-
+	if (device_id == LTQ_FLOW_DEV_INT_R) {
 		/* Init FLOW Switch Core Layer */
 		core_init.sdev = LTQ_FLOW_DEV_INT_R;
 		core_init.gsw_base_addr = addr_gswr;
@@ -1027,64 +1027,24 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 		pEDev1->gsw_dev = LTQ_FLOW_DEV_INT_R;
 		pEDev1->gswr_base = addr_gswr;
 		pEDev1->gsw_base = addr_gswr;
+	}
 
-		/*Check whether External switch is attched to GSWIP-R*/
-		/** Get Platform Driver Data of GSWIP-R */
-		ops = platform_get_drvdata(pdev);
-		/** Get Switch Core Private Data */
-		PrvData = container_of(ops, ethsw_api_dev_t, ops);
+	if (device_id == LTQ_FLOW_DEV_EXT_AX3000_F24S) {
 
-		if (PrvData->ext_devid == LTQ_FLOW_DEV_EXT_AX3000_F24S) {
-			ethsw_core_init_t ext_core_init;
+		prvdata->cport = GSW_2X_SOC_CPU_PORT;
+		prvdata->gsw_dev = LTQ_FLOW_DEV_EXT_AX3000_F24S;
+		prvdata->parent_devid = LTQ_FLOW_DEV_INT_R;
 
-			/** Clear core_init */
-			memset(&ext_core_init, 0, sizeof(ethsw_core_init_t));
+		/* Init External Switch Core Layer */
+		core_init.sdev = LTQ_FLOW_DEV_EXT_AX3000_F24S;
+		core_init.gsw_base_addr = NULL;
+		core_init.pdev = (void *)prvdata;
+		pEDevExt = ethsw_api_core_init(&core_init);
 
-#if defined(DEBUG_AX3000_F24S) && DEBUG_AX3000_F24S
-			/*hardcoded temp setting to power on F24s AX3000 model
-			  Note :Only for debugging purpose, macro is disabled
-			  when check in to ugw 8.x*/
-			gsw1_w32(0x800,	(volatile void *)0xb6080120);
-			gsw1_w32(0x7c,	(volatile void *)0xbc003c1c);
-			gsw1_w32(0x1806,	(volatile void *)0xba003d10);
-			gsw1_w32(0x100800, (volatile void *)0xb6080120);
-			gsw1_w32(0x80000000, (volatile void *)0xb6000010);
-			gsw1_w32(0x0, (volatile void *)0xb6000010);
-			gsw1_w32(0xff, (volatile void *)0xb6D00034);
-			gsw1_w32(0xff, (volatile void *)0xb6D00044);
-			gsw1_w32(0x00008800, (volatile void *)0xb6D002B8);
-#endif
-			ExtPrvData = (void *)kmalloc(sizeof(ethsw_api_dev_t), GFP_KERNEL);
-
-			if (ExtPrvData == NULL) {
-				pr_err("%s:%s:%d (Exterenal switch:LTQ_FLOW_DEV_EXT_AX3000_F24S Init Failed)\n",
-				       __FILE__, __func__, __LINE__);
-				return -1;
-			}
-
-			memset(ExtPrvData, 0, sizeof(ethsw_api_dev_t));
-
-			/*init external switch private data*/
-			ExtPrvData->cport = GSW_2X_SOC_CPU_PORT;
-			ExtPrvData->gsw_dev = LTQ_FLOW_DEV_EXT_AX3000_F24S;
-			ExtPrvData->parent_devid = LTQ_FLOW_DEV_INT_R;
-			ExtPrvData->ext_devid = PrvData->ext_devid;
-			ExtPrvData->ext_phyid = PrvData->ext_phyid;
-			ExtPrvData->gswex_base = PrvData->gswex_base;
-			ExtPrvData->gswex_sgmiibase = PrvData->gswex_sgmiibase;
-
-			/* Init External Switch Core Layer */
-			ext_core_init.sdev = LTQ_FLOW_DEV_EXT_AX3000_F24S;
-			ext_core_init.gsw_base_addr = NULL;
-			ext_core_init.pdev = (void *)ExtPrvData;
-			pEDevExt = ethsw_api_core_init(&ext_core_init);
-
-			if (pEDevExt == NULL) {
-				pr_err("%s:%s:%d (Init Failed)\n",
-				       __FILE__, __func__, __LINE__);
-				return -1;
-			}
-
+		if (pEDevExt == NULL) {
+			pr_err("%s:%s:%d (Init Failed)\n",
+			       __FILE__, __func__, __LINE__);
+			return -1;
 		}
 
 	}
@@ -1104,19 +1064,18 @@ int ltq_gsw_api_register(struct platform_device *pdev)
 	}
 
 	/* add Internal switch */
-	if ((device_id == 0) && pioctlctl && pEDev0)
+	if (device_id == LTQ_FLOW_DEV_INT && pioctlctl && pEDev0)
 		ioctl_wrapper_dev_add(pioctlctl, &pEDev0->ops, LTQ_FLOW_DEV_INT);
 
 	/* add Internal switch */
-	if ((device_id == 1) && pioctlctl && pEDev1) {
+	if ((device_id == LTQ_FLOW_DEV_INT_R) && pioctlctl && pEDev1)
 		ioctl_wrapper_dev_add(pioctlctl, &pEDev1->ops, LTQ_FLOW_DEV_INT_R);
 
-		/* Init wrapper , if external switch attached to GSWIP-R*/
-		if ((pEDev1->ext_devid == LTQ_FLOW_DEV_EXT_AX3000_F24S) && pioctlctl && pEDevExt) {
-			ioctl_wrapper_dev_add(pioctlctl, &pEDevExt->ops, LTQ_FLOW_DEV_EXT_AX3000_F24S);
-		}
-
-	}
+	/* Init wrapper , if external switch attached to GSWIP-R*/
+	if ((device_id == LTQ_FLOW_DEV_EXT_AX3000_F24S) && pioctlctl
+						&& pEDevExt)
+		ioctl_wrapper_dev_add(pioctlctl, &pEDevExt->ops,
+				LTQ_FLOW_DEV_EXT_AX3000_F24S);
 
 	return 0;
 }

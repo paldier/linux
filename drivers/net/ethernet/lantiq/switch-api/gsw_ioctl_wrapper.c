@@ -253,6 +253,7 @@ static int gsw_api_release(struct inode *inode,
 int gsw_cdev_interface(u32 major, u32 device_id, struct gswss *gswdev)
 {
 	int ret;
+	struct device *dev;
 
 	cdev_init(&gswdev->gswss_cdev, &swapi_fops);
 	gswdev->gswss_cdev.owner = THIS_MODULE;
@@ -261,9 +262,9 @@ int gsw_cdev_interface(u32 major, u32 device_id, struct gswss *gswdev)
 		pr_err("Failed to add cdev\n");
 		goto fail_add_cdev;
 	}
-	if (!device_create(gswss_class, NULL, MKDEV(major, device_id),
-			  NULL, "switch_api/%d", device_id)) {
-		ret = -EINVAL;
+	dev = device_create(gswss_class, NULL, MKDEV(major, device_id),
+			  NULL, "switch_api/%d", device_id);
+	if (IS_ERR(dev)) {
 		pr_debug("failed to create device\n");
 		goto fail_create_device;
 	}
