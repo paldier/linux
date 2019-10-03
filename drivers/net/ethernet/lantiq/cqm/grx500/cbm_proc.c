@@ -30,13 +30,14 @@ static struct dp_proc_entry cbm_proc_entries[] = {
 	 cbm_enq_ovh_bytes_write},
 	{PROC_FILE_CBM_COUNTER_MODE, cbm_counter_mode_get_proc, NULL, NULL,
 	 cbm_counter_mode_set_proc},
-	 {PROC_FILE_CBM_Q_THRES, cbm_q_thres_get_proc, NULL, NULL,
+	{PROC_FILE_CBM_Q_THRES, cbm_q_thres_get_proc, NULL, NULL,
 	 cbm_q_thres_set_proc},
 	{PROC_FILE_CBM_Q_DELAY, NULL, NULL, NULL,
 	 cbm_eqm_delay_set_proc},
 	 #ifdef QOCC_TEST
 	{PROC_FILE_CBM_QOCC_TEST, NULL, NULL, NULL, cbm_qocc_test_steps},
 	#endif
+	{PROC_FILE_CBM_BUF_STAT, cbm_buff_stat_dump, NULL, NULL, NULL},
 	{NULL, NULL, NULL, NULL, NULL}
 };
 
@@ -1054,6 +1055,20 @@ ssize_t cbm_qocc_test_steps(struct file *file, const char *buf,
 	return count;
 }
 #endif
+
+void cbm_buff_stat_dump(struct seq_file *s)
+{
+	struct cbm_buff_stat *buff_stat;
+
+	if (!capable(CAP_SYS_ADMIN))
+		return;
+
+	buff_stat = cbm_buff_stat_get();
+	seq_printf(s, "Std      buf alloc error = %d\n", buff_stat->std_alloc_err);
+	seq_printf(s, "Jumbo    buf alloc error = %d\n", buff_stat->jbo_alloc_err);
+	seq_printf(s, "Transmit buf alloc error = %d\n", buff_stat->xmit_alloc_err);
+}
+
 ssize_t fsqm_freesegment_read(struct file *file, const char *buf,
 			size_t count, loff_t *ppos)
 {

@@ -47,6 +47,13 @@ static struct cbm_buff_info g_cbm_buff = {
 	.std_fsqm_idx = 0,
 	.jbo_fsqm_idx = 1
 	};
+
+static struct cbm_buff_stat g_cbm_buff_stat = {
+	.std_alloc_err = 0,
+	.jbo_alloc_err = 0,
+	.xmit_alloc_err = 0
+	};
+
 #ifdef CONFIG_CBM_LS_ENABLE
 static struct cbm_desc_list g_cbm_dq_dlist[204];
 static void __iomem *dqmdesc[2];
@@ -647,6 +654,11 @@ s32 reserved_dp_resources_get(
 	return 0;
 }
 
+struct cbm_buff_stat *cbm_buff_stat_get(void)
+{
+	return &g_cbm_buff_stat;
+}
+
 static void *cbm_buffer_alloc_grx500(u32 pid, u32 flag)
 {
 	u32 buf_addr = 0;
@@ -665,7 +677,12 @@ static void *cbm_buffer_alloc_grx500(u32 pid, u32 flag)
 		 (i++) < DEFAULT_WAIT_CYCLES);
 
 	if ((buf_addr & 0xFFFFF800) == 0xFFFFF800) {
-		cbm_err("alloc buffer fail for portid: %d type %d ofsc %d\n", pid, flag, cbm_get_std_free_count());
+		pr_err_once("alloc buffer fail for portid: %d type %d ofsc %d\n",
+			pid, flag, cbm_get_std_free_count());
+		if ((flag & CBM_PORT_F_JUMBO_BUF))
+			g_cbm_buff_stat.jbo_alloc_err++;
+		else
+			g_cbm_buff_stat.std_alloc_err++;
 		local_irq_restore(sys_flag);
 		return NULL;
 	}
@@ -1762,7 +1779,8 @@ cbm_cpu_pkt_tx_grx500(
 			return CBM_FAILURE;
 		}
 		if (!new_buf) {
-			pr_err("%s: cbm buffer alloc failed ..\n", __func__);
+			pr_err_once("%s: cbm buffer alloc failed ..\n", __func__);
+			g_cbm_buff_stat.xmit_alloc_err++;
 			dev_kfree_skb_any(skb);
 			return CBM_FAILURE;
 		}

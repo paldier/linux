@@ -51,6 +51,7 @@
 #ifdef QOCC_TEST
 #define PROC_FILE_CBM_QOCC_TEST "cbmqocctest"
 #endif
+#define PROC_FILE_CBM_BUF_STAT "cbmbuffstat"
 
 #define get_val(val, mask, offset) (((val) & (mask)) >> (offset))
 
@@ -81,5 +82,6 @@ ssize_t cbm_eqm_delay_set_proc(struct file *file, const char *buf, size_t count,
 #ifdef QOCC_TEST
 ssize_t cbm_qocc_test_steps(struct file *file, const char *buf, size_t count, loff_t *ppos);
 #endif
+void cbm_buff_stat_dump(struct seq_file *s);
 #define CBM_PRINT printk
 #endif

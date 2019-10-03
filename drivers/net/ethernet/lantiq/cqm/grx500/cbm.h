@@ -582,6 +582,12 @@ struct cbm_buff_info {
 	unsigned int jbo_fsqm_idx;
 };
 
+struct cbm_buff_stat {
+	unsigned int std_alloc_err;
+	unsigned int jbo_alloc_err;
+	unsigned int xmit_alloc_err;
+};
+
 struct cbm_jumbo_divide {
 s32 jumbo_buf_used;
 void *curr_jumbo_buf;
@@ -593,5 +599,8 @@ struct cbm_qlink_get {
 u32 qid[EGRESS_QUEUE_ID_MAX];
 u32 qlink_sbin[EGRESS_QUEUE_ID_MAX];
 };
+
+struct cbm_buff_stat *cbm_buff_stat_get(void);
+
 #endif /* __CBM_COMMON_H__ */
 
