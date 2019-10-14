@@ -753,6 +753,10 @@ typedef struct {
 	uint32_t if_flags; /*!< Flags for Interface. Valid values are below: PPA_F_LAN_IF and PPA_F_WAN_IF */
 	PPA_IFNAME ifname_lower[PPA_IF_NAME_SIZE]; /*!< Name of the manually configured its lower stack interface (provide storage buffer) */
 	uint8_t hw_disable; /*!< If this flag is set then only HW acceleration would be disabled for ifname (SW acceleration would still work for ifname) */
+	uint64_t acc_tx_ipv4; /*!< tx tx mib (bytes counter/packet counter) */
+	uint64_t acc_rx_ipv4; /*!< rx rx mib (bytes counter/packet counter) */
+	uint64_t acc_tx_ipv6; /*!< tx tx mib (bytes counter/packet counter) */
+	uint64_t acc_rx_ipv6; /*!< rx rx mib (bytes counter/packet counter) */
 } PPA_CMD_IFINFO;
 /*!
 	\brief This is the data structure for PPA Init used from the userspace
@@ -2138,6 +2142,7 @@ typedef enum {
 	PPA_CMD_QOS_DSCP_CLASS_SET_NR, /*!< NR for PPA_CMD_QOS_DSCP_CLASS_SET */
 	PPA_CMD_QOS_DSCP_CLASS_RESET_NR, /*!< NR for PPA_CMD_QOS_DSCP_CLASS_RESET */
 	PPA_MEM_SET_PORT_TRUNKING_NR, /*!< NR for PPA_MEM_SET_PORT_TRUNKING */
+	PPA_CMD_GET_IFACE_MIB_NR, /*!< NR for PPA_CMD_GET_IFACE_MIB */
 	/* PPA_IOC_MAXNR should be the last one in the enumberation */
 	PPA_IOC_MAXNR /*!< NR for PPA_IOC_MAXNR */
 } PPA_IOC_NR;
@@ -2626,6 +2631,10 @@ typedef enum {
 	\ref PPA_CMD_CLEAR_PORT_MIB structure
  */
 #define PPA_CMD_CLEAR_PORT_MIB _IOW(PPA_IOC_MAGIC, PPA_CMD_CLEAR_PORT_MIB_NR, PPA_CMD_PORT_MIB_INFO)
+/** PPA Get Interface MIB info. Value is manipulated by _IOR() macro for final value
+	\param PPA_CMD_IFINFO
+ */
+#define PPA_CMD_GET_IFACE_MIB _IOR(PPA_IOC_MAGIC, PPA_CMD_GET_IFACE_MIB_NR, PPA_CMD_IFINFO)
 /** PPA Enable/disable HAL debug flag. Value is manipulated by _IOR() macro for final value
 	\param PPA_CMD_SET_HAL_DBG_FLAG The parameter points to a
 	\ref PPA_CMD_SET_HAL_DBG_FLAG structure

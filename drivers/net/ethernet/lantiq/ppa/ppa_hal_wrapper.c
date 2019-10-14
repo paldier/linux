@@ -1250,11 +1250,10 @@ uint32_t ppa_drv_test_and_clear_bridging_hit_stat(PPA_BR_MAC_INFO *entry, uint32
 	return ppa_hsel_test_and_clear_bridging_hit_stat(entry, flag, get_platform_hal(0));
 }
 
-/*only neded for ppe hal*/
 #if defined(MIB_MODE_ENABLE) && MIB_MODE_ENABLE
 uint32_t ppa_drv_set_mib_mode(PPA_MIB_MODE_ENABLE *cfg, uint32_t flag)
 {
-	uint32_t hal_id = PPE_HAL;
+	uint32_t hal_id = get_platform_hal(0);
 
 	if (!ppa_drv_hal_hook[hal_id]) return PPA_SUCCESS;
 
@@ -1263,7 +1262,7 @@ uint32_t ppa_drv_set_mib_mode(PPA_MIB_MODE_ENABLE *cfg, uint32_t flag)
 
 uint32_t ppa_drv_get_mib_mode(PPA_MIB_MODE_ENABLE *cfg)
 {
-	uint32_t hal_id = PPE_HAL;
+	uint32_t hal_id = get_platform_hal(0);
 
 	if (!ppa_drv_hal_hook[hal_id]) return PPA_SUCCESS;
 

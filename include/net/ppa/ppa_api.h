@@ -344,7 +344,13 @@ typedef struct {
 	uint32_t	tx_bytes;			 /*!<	 Number of transmit bytes through the interface */
 	uint32_t	rx_bytes;			 /*!<	 Number of received bytes through the interface */
 	uint32_t	rx_pkts_prev[MAX_HAL];	 
-	uint32_t	tx_pkts_prev[MAX_HAL];	
+	uint32_t	tx_pkts_prev[MAX_HAL];
+#if IS_ENABLED(CONFIG_IPV4_IPV6_COUNTER_SUPPORT)
+	uint64_t	tx_pkts_ipv4;		/*!<	 Number of IPv4 transmitted packets through the interface */
+	uint64_t	rx_pkts_ipv4;		/*!<	 Number of IPv4 received packets through the interface */
+	uint64_t	tx_pkts_ipv6;		/*!<	 Number of IPv6 transmitted packets through the interface */
+	uint64_t	rx_pkts_ipv6;		/*!<	 Number of IPv6 received packets through the interface */
+#endif /* CONFIG_IPV4_IPV6_COUNTER_SUPPORT */
 } PPA_IF_STATS;
 /*!
 	\brief This is the data structure for PPA accelerated statistics for an interface. Depending on the platform and

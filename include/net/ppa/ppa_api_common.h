@@ -51,6 +51,13 @@
 #define PPA_IF_MIB 		1	 /*Flag to enable/disable PPA software interface based mib counter*/
 #define SESSION_STATISTIC_DEBUG 1 /*flag to enable session management statistics support*/
 #define MPE_IFMIB		1
+#if IS_ENABLED(CONFIG_IPV4_IPV6_COUNTER_SUPPORT)
+#undef PPA_INTF_MIB_TIMER	/* Interface packet counters will be updated in other thread */
+#ifndef MIB_MODE_ENABLE	 /*if not defined in kernel's .configure file, then use local's definition*/
+#define MIB_MODE_ENABLE		1
+#endif
+#else /* CONFIG_IPV4_IPV6_COUNTER_SUPPORT */
 #define PPA_INTF_MIB_TIMER	1
+#endif /* CONFIG_IPV4_IPV6_COUNTER_SUPPORT */
 
 #endif

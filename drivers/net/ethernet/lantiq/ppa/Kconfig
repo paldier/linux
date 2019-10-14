@@ -87,5 +87,12 @@ config PPA_EXT_PKT_LEARNING
         help
             External packet learning driver support for PPA
 
+config IPV4_IPV6_COUNTER_SUPPORT
+        bool "IPv4 IPv6 counter support"
+        depends on PPA
+        default n
+        help
+            IPv4 IPv6 counter support in PPA
+
 endif # PPA
 endmenu
