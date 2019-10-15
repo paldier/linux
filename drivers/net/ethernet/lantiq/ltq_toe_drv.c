@@ -444,9 +444,6 @@ static void lro_process_output_context(int port, int oc_flag_no)
 #endif
 	struct sk_buff *frag_skb = NULL, *last_frag_skb = NULL;
 	unsigned long tso_rl_flags;
-	struct iphdr	*ip_hdr;
-	struct ethhdr	*eth;
-	int network_depth = 0;
 
 	oc_flag = ltq_toe_r32(LRO_OC_FLAG(port, oc_flag_no));
 	pr_debug("LRO done and OC_FLAG: %x\n", oc_flag);
@@ -511,6 +508,7 @@ static void lro_process_output_context(int port, int oc_flag_no)
 					skb->DW3 = desc3;
 					skb_put(skb, data_len);
 				} else {
+					cbm_buffer_free(smp_processor_id(), data_ptr, 0);
 					pr_err("failure in allocating skb\r\n");
 					return;
 				}
@@ -555,15 +553,13 @@ static void lro_process_output_context(int port, int oc_flag_no)
 				dbg_info[dbg_head].aggr_len = skb->len - 62;
 				dbg_head = (dbg_head + 1) % LRO_MAX_DBG_INFO;
 #endif
-				/* re-compute the IP header checksum since HW has modified
-				the IP header's total_len field */
-				eth = (struct ethhdr *)(skb->data + PMAC_HDR_SIZE);
-				skb->mac_len = ETH_HLEN + PMAC_HDR_SIZE;
-				__vlan_get_protocol(skb, eth->h_proto, &network_depth);
-				ip_hdr = (struct iphdr *)(skb->data + network_depth);
-				ip_hdr->check = 0;
-				ip_hdr->check = ip_fast_csum((unsigned char *)ip_hdr, ip_hdr->ihl);
-				skb->mac_len = 0;
+				/*
+				 * TCP/IP header checksum is wrong here,
+				 * since HW has modified the TCP Payload and IP header's total_len field.
+				 *
+				 * So, mark skb->ip_summed as CHECKSUM_UNNECESSARY.
+				 */
+				skb->ip_summed = CHECKSUM_UNNECESSARY;
 
 				/* Send it to datapath library */
 				dp_rx(skb, 0);
@@ -601,6 +597,7 @@ static void lro_process_output_context(int port, int oc_flag_no)
 				skb->DW3 = desc3;
 				skb_put(skb, data_len);
 			} else {
+				cbm_buffer_free(smp_processor_id(), data_ptr, 0);
 				pr_err("failure in allocating skb\r\n");
 				return;
 			}
@@ -705,6 +702,7 @@ static void ltq_lro_exception_tasklet(unsigned long dev __maybe_unused)
 			skb->DW3 = desc3;
 			skb_put(skb, data_len);
 		} else {
+			cbm_buffer_free(smp_processor_id(), data_ptr, 0);
 			pr_err("failure in allocating skb\r\n");
 			return;
 		}
