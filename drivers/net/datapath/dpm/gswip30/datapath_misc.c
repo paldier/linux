@@ -68,9 +68,9 @@ static void init_dma_desc_mask(void)
 
 static void init_dma_pmac_template(int portid, u32 flags)
 {
+
 	int i;
 	struct pmac_port_info *dp_info = get_dp_port_info(0, portid);
-
 	/*Note:
 	 * final tx_dma0 = (tx_dma0 & dma0_mask_template) | dma0_template
 	 * final tx_dma1 = (tx_dma1 & dma1_mask_template) | dma1_template
@@ -191,6 +191,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.enc = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.dec = 0;
 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.mpe2 = 0;
+
 	} else if (flags & DP_F_FAST_WLAN) {
 		/* WLAN block must put after DSL/DIRECTLINK block
 		 * since all ACA device in GRX500 is using WLAN flag wrongly
@@ -212,7 +213,8 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
-	} else /*if(flags & DP_F_DIRECT ) */{/*always with pmac*/
+
+	} else if (flags & DP_F_DIRECT ) {/*always with pmac*/
 		/*normal dirctpath without checksum support */
 		dp_info->pmac_template[TEMPL_NORMAL].port_map_en = 0;
 		dp_info->pmac_template[TEMPL_NORMAL].sppid = portid;
@@ -227,7 +229,39 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[TEMPL_NORMAL].field.dec = 0;
 		dp_info->dma1_mask_template[TEMPL_NORMAL].field.mpe2 = 0;
 
-		/*dirctpath with checksum support */
+		/* directpath with checksum support, for HW Litepath */
+		dp_info->pmac_template[TEMPL_CHECKSUM].port_map_en = 0;
+		dp_info->pmac_template[TEMPL_CHECKSUM].sppid = portid;
+		dp_info->pmac_template[TEMPL_CHECKSUM].redirect = 0;
+		dp_info->pmac_template[TEMPL_CHECKSUM].tcp_chksum = 1;
+		dp_info->pmac_template[TEMPL_CHECKSUM].class_en = 1;
+		dp_info->pmac_template[TEMPL_CHECKSUM].port_map = 0xff;
+		dp_info->pmac_template[TEMPL_CHECKSUM].port_map2 = 0xff;
+		RESET_PMAC_PORTMAP(&dp_info->pmac_template[TEMPL_CHECKSUM],
+				 portid);
+		dp_info->dma1_template[TEMPL_CHECKSUM].field.enc = 1;
+		dp_info->dma1_template[TEMPL_CHECKSUM].field.dec = 1;
+		dp_info->dma1_template[TEMPL_CHECKSUM].field.mpe2 = 1;
+		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
+		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
+		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
+
+	} else {/*always with pmac*/
+		/*normal dirctpath without checksum support */
+		dp_info->pmac_template[TEMPL_NORMAL].port_map_en = 0;
+		dp_info->pmac_template[TEMPL_NORMAL].sppid = portid;
+		dp_info->pmac_template[TEMPL_NORMAL].redirect = 0;
+		dp_info->pmac_template[TEMPL_NORMAL].port_map = 0xff;
+		dp_info->pmac_template[TEMPL_NORMAL].port_map2 = 0xff;
+		dp_info->pmac_template[TEMPL_NORMAL].class_en = 1;
+		dp_info->dma1_template[TEMPL_NORMAL].field.enc = 1;
+		dp_info->dma1_template[TEMPL_NORMAL].field.dec = 1;
+		dp_info->dma1_template[TEMPL_NORMAL].field.mpe2 = 0;
+		dp_info->dma1_mask_template[TEMPL_NORMAL].field.enc = 0;
+		dp_info->dma1_mask_template[TEMPL_NORMAL].field.dec = 0;
+		dp_info->dma1_mask_template[TEMPL_NORMAL].field.mpe2 = 0;
+
+		/* directpath with checksum support */
 		dp_info->pmac_template[TEMPL_CHECKSUM].port_map_en = 1;
 		dp_info->pmac_template[TEMPL_CHECKSUM].sppid = PMAC_CPU_ID;
 		dp_info->pmac_template[TEMPL_CHECKSUM].redirect = 1;
