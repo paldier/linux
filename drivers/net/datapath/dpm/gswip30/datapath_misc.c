@@ -212,7 +212,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
-	} else /*if (flags & DP_F_DIRECT ) */{/*always with pmac*/
+	} else /*if(flags & DP_F_DIRECT ) */{/*always with pmac*/
 		/*normal dirctpath without checksum support */
 		dp_info->pmac_template[TEMPL_NORMAL].port_map_en = 0;
 		dp_info->pmac_template[TEMPL_NORMAL].sppid = portid;
