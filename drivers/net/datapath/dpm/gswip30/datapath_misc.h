@@ -42,9 +42,9 @@ struct dp_coc_threshold {
 
 #define RESET_PMAC_PORTMAP(pmac, port_id) do { \
 	if ((port_id) <= 7) \
-		(pmac)->port_map2 &= ~(1 << (port_id)); \
+		(pmac)->port_map2 = ~(1 << (port_id)); \
 	else \
-		(pmac)->port_map &= ~(1 << (port_id - 8)); } \
+		(pmac)->port_map = ~(1 << (port_id - 8)); } \
 	while (0)
 
 #define SET_PMAC_PORTMAP(pmac, port_id) do { \
