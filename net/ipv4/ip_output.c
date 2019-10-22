@@ -476,7 +476,6 @@ packet_routed:
 			     skb_shinfo(skb)->gso_segs ?: 1);
 
 	/* TODO : should we use skb->sk here instead of sk ? */
-	skb->priority = sk->sk_priority;
 	skb->mark = sk->sk_mark;
 
 	res = ip_local_out(net, sk, skb);
