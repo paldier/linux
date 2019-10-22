@@ -229,6 +229,9 @@ EXPORT_SYMBOL(tmu_hal_setup_dp_ingress_connectivity_hook_fn);
 int32_t (*tmu_hal_set_checksum_queue_map_hook_fn)(uint32_t pmac_port) = NULL;
 EXPORT_SYMBOL(tmu_hal_set_checksum_queue_map_hook_fn);
 
+int32_t (*tmu_hal_set_lro_queue_map_hook_fn)(uint32_t pmac_port) = NULL;
+EXPORT_SYMBOL(tmu_hal_set_lro_queue_map_hook_fn);
+
 int32_t (*mpe_hal_set_checksum_queue_map_hook_fn)(
 		uint32_t pmac_port, bool is_pmac_hdr_req) = NULL;
 EXPORT_SYMBOL(mpe_hal_set_checksum_queue_map_hook_fn);
@@ -306,6 +309,14 @@ int32_t ppa_drv_tmu_set_checksum_queue_map(uint32_t pmac_port)
 	return tmu_hal_set_checksum_queue_map_hook_fn (pmac_port);
 }
 EXPORT_SYMBOL(ppa_drv_tmu_set_checksum_queue_map);
+
+int32_t ppa_drv_tmu_set_lro_queue_map(uint32_t pmac_port)
+{
+	if(!tmu_hal_set_lro_queue_map_hook_fn)
+		return PPA_EINVAL;
+	return tmu_hal_set_lro_queue_map_hook_fn (pmac_port);
+}
+EXPORT_SYMBOL(ppa_drv_tmu_set_lro_queue_map);
 
 int32_t ppa_drv_mpe_set_checksum_queue_map(uint32_t pmac_port, bool is_pmac_hdr_req)
 {

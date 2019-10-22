@@ -52,6 +52,8 @@ extern int32_t (*tmu_hal_clear_qos_mib_hook_fn)(
 #endif
 extern int (*tmu_hal_set_checksum_queue_map_hook_fn)
 		(uint32_t pmac_port);
+extern int(*tmu_hal_set_lro_queue_map_hook_fn)
+		(uint32_t pmac_port);
 extern int (*tmu_hal_remove_dp_egress_connectivity_hook_fn)
 		(struct net_device *netdev, uint32_t pmac_port);
 extern int (*tmu_hal_setup_dp_egress_connectivity_hook_fn)
