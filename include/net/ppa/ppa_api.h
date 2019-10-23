@@ -522,6 +522,7 @@ typedef struct {
 	struct net_device *tx_dev;
 } PPA_TUNNEL_INFO;
 typedef struct {
+	void  *p_item; 	/* pointer to the uc_session_node */
 	uint8_t f_ipv6;
 	IP_ADDR src_ip;
 	IP_ADDR dst_ip;
