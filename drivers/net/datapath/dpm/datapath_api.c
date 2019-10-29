@@ -878,14 +878,17 @@ int32_t dp_alloc_port_ext(int inst, struct module *owner,
 {
 	int res;
 	struct dp_port_data tmp_data = {0};
+	int first = 0;
 
 	if (unlikely(!dp_init_ok)) {
 		DP_LIB_LOCK(&dp_lock);
 		if (!try_walkaround) {
-			try_walkaround = 1;
-			dp_probe(NULL); /*workaround to re-init */
+			try_walkaround++;
+			first = try_walkaround;
 		}
 		DP_LIB_UNLOCK(&dp_lock);
+		if (first == 1)
+			dp_init_module();
 		if (!dp_init_ok) {
 			pr_err("dp_alloc_port fail: datapath can't init\n");
 			return DP_FAILURE;
@@ -955,6 +958,7 @@ int32_t dp_register_dev(struct module *owner, uint32_t port_id,
 }
 EXPORT_SYMBOL(dp_register_dev);
 
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
 static int remove_umt(int inst, const struct dp_umt_port *umt)
 {
 	struct umt_ops *ops = dp_get_umt_ops(inst);
@@ -964,6 +968,7 @@ static int remove_umt(int inst, const struct dp_umt_port *umt)
 
 	return ops->umt_release(ops->umt_dev, umt->ctl.id);
 }
+#endif
 
 int32_t dp_register_dev_ext(int inst, struct module *owner, uint32_t port_id,
 			    dp_cb_t *dp_cb, struct dp_dev_data *data,
@@ -1516,9 +1521,11 @@ static int dp_register_dc(int inst, uint32_t port_id,
 			  struct dp_dev_data *data, uint32_t flags)
 {
 	struct pmac_port_info *port = get_dp_port_info(inst, port_id);
+#if !IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP30)
 	struct umt_port_res *res;
 	struct umt_ops *ops = dp_get_umt_ops(inst);
-	int i, ret;
+#endif
+	int i, ret = DP_SUCCESS;
 
 	/* Fill in the output data to the the DCDP driver for the RX rings
 	 * and Save Info for debugging
@@ -1561,7 +1568,7 @@ static int dp_register_dc(int inst, uint32_t port_id,
 	memcpy(&port->umt, data->umt, sizeof(struct dp_umt_port));
 	return ret;
 #endif
-	return DP_SUCCESS;
+	return ret;
 }
 
 /* return DP_SUCCESS -- found

@@ -21,8 +21,11 @@
 int request_dp(u32 flag)
 {
 	struct dp_inst_info info;
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP32) || \
+	IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP31)
 	int i = 0;
 	u32 mac_ifcnt = gsw_get_mac_subifcnt(0);
+#endif
 
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_HAL_GSWIP32)
 	info.type = GSWIP32_TYPE;

@@ -127,6 +127,12 @@ config INTEL_DATAPATH_CPUFREQ
 	---help---
 	  It is to support DFS(COC) in Datapath
 
+config INTEL_DATAPATH_MIB
+	bool "Datapath MIB support"
+	depends on INTEL_DATAPATH
+	---help---
+	  It is to support MIB counter in Datapath
+
 #
 # Datapath Lib
 #

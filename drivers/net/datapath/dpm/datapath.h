@@ -873,6 +873,7 @@ extern int32_t (*qos_mgr_hook_setup_tc)(struct net_device *dev,
 #define DP_SUBIF_LIST_HASH_BIT_LENGTH 10
 #define DP_SUBIF_LIST_HASH_SIZE ((1 << DP_SUBIF_LIST_HASH_BIT_LENGTH) - 1)
 
+int dp_get_drv_mib(dp_subif_t *subif, dp_drv_mib_t *mib, uint32_t flag);
 extern struct hlist_head dp_subif_list[DP_SUBIF_LIST_HASH_SIZE];
 int32_t dp_sync_subifid(struct net_device *dev, char *subif_name,
 			dp_subif_t *subif_id, struct dp_subif_data *data,

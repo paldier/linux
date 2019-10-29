@@ -115,7 +115,7 @@ int32_t (*mpe_hal_feature_start_fn)(
 		uint32_t flags) = NULL;
 EXPORT_SYMBOL(mpe_hal_feature_start_fn);
 
-#ifdef CONFIG_LTQ_DATAPATH_DUMMY_MPE_MIB
+#ifdef CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB
 int32_t (*mpe_hal_get_netif_mib_hook_fn) (struct net_device *dev,
 		dp_subif_t *subif_id, struct mpe_hal_if_stats *mpe_mib,
 		uint32_t flag) = NULL;

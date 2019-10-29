@@ -86,6 +86,10 @@ void proc_coc_read_30(struct seq_file *s);
 ssize_t proc_coc_write_30(struct file *file, const char *buf, size_t count,
 			  loff_t *ppos);
 #endif
+#if IS_ENABLED(CONFIG_INTEL_DATAPATH_MIB)
+int dp_reset_sys_mib(u32 flag);
+int dp_mib_init(u32 flag);
+#endif
 
 #endif
 

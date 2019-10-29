@@ -11,15 +11,15 @@ menuconfig INTEL_DATAPATH_HAL_GSWIP30
 if INTEL_DATAPATH_HAL_GSWIP30
 config INTEL_DATAPATH_HAL_GSWIP30_MIB
 	bool "Datapath aggregated mib support"
-	depends on INTEL_DATAPATH_HAL_GSWIP30 && SOC_GRX500 && LTQ_TMU && LTQ_PPA_TMU_MIB_SUPPORT
 	default y
+	depends on INTEL_DATAPATH_HAL_GSWIP30 && SOC_GRX500 && LTQ_TMU && PPA_TMU_MIB_SUPPORT && INTEL_DATAPATH_MIB
 	---help---
 	  It is to aggregate GSWIP-L/R, TMU and driver's MIB counter
 
 config INTEL_DATAPATH_MIB_TMU_MPE_MIB
         bool "Support TMU-HAL mib API and MPE_HAL mib API"
         default n
-        depends on INTEL_DATAPATH_MIB_HAL_GSWIP30_MIB
+        depends on INTEL_DATAPATH_HAL_GSWIP30_MIB
         ---help---
           It is to provide TMU HAL mib api
 endif

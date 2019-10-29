@@ -260,7 +260,7 @@ static struct
 rtnl_link_stats64 *vuni_get_stats(struct net_device *dev,
 				  struct rtnl_link_stats64 *storage)
 {
-#ifndef CONFIG_LTQ_DATAPATH_MIB
+#ifndef CONFIG_INTEL_DATAPATH_MIB
 	struct intel_vuni_priv *priv = netdev_priv(dev);
 	*storage = priv->stats;
 #else

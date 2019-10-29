@@ -86,7 +86,7 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 	struct sk_buff *lct_skb;
 	struct dp_subif_info *sif;
 	struct dev_mib *mib;
-	int vap, ret;
+	int vap;
 
 	vap = dp_port->lct_idx;
 	sif = get_dp_port_subif(dp_port, vap);
@@ -106,16 +106,15 @@ static int dp_handle_lct(struct pmac_port_info *dp_port,
 		}
 		lct_skb->dev = sif->netif;
 		UP_STATS(mib->rx_fn_rxif_pkt);
-		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s) ret(%d)\n",
-			 lct_skb->dev->name ? lct_skb->dev->name : "NULL",
-			 ret);
+		DP_DEBUG(DP_DBG_FLAG_PAE, "pkt sent lct(%s)\n",
+			 lct_skb->dev->name ? lct_skb->dev->name : "NULL");
 		rx_fn(lct_skb->dev, NULL, lct_skb, lct_skb->len);
 		return 1;
 	} else if (memcmp(skb->data + PMAC_SIZE, skb->dev->dev_addr, 6) == 0) {
 		/* unicast */
 		DP_DEBUG(DP_DBG_FLAG_PAE, "LCT unicast\n");
-		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s) ret(%d)\n",
-			 skb->dev->name ? skb->dev->name : "NULL", ret);
+		DP_DEBUG(DP_DBG_FLAG_PAE, "unicast pkt sent lct(%s)\n",
+			 skb->dev->name ? skb->dev->name : "NULL");
 		if ((STATS_GET(sif->rx_flag) <= 0)) {
 			UP_STATS(mib->rx_fn_dropped);
 			dev_kfree_skb_any(skb);
@@ -147,7 +146,6 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 	char decryp = 0;
 	u8 inst = 0;
 	struct pmac_port_info *dp_port;
-	struct mac_ops *ops;
 	int ret_lct = 1;
 	struct dp_subif_info *sif;
 	struct dev_mib *mib;
@@ -210,23 +208,6 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 	dp_port = get_dp_port_info(inst, port_id);
 	sif = get_dp_port_subif(dp_port, vap);
 	mib = get_dp_port_subif_mib(sif);
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
-	if (dp_port->f_ptp) {
-		ops = dp_port_prop[inst].mac_ops[port_id];
-		if (ops)
-			ops->do_rx_hwts(ops, skb);
-	}
-#endif
-	/*PON traffic always have timestamp attached,removing Timestamp */
-	if (dp_port->alloc_flags & (DP_F_GPON | DP_F_EPON)) {
-		/* Stripping of last 10 bytes timestamp */
-#if IS_ENABLED(CONFIG_INTEL_DATAPATH_PTP1588)
-		if (!dp_port->f_ptp)
-			__pskb_trim(skb, skb->len - DP_TS_HDRLEN);
-#else
-		__pskb_trim(skb, skb->len - DP_TS_HDRLEN);
-#endif
-	}
 
 	rx_fn = dp_port->cb.rx_fn;
 	if (likely(rx_fn && dp_port->status)) {

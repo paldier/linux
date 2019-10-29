@@ -26,12 +26,13 @@
 #include <net/datapath_api.h>
 #include <net/datapath_proc_api.h>
 #include "../datapath.h"
+#include "datapath_misc.h"
 #ifdef CONFIG_LTQ_TMU
 #include <net/drv_tmu_ll.h>
 #endif
-#if IS_ENABLED(CONFIG_LTQ_PPA_TMU_MIB_SUPPORT)
-#include <net/ltq_tmu_hal_api.h>
-#include <net/ltq_mpe_hal.h>
+#if IS_ENABLED(CONFIG_PPA_TMU_MIB_SUPPORT)
+#include <net/ppa/ltq_tmu_hal_api.h>
+#include <net/ppa/ltq_mpe_hal.h>
 #endif
 
 static struct gsw_itf itf_assign[] = {
@@ -142,7 +143,7 @@ struct mibs_low_lvl_port {
 	GSW_RMON_Port_cnt_t r;
 	GSW_RMON_Redirect_cnt_t redir; /*only for ethernet WAN port */
 	dp_drv_mib_t drv;
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#ifdef CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB
 	struct tmu_hal_qos_stats tmu_qos[MAX_SUBIF_PER_PORT];
 	struct tmu_hal_qos_stats tmu_chksum;  /*only for ethernet WAN port */
 	struct mpe_hal_if_stats mpe;
@@ -151,7 +152,7 @@ struct mibs_low_lvl_port {
 
 struct mibs_low_lvl_vap {
 	GSW_RMON_If_cnt_t gsw_if; /*for pae only(L not support interface mib)*/
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#ifdef CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB
 	struct tmu_hal_qos_stats tmu_qos;
 	struct mpe_hal_if_stats mpe;
 #endif
@@ -206,6 +207,8 @@ static int32_t (*mpe_hal_clear_if_m_local)(struct net_device *dev,
 					   dp_subif_t *subif_id,
 					   uint32_t flag);
 #endif
+int dp_get_port_vap_mib_30(dp_subif_t *subif, void *priv,
+			   struct rtnl_link_stats64 *net_mib, u32 flag);
 
 /*internal API: update local net mib counters periodically */
 static int update_port_mib_lower_lvl(dp_subif_t *subif, u32 flag);
@@ -219,9 +222,8 @@ static u64 wraparound(u64 curr, u64 last, u32 size)
 	if ((size > 4) || /*for 8 bytes(64bit mib),no need to do wraparound*/
 	    (curr >= last))
 		return curr - last;
-	pr_info("Wraparound happen:\n");
-	pr_info("  current mib: 0x%x\n", curr);
-	pr_info("  last    mib: 0x%x\n", last);
+	DP_DEBUG(DP_DBG_FLAG_MIB, "Wraparound happen:%s 0x%llx %s 0x%llx\n",
+		 "current mib: ", curr, "  last mib: ", last);
 	return ((u64)WRAPAROUND_MAX_32) + (u64)curr - last;
 }
 
@@ -229,10 +231,10 @@ static int port_mib_wraparound(u32 ep, struct mibs_low_lvl_port *curr,
 			       struct mibs_low_lvl_port *last)
 {
 /* RMON_PORT_WRAP: c-current, l-last x-size in bytes */
-#define RMON_PORT_WRAP(c, l, x) wraparound((c)->(x), (l)->(x), sizeof((l)->(x)))
+#define RMON_PORT_WRAP(c, l, x) wraparound((c)->x, (l)->x, sizeof((l)->x))
 	GSW_RMON_Port_cnt_t *curr_tmp;
 	GSW_RMON_Port_cnt_t *last_tmp;
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#ifdef CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB
 	int i;
 #endif
 
@@ -323,7 +325,7 @@ static int port_mib_wraparound(u32 ep, struct mibs_low_lvl_port *curr,
 		return 0;
 	}
 
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#ifdef CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB
 	/*TMU drop counters */
 	for (i = 0; i < MAX_SUBIF_PER_PORT; i++)
 		aggregate_mib[ep].curr.tx_tmu_drop_pkts +=
@@ -392,21 +394,13 @@ static int vap_mib_wraparound(dp_subif_t *subif,
 			      struct mibs_low_lvl_vap *curr,
 			      struct mibs_low_lvl_vap *last)
 {
-#define VAP_RMON_WRAP_ITF(c, l, x) do { \
-	wrapar((c)->gsw_if.x, (l)->gsw_if.x, sizeof((l)->gsw_if.x)) \
-} while (0)
-#define VAP_RMON_WRAP_TMU(c, l, x) do { \
-	wrapar((c)->tmu_qos.x, (l)->tmu_qos.x, sizeof((l)->tmu_qos.x)) \
-} while (0)
-#define VAP_RMON_WRAP_MPE(c, l, x) do { \
-	wrapar((c)->mpe.x, (l)->mpe.x, sizeof((l)->mpe.x)) \
-} while (0)
-#define VAP_RMON_WRAP_DRV(c, l, x) do { \
-	wrapar((c)->drv.x, (l)->drv.x, sizeof((l)->drv.x)) \
-} while (0)
+#define VAP_RMON_WRAP_ITF(c, l, x) wraparound((c)->gsw_if.x, (l)->gsw_if.x, sizeof((l)->gsw_if.x))
+#define VAP_RMON_WRAP_TMU(c, l, x) wraparound((c)->tmu_qos.x, (l)->tmu_qos.x, sizeof((l)->tmu_qos.x))
+#define VAP_RMON_WRAP_MPE(c, l, x) wraparound((c)->mpe.x, (l)->mpe.x, sizeof((l)->mpe.x))
+#define VAP_RMON_WRAP_DRV(c, l, x) wraparound((c)->drv.x, (l)->drv.x, sizeof((l)->drv.x))
 
 	int ep = subif->port_id;
-	struct dp_port_info *pi = get_dp_port_info(0, subif->port_id);
+	struct pmac_port_info *pi = get_dp_port_info(0, subif->port_id);
 	int vap = GET_VAP(subif->subif, pi->vap_offset, pi->vap_mask);
 
 	if ((ep <= 0) ||
@@ -424,7 +418,7 @@ static int vap_mib_wraparound(dp_subif_t *subif,
 	    VAP_RMON_WRAP_ITF(curr, last, nTxPktsCount);
 	aggregate_mib[ep].curr_vap[vap].tx_disc_pkts_itf +=
 	    VAP_RMON_WRAP_ITF(curr, last, nTxDiscPktsCount);
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#ifdef CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB
 	aggregate_mib[ep].curr_vap[vap].tx_disc_pkts_tmu +=
 	    VAP_RMON_WRAP_TMU(curr, last, dropPkts);
 	aggregate_mib[ep].curr_vap[vap].tx_disc_pkts_mpe +=
@@ -438,10 +432,11 @@ static int vap_mib_wraparound(dp_subif_t *subif,
 	return 0;
 }
 
-static int get_gsw_port_rmon(u32 ep, char *gsw_drv_name,
+static int get_gsw_port_rmon(u32 ep, int index,
 			     GSW_RMON_Port_cnt_t *mib)
 {
 	GSW_return_t ret;
+	struct core_ops *gsw_handle;
 
 	if (!mib) {
 		pr_err("why mib pointer is %p\n", mib);
@@ -451,10 +446,11 @@ static int get_gsw_port_rmon(u32 ep, char *gsw_drv_name,
 		return -1;
 	memset(mib, 0, sizeof(*mib));
 	mib->nPortId = ep;
-	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Port_Get(dp_port_prop[0].ops[index], mib);
+	gsw_handle = dp_port_prop[0].ops[index];
+	ret = gsw_handle->gsw_rmon_ops.RMON_Port_Get(gsw_handle, mib);
 	if (ret) {
-		pr_err("GSW_RMON_PORT_GET failed(%d) from %s for port %d\n",
-		       ret, gsw_drv_name, ep);
+		pr_err("GSW_RMON_PORT_GET failed(%d) for port %d\n",
+		       ret, ep);
 		return -1;
 	}
 
@@ -465,6 +461,7 @@ static int get_gsw_redirect_rmon(u32 ep, int index,
 				 GSW_RMON_Redirect_cnt_t *mib)
 {
 	GSW_return_t ret;
+	struct core_ops *gsw_handle;
 
 	if (!mib) {
 		pr_err("why mib pointer is %p\n", mib);
@@ -472,31 +469,33 @@ static int get_gsw_redirect_rmon(u32 ep, int index,
 	}
 
 	memset(mib, 0, sizeof(*mib));
-	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_Redirect_Get(dp_port_prop[0].ops[index], mib);
+	gsw_handle = dp_port_prop[0].ops[index];
+	ret = gsw_handle->gsw_rmon_ops.RMON_Redirect_Get(gsw_handle, mib);
 	if (ret) {
-		pr_err("GSW_RMON_REDIRECT_GET failed from %s\n",
-		       gsw_drv_name);
+		pr_err("GSW_RMON_REDIRECT_GET failed\n");
 		return -1;
 	}
 
 	return 0;
 }
 
-static int get_gsw_itf_rmon(u32 index, int index,
+static int get_gsw_itf_rmon(u32 itf_index, int index,
 			    GSW_RMON_If_cnt_t *mib)
 {
 	GSW_return_t ret;
+	struct core_ops *gsw_handle;
 
 	if (!mib) {
 		pr_err("why mib pointer is %p\n", mib);
 		return -1;
 	}
 	memset(mib, 0, sizeof(*mib));
-	mib->nIfId = index;
-	ret = dp_port_prop[0].ops[index]->gsw_rmon_ops.RMON_If_Get(dp_port_prop[0].ops[index], mib);
+	mib->nIfId = itf_index;
+	gsw_handle = dp_port_prop[0].ops[index];
+	ret = gsw_handle->gsw_rmon_ops.RMON_If_Get(gsw_handle, mib);
 	if (ret) {
-		pr_err("GSW_RMON_PORT_GET GSW_RMON_IF_GET from %s: index %d\n",
-		       gsw_drv_name, index);
+		pr_err
+		    ("GSW_RMON_PORT_GET GSW_RMON_IF_GET for index %d\n", index);
 		return -1;
 	}
 	return 0;
@@ -531,7 +530,7 @@ int gsw_eth_wan_redirect_status(void)
 	struct qos_ops *gsw_qos;
 	#define MAX_CLASS_NUM 16
 
-	gsw_handle = dp_port_prop[inst].ops[1];
+	gsw_handle = dp_port_prop[0].ops[1];
 	gsw_qos = &gsw_handle->gsw_qos_ops;
 	memset(&q_cfg, 0, sizeof(q_cfg));
 	q_cfg.nPortId = WAN_EP;
@@ -541,7 +540,7 @@ int gsw_eth_wan_redirect_status(void)
 		if (ret) {
 			pr_err("%s failed(%d) from %s for port %d\n",
 			       "GSW_QOS_QUEUE_PORT_GET",
-			       ret, GSWIP_R, WAN_EP);
+			       ret, "GSWIP_R", WAN_EP);
 			return -1;
 		}
 		if (q_cfg.nRedirectPortId == 0)
@@ -685,7 +684,7 @@ HANDLE_WRAPWROUND:
 static void mib_wraparound_timer_poll(unsigned long data)
 {
 	int i;
-	dp_subif_t subif;
+	dp_subif_t subif = {0};
 #define START_PORT_ID 0
 	/*start from port 1, not 0 since 0 is no device registered*/
 	static int port = START_PORT_ID;
@@ -697,7 +696,7 @@ static void mib_wraparound_timer_poll(unsigned long data)
 	/* update vap if necessary */
 	if (port) {
 		for (i = 0; i < MAX_SUBIF_PER_PORT; i++) {
-			struct dp_port_info *pi = get_dp_port_info(0, port);
+			struct pmac_port_info *pi = get_dp_port_info(0, port);
 
 			subif.subif = SET_VAP(i, pi->vap_offset, pi->vap_mask);
 			/* update sub-interface/vap mib only */
@@ -723,7 +722,7 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 	int itf_base;
 	struct mibs_low_lvl_vap *curr;
 	int port_id;
-	struct dp_port_info *pi;
+	struct pmac_port_info *pi;
 
 	/*update struct pmac_port_info[subif->ep].net_mib */
 	if (!subif || (subif->port_id <= 0) || (subif->port_id >= PMAC_MAX_NUM))
@@ -767,7 +766,7 @@ static int update_vap_mib_lower_lvl(dp_subif_t *subif, u32 flag)
 					      &curr->tmu_qos, 0);
 		if (ret) {
 			curr->tmu_qos = last_vap[port_id][vap].tmu_qos;
-			pr_err("%s failed for port.vap(%d.%d):%d\n",
+			DP_DEBUG(DP_DBG_FLAG_MIB, "%s failed for port.vap(%d.%d):%d\n",
 			       "tmu_hal_get_qos_mib_hook_fn",
 			       port_id, vap, ret);
 		}
@@ -842,7 +841,6 @@ static unsigned int proc_mib_port_start_id = 1;
 static unsigned int proc_mib_port_end_id = PMAC_MAX_NUM - 1;
 int proc_mib_inside_dump(struct seq_file *s, int pos)
 {
-	int ret;
 	dp_subif_t subif;
 	struct rtnl_link_stats64 net_mib;
 
@@ -900,7 +898,7 @@ int proc_mib_inside_dump(struct seq_file *s, int pos)
 		   last[pos].redir.nTxPktsCount);
 	seq_printf(s, "  %-45s=%40u\n", "last.redir.nTxDiscPktsCount",
 		   last[pos].redir.nTxDiscPktsCount);
-#ifdef CONFIG_LTQ_DATAPATH_MIB_TMU_MPE_MIB
+#ifdef CONFIG_INTEL_DATAPATH_MIB_TMU_MPE_MIB
 	/*checksum */
 	seq_printf(s, "  %-45s=%40llu\n", "last.tmu_chksum.deqPkts",
 		   last[pos].tmu_chksum.deqPkts);
@@ -1037,7 +1035,7 @@ ssize_t proc_mib_inside_write(struct file *file, const char *buf,
 int dp_get_port_vap_mib_30(dp_subif_t *subif, void *priv,
 			   struct rtnl_link_stats64 *net_mib, u32 flag)
 {
-	dp_subif_t tmp_subif;
+	dp_subif_t tmp_subif = {0};
 	unsigned int port_id, vap;
 	struct pmac_port_info *port_info;
 
@@ -1554,7 +1552,7 @@ int clear_gsw_itf_mib(dp_subif_t *subif, u32 flag)
 	struct pmac_port_info *port_info;
 	struct core_ops *gsw_handle;
 
-	gsw_handle = dp_port_prop[inst].ops[GSWIP_R];
+	gsw_handle = dp_port_prop[0].ops[GSWIP_R];
 	if (!(flag & DP_F_STATS_SUBIF))
 		return 0;
 	if (!subif) { /* clear all */
@@ -1596,10 +1594,10 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 	int i;
 	dp_subif_t tmp_subif;
 	struct core_ops *gsw_l, *gsw_r;
-	struct dp_port_info *pi;
+	struct pmac_port_info *pi;
 
-	gsw_l = dp_port_prop[inst].ops[GSWIP_L];
-	gsw_r = dp_port_prop[inst].ops[GSWIP_R];
+	gsw_l = dp_port_prop[0].ops[GSWIP_L];
+	gsw_r = dp_port_prop[0].ops[GSWIP_R];
 
 	if (!subif) { /*clear all */
 		spin_lock_bh(&dp_mib_lock);
@@ -1704,7 +1702,7 @@ int dp_clear_netif_mib_30(dp_subif_t *subif, void *priv, u32 flag)
 		/*reset GSWIP-L/R rmon counters */
 		rmon.eRmonType = GSW_RMON_PORT_TYPE;
 		rmon.nRmonId = port_id;
-		gsw_l->gsw_rmon_ops.RMON_Clear(gsw_r, &rmon);
+		gsw_l->gsw_rmon_ops.RMON_Clear(gsw_l, &rmon);
 		gsw_r->gsw_rmon_ops.RMON_Clear(gsw_r, &rmon);
 	} else {		/*port 7 ~ 14 */
 		rmon.eRmonType = GSW_RMON_PORT_TYPE;
@@ -1955,7 +1953,7 @@ help:
 int proc_mib_vap_dump(struct seq_file *s, int pos)
 {
 	int j = 0;
-	int ret = 0, f_newline = 0;
+	int f_newline = 0;
 	dp_subif_t subif;
 	struct rtnl_link_stats64 stats_mib;
 	int itf_base;
@@ -2068,7 +2066,7 @@ int set_gsw_itf(u8 ep, u8 ena, int start)
 	GSW_portCfg_t port_cfg;
 	struct core_ops *gsw_r;
 
-	gsw_r = dp_port_prop[inst].ops[GSWIP_R];
+	gsw_r = dp_port_prop[0].ops[GSWIP_R];
 
 	if (ep >= PMAC_MAX_NUM)
 		return -1;
