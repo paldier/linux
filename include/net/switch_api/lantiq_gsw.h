@@ -2905,6 +2905,13 @@ typedef struct {
 	u32	nTxBytesCount;
 } GSW_RMON_Route_cnt_t;
 
+/** Defined as per RMON counter table structure
+ * Applicable only for GSWIP 3.0
+ */
+typedef enum {
+	GSW_RMON_REDIRECTION = 0X18,
+} GSW_RMON_Port_t;
+
 /*@}*/ /* GSW_IOCTL_RMON */
 
 /** \addtogroup GSW_IOCTL_PMAC */

@@ -192,9 +192,6 @@ static gsw_capdesc_t capdes[] = {
 /*****************/
 /* Function Body */
 /*****************/
-#ifndef CONFIG_X86_INTEL_CE2700
-//static void 		*gswr_bm_addr = (void  *) (KSEG1 | 0x1a000114);;
-#endif
 #define GAP_MAX	50
 #define GAP_MAX1	1000
 #define MAX_READ 20
@@ -15153,7 +15150,7 @@ GSW_return_t GSW_RMON_Redirect_Get(void *cdev, GSW_RMON_Redirect_cnt_t *parm)
 		u8 index;
 		u8 i, j, m, rpt, loc, hc, crd[MAX_READ] = {0};
 		u32 rdcount[MAX_READ] = {0}, br;
-		u32 data, data0, data1;
+		u32 data, data0, data1, bm_ram_ctrl = 0;
 		u64  rxbytes_l = 0, rxbytes_h = 0;
 		u64 txbytes_l = 0, txbytes_h = 0;
 
@@ -15172,18 +15169,30 @@ repeat:
 			loc = 0;
 
 			for (j = 0; j < MAX_READ; j++) {
-#ifndef CONFIG_X86_INTEL_CE2700
-				/*suresh*/
-//				ltq_w32(0x8018, gswr_bm_addr);
-//				ltq_w32(0x0018, gswr_bm_addr);
-				//			asm("SYNC");
-//				ltq_w32(0x8018, gswr_bm_addr);
-#endif
-
-				if (GSW_statusErr == CHECK_BUSY(BM_RAM_CTRL_BAS_OFFSET,
-								BM_RAM_CTRL_BAS_OFFSET, BM_RAM_CTRL_BAS_OFFSET, RETURN_ERROR_CODE))
-					continue; /*Error already printed. Try the next iteration*/
-
+				/* Set Redirection RMON table Adrees */
+				FILL_CTRL_REG(bm_ram_ctrl,
+					      BM_RAM_CTRL_ADDR_SHIFT,
+						  GSW_RMON_REDIRECTION);
+				/* Set RAM access busy */
+				FILL_CTRL_REG(bm_ram_ctrl,
+					      BM_RAM_CTRL_BAS_SHIFT, 1);
+				gsw_w32_raw(cdev, BM_RAM_CTRL_REG_OFFSET,
+					    bm_ram_ctrl);
+				/* Set initiate a RAM access */
+				FILL_CTRL_REG(bm_ram_ctrl,
+					      BM_RAM_CTRL_BAS_SHIFT, 0);
+				gsw_w32_raw(cdev, BM_RAM_CTRL_REG_OFFSET,
+					    bm_ram_ctrl);
+				/* Set RAM access busy */
+				FILL_CTRL_REG(bm_ram_ctrl,
+					      BM_RAM_CTRL_BAS_SHIFT, 1);
+				gsw_w32_raw(cdev, BM_RAM_CTRL_REG_OFFSET,
+					    bm_ram_ctrl);
+				/* Wait until RAM is ready to Read */
+				CHECK_BUSY(BM_RAM_CTRL_BAS_OFFSET,
+					   BM_RAM_CTRL_BAS_SHIFT,
+					   BM_RAM_CTRL_BAS_SIZE,
+					   RETURN_FROM_FUNCTION);
 				for (i = 0; i < 4; i++) {
 					gsw_r32(cdev, BM_RAM_VAL_0_VAL0_OFFSET,
 						BM_RAM_VAL_0_VAL0_SHIFT,
