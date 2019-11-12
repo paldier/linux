@@ -3331,6 +3331,7 @@ dp_enable(
 	cbm_tmu_res_t *res = NULL;
 	int q_buff_num;
 	unsigned long sys_flag;
+	struct tmu_equeue_drop_params thx = {0};
 
 	qidt_set.ep = port_id;
 	qidt_mask.ep_mask = 0;
@@ -3384,6 +3385,17 @@ dp_enable(
 		tmu_equeue_enable(tmp_q_buff3[j], (flags & CBM_PORT_F_DISABLE) ? 0 : 1);
 		LOGF_KLOG_INFO("enable queue %d\n", tmp_q_buff3[j]);
 		LOGF_KLOG_INFO("flag %d refcnt %d\n", ((flags & CBM_PORT_F_DISABLE) ? 0 : 1), cbm_qtable[tmp_q_buff3[j]].refcnt);
+
+		tmu_equeue_drop_params_get(tmp_q_buff3[j], &thx);
+		/*
+		 * Change drop algo to DT and increase green threshold to thren times
+		 * the default threshold
+		 */
+		thx.dmod = 0;
+		thx.math0 = 0x72;
+		thx.math1 = 0x24;
+		thx.qtth1 = 0x24;
+		tmu_equeue_drop_params_set(tmp_q_buff3[j], &thx);
 	}
 	/*Enable the TMU port, i*/
 	tmu_egress_port_enable(res[0].tmu_port, (flags & CBM_PORT_F_DISABLE) ? 0 : 1);
