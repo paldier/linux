@@ -1116,6 +1116,12 @@ int ppa_get_multicast_pkt_ip(PPA_BUF *ppa_buf, void *dst_ip, void *src_ip);
 	\note
  */
 void ppa_get_pkt_dst_ip(PPA_IPADDR *ip, PPA_BUF *buf);
+/*! \brief   Returns IP TTL of the packet.
+  \param[in] ppa_buf Pointer to the packet buffer.
+  \return TTL value.
+  \note
+ */
+uint8_t ppa_get_pkt_ip_ttl(PPA_BUF *ppa_buf);
 /*! \brief Returns source TCP/UDP port of the IP packet.
 	\param[in] ppa_buf Pointer to the packet buffer.
 	\return TCP/UDP Source Port of the packet.
@@ -2253,7 +2259,7 @@ int ppa_get_hash_from_packet(PPA_BUF *ppa_buf,
 	\return ipttl
 	\note
  */
-int32_t ppa_get_ip_ttl(void);
+int32_t ppa_get_ip_ttl_default(void);
 /*! \brief get system meminfo
 	\param pointer to systeminfo structure
 	\return system mem info
