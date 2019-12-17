@@ -3295,7 +3295,7 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
 		PrvData->tflow_idx.flow_idx[i].indexinusagecnt++;
 	}
 
-	if (IS_VRSN_30_31_32(PrvData->gipver)) {
+	if (IS_VRSN_31_OR_32(PrvData->gipver)) {
 		/* First Entry of Common Region in TFLOW Table */
 		gsw_w32(cdev, PCE_TFCR_ID_INDEX_OFFSET, PCE_TFCR_ID_INDEX_SHIFT,
 			PCE_TFCR_ID_INDEX_SIZE, 0x0);
