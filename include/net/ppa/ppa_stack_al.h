@@ -1661,6 +1661,25 @@ int32_t ppa_form_gre_hdr(PPA_NETIF *dev,
 		uint16_t dataLen,
 		uint8_t *pHdr,
 		uint16_t *len);
+/*! \brief  This function forms IPv6 header (DSLite) for given interface.
+  \param[out]  dev  Pointer to the buffer to copy header.
+  \param[in]   pointer to netdev struct.
+  \param[in]   payload length.
+  \return    Returns PPA_SUCCESS value if header is formed.
+  \note
+ */
+int32_t ppa_get_ipv6_tnl_iph(struct ipv6hdr* ip6h,
+   struct net_device *dev,
+   uint16_t dataLen);
+/*! \brief  This function detects mesh mode for MapE session.
+  \param[in]   IP destination IPv4  address of the map-e session.
+  \param[in]   net dev pointer for map-e interface.
+  \return    Returns true if mesh mode is detected else false.
+  \note
+ */
+bool ppa_is_mape_mesh_session(uint32_t dest_ip,
+                struct net_device *dev);
+
 /*! \brief This function returns EOGRE inner destination mac address.
 	\param[out] mac Pointer to destination mac address.
 	\param[in] skb Pointer to the packet buffer.
