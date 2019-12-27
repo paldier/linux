@@ -1063,6 +1063,9 @@ static long mtdchar_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
 {
 	int ret;
 
+	if (!capable(CAP_SYS_RESOURCE))
+		return -EPERM;
+
 	mutex_lock(&mtd_mutex);
 	ret = mtdchar_ioctl(file, cmd, arg);
 	mutex_unlock(&mtd_mutex);
@@ -1088,6 +1091,9 @@ static long mtdchar_compat_ioctl(struct file *file, unsigned int cmd,
 	struct mtd_info *mtd = mfi->mtd;
 	void __user *argp = compat_ptr(arg);
 	int ret = 0;
+
+	if (!capable(CAP_SYS_RESOURCE))
+		return -EPERM;
 
 	mutex_lock(&mtd_mutex);
 
