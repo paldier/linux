@@ -813,17 +813,24 @@ static void ltq_set_max_pkt_len (struct ltq_eth_priv *priv, u16 pkt_len)
 {
 	struct core_ops *ops = NULL;
 	pkt_len += ETH_HLEN + ETH_FCS_LEN;
-	if(priv != NULL) {
-		if(priv->wan)
-			ops = gsw_get_swcore_ops(1);
-		else
+	if (priv != NULL) {
+		/* Set the GSW-L MAC_FLEN register for max packet length */
+		if (!priv->wan) {
 			ops = gsw_get_swcore_ops(0);
-		if(ops == NULL)
+			if (ops == NULL)
+				return;
+
+			pr_info("doing the GSW-L MAC_FLEN configuration\n");
+			gsw_reg_set_val(ops, 0x8C5, max(pkt_len, gsw_reg_get_val(ops, 0x8C5)));
+		}
+
+		/* Set the GSW-R MAC_FLEN register for max packet length */
+		ops = gsw_get_swcore_ops(1);
+		if (ops == NULL)
 			return;
 
-		/* Set the MAC_FLEN register for max packet length */
-		pr_info("doing the GSW MAC_FLEN configuration\n");
-		gsw_reg_set_val(ops, 0x8C5, pkt_len);
+		pr_info("doing the GSW-R MAC_FLEN configuration\n");
+		gsw_reg_set_val(ops, 0x8C5, max(pkt_len, gsw_reg_get_val(ops, 0x8C5)));
 	}
 }
 
