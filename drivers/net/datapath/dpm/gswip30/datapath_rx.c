@@ -245,6 +245,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 					desc_0, desc_1,
 					desc_2, desc_3);
 		}
+		desc_0->field.flow_id = 0;
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_MPE_FASTHOOK_TEST)
 		if (unlikely(ltq_mpe_fasthook_rx_fn))
 			ltq_mpe_fasthook_rx_fn(skb, 1, NULL);	/*with pmac */
