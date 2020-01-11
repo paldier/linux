@@ -3468,14 +3468,17 @@ static s32 cbm_empty_queue(s32 cbm_port_id, u32 qocc, u32 port_type)
 	while (qocc) {
 		#ifdef CHECK_WHILE_LOOP
 		iter++;
-		if (iter > 30000) {
-			pr_info_once("%s >30k iter qocc %d", __func__, qocc);
+		if (iter > 50000) {
+			pr_info_once("%s >50k iter qocc %d\n", __func__, qocc);
+			return qocc;
+		} else if (iter > 30000) {
+			pr_info_once("%s >30k iter qocc %d\n", __func__, qocc);
 		} else if (iter > 10000) {
-			pr_info_once("%s >10k iter qocc %d", __func__, qocc);
+			pr_info_once("%s >10k iter qocc %d\n", __func__, qocc);
 		} else if (iter > 5000) {
-			pr_info_once("%s >5k iter qocc %d", __func__, qocc);
+			pr_info_once("%s >5k iter qocc %d\n", __func__, qocc);
 		} else if (iter > 500) {
-			pr_info_once("%s >500 iter qocc %d", __func__, qocc);
+			pr_info_once("%s >500 iter qocc %d\n", __func__, qocc);
 		}
 		#endif
 		for (i = 0; i < dqm_port_info[cbm_port_id].deq_info.num_desc;) {
