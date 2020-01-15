@@ -81,7 +81,7 @@ uint32_t ppa_drv_generic_hal_register(uint32_t hal_id, ppa_generic_hook_t generi
 void ppa_drv_generic_hal_deregister(uint32_t hal_id)
 {
 	if (hal_id >= MAX_HAL)
-		return PPA_FAILURE;
+		return;
 
 	if (hal_id  ==  PPE_HAL) {/*ppe hal*/
 		ppa_drv_hal_generic_hook  =  NULL;
@@ -152,6 +152,9 @@ uint32_t ppa_drv_register_cap(PPA_API_CAPS cap, uint8_t wt, PPA_HAL_ID hal_id)
 {
 	PPA_HSEL_CAP_NODE *cap_node;
 
+	if (cap >= MAX_CAPS)
+		return PPA_FAILURE;
+
 	/* allocate the node*/
 	cap_node  =  (PPA_HSEL_CAP_NODE*) kmalloc (sizeof(PPA_HSEL_CAP_NODE), GFP_KERNEL);
 	if (!cap_node) {
@@ -173,6 +176,9 @@ uint32_t ppa_drv_deregister_cap(PPA_API_CAPS cap, PPA_HAL_ID hal_id)
 {
 	PPA_HSEL_CAP_NODE *t_node = NULL;
 	PPA_HLIST_NODE *tmp;
+
+	if (cap >= MAX_CAPS)
+		return PPA_FAILURE;
 
 	ppa_hlist_for_each_entry_safe(t_node, tmp, &g_hsel_caps_list[cap], cap_list) {
 		if (t_node->hal_id  ==  hal_id) {
