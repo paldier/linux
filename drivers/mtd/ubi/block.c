@@ -50,6 +50,7 @@
 #include <linux/scatterlist.h>
 #include <linux/idr.h>
 #include <asm/div64.h>
+#include <linux/root_dev.h>
 
 #include "ubi-media.h"
 #include "ubi.h"
@@ -103,6 +104,8 @@ static DEFINE_IDR(ubiblock_minor_idr);
 /* Protects ubiblock_devices and ubiblock_minor_idr */
 static DEFINE_MUTEX(devices_mutex);
 static int ubiblock_major;
+
+static bool rootfsname_set = false;
 
 static int __init ubiblock_set_param(const char *val,
 				     const struct kernel_param *kp)
@@ -164,6 +167,42 @@ static int __init ubiblock_set_param(const char *val,
 	return 0;
 }
 
+static int __init ubiblock_set_rootfsname_param(const char *val,
+				     const struct kernel_param *kp)
+{
+	size_t len;
+	struct ubiblock_param *param;
+
+	if (ubiblock_devs)
+		return(0); /* if ubi block options already set by ubi.block,
+			    * we can skip this param. */
+
+	if (!val)
+		return -EINVAL;
+
+	len = strnlen(val, UBIBLOCK_PARAM_LEN);
+	if (len == 0) {
+		pr_warn("UBI: block: empty 'rootfsname=' parameter - ignored\n");
+		return 0;
+	}
+
+	if (len == UBIBLOCK_PARAM_LEN) {
+		pr_err("UBI: block: parameter \"%s\" is too long, max. is %d\n",
+			val, UBIBLOCK_PARAM_LEN);
+		return -EINVAL;
+	}
+
+	param = &ubiblock_param[ubiblock_devs];
+	param->ubi_num = 0;
+	param->vol_id = -1;
+	strcpy(param->name, val);
+	ubiblock_devs = 1;
+
+	rootfsname_set = true;
+
+	return(0);
+}
+
 static const struct kernel_param_ops ubiblock_param_ops = {
 	.set    = ubiblock_set_param,
 };
@@ -178,6 +217,12 @@ MODULE_PARM_DESC(block, "Attach block devices to UBI volumes. Parameter format: 
 			"ubi.block=0,rootfs\n"
 			"Using both UBI device number and UBI volume number:\n"
 			"ubi.block=0,0\n");
+
+/* Fallback approach if command line uses 'rootfsname=<rootfs volume name>' */
+static const struct kernel_param_ops ubiblock_rootfsname_param_ops = {
+	.set    = ubiblock_set_rootfsname_param,
+};
+__module_param_call("", rootfsname, &ubiblock_rootfsname_param_ops, NULL, 0, -1, 0);
 
 static struct ubiblock *find_dev_nolock(int ubi_num, int vol_id)
 {
@@ -447,6 +492,13 @@ int ubiblock_create(struct ubi_volume_info *vi)
 	dev_info(disk_to_dev(dev->gd), "created from ubi%d:%d(%s)",
 		 dev->ubi_num, dev->vol_id, vi->name);
 	mutex_unlock(&devices_mutex);
+
+	if (ROOT_DEV == 0 && rootfsname_set) {
+		ROOT_DEV = MKDEV(gd->major, gd->first_minor);
+		pr_notice("ubiblock: device ubiblock%d_%d (%s) set to be root filesystem\n",
+		          dev->ubi_num, dev->vol_id, vi->name);
+	}
+
 	return 0;
 
 out_free_queue:
