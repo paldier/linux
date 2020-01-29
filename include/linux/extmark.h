@@ -35,6 +35,10 @@
 #define LROSESS_NO_OF_BITS 1
 #define LROSESS_MASK 0x80000000
 
+/* LRO bit is being reused to mark packet is acclerated by SAE */
+#define FILTERTAP_START_BIT_POS 31
+#define FILTERTAP_NO_OF_BITS 1
+#define FILTERTAP_MASK 0x80000000
 
 #define GET_DATA_FROM_MARK_OPT(mark, mask, pos, value) \
 	(value = ((mark & mask) >> pos))
