@@ -298,6 +298,7 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 		}
 		hlist_add_head(&dp_dev->hlist, &dp_dev_list[idx]);
 #if IS_ENABLED(CONFIG_PPA)
+#if (!IS_ENABLED(CONFIG_SOC_GRX500))
 		/*backup ops*/
 		if (dev) {
 			dev->features |= NETIF_F_HW_TC;
@@ -311,7 +312,8 @@ int dp_inst_add_dev(struct net_device *dev, char *subif_name, int inst,
 			if (err)
 				return DP_FAILURE;
 		}
-#endif
+#endif /* CONFIG_SOC_GRX500 */
+#endif /* CONFIG_PPA */
 #if IS_ENABLED(CONFIG_INTEL_DATAPATH_SWITCHDEV)
 	if (!(flag & DP_F_SUBIF_LOGICAL))
 		dp_port_register_switchdev(dp_dev, dev);
