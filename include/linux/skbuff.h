@@ -809,6 +809,9 @@ struct sk_buff {
 #if defined(CONFIG_LTQ_CBM) || IS_ENABLED(CONFIG_DIRECTCONNECT_DP_API)
 	__u32 DW0, DW1, DW2, DW3;
 #endif
+#ifdef CONFIG_NETWORK_EXTMARK
+	__u32		extmark;
+#endif
 #ifdef CONFIG_PPA
 	void			*ptr_ppa_pitem;
 #endif
@@ -824,9 +827,6 @@ struct sk_buff {
 				*data;
 	unsigned int		truesize;
 	atomic_t		users;
-#ifdef CONFIG_NETWORK_EXTMARK
-	__u32		extmark;
-#endif
 };
 
 #ifdef __KERNEL__

@@ -886,9 +886,6 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	memcpy(&new->headers_start, &old->headers_start,
 	       offsetof(struct sk_buff, headers_end) -
 	       offsetof(struct sk_buff, headers_start));
-#ifdef CONFIG_NETWORK_EXTMARK
-	new->extmark	 = old->extmark;
-#endif
 #if IS_ENABLED(CONFIG_PPA)
 	if (ppa_hook_pitem_refcnt_inc_fn && new->ptr_ppa_pitem)
 		ppa_hook_pitem_refcnt_inc_fn(new);
