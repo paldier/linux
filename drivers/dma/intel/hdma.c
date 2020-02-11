@@ -579,12 +579,6 @@ static int dma_ctrl_cfg(struct dma_ctrl *pctrl)
 		enable = 0;
 	dma_ctrl_chan_flow_ctl_cfg(pctrl, enable);
 
-	if ((pctrl->flags & DMA_FTOD))
-		enable = 1;
-	else
-		enable = 0;
-	dma_ctrl_desc_fetch_on_demand_cfg(pctrl, enable);
-
 	if ((pctrl->flags & DMA_DESC_IN_SRAM))
 		enable = 1;
 	else
@@ -2989,7 +2983,7 @@ static irqreturn_t dma_chan_interrupt(int irq, void *dev_id)
 static int dma_ctrl_init(struct dma_ctrl *pctrl)
 {
 	u32 i, j;
-	int ret;
+	int enable, ret;
 	struct dma_port *pport = NULL;
 	struct dmax_chan *pch = NULL;
 
@@ -3024,6 +3018,13 @@ static int dma_ctrl_init(struct dma_ctrl *pctrl)
 			}
 		}
 	}
+
+	if ((pctrl->flags & DMA_FTOD))
+		enable = 1;
+	else
+		enable = 0;
+	dma_ctrl_desc_fetch_on_demand_cfg(pctrl, enable);
+
 	return 0;
 }
 
