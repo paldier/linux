@@ -109,10 +109,11 @@ struct umt_port {
 	u32 dma_cid; /* DMA Chan ID */
 	enum umt_status suspend;
 	spinlock_t umt_port_lock;
-#ifdef CONFIG_LTQ_UMT_SW_MODE
+#if IS_ENABLED(CONFIG_LTQ_UMT_SW_MODE)
 	u32 dq_idx;
 	u32 umt_ep_dst;
 	u32 umtid_map_cbmid;
+	u32 umt_remaining_time;
 #endif
 };
 
