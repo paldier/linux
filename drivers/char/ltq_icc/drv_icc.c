@@ -581,7 +581,7 @@ int icc_os_register (void){
 	 }
 		TRACE(ICC, DBG_LEVEL_HIGH, ("Major Id is %d\n",icc_major_id));
    	TRACE(ICC, DBG_LEVEL_HIGH, ("ICC driver registered\n"));
-   return ret;
+   return 0;
 }
 
 /**
@@ -782,8 +782,11 @@ int __init icc_init_module (void){
 #ifdef KTHREAD
 	sema_init(&icc_callback_sem,1);
 #endif
+	return 0;
 finish:
-	return result;
+	mps_unregister_callback();
+	mps_close((struct inode *)1, NULL);
+	return -EINVAL;
 }
 
 /*Exit module routine*/
@@ -972,8 +975,6 @@ int icc_unregister_callback (icc_devices type)
 /*Module related definitions*/
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Swaroop Sarma");
-MODULE_PARM_DESC (icc_major_id, "Major ID of device");
-module_param (icc_major_id, short, 0);
 /*module functions of ICC driver*/
 module_init (icc_init_module);
 module_exit (icc_cleanup_module);
