@@ -404,11 +404,6 @@ long icc_ioctl (struct file *file_p,uint32_t nCmd, unsigned long arg){
 				break;
 			case ICC_IOC_MEM_INVALIDATE:
 			case ICC_IOC_MEM_COMMIT:
-#ifdef SYSTEM_4KEC
-					/*As the 4kec is uncached access no need of cache flushing, but for safety do a sync*/
-					__asm__ __volatile__(" sync \n");
-					return 0;
-#endif
 				num=(int)file_p->private_data;
         /* Initialize destination and copy mps_message from usermode */
         memset (&icc_address, 0, sizeof (icc_commit_t));
@@ -428,12 +423,10 @@ long icc_ioctl (struct file *file_p,uint32_t nCmd, unsigned long arg){
 					}
 
 					icc_address.address[i] = mmap_addr+icc_address.offset[i];
-#ifndef SYSTEM_4KEC
 					if(nCmd == ICC_IOC_MEM_COMMIT)
 						cache_wb_inv(icc_address.address[i],icc_address.length[i]);
 					else
 						cache_inv(icc_address.address[i],icc_address.length[i]);
-#endif 
 				}
 				
 				break;
