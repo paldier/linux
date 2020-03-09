@@ -2374,6 +2374,53 @@ static void get_vlan_sw_table(void *cdev, u8 pcindex,
 }
 #endif /* CONFIG_LTQ_VLAN */
 
+static GSW_return_t gsw_rmon_table_config(void *cdev, GSW_RMON_mode_t *parm)
+{
+	u32  bm_ram_ctrl = 0;
+	int ret;
+
+	switch (parm->eRmonType) {
+	case GSW_RMON_METER_TYPE:
+			FILL_CTRL_REG(bm_ram_ctrl, BM_RAM_CTRL_ADDR_SHIFT,
+				      GSW_RMON_METER);
+		break;
+	case GSW_RMON_IF_TYPE:
+			FILL_CTRL_REG(bm_ram_ctrl, BM_RAM_CTRL_ADDR_SHIFT,
+				      GSW_RMON_IF);
+		break;
+	case GSW_RMON_ROUTE_TYPE:
+			FILL_CTRL_REG(bm_ram_ctrl, BM_RAM_CTRL_ADDR_SHIFT,
+				      GSW_RMON_ROUTE);
+		break;
+	case GSW_RMON_PMAC_TYPE:
+			FILL_CTRL_REG(bm_ram_ctrl, BM_RAM_CTRL_ADDR_SHIFT,
+				      GSW_RMON_PMACIG);
+		break;
+	default:
+		return GSW_statusErr;
+	}
+	/* Set RAM access busy */
+	FILL_CTRL_REG(bm_ram_ctrl,
+		      BM_RAM_CTRL_BAS_SHIFT, 1);
+	gsw_w32_raw(cdev, BM_RAM_CTRL_REG_OFFSET,
+		    bm_ram_ctrl);
+	/* Set initiate a RAM access */
+	FILL_CTRL_REG(bm_ram_ctrl,
+		      BM_RAM_CTRL_BAS_SHIFT, 0);
+	asm("SYNC");
+	/* Set RAM access busy */
+	FILL_CTRL_REG(bm_ram_ctrl,
+		      BM_RAM_CTRL_BAS_SHIFT, 1);
+	gsw_w32_raw(cdev, BM_RAM_CTRL_REG_OFFSET,
+		    bm_ram_ctrl);
+	/* Wait until RAM is ready to Read */
+	ret = CHECK_BUSY(BM_RAM_CTRL_BAS_OFFSET,
+			 BM_RAM_CTRL_BAS_SHIFT,
+			 BM_RAM_CTRL_BAS_SIZE,
+			 RETURN_FROM_FUNCTION);
+
+	return ret;
+}
 
 static void get_gsw_hw_cap(void *cdev)
 {
@@ -14880,11 +14927,16 @@ UNLOCK_AND_RETURN:
 static GSW_return_t GSW_RMON_Meter_Get_Legacy(void *cdev, GSW_RMON_Meter_cnt_t *parm)
 {
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
+	GSW_RMON_mode_t param;
+	int ret;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
 	}
+
+	memset(&param, 0, sizeof(GSW_RMON_mode_t));
+	param.eRmonType = GSW_RMON_METER_TYPE;
 
 	if ((gswdev->gipver == LTQ_GSWIP_3_0) && (gswdev->sdev == LTQ_FLOW_DEV_INT_R)) {
 		u8 index, addr;
@@ -14913,16 +14965,9 @@ repeat:
 			loc = 0;
 
 			for (j = 0; j < MAX_READ; j++) {
-#ifndef CONFIG_X86_INTEL_CE2700
-				/*suresh*/
-//				ltq_w32(0x8019, gswr_bm_addr);
-//				ltq_w32(0x0019, gswr_bm_addr);
-				//			asm("SYNC");
-//				ltq_w32(0x8019, gswr_bm_addr);
-#endif
-				CHECK_BUSY(BM_RAM_CTRL_BAS_OFFSET, BM_RAM_CTRL_BAS_SHIFT,
-					   BM_RAM_CTRL_BAS_SIZE, RETURN_FROM_FUNCTION);
-
+				ret = gsw_rmon_table_config(cdev, &param);
+				if (ret == GSW_statusErr)
+					continue;
 				for (i = 0; i < 4; i++) {
 					gsw_r32(cdev, BM_RAM_VAL_0_VAL0_OFFSET,
 						BM_RAM_VAL_0_VAL0_SHIFT,
@@ -15382,12 +15427,16 @@ repeat:
 GSW_return_t GSW_RMON_If_Get(void *cdev, GSW_RMON_If_cnt_t *parm)
 {
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
-	u32 ret;
+	int ret = GSW_statusOk;
+	GSW_RMON_mode_t param;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
 	}
+
+	memset(&param, 0, sizeof(GSW_RMON_mode_t));
+	param.eRmonType = GSW_RMON_IF;
 
 #ifdef __KERNEL__
 	spin_lock_bh(&gswdev->lock_bm);
@@ -15429,18 +15478,9 @@ repeat:
 			loc = 0;
 
 			for (j = 0; j < MAX_READ; j++) {
-#ifndef CONFIG_X86_INTEL_CE2700
-				/*suresh*/
-				//			ltq_w32(0x801A, gswr_bm_addr);
-				//			ltq_w32(0x001A, gswr_bm_addr);
-				//			asm("SYNC");
-				//			ltq_w32(0x801A, gswr_bm_addr);
-#endif
-
-				if (GSW_statusErr == CHECK_BUSY(BM_RAM_CTRL_BAS_OFFSET,
-								BM_RAM_CTRL_BAS_SHIFT, BM_RAM_CTRL_BAS_SIZE, RETURN_ERROR_CODE))
+				ret = gsw_rmon_table_config(cdev, &param);
+				if (ret == GSW_statusErr)
 					continue;
-
 				for (i = 0; i < 4; i++) {
 					gsw_r32(cdev, BM_RAM_VAL_0_VAL0_OFFSET,
 						BM_RAM_VAL_0_VAL0_SHIFT,
@@ -15570,12 +15610,16 @@ UNLOCK_AND_RETURN:
 GSW_return_t GSW_RMON_Route_Get(void *cdev, GSW_RMON_Route_cnt_t *parm)
 {
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
-	u32 ret;
+	int ret = GSW_statusOk;
+	GSW_RMON_mode_t param;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return  GSW_statusErr;
 	}
+
+	memset(&param, 0, sizeof(GSW_RMON_mode_t));
+	param.eRmonType = GSW_RMON_ROUTE;
 
 #ifdef __KERNEL__
 	spin_lock_bh(&gswdev->lock_bm);
@@ -15609,18 +15653,9 @@ repeat:
 			loc = 0;
 
 			for (j = 0; j < MAX_READ; j++) {
-#ifndef CONFIG_X86_INTEL_CE2700
-				/*suresh*/
-//				ltq_w32(0x801B, gswr_bm_addr);
-//				ltq_w32(0x001B, gswr_bm_addr);
-				//			asm("SYNC");
-//				ltq_w32(0x801B, gswr_bm_addr);
-#endif
-
-				if (GSW_statusErr == CHECK_BUSY(BM_RAM_CTRL_BAS_SIZE,
-								BM_RAM_CTRL_BAS_SHIFT, BM_RAM_CTRL_BAS_SIZE, RETURN_ERROR_CODE))
+				ret = gsw_rmon_table_config(cdev, &param);
+				if (ret == GSW_statusErr)
 					continue;
-
 				for (i = 0; i < 4; i++) {
 					gsw_r32(cdev, BM_RAM_VAL_0_VAL0_OFFSET,
 						BM_RAM_VAL_0_VAL0_SHIFT,
@@ -15985,12 +16020,16 @@ static GSW_return_t GSW_PMAC_CountGet_v31(void *cdev, GSW_PMAC_Cnt_t *parm)
 int GSW_PMAC_CountGet(void *cdev, GSW_PMAC_Cnt_t *parm)
 {
 	ethsw_api_dev_t *gswdev = GSW_PDATA_GET(cdev);
-	u32 ret;
+	int ret = GSW_statusOk;
+	GSW_RMON_mode_t param;
 
 	if (gswdev == NULL) {
 		pr_err("%s:%s:%d", __FILE__, __func__, __LINE__);
 		return GSW_statusErr;
 	}
+
+	memset(&param, 0, sizeof(GSW_RMON_mode_t));
+	param.eRmonType = GSW_RMON_PMACIG;
 
 #ifdef __KERNEL__
 	spin_lock_bh(&gswdev->lock_bm);
@@ -16023,15 +16062,8 @@ repeat:
 			loc = 0;
 
 			for (j = 0; j < MAX_READ; j++) {
-#ifndef CONFIG_X86_INTEL_CE2700
-				//ltq_w32(0x801C, gswr_bm_addr);
-				//ltq_w32(0x001C, gswr_bm_addr);
-//				asm("SYNC");
-				//ltq_w32(0x801C, gswr_bm_addr);
-#endif
-
-				if (GSW_statusErr == CHECK_BUSY(BM_RAM_CTRL_BAS_OFFSET,
-								BM_RAM_CTRL_BAS_SHIFT, BM_RAM_CTRL_BAS_SIZE, RETURN_ERROR_CODE))
+				ret = gsw_rmon_table_config(cdev, &param);
+				if (ret == GSW_statusErr)
 					continue;
 
 				for (i = 0; i < 4; i++) {

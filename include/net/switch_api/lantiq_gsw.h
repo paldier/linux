@@ -2910,6 +2910,9 @@ typedef struct {
  */
 typedef enum {
 	GSW_RMON_REDIRECTION = 0X18,
+	GSW_RMON_IF = 0x1A,
+	GSW_RMON_ROUTE = 0x1B,
+	GSW_RMON_PMACIG = 0x1C,
 } GSW_RMON_Port_t;
 
 /*@}*/ /* GSW_IOCTL_RMON */
