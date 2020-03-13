@@ -608,6 +608,8 @@ static int br_selective_flood4(struct net_bridge_port *p, struct sk_buff *skb)
 	if (!IN_MULTICAST(ntohl(iph->daddr)))
 		return 1;
 
+	if ((ntohl(iph->daddr) & 0xff000000U) == 0xef000000U)
+		return 1;
 	init_ipaddr(&daddr, IPV4, &iph->daddr);
 	init_ipaddr(&saddr, IPV4, &iph->saddr);
 
@@ -630,9 +632,12 @@ static int br_selective_flood4(struct net_bridge_port *p, struct sk_buff *skb)
 		case IGMPV2_HOST_MEMBERSHIP_REPORT:
 		case IGMPV3_HOST_MEMBERSHIP_REPORT:
 		case IGMP_HOST_LEAVE_MESSAGE:
-			if ((ntohl(iph->daddr) & 0xffffff00U) == 0xe0000000U ||
-				(ntohl(iph->daddr) & 0xff000000U) == 0xef000000U)
-				return 0;	/* Allow control packets */
+			if ((ntohl(iph->daddr) & 0xffffff00U) == 0xe0000000U) {
+				if (p->igmp_router_port)
+					return 1;
+				else
+					return 0;	/* Allow control packets */
+			}
 		default:
 			break;
 		}
