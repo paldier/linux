@@ -620,6 +620,8 @@ static int br_selective_flood4(struct net_bridge_port *p, struct sk_buff *skb)
 		case IGMP_HOST_MEMBERSHIP_QUERY:
 			if (p->igmp_router_port)
 				return 0;
+			if ((ntohl(iph->daddr) & 0xffffffff) == 0xe0000001)
+				return 1;	/*Allow general query packets */
 			igmph3 = (struct igmpv3_query *)igmph;
 			igmplen = ntohs((int)iph->tot_len) - 4 * (int)iph->ihl;
 			if (igmplen == 8) {
