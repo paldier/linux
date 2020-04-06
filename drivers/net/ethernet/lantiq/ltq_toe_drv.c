@@ -131,6 +131,8 @@ static u32 lro_num_except[LRO_MAX_EXCEPTION_COUNT], lro_num_success;
 static u32 lro_budget_left[21];
 static u32 lro_num_except_entries[32];
 static u32 g_unmatched_entry;
+static ltq_tso_port_t ltq_tso_port[NR_CPUS];
+static ltq_lro_port_t ltq_lro_port[LTQ_MAX_LRO_PORTS];
 
 static int ltq_toe_exit(struct platform_device *pdev);
 static int tso_configure_dma(void);
@@ -896,20 +898,13 @@ int lro_start_flow (int *session_id, int timeout, int flags, struct cpumask cpum
 	pr_info("started flow %u for session id = %x\n", port, ltq_toe_r32(LRO_FID(port)));
 
 	/* Set the IRQ affinity */
-	cpumask.bits[0] = 0x1;
+	cpumask.bits[0] = pport->affinity;
 	ret = irq_set_affinity(pport->irq_num, &cpumask);
 	if (ret) {
+		pport->in_use = 0;
 		pr_err("%s: can not set affinity for IRQ - %d", __func__, pport->irq_num);
 		return ret;
 	}
-
-	ret = irq_set_affinity(190, &cpumask);
-	if (ret) {
-		pr_err("%s: can not set affinity for IRQ - %d", __func__, 190);
-		return ret;
-	}
-
-	//enable_irq(pport->irq_num);
 	return ret;
 }
 EXPORT_SYMBOL(lro_start_flow);
@@ -2423,11 +2418,11 @@ static int ltq_toe_init(struct platform_device *pdev)
 {
 	struct resource *r;
 	struct resource irqres[15];
+	uint8_t cpu_mask[NR_CPUS], cpu_available = 0;
+	ltq_tso_port_t *tsoPort;
 	struct cpumask cpumask;
 	struct device_node *node = pdev->dev.of_node;
-	int ret_val, i;
-	int cpu;
-	int sgNo;
+	int ret, ret_val, i, cpu, sgNo;
 
 	/* Get the TOE base address */
 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -2495,8 +2490,12 @@ static int ltq_toe_init(struct platform_device *pdev)
 
 	/* Initialise the 4 ports */
 	for_each_online_cpu(cpu) {
-		ltq_tso_port_t	*tsoPort =  (ltq_tso_port + cpu);
+		/* cpu mask is for LRO irq load distribution among
+		all CPUs, this part needs to be handles seperately
+		if any modifications done later on TSO front, here */
+		cpu_mask[cpu_available++] = 1 << cpu;
 
+		tsoPort = (ltq_tso_port + cpu);
 		tsoPort->membase = ltq_toe_membase + (cpu*0x20);
 		tsoPort->port_number = cpu;
 		atomic_set( &(tsoPort->availBuffs),SG_BUFFER_PER_PORT);
@@ -2530,40 +2529,41 @@ static int ltq_toe_init(struct platform_device *pdev)
 	}
 
 	/* Register the interrupt handlers for the LRO */
-	for (i = 7; i < (7 + LTQ_MAX_LRO_PORTS); i++) {
-		ltq_lro_port[i-7].port_num = i-7;
-		ltq_lro_port[i-7].irq_num = irqres[i].start;
-		ret_val = request_irq(irqres[i].start, lro_port_context_isr,
-					0, "lro_irq", &ltq_lro_port[i-7]);
+	for (i = 0; i < LTQ_MAX_LRO_PORTS; ++i) {
+		ltq_lro_port[i].port_num = i;
+		ltq_lro_port[i].irq_num = irqres[i + 7].start;
+		ltq_lro_port[i].affinity = cpu_mask[i % cpu_available];
+		ret_val = request_irq(irqres[i + 7].start, lro_port_context_isr,
+					0, "lro_irq", &ltq_lro_port[i]);
 		if (ret_val) {
-			pr_err("failed to request lro_irq \n");
+			pr_err("failed to request lro_irq\n");
 			return ret_val;
 		}
-		tasklet_init(&lro_tasklet[i-7],
-			ltq_lro_tasklet, (unsigned long) &ltq_lro_port[i-7]);
+		tasklet_init(&lro_tasklet[i],
+			ltq_lro_tasklet, (unsigned long) &ltq_lro_port[i]);
 #ifdef USE_TIMER_FOR_SESSION_STOP
-		init_timer(&ltq_lro_port[i-7].lro_timer);
+		init_timer(&ltq_lro_port[i].lro_timer);
 		lro_time = msecs_to_jiffies(5000);
-		ltq_lro_port[i-7].lro_timer.function = lro_timer_fn;
-		ltq_lro_port[i-7].lro_timer.expires = jiffies + lro_time;
-		ltq_lro_port[i-7].lro_timer.data = (unsigned int)&ltq_lro_port[i-7];
+		ltq_lro_port[i].lro_timer.function = lro_timer_fn;
+		ltq_lro_port[i].lro_timer.expires = jiffies + lro_time;
+		ltq_lro_port[i].lro_timer.data = (unsigned int)&ltq_lro_port[i];
 #endif
-		//disable_irq(irqres[i].start);
 	}
 
-#if 1
 	ret_val = request_irq(irqres[6].start, lro_port_except_isr,
 					0, "lro_except_irq", NULL);
-	if (ret_val) {
+
+	cpumask.bits[0] = 0x1;
+	ret = irq_set_affinity(irqres[6].start, &cpumask);
+	if (ret_val || ret) {
 		pr_err("failed to request lro exception irq with ret_val = %d\n", ret_val);
 		return ret_val;
 	}
-	tasklet_init(&lro_exception_tasklet, ltq_lro_exception_tasklet, 0l);
-#endif
+	tasklet_init(&lro_exception_tasklet, ltq_lro_exception_tasklet, 1);
 	ret_val = request_irq(irqres[5].start, lro_port_overflow_isr,
-					0, "lro_ovflow_irq", NULL);
-
-	if (ret_val) {
+						0, "lro_ovflow_irq", NULL);
+	ret = irq_set_affinity(irqres[5].start, &cpumask);
+	if (ret_val || ret) {
 		pr_err("failed to request lro overflow irq \n");
 		return ret_val;
 	}

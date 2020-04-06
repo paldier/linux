@@ -44,11 +44,9 @@ typedef struct ltq_lro_port {
 	bool in_use;
 	int session_id;
 	int to_read;
+	uint8_t affinity;
 #ifdef USE_TIMER_FOR_SESSION_STOP
 	struct timer_list lro_timer;
 #endif
 } ltq_lro_port_t;
 
-static ltq_tso_port_t ltq_tso_port[NR_CPUS];
-
-static ltq_lro_port_t ltq_lro_port[LTQ_MAX_LRO_PORTS];
