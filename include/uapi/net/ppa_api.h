@@ -365,6 +365,11 @@
 	\brief MAX_PRIO_NUM */
 #define MAX_PRIO_NUM 8
 
+/*!
+ *	\brief MAX_WLAN_DEV
+ */
+#define MAX_WLAN_DEV 4
+
 #define TC_START_BIT_POS		0
 #define TC_MASK				 0x1f
 /*!

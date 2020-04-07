@@ -75,10 +75,6 @@
  * Definition
  * ####################################
  */
-#if defined(WMM_QOS_CONFIG) && WMM_QOS_CONFIG
-#define WMM_QOS_DEV_F_REG			0x00000001
-#define WMM_QOS_DEV_F_DREG			0x00000002
-#endif/* WMM_QOS_CONFIG */
 #ifdef NO_DOXY
 #define VLAN_ID_SPLIT(full_id, pri, cfi, vid)	do { pri = ((full_id) >> 13) & 7; cfi = ((full_id) >> 12) & 1; vid = (full_id) & 0xFFF } while (0)
 #define VLAN_ID_CONBINE(full_id, pri, cfi, vid) full_id	= (((uint16_t)(pri) & 7) << 13) | (((uint16_t)(cfi) & 1) << 12) | ((uint16_t) (vid) & 0xFFF)

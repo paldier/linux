@@ -253,9 +253,35 @@ int32_t (*ppa_check_if_netif_fastpath_fn)(PPA_NETIF *, char *, uint32_t) = NULL;
 int32_t (*ppa_hook_disconn_if_fn)(PPA_NETIF *, PPA_DP_SUBIF *, uint8_t *, uint32_t) = NULL;
 
 #if defined(WMM_QOS_CONFIG) && WMM_QOS_CONFIG
-int32_t (*ppa_register_qos_class2prio_hook_fn)(int32_t, PPA_NETIF *, PPA_QOS_CLASS2PRIO_CB, uint32_t) = NULL;
-#endif
-#endif
+static RAW_NOTIFIER_HEAD(ppa_event_chain);
+
+int ppa_register_event_notifier(struct notifier_block *nb)
+{
+	return raw_notifier_chain_register(&ppa_event_chain, nb);
+}
+EXPORT_SYMBOL(ppa_register_event_notifier);
+
+int ppa_unregister_event_notifier(struct notifier_block *nb)
+{
+	return raw_notifier_chain_unregister(&ppa_event_chain, nb);
+}
+EXPORT_SYMBOL(ppa_unregister_event_notifier);
+
+int ppa_call_class2prio_notifiers(unsigned long val,
+				  s32 port_id, PPA_NETIF *dev,
+				  u8 class2prio[MAX_TC_NUM])
+{
+	struct ppa_class2prio_notifier_info info;
+
+	info.port_id = port_id;
+	info.dev = dev;
+	memcpy(info.class2prio, class2prio, (sizeof(u8) * MAX_TC_NUM));
+
+	return raw_notifier_call_chain(&ppa_event_chain, val, &info);
+}
+EXPORT_SYMBOL(ppa_call_class2prio_notifiers);
+#endif /* WMM_QOS_CONFIG */
+#endif /* CONFIG_PPA_API_DIRECTCONNECT */
 
 #if IS_ENABLED(CONFIG_PPA_API_DIRECTPATH)
 int32_t (*ppa_directpath_port_add_fn)(void) = NULL;
@@ -486,9 +512,6 @@ EXPORT_SYMBOL(ppa_hook_get_netif_accel_stats_fn);
 #if IS_ENABLED(CONFIG_PPA_API_DIRECTCONNECT)
 EXPORT_SYMBOL(ppa_check_if_netif_fastpath_fn);
 EXPORT_SYMBOL(ppa_hook_disconn_if_fn);
-#if defined(WMM_QOS_CONFIG) && WMM_QOS_CONFIG
-EXPORT_SYMBOL(ppa_register_qos_class2prio_hook_fn);
-#endif
 #endif
 
 #if IS_ENABLED(CONFIG_PPA_API_DIRECTPATH)
