@@ -207,10 +207,12 @@ static inline void umt_reset_umt(u32 umt_id)
  * intput:
  * @umt_id: UMT port id, (0 - 3)
  * @ep_id:  Aligned with datapath lib ep_id
+ * @msg_mode:  0-No MSG, 1-MSG0 Only, 2-MSG1 Only, 3-MSG0 & MSG1.
  * @period: measured in microseconds.
  * ret:  Fail < 0 / Success: 0
  */
-int ltq_umt_set_period(u32 umt_id, u32 ep_id, u32 period)
+int ltq_umt_set_period(u32 umt_id, u32 ep_id,
+		       enum umt_msg_mode msg_mode, u32 period)
 {
 	struct mcpy_umt *pumt = mcpy_get_umt();
 	struct umt_port *port;
@@ -231,10 +233,19 @@ int ltq_umt_set_period(u32 umt_id, u32 ep_id, u32 period)
 		goto period_err;
 	}
 
+	#if IS_ENABLED(CONFIG_LTQ_UMT_SW_MODE)
+	if ((msg_mode == UMT_MSG1_ONLY)) {
+		port->umt_msg1_period = period;
+		port->umt_remaining_time = period;
+	} else
+	#endif
 	if (port->umt_period != period) {
 		port->umt_period = period;
 		#if IS_ENABLED(CONFIG_LTQ_UMT_SW_MODE)
-		port->umt_remaining_time = period;
+		if ((msg_mode == UMT_MSG0_MSG1)) {
+			port->umt_msg1_period = period;
+			port->umt_remaining_time = period;
+		}
 		#endif
 		umt_set_period(umt_id, port->umt_period);
 	}
@@ -320,7 +331,11 @@ int ltq_umt_set_mode(u32 umt_id, u32 ep_id, struct umt_set_mode *p_umt_mode)
 
 #if IS_ENABLED(CONFIG_LTQ_UMT_SW_MODE)
 	port->umt_ep_dst = umt_ep_dst;
-	port->umt_remaining_time = port->umt_period;
+	if (p_umt_mode->msg1_period)
+		port->umt_msg1_period = p_umt_mode->msg1_period;
+	else
+		port->umt_msg1_period = port->umt_period;
+	port->umt_remaining_time = port->umt_msg1_period;
 #endif
 	umt_set_mode(umt_id, port->umt_mode);
 	umt_set_msgmode(umt_id, port->msg_mode);
@@ -575,6 +590,7 @@ int ltq_umt_release(u32 umt_id, u32 ep_id)
 	port->umt_period = 0;
 	port->status = UMT_DISABLE;
 #if IS_ENABLED(CONFIG_LTQ_UMT_SW_MODE)
+	port->umt_msg1_period = 0;
 	port->umt_remaining_time = 0;
 	port->umt_ep_dst = 0;
 	port->umtid_map_cbmid = 0;
@@ -935,7 +951,7 @@ void umt_callback_fn(void *param)
 				port->umt_remaining_time -= g_umt_interval;
 				continue;
 			}
-			port->umt_remaining_time = port->umt_period;
+			port->umt_remaining_time = port->umt_msg1_period;
 			ret = cbm_dequeue_dma_port_stats_get(port->umtid_map_cbmid, &dq_ptr, 0);
 			if (ret != 0)
 				continue;

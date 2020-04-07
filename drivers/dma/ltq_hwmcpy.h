@@ -113,6 +113,7 @@ struct umt_port {
 	u32 dq_idx;
 	u32 umt_ep_dst;
 	u32 umtid_map_cbmid;
+	u32 umt_msg1_period;
 	u32 umt_remaining_time;
 #endif
 };
