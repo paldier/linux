@@ -287,7 +287,7 @@ int32_t dp_rx_30(struct sk_buff *skb, u32 flags)
 	}
 
 	if (unlikely(port_id >=
-	    dp_port_prop[inst].info.cap.max_num_dp_ports - 1)) {
+	    dp_port_prop[inst].info.cap.max_num_dp_ports)) {
 		pr_err("Drop for wrong ep or src port id=%u ??\n",
 		       port_id);
 		goto RX_DROP;
