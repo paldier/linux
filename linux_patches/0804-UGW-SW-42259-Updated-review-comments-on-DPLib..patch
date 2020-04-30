@@ -1,0 +1,105 @@
+From 25b057e8e9a7e8133fefd471f69939a951ecf2f6 Mon Sep 17 00:00:00 2001
+From: agaraix <anath.bandux.garai@intel.com>
+Date: Tue, 22 Oct 2019 18:01:36 +0530
+Subject: [PATCH] UGW_SW-42259 : Updated review comments on DPLib.
+
+---
+ drivers/net/datapath/dpm/gswip30/datapath_misc.c | 38 ++----------------------
+ drivers/net/datapath/dpm/gswip30/datapath_misc.h |  4 +--
+ 2 files changed, 5 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/net/datapath/dpm/gswip30/datapath_misc.c b/drivers/net/datapath/dpm/gswip30/datapath_misc.c
+index 1ab5274f607b..4cf275eff283 100644
+--- a/drivers/net/datapath/dpm/gswip30/datapath_misc.c
++++ b/drivers/net/datapath/dpm/gswip30/datapath_misc.c
+@@ -68,9 +68,9 @@ static void init_dma_desc_mask(void)
+ 
+ static void init_dma_pmac_template(int portid, u32 flags)
+ {
+-
+ 	int i;
+ 	struct pmac_port_info *dp_info = get_dp_port_info(0, portid);
++
+ 	/*Note:
+ 	 * final tx_dma0 = (tx_dma0 & dma0_mask_template) | dma0_template
+ 	 * final tx_dma1 = (tx_dma1 & dma1_mask_template) | dma1_template
+@@ -191,7 +191,6 @@ static void init_dma_pmac_template(int portid, u32 flags)
+ 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.enc = 0;
+ 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.dec = 0;
+ 		dp_info->dma1_mask_template[TEMPL_OTHERS].field.mpe2 = 0;
+-
+ 	} else if (flags & DP_F_FAST_WLAN) {
+ 		/* WLAN block must put after DSL/DIRECTLINK block
+ 		 * since all ACA device in GRX500 is using WLAN flag wrongly
+@@ -213,8 +212,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
+ 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
+ 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
+ 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
+-
+-	} else if (flags & DP_F_DIRECT ) {/*always with pmac*/
++	} else /*if (flags & DP_F_DIRECT ) */{/*always with pmac*/
+ 		/*normal dirctpath without checksum support */
+ 		dp_info->pmac_template[TEMPL_NORMAL].port_map_en = 0;
+ 		dp_info->pmac_template[TEMPL_NORMAL].sppid = portid;
+@@ -229,7 +227,7 @@ static void init_dma_pmac_template(int portid, u32 flags)
+ 		dp_info->dma1_mask_template[TEMPL_NORMAL].field.dec = 0;
+ 		dp_info->dma1_mask_template[TEMPL_NORMAL].field.mpe2 = 0;
+ 
+-		/* directpath with checksum support, for HW Litepath */
++		/* directpath with checksum support, used only for HW Litepath */
+ 		dp_info->pmac_template[TEMPL_CHECKSUM].port_map_en = 0;
+ 		dp_info->pmac_template[TEMPL_CHECKSUM].sppid = portid;
+ 		dp_info->pmac_template[TEMPL_CHECKSUM].redirect = 0;
+@@ -245,36 +243,6 @@ static void init_dma_pmac_template(int portid, u32 flags)
+ 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
+ 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
+ 		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
+-
+-	} else {/*always with pmac*/
+-		/*normal dirctpath without checksum support */
+-		dp_info->pmac_template[TEMPL_NORMAL].port_map_en = 0;
+-		dp_info->pmac_template[TEMPL_NORMAL].sppid = portid;
+-		dp_info->pmac_template[TEMPL_NORMAL].redirect = 0;
+-		dp_info->pmac_template[TEMPL_NORMAL].port_map = 0xff;
+-		dp_info->pmac_template[TEMPL_NORMAL].port_map2 = 0xff;
+-		dp_info->pmac_template[TEMPL_NORMAL].class_en = 1;
+-		dp_info->dma1_template[TEMPL_NORMAL].field.enc = 1;
+-		dp_info->dma1_template[TEMPL_NORMAL].field.dec = 1;
+-		dp_info->dma1_template[TEMPL_NORMAL].field.mpe2 = 0;
+-		dp_info->dma1_mask_template[TEMPL_NORMAL].field.enc = 0;
+-		dp_info->dma1_mask_template[TEMPL_NORMAL].field.dec = 0;
+-		dp_info->dma1_mask_template[TEMPL_NORMAL].field.mpe2 = 0;
+-
+-		/* directpath with checksum support */
+-		dp_info->pmac_template[TEMPL_CHECKSUM].port_map_en = 1;
+-		dp_info->pmac_template[TEMPL_CHECKSUM].sppid = PMAC_CPU_ID;
+-		dp_info->pmac_template[TEMPL_CHECKSUM].redirect = 1;
+-		dp_info->pmac_template[TEMPL_CHECKSUM].tcp_chksum = 1;
+-		dp_info->pmac_template[TEMPL_CHECKSUM].class_en = 1;
+-		SET_PMAC_PORTMAP(&dp_info->pmac_template[TEMPL_CHECKSUM],
+-				 portid);
+-		dp_info->dma1_template[TEMPL_CHECKSUM].field.enc = 1;
+-		dp_info->dma1_template[TEMPL_CHECKSUM].field.dec = 1;
+-		dp_info->dma1_template[TEMPL_CHECKSUM].field.mpe2 = 1;
+-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.enc = 0;
+-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.dec = 0;
+-		dp_info->dma1_mask_template[TEMPL_CHECKSUM].field.mpe2 = 0;
+ 	}
+ }
+ 
+diff --git a/drivers/net/datapath/dpm/gswip30/datapath_misc.h b/drivers/net/datapath/dpm/gswip30/datapath_misc.h
+index dea779252f93..2b92a36ca79e 100644
+--- a/drivers/net/datapath/dpm/gswip30/datapath_misc.h
++++ b/drivers/net/datapath/dpm/gswip30/datapath_misc.h
+@@ -42,9 +42,9 @@ struct dp_coc_threshold {
+ 
+ #define RESET_PMAC_PORTMAP(pmac, port_id) do { \
+ 	if ((port_id) <= 7) \
+-		(pmac)->port_map2 &= ~(1 << (port_id)); \
++		(pmac)->port_map2 = ~(1 << (port_id)); \
+ 	else \
+-		(pmac)->port_map &= ~(1 << (port_id - 8)); } \
++		(pmac)->port_map = ~(1 << (port_id - 8)); } \
+ 	while (0)
+ 
+ #define SET_PMAC_PORTMAP(pmac, port_id) do { \

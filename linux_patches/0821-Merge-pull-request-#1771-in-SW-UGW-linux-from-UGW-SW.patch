@@ -1,0 +1,52 @@
+From ecc851d667e3be879b8dfc7d4dc877aed14ef6ee Mon Sep 17 00:00:00 2001
+From: CI Assistant <chdauto@intel.com>
+Date: Tue, 11 Feb 2020 22:11:32 +0200
+Subject: [PATCH] Merge pull request #1771 in SW_UGW/linux from
+ UGW_SW-47838-fix-forltq_dma_driver-crash-issue-in-ax6000 to 8.4.1
+
+* commit '1c9f505794f597ec3349ee4f4d25b84aacc3b09e':
+  fix for ltq_dma_driver crash issue in ax6000
+---
+ drivers/dma/intel/hdma.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/dma/intel/hdma.c b/drivers/dma/intel/hdma.c
+index 2fc5dd9aae44..f2da12ebbd0e 100755
+--- a/drivers/dma/intel/hdma.c
++++ b/drivers/dma/intel/hdma.c
+@@ -579,12 +579,6 @@ static int dma_ctrl_cfg(struct dma_ctrl *pctrl)
+ 		enable = 0;
+ 	dma_ctrl_chan_flow_ctl_cfg(pctrl, enable);
+ 
+-	if ((pctrl->flags & DMA_FTOD))
+-		enable = 1;
+-	else
+-		enable = 0;
+-	dma_ctrl_desc_fetch_on_demand_cfg(pctrl, enable);
+-
+ 	if ((pctrl->flags & DMA_DESC_IN_SRAM))
+ 		enable = 1;
+ 	else
+@@ -2989,7 +2983,7 @@ static irqreturn_t dma_chan_interrupt(int irq, void *dev_id)
+ static int dma_ctrl_init(struct dma_ctrl *pctrl)
+ {
+ 	u32 i, j;
+-	int ret;
++	int enable, ret;
+ 	struct dma_port *pport = NULL;
+ 	struct dmax_chan *pch = NULL;
+ 
+@@ -3024,6 +3018,13 @@ static int dma_ctrl_init(struct dma_ctrl *pctrl)
+ 			}
+ 		}
+ 	}
++
++	if ((pctrl->flags & DMA_FTOD))
++		enable = 1;
++	else
++		enable = 0;
++	dma_ctrl_desc_fetch_on_demand_cfg(pctrl, enable);
++
+ 	return 0;
+ }
+ 

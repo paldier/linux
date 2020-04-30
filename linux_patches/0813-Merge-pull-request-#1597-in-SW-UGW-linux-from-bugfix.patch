@@ -1,0 +1,49 @@
+From 90893d80897bfa666a778f36da7bf6d2990c99ec Mon Sep 17 00:00:00 2001
+From: CI Assistant <chdauto@intel.com>
+Date: Fri, 3 Jan 2020 19:09:03 +0200
+Subject: [PATCH] Merge pull request #1597 in SW_UGW/linux from
+ bugfix/UGW_SW-46293-lan-only-jumbo-support-8.4.1 to 8.4.1
+
+* commit '13431291e7f4e180ad59d9dfd4ec61c8fca07923':
+  UGW_SW-46293: ethlan only jumbo support
+---
+ drivers/net/ethernet/lantiq/ltq_eth_drv_xrx500.c | 23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/lantiq/ltq_eth_drv_xrx500.c b/drivers/net/ethernet/lantiq/ltq_eth_drv_xrx500.c
+index 564a69140576..6b23dbf4f620 100644
+--- a/drivers/net/ethernet/lantiq/ltq_eth_drv_xrx500.c
++++ b/drivers/net/ethernet/lantiq/ltq_eth_drv_xrx500.c
+@@ -813,17 +813,24 @@ static void ltq_set_max_pkt_len (struct ltq_eth_priv *priv, u16 pkt_len)
+ {
+ 	struct core_ops *ops = NULL;
+ 	pkt_len += ETH_HLEN + ETH_FCS_LEN;
+-	if(priv != NULL) {
+-		if(priv->wan)
+-			ops = gsw_get_swcore_ops(1);
+-		else
++	if (priv != NULL) {
++		/* Set the GSW-L MAC_FLEN register for max packet length */
++		if (!priv->wan) {
+ 			ops = gsw_get_swcore_ops(0);
+-		if(ops == NULL)
++			if (ops == NULL)
++				return;
++
++			pr_info("doing the GSW-L MAC_FLEN configuration\n");
++			gsw_reg_set_val(ops, 0x8C5, max(pkt_len, gsw_reg_get_val(ops, 0x8C5)));
++		}
++
++		/* Set the GSW-R MAC_FLEN register for max packet length */
++		ops = gsw_get_swcore_ops(1);
++		if (ops == NULL)
+ 			return;
+ 
+-		/* Set the MAC_FLEN register for max packet length */
+-		pr_info("doing the GSW MAC_FLEN configuration\n");
+-		gsw_reg_set_val(ops, 0x8C5, pkt_len);
++		pr_info("doing the GSW-R MAC_FLEN configuration\n");
++		gsw_reg_set_val(ops, 0x8C5, max(pkt_len, gsw_reg_get_val(ops, 0x8C5)));
+ 	}
+ }
+ 

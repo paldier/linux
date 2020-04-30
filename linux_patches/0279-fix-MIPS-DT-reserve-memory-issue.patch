@@ -1,0 +1,25 @@
+From 99f856b9ec79ea226d2d202df491cf3b9a409a4c Mon Sep 17 00:00:00 2001
+From: yixin zhu <yixin.zhu@intel.com>
+Date: Wed, 19 Sep 2018 13:09:43 +0800
+Subject: [PATCH] fix MIPS DT reserve memory issue
+
+---
+ arch/mips/kernel/setup.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/mips/kernel/setup.c b/arch/mips/kernel/setup.c
+index 0882d7e0b9d3..30e1c701205d 100644
+--- a/arch/mips/kernel/setup.c
++++ b/arch/mips/kernel/setup.c
+@@ -528,7 +528,10 @@ static void __init bootmem_init(void)
+ 			continue;
+ #endif
+ 
+-		memblock_add_node(PFN_PHYS(start), PFN_PHYS(end - start), 0);
++		if (boot_mem_map.map[i].type != BOOT_MEM_RESERVED)
++			memblock_add_node(PFN_PHYS(start), PFN_PHYS(end - start), 0);
++		else
++			memblock_reserve(PFN_PHYS(start), PFN_PHYS(end - start));
+ 	}
+ 
+ 	/*

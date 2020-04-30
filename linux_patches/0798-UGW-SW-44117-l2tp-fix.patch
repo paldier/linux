@@ -1,0 +1,34 @@
+From 08aaaf5cfba10c12b0b6980ed341418c7c17b6e0 Mon Sep 17 00:00:00 2001
+From: Deepansh Rastogi <deepansh.rastogi@intel.com>
+Date: Tue, 22 Oct 2019 16:20:38 +0530
+Subject: [PATCH] UGW_SW-44117: l2tp fix
+
+---
+ net/ipv4/arp.c       | 1 +
+ net/ipv4/ip_output.c | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
+index 8cae791a7ace..0fafc5e0e242 100644
+--- a/net/ipv4/arp.c
++++ b/net/ipv4/arp.c
+@@ -317,6 +317,7 @@ static void arp_send_dst(int type, int ptype, __be32 dest_ip,
+ 	if (!skb)
+ 		return;
+ 
++	skb->priority = 7; /* For ARP Prioritization */
+ 	skb_dst_set(skb, dst_clone(dst));
+ 	arp_xmit(skb);
+ }
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index c22a734f75bf..a097c311d666 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -476,7 +476,6 @@ int ip_queue_xmit(struct sock *sk, struct sk_buff *skb, struct flowi *fl)
+ 			     skb_shinfo(skb)->gso_segs ?: 1);
+ 
+ 	/* TODO : should we use skb->sk here instead of sk ? */
+-	skb->priority = sk->sk_priority;
+ 	skb->mark = sk->sk_mark;
+ 
+ 	res = ip_local_out(net, sk, skb);

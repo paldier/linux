@@ -1,0 +1,40 @@
+From 29c65b15e9845270cac54ca31cf9234d650021c1 Mon Sep 17 00:00:00 2001
+From: CI Assistant <chdauto@intel.com>
+Date: Fri, 20 Mar 2020 07:09:02 +0200
+Subject: [PATCH] Merge pull request #1927 in SW_UGW/linux from
+ bugfix/UGW_SW-48467-try-regulator-shut-multiple-for-failure-case-8.4.1 to
+ 8.4.1
+
+* commit '2e3cd1b7037ded5f7839c950591550727df165a1':
+  UGW_SW-48467 regulator shutdown failure case recovery
+---
+ drivers/regulator/tps65273-regulator.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/tps65273-regulator.c b/drivers/regulator/tps65273-regulator.c
+index ae989b525caa..3dee41770913 100755
+--- a/drivers/regulator/tps65273-regulator.c
++++ b/drivers/regulator/tps65273-regulator.c
+@@ -318,14 +318,21 @@ static void tps65273_shutdown(struct i2c_client *client)
+ {
+ 	struct tps65273 *tps = i2c_get_clientdata(client);
+ 	int i, ret = 0;
++	int count = 5;
+ 
+ 	dev_dbg(&client->dev, "function %s is called\n", __func__);
+ 
+ 	for (i = 0; i < TPS65273_NUM_REGULATOR; i++) {
+ 		struct regulator_dev *rdev = tps->rdev[i];
+-		ret = regmap_update_bits(tps->regmap,
++		do {
++			ret = regmap_update_bits(tps->regmap,
+ 					TPS65273_REG_VOUT1_SEL + i,
+ 					TPS65273_VOUT_SEL_GO_BIT, 0);
++			/* try out multiple times for success */
++			/* fail case may be signal with ERESTARTSYS */
++			if (ret == 0)
++				break;
++		} while(--count);
+ 		if (ret < 0) {
+ 			dev_err(&client->dev,
+ 				"shutdown regulator failed: (%d)\n", ret);

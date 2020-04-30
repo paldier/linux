@@ -1,0 +1,45 @@
+From fe80909704dafc0b663ee6d567bb089880e0ce40 Mon Sep 17 00:00:00 2001
+From: CI Assistant <chdauto@intel.com>
+Date: Wed, 15 Jan 2020 07:49:28 +0200
+Subject: [PATCH] Merge pull request #1631 in SW_UGW/linux from
+ feature/UGW_SW-45728-kelocwork-changes-porting-from-8.x-to-8.4.1 to 8.4.1
+
+* commit '44373b707a41795028ed24e7eb7db5acebd9b8a0':
+  UGW_SW-45728 : PPA klocwork fix
+---
+ drivers/net/ethernet/lantiq/ppa/ppa_hal_wrapper.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/lantiq/ppa/ppa_hal_wrapper.c b/drivers/net/ethernet/lantiq/ppa/ppa_hal_wrapper.c
+index e152b4943d25..d3f74b339a4e 100644
+--- a/drivers/net/ethernet/lantiq/ppa/ppa_hal_wrapper.c
++++ b/drivers/net/ethernet/lantiq/ppa/ppa_hal_wrapper.c
+@@ -81,7 +81,7 @@ uint32_t ppa_drv_generic_hal_register(uint32_t hal_id, ppa_generic_hook_t generi
+ void ppa_drv_generic_hal_deregister(uint32_t hal_id)
+ {
+ 	if (hal_id >= MAX_HAL)
+-		return PPA_FAILURE;
++		return;
+ 
+ 	if (hal_id  ==  PPE_HAL) {/*ppe hal*/
+ 		ppa_drv_hal_generic_hook  =  NULL;
+@@ -152,6 +152,9 @@ uint32_t ppa_drv_register_cap(PPA_API_CAPS cap, uint8_t wt, PPA_HAL_ID hal_id)
+ {
+ 	PPA_HSEL_CAP_NODE *cap_node;
+ 
++	if (cap >= MAX_CAPS)
++		return PPA_FAILURE;
++
+ 	/* allocate the node*/
+ 	cap_node  =  (PPA_HSEL_CAP_NODE*) kmalloc (sizeof(PPA_HSEL_CAP_NODE), GFP_KERNEL);
+ 	if (!cap_node) {
+@@ -174,6 +177,9 @@ uint32_t ppa_drv_deregister_cap(PPA_API_CAPS cap, PPA_HAL_ID hal_id)
+ 	PPA_HSEL_CAP_NODE *t_node = NULL;
+ 	PPA_HLIST_NODE *tmp;
+ 
++	if (cap >= MAX_CAPS)
++		return PPA_FAILURE;
++
+ 	ppa_hlist_for_each_entry_safe(t_node, tmp, &g_hsel_caps_list[cap], cap_list) {
+ 		if (t_node->hal_id  ==  hal_id) {
+ 			ppa_hlist_del(&t_node->cap_list);

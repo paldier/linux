@@ -1,0 +1,46 @@
+From 886d96e833d9c0770aeec50ad7b146bbab14c251 Mon Sep 17 00:00:00 2001
+From: CI Assistant <chdauto@intel.com>
+Date: Tue, 17 Dec 2019 16:11:46 +0200
+Subject: [PATCH] Merge pull request #1539 in SW_UGW/linux from
+ bugfix/UGW_SW-45129-8.4.1-port-forwarding-not-happening-in-bridge-mode to
+ 8.4.1
+
+* commit 'b362ca172ec4fa9332b83767843986d21e012fb0': (811 commits)
+  UGW_SW-45129-Fix for PCE port-forwarding rule not working in dev 0
+  UGW_SW-45232: enable IRQ mode for TSO
+  UGW_SW-45104 : EoGRE/IPoGRE US TTL fix
+  UGW_SW-44909: Changing drop algo of system default queues to Drop Tail mode
+  UGW_SW-42259 : compile fix.
+  UGW_SW-42259 : Updated review comments on DPLib.
+  UGW_SW-42259 : Updated review comments on DPLib.
+  UGW_SW-42259 : LRO queuemap for HW Litepath device, that is DirectPath port.
+  UGW_SW-42259: pmac header update for tcp hw litepath datapath
+  UGW_SW-42259 : GRX TOE driver enhancement
+  UGW_SW-43281 : GSWAPI: Fix for read redirection rmon counters.
+  UGW_SW-43281 : DP MIB support for GRX interface counter.
+  UGW_SW-44117: l2tp fix
+  UGW_SW-43919: Adding support for IPv4/IPv6 counters per interface
+  UGW_SW-43259: F24S detection inpendent from GSWIP-R for AXE Point model
+  UGW_SW-42793 : cbm buffer alloc error msg flooding prevention
+  UGW_SW-43571-Added new PPA IOCTL case for mem write in 8.4.1
+  UGW_SW-43175: Porting NULL pointer check for VAP unregister case to 8.4.1
+  UGW_SW-43555 adapt the new client Id for secure services
+  DRVLIB_SW-2849 - GPTC driver SDL reviewFix the possible memory leak
+  ...
+---
+ drivers/net/ethernet/lantiq/switch-api/gsw_flow_core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/lantiq/switch-api/gsw_flow_core.c b/drivers/net/ethernet/lantiq/switch-api/gsw_flow_core.c
+index 657cdc9d3208..dbdf80988311 100644
+--- a/drivers/net/ethernet/lantiq/switch-api/gsw_flow_core.c
++++ b/drivers/net/ethernet/lantiq/switch-api/gsw_flow_core.c
+@@ -3295,7 +3295,7 @@ void *ethsw_api_core_init(ethsw_core_init_t *ethcinit)
+ 		PrvData->tflow_idx.flow_idx[i].indexinusagecnt++;
+ 	}
+ 
+-	if (IS_VRSN_30_31_32(PrvData->gipver)) {
++	if (IS_VRSN_31_OR_32(PrvData->gipver)) {
+ 		/* First Entry of Common Region in TFLOW Table */
+ 		gsw_w32(cdev, PCE_TFCR_ID_INDEX_OFFSET, PCE_TFCR_ID_INDEX_SHIFT,
+ 			PCE_TFCR_ID_INDEX_SIZE, 0x0);

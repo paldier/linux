@@ -1,0 +1,27 @@
+From 3a788b5c7b679af888b16a34560f929775168d66 Mon Sep 17 00:00:00 2001
+From: eugenehu <eugene.huang@intel.com>
+Date: Mon, 20 Aug 2018 17:49:25 +0800
+Subject: [PATCH] enable Fibocom L830-EB module
+
+---
+ drivers/net/usb/cdc_ncm.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index 279aaad45d73..7cd49e3a898c 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -1787,6 +1787,13 @@ static const struct usb_device_id cdc_devs[] = {
+ 	  .driver_info = (unsigned long)&wwan_noarp_info,
+ 	},
+ 
++	/* Fibocom L830-EB LTE Modem platform */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x2cb7, 0x000b,
++		USB_CLASS_COMM,
++		USB_CDC_SUBCLASS_NCM, USB_CDC_PROTO_NONE),
++	  .driver_info = (unsigned long)&wwan_noarp_info,
++	},
++
+ 	/* Generic CDC-NCM devices */
+ 	{ USB_INTERFACE_INFO(USB_CLASS_COMM,
+ 		USB_CDC_SUBCLASS_NCM, USB_CDC_PROTO_NONE),

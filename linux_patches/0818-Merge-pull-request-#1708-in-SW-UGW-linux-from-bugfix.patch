@@ -1,0 +1,42 @@
+From 119db87582acee8bf7d9957253a986649cafc3ac Mon Sep 17 00:00:00 2001
+From: CI Assistant <chdauto@intel.com>
+Date: Wed, 29 Jan 2020 21:13:40 +0200
+Subject: [PATCH] Merge pull request #1708 in SW_UGW/linux from
+ bugfix/UGW_SW-46847-swac-performance-enhance-8.4.1 to 8.4.1
+
+* commit 'dc6cd32abd1c25ed084e7aee5da92587898dc557':
+  UGW_SW-46847 : Software acceleration performance enhance
+---
+ include/linux/extmark.h | 4 ++++
+ net/core/dev.c          | 3 +++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/include/linux/extmark.h b/include/linux/extmark.h
+index 0944bc0306bd..47f054670a40 100644
+--- a/include/linux/extmark.h
++++ b/include/linux/extmark.h
+@@ -35,6 +35,10 @@
+ #define LROSESS_NO_OF_BITS 1
+ #define LROSESS_MASK 0x80000000
+ 
++/* LRO bit is being reused to mark packet is acclerated by SAE */
++#define FILTERTAP_START_BIT_POS 31
++#define FILTERTAP_NO_OF_BITS 1
++#define FILTERTAP_MASK 0x80000000
+ 
+ #define GET_DATA_FROM_MARK_OPT(mark, mask, pos, value) \
+ 	(value = ((mark & mask) >> pos))
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 3ff2fe215805..12d7695915d3 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2977,6 +2977,9 @@ static int xmit_one(struct sk_buff *skb, struct net_device *dev,
+ 	unsigned int len;
+ 	int rc;
+ 
++#ifdef CONFIG_NETWORK_EXTMARK
++	if (!(skb->extmark & FILTERTAP_MASK))
++#endif
+ 	if (!list_empty(&ptype_all) || !list_empty(&dev->ptype_all))
+ 		dev_queue_xmit_nit(skb, dev);
+ 

@@ -1,0 +1,21 @@
+From 1435ba7d21009e4a1ba79791e16c94a436b9becc Mon Sep 17 00:00:00 2001
+From: agaraix <anath.bandux.garai@intel.com>
+Date: Wed, 23 Oct 2019 07:30:26 +0530
+Subject: [PATCH] UGW_SW-42259 : compile fix.
+
+---
+ include/net/ppa/ppa_api.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/net/ppa/ppa_api.h b/include/net/ppa/ppa_api.h
+index 153664c86b32..78f2beb0cdd4 100644
+--- a/include/net/ppa/ppa_api.h
++++ b/include/net/ppa/ppa_api.h
+@@ -522,6 +522,7 @@ typedef struct {
+ 	struct net_device *tx_dev;
+ } PPA_TUNNEL_INFO;
+ typedef struct {
++	void  *p_item; 	/* pointer to the uc_session_node */
+ 	uint8_t f_ipv6;
+ 	IP_ADDR src_ip;
+ 	IP_ADDR dst_ip;

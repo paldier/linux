@@ -1,0 +1,40 @@
+From 91e4ed6cae91f36b5ca54a8769cb6d740c97b444 Mon Sep 17 00:00:00 2001
+From: Deepansh Rastogi <deepansh.rastogi@intel.com>
+Date: Tue, 12 Nov 2019 13:54:06 +0530
+Subject: [PATCH] UGW_SW-44909: Changing drop algo of system default queues to
+ Drop Tail mode
+
+---
+ drivers/net/ethernet/lantiq/cqm/grx500/cbm.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/net/ethernet/lantiq/cqm/grx500/cbm.c b/drivers/net/ethernet/lantiq/cqm/grx500/cbm.c
+index 46d7c526d323..5e61f2315f42 100644
+--- a/drivers/net/ethernet/lantiq/cqm/grx500/cbm.c
++++ b/drivers/net/ethernet/lantiq/cqm/grx500/cbm.c
+@@ -3331,6 +3331,7 @@ dp_enable(
+ 	cbm_tmu_res_t *res = NULL;
+ 	int q_buff_num;
+ 	unsigned long sys_flag;
++	struct tmu_equeue_drop_params thx = {0};
+ 
+ 	qidt_set.ep = port_id;
+ 	qidt_mask.ep_mask = 0;
+@@ -3384,6 +3385,17 @@ dp_enable(
+ 		tmu_equeue_enable(tmp_q_buff3[j], (flags & CBM_PORT_F_DISABLE) ? 0 : 1);
+ 		LOGF_KLOG_INFO("enable queue %d\n", tmp_q_buff3[j]);
+ 		LOGF_KLOG_INFO("flag %d refcnt %d\n", ((flags & CBM_PORT_F_DISABLE) ? 0 : 1), cbm_qtable[tmp_q_buff3[j]].refcnt);
++
++		tmu_equeue_drop_params_get(tmp_q_buff3[j], &thx);
++		/*
++		 * Change drop algo to DT and increase green threshold to thren times
++		 * the default threshold
++		 */
++		thx.dmod = 0;
++		thx.math0 = 0x72;
++		thx.math1 = 0x24;
++		thx.qtth1 = 0x24;
++		tmu_equeue_drop_params_set(tmp_q_buff3[j], &thx);
+ 	}
+ 	/*Enable the TMU port, i*/
+ 	tmu_egress_port_enable(res[0].tmu_port, (flags & CBM_PORT_F_DISABLE) ? 0 : 1);

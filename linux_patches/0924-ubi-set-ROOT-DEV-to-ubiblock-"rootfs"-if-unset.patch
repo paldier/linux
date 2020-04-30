@@ -1,0 +1,29 @@
+From 2609eb5fdef22694a3f3faf81bd69749bf6a94ec Mon Sep 17 00:00:00 2001
+From: Daniel Golle <daniel@makrotopia.org>
+Date: Thu, 7 Mar 2019 14:38:03 +0530
+Subject: [PATCH] ubi: set ROOT_DEV to ubiblock "rootfs" if unset
+
+Signed-off-by: Daniel Golle <daniel@makrotopia.org>
+---
+ drivers/mtd/ubi/block.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/mtd/ubi/block.c b/drivers/mtd/ubi/block.c
+index ba816ce2635a..cad9899b76f4 100644
+--- a/drivers/mtd/ubi/block.c
++++ b/drivers/mtd/ubi/block.c
+@@ -493,6 +493,14 @@ int ubiblock_create(struct ubi_volume_info *vi)
+ 		 dev->ubi_num, dev->vol_id, vi->name);
+ 	mutex_unlock(&devices_mutex);
+ 
++	if (!strcmp(vi->name, "rootfs") &&
++	    IS_ENABLED(CONFIG_MTD_ROOTFS_ROOT_DEV) &&
++	    ROOT_DEV == 0) {
++		pr_notice("ubiblock: device ubiblock%d_%d (%s) set to be root filesystem\n",
++			  dev->ubi_num, dev->vol_id, vi->name);
++		ROOT_DEV = MKDEV(gd->major, gd->first_minor);
++	}
++
+ 	if (ROOT_DEV == 0 && rootfsname_set) {
+ 		ROOT_DEV = MKDEV(gd->major, gd->first_minor);
+ 		pr_notice("ubiblock: device ubiblock%d_%d (%s) set to be root filesystem\n",
